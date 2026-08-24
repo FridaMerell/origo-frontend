@@ -81,3 +81,8 @@ body {
 [data-theme="verso"] .tenant-heading {
   color: var(--accent);
 }
+
+
+svg {
+  display: inline-block;
+}

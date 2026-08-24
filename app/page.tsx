@@ -1,9 +1,23 @@
 import Image from "next/image";
+import { logout } from "@/app/actions/auth";
+import { getCurrentUser } from "@/app/lib/dal";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+        {user && (
+          <form action={logout} className="self-end text-sm">
+            <span className="mr-3 text-zinc-600 dark:text-zinc-400">
+              Signed in as {String(user.username ?? user.email ?? "user")}
+            </span>
+            <button type="submit" className="underline">
+              Sign out
+            </button>
+          </form>
+        )}
         <Image
           className="dark:invert h-5 w-[100px]"
           src="/next.svg"

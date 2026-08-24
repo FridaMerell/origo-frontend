@@ -1,9 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import { logout } from "@/app/actions/auth";
-import { getCurrentUser } from "@/app/lib/dal";
+import { useUser } from "@/app/lib/user-context";
 
-export default async function Home() {
-  const user = await getCurrentUser();
+export default function Home() {
+  const user = useUser();
 
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">

@@ -1,8 +1,10 @@
-import { logout } from "@/app/actions/auth";
-import { getCurrentUser } from "@/app/lib/dal";
+"use client";
 
-export async function TenantHome({ tenantName }: { tenantName: string }) {
-  const user = await getCurrentUser();
+import { logout } from "@/app/actions/auth";
+import { useUser } from "@/app/lib/user-context";
+
+export function TenantHome({ tenantName }: { tenantName: string }) {
+  const user = useUser();
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-16 py-32">

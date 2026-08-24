@@ -1,4 +1,5 @@
 export const API_BASE_URL = process.env.ORIGO_API_URL ?? "http://api.origo.test:8000";
+export const ORIGO_VERSION = process.env.ORIGO_VERSION ?? "0.0.0";
 
 export const AUTH_ENDPOINTS = {
   csrf: "/api/accounts/csrf/",
@@ -7,8 +8,19 @@ export const AUTH_ENDPOINTS = {
   user: "/api/accounts/me/",
 } as const;
 
+export const VERSO_ENDPOINTS = {
+  facilities: "/api/verso/houses/",
+  bookings: "/api/verso/bookings/",
+  bookingRequests: "/api/verso/booking-requests/",
+  checkOuts: "/api/verso/check-outs/",
+  ventures: "/api/verso/ventures/",
+  ventureTasks: "/api/verso/venture-tasks/",
+  expenses: "/api/verso/expenses/",
+} as const;
+
 export const SESSION_COOKIE = "origo_sessionid";
 export const CSRF_COOKIE = "origo_csrftoken";
+export const FACILITY_COOKIE = "verso_facility";
 
 // Set to a shared parent domain (e.g. ".origo.test") so the session cookie
 // is sent to every subdomain (verso, flux, ...). Leave unset to scope the

@@ -1,85 +1,159 @@
-import { Button } from "@/app/components/ui/Button";
+import Link from "next/link";
+import { cookies } from "next/headers";
 import { Card } from "@/app/components/ui/Card";
 import { Icon } from "@/app/components/ui/Icon";
+import { FACILITY_COOKIE } from "@/app/lib/config";
+import { getBookings, getFacilities, type Booking } from "@/app/lib/dal";
+import { BookVisitButton } from "@/app/verso/besok/book-visit-button";
+import { BookingModalProvider } from "@/app/verso/besok/booking-modal-context";
+import { StayBar } from "@/app/verso/besok/stay-bar";
 
-const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const WEEKDAYS = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
+
+const STAY_COLORS = ["var(--accent)", "var(--secondary)", "var(--danger)"];
 
 type Stay = {
+  booking: Booking;
   who: string;
   color: string;
   start: Date;
   end: Date;
 };
 
-function getStays(year: number, month: number): Stay[] {
-  return [
-    { who: "Erik & family", color: "var(--accent)", start: new Date(year, month, 3), end: new Date(year, month, 7) },
-    { who: "Lina", color: "var(--secondary)", start: new Date(year, month, 12), end: new Date(year, month, 15) },
-    { who: "The Berg siblings", color: "var(--danger)", start: new Date(year, month, 22), end: new Date(year, month, 27) },
-  ];
-}
-
 function isSameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-export default function BesokPage() {
+function parseLocalDate(dateStr: string) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export default async function BesokPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ y?: string; m?: string }>;
+}) {
+  const [facilities, bookings] = await Promise.all([getFacilities(), getBookings()]);
+  const cookieStore = await cookies();
+  const selectedId = cookieStore.get(FACILITY_COOKIE)?.value;
+  const selectedFacility =
+    facilities.find((facility) => String(facility.id) === selectedId) ?? facilities[0] ?? null;
+
   const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const params = await searchParams;
+  const year = params.y ? Number(params.y) : today.getFullYear();
+  const month = params.m ? Number(params.m) - 1 : today.getMonth();
+
+  const prevMonth = new Date(year, month - 1, 1);
+  const nextMonth = new Date(year, month + 1, 1);
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7; // Mon = 0
 
-  const cells: (Date | null)[] = [
-    ...Array.from({ length: firstWeekday }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1)),
-  ];
+  type Cell = { date: Date; inMonth: boolean } | null;
 
-  const stays = getStays(year, month);
-  const monthLabel = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+  const cells: Cell[] = [
+    ...Array.from({ length: firstWeekday }, (_, i): Cell => ({
+      date: new Date(year, month - 1, daysInPrevMonth - firstWeekday + i + 1),
+      inMonth: false,
+    })),
+    ...Array.from({ length: daysInMonth }, (_, i): Cell => ({ date: new Date(year, month, i + 1), inMonth: true })),
+  ];
+  const trailingCount = (7 - (cells.length % 7)) % 7;
+  cells.push(
+    ...Array.from({ length: trailingCount }, (_, i): Cell => ({
+      date: new Date(year, month + 1, i + 1),
+      inMonth: false,
+    }))
+  );
+
+  const stays: Stay[] = bookings
+    .filter((b) => !selectedFacility || String(b.house) === String(selectedFacility.id))
+    .map((b, i) => ({
+      booking: b,
+      who: b.visitor,
+      color: STAY_COLORS[i % STAY_COLORS.length],
+      start: parseLocalDate(b.start_date),
+      end: parseLocalDate(b.end_date),
+    }));
+
+  const monthLabel = new Date(year, month, 1).toLocaleDateString("sv-SE", {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-7">
       <div className="flex items-baseline justify-between">
-        <h1 className="m-0 font-display text-2xl font-semibold text-text">{monthLabel}</h1>
-        <Button variant="primary" size="sm">
-          <Icon name="plus" size={14} className="text-accent-contrast" />
-          Book a visit
-        </Button>
+        <div className="flex items-center gap-3">
+          <Link
+            href={`?y=${prevMonth.getFullYear()}&m=${prevMonth.getMonth() + 1}`}
+            aria-label="Föregående månad"
+            className="flex size-6 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent"
+          >
+            <Icon name="chevron-left" size={16} />
+          </Link>
+          <h1 className="m-0 font-display text-2xl font-semibold text-text">{monthLabel}</h1>
+          <Link
+            href={`?y=${nextMonth.getFullYear()}&m=${nextMonth.getMonth() + 1}`}
+            aria-label="Nästa månad"
+            className="flex size-6 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent"
+          >
+            <Icon name="chevron-right" size={16} />
+          </Link>
+        </div>
+        <BookVisitButton />
       </div>
 
-      <Card className="overflow-hidden p-0">
-        <div className="grid grid-cols-7 border-b border-border">
-          {WEEKDAYS.map((d) => (
-            <div key={d} className="px-3 py-2.5 text-xs font-semibold text-text-muted">
-              {d}
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7">
-          {cells.map((date, i) => {
-            const stay = date && stays.find((s) => date >= s.start && date < s.end);
-            const isStart = date && stay && isSameDay(date, stay.start);
-            return (
+      <BookingModalProvider>
+        <Card className="overflow-hidden p-0">
+          <div className="grid grid-cols-7 border-b border-l border-t border-border">
+            {WEEKDAYS.map((d) => (
               <div
-                key={i}
-                className="relative box-border min-h-[74px] border-r border-b border-border p-1.5 last:border-r-0"
+                key={d}
+                className="border-r border-border px-3 py-2.5 text-xs font-semibold text-text-muted"
               >
-                {date && <span className="text-xs text-text-faint">{date.getDate()}</span>}
-                {isStart && stay && (
-                  <div
-                    className="mt-1.5 rounded px-1.5 py-1 font-body text-[11px] text-white"
-                    style={{ background: stay.color }}
-                  >
-                    {stay.who}
-                  </div>
-                )}
+                {d}
               </div>
-            );
-          })}
-        </div>
-      </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 border-l border-border">
+            {cells.map((cell, i) => {
+              const date = cell?.date ?? null;
+              const dayStays = date ? stays.filter((s) => date >= s.start && date <= s.end) : [];
+              const isRowStart = i % 7 === 0;
+              return (
+                <div
+                  key={i}
+                  className={`relative box-border min-h-[74px] block border-r border-b border-border overflow-clip ${cell && !cell.inMonth ? "opacity-40" : ""}`}
+                >
+                  {date && <span className="text-xs text-text-faint  p-1.5">{date.getDate()}</span>}
+                  {date &&
+                    dayStays.map((stay) => {
+                      const isStart = isSameDay(date, stay.start);
+                      const isLastDay = isSameDay(date, stay.end);
+                      const showLabel = isStart || isRowStart;
+                      return (
+                        <div key={stay.booking.id} className={`${isStart ? "pl-1.5" : ""} ${isLastDay ? "pr-1.5" : ""}`}>
+                          <StayBar
+                            booking={stay.booking}
+                            color={stay.color}
+                            showLabel={Boolean(showLabel)}
+                            roundLeft={isStart}
+                            roundRight={isLastDay}
+                          />
+                        </div>
+                      );
+                    })}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </BookingModalProvider>
 
       <div className="flex gap-5">
         {stays.map((s) => (

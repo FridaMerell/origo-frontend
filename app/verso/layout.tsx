@@ -1,34 +1,55 @@
-"use client";
+import type { ReactNode } from "react";
+import { cookies } from "next/headers";
+import { FACILITY_COOKIE } from "@/app/lib/config";
+import {
+  getAllVentureTasks,
+  getBookingRequests,
+  getBookings,
+  getCheckOuts,
+  getExpenses,
+  getFacilities,
+  getVentures,
+} from "@/app/lib/dal";
+import { BookingDataProvider } from "@/app/lib/booking-context";
+import { FacilityProvider } from "@/app/lib/facility-context";
+import { VentureDataProvider } from "@/app/lib/venture-context";
+import VersoShell from "./verso-shell";
 
-import { useEffect, useState, type ReactNode } from "react";
-import Sidebar from "./sidebar";
+export default async function VersoLayout({ children }: { children: ReactNode }) {
+  const [facilities, bookings, bookingRequests, checkOuts, ventureTasks, expenses] =
+    await Promise.all([
+      getFacilities(),
+      getBookings(),
+      getBookingRequests(),
+      getCheckOuts(),
+      getAllVentureTasks(),
+      getExpenses(),
+    ]);
+  const cookieStore = await cookies();
+  const selectedId = cookieStore.get(FACILITY_COOKIE)?.value;
+  const selectedFacility =
+    facilities.find((facility) => String(facility.id) === selectedId) ?? facilities[0] ?? null;
 
-const STORAGE_KEY = "verso-mode";
-
-export default function VersoLayout({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<"light" | "dark" | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    setMode(stored === "dark" || stored === "light" ? stored : "light");
-  }, []);
-
-  const toggleMode = () => {
-    setMode((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem(STORAGE_KEY, next);
-      return next;
-    });
-  };
+  const houseVentures = selectedFacility ? await getVentures(selectedFacility.id) : [];
+  const houseExpenses = selectedFacility
+    ? expenses.filter((expense) => String(expense.house) === String(selectedFacility.id))
+    : [];
 
   return (
-    <div
-      data-theme="verso"
-      data-mode={mode ?? undefined}
-      className="flex h-full min-h-screen flex-1 bg-bg text-text font-body"
-    >
-      <Sidebar mode={mode} onToggleMode={toggleMode} />
-      {children}
-    </div>
+    <FacilityProvider facilities={facilities} selectedFacility={selectedFacility}>
+      <BookingDataProvider
+        bookings={bookings}
+        bookingRequests={bookingRequests}
+        checkOuts={checkOuts}
+      >
+        <VentureDataProvider
+          ventures={houseVentures}
+          ventureTasks={ventureTasks}
+          expenses={houseExpenses}
+        >
+          <VersoShell>{children}</VersoShell>
+        </VentureDataProvider>
+      </BookingDataProvider>
+    </FacilityProvider>
   );
 }

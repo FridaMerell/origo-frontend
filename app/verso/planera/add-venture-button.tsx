@@ -1,20 +1,22 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { Button } from "@/app/components/ui/Button";
-import { Icon } from "@/app/components/ui/Icon";
-import { VentureFormModal } from "@/app/verso/planera/venture-form-modal";
+import { useState } from "react"
+import { Drawer } from "@/app/components/ui/Drawer"
+import { Icon } from "@/app/components/ui/Icon"
+import { VentureForm } from "@/app/verso/planera/venture-form"
 
 export function AddVentureButton() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
   return (
-    <>
-      <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
-        <Icon name="plus" size={14} className="text-accent-contrast" />
-        Nytt projekt
-      </Button>
-      <VentureFormModal open={open} onClose={() => setOpen(false)} />
-    </>
-  );
+    <Drawer
+      trigger={'Nytt projekt'}
+      title="Nytt projekt"
+      triggerSize={'sm'}
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <VentureForm onSuccess={() => setOpen(false)} />
+    </Drawer>
+  )
 }

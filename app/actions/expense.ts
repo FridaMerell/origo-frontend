@@ -1,10 +1,10 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { FACILITY_COOKIE, VERSO_ENDPOINTS } from "@/app/lib/config"
+import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
-import { cookies } from "next/headers"
+import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 
 export type CreateExpenseState = { error?: string; success?: boolean } | undefined
 
@@ -12,8 +12,7 @@ export async function createExpense(
   _prevState: CreateExpenseState,
   formData: FormData
 ): Promise<CreateExpenseState> {
-  const cookieStore = await cookies()
-  const house = cookieStore.get(FACILITY_COOKIE)?.value
+  const house = await resolveSelectedHouse()
   const venture = formData.get("venture")
   const amount = formData.get("amount")
   const description = formData.get("description")
@@ -25,6 +24,12 @@ export async function createExpense(
     typeof description !== "string" || !description ||
     typeof dateIncurred !== "string" || !dateIncurred
   ) {
+    console.error("Missing required fields in createExpense:", {
+      house,
+      amount,
+      description,
+      dateIncurred,
+    })
     return { error: "Alla fält måste fyllas i." }
   }
 

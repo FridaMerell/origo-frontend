@@ -28,7 +28,7 @@ export default function VersoShell({ children }: { children: ReactNode }) {
       className="flex h-full min-h-screen flex-1 bg-bg text-text font-body"
     >
       <Sidebar mode={mode} onToggleMode={toggleMode} />
-      <main className="min-w-0 flex-1 overflow-x-auto">{children}</main>
+      <main className="min-w-0 flex-1">{children}</main>
     </div>
   );
 }

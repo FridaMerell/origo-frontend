@@ -8,21 +8,25 @@ type FacilityContextValue = {
   facilities: Facility[];
   selectedFacility: Facility | null;
   selectFacility: (id: string) => void;
+  yearlyExpenses: number;
 };
 
 const FacilityContext = createContext<FacilityContextValue>({
   facilities: [],
   selectedFacility: null,
   selectFacility: () => {},
+  yearlyExpenses: 0,
 });
 
 export function FacilityProvider({
   facilities,
   selectedFacility,
+  yearlyExpenses,
   children,
 }: {
   facilities: Facility[];
   selectedFacility: Facility | null;
+  yearlyExpenses: number;
   children: React.ReactNode;
 }) {
   const selectFacility = (id: string) => {
@@ -31,7 +35,7 @@ export function FacilityProvider({
   };
 
   return (
-    <FacilityContext.Provider value={{ facilities, selectedFacility, selectFacility }}>
+    <FacilityContext.Provider value={{ facilities, selectedFacility, selectFacility, yearlyExpenses }}>
       {children}
     </FacilityContext.Provider>
   );

@@ -206,17 +206,18 @@ const UpdatesWidget = () => {
   const { updates } = useUpdateData()
   const users = useUsers()
   return <Card className="w-full col-span-6 md:col-span-3 lg:col-span-3 gap-5 flex flex-col justify-between">
-    { updates && updates.length > 0 ?
-       (
+    {updates && updates.length > 0 ?
+      (
         <ListTable
           showHeader={false}
+          caption={'Nyligen uppdaterat'}
           columns={[{
             key: "entry", render: (e) => (
               <div className="flex items-center gap-3">
                 <Avatar name={getUserLabel(users, e.author)} size={28} />
                 <div className="flex flex-col">
                   <span>{e.title}</span>
-                  <span className="text-xs text-text-faint">Noted by {getUserLabel(users, e.author)}</span>
+                  <span className="text-xs text-text-faint">Skickat av {getUserLabel(users, e.author)}</span>
                 </div>
               </div>
             )
@@ -230,11 +231,29 @@ const UpdatesWidget = () => {
     }
     <div>
 
-    <Drawer trigger="Lägg till uppdatering" triggerVariant={"secondary"} triggerSize={'sm'} title={'Ny uppdatering'} >
-      <UpdateForm />
-    </Drawer>
     </div>
   </Card>
+}
+
+const ResentExpensesWidget = () => {
+  const { selectedFacility, yearlyExpenses } = useFacilities()
+  return yearlyExpenses ? (
+    <Card className="w-full col-span-6 md:col-span-3 lg:col-span-3 gap-5 flex flex-col justify-between">
+      <div className="flex flex-col gap-2">
+        <span className="text-text-faint text-xs ">
+          <Icon name="credit-card" size={13} className="inline-block mr-1" />
+          Utgifter i år
+        </span>
+        <div className="flex flex-col gap-1">
+          <span className="text-2xl font-display font-bold">{yearlyExpenses} kr</span>
+        </div>
+      </div>
+    </Card>
+  ) : (
+    <Card className="w-full col-span-6 md:col-span-3 lg:col-span-3 gap-5 flex flex-col justify-between">
+      <div className="mb-5 text-text-muted">Inga utgifter.</div>
+    </Card>
+  )
 }
 
 const Home = () => {
@@ -249,10 +268,13 @@ const Home = () => {
     )
   }
   return (
-    <div className=" flex flex-col py-5 my-5 mx-10 w-full gap-4">
+    <div className="flex flex-col gap-4 px-10 py-5">
       <div className="w-full flex items-center justify-between gap-4">
         <h1 className="text-2xl font-display">Dashboard för {selectedFacility.name}</h1>
         <div className="flex gap-2">
+          <Drawer trigger="Lägg till uppdatering" triggerVariant={"secondary"} triggerSize={'sm'} title={'Ny uppdatering'} >
+            <UpdateForm />
+          </Drawer>
           <BookVisitButton />
         </div>
       </div>
@@ -260,6 +282,7 @@ const Home = () => {
         <NextVisitWidget facility={selectedFacility} />
         <WeatherWidget facility={selectedFacility} />
         <UpdatesWidget />
+        <ResentExpensesWidget />
       </div>
     </div>
   )

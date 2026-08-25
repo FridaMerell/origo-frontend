@@ -143,34 +143,6 @@ export default function VenturePage() {
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between">
-          <h2 className="m-0 font-display text-lg font-semibold text-text">Utgifter</h2>
-          <Drawer trigger="Ny utgift" triggerVariant="secondary" triggerSize="sm" title="Ny utgift">
-            <ExpenseForm venture={venture.id} />
-          </Drawer>
-        </div>
-        {ventureExpenses.length === 0 ? (
-          <div className="text-sm text-text-muted">Inga utgifter ännu.</div>
-        ) : (
-          <Card className="flex flex-col gap-0 p-0">
-            {ventureExpenses.map((expense) => (
-              <div
-                key={expense.id}
-                className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0"
-              >
-                <span>{expense.description}</span>
-                <span className="flex items-center gap-3">
-                  <span className="font-mono">{expense.amount}</span>
-                  <span className="text-xs text-text-faint">
-                    {new Date(expense.date_incurred).toLocaleDateString("sv-SE", { dateStyle: "medium" })}
-                  </span>
-                </span>
-              </div>
-            ))}
-          </Card>
-        )}
-      </div>
 
       <div className="flex flex-col gap-2">
         <h2 className="m-0 font-display text-lg font-semibold text-text">Uppdateringar</h2>
@@ -212,6 +184,34 @@ export default function VenturePage() {
               </Card>
             ))}
           </div>
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-baseline justify-between">
+          <h2 className="m-0 font-display text-lg font-semibold text-text">Utgifter</h2>
+          <Drawer trigger="Ny utgift" triggerVariant="secondary" triggerSize="sm" title="Ny utgift">
+            <ExpenseForm venture={venture.id} />
+          </Drawer>
+        </div>
+        {ventureExpenses.length === 0 ? (
+          <div className="text-sm text-text-muted">Inga utgifter ännu.</div>
+        ) : (
+          <Card className="flex flex-col gap-0 p-0">
+            {ventureExpenses.map((expense) => (
+              <div
+                key={expense.id}
+                className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0"
+              >
+                <span>{expense.description}</span>
+                <span className="flex items-center gap-3">
+                  <span className="font-mono">{expense.amount}</span>
+                  <span className="text-xs text-text-faint">
+                    {new Date(expense.date_incurred).toLocaleDateString("sv-SE", { dateStyle: "medium" })}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </Card>
         )}
       </div>
     </div>

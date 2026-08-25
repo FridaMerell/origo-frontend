@@ -5,6 +5,7 @@ import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
 import { getCurrentUser } from "@/app/lib/dal"
+import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 
 export type CreateVersoUpdateState = { error?: string; success?: boolean } | undefined
 
@@ -27,6 +28,11 @@ export async function createVersoUpdate(
     return { error: "Du måste vara inloggad." }
   }
 
+  const house = await resolveSelectedHouse()
+  if (!house) {
+    return { error: "Ingen anläggning vald." }
+  }
+
   const { sessionId, csrfToken } = await getSessionCookies()
 
   const response = await fetchOrigoApi(VERSO_ENDPOINTS.versoUpdates, {
@@ -39,9 +45,10 @@ export async function createVersoUpdate(
     body: JSON.stringify({
       title,
       content,
+      house,
       venture: venture || null,
       task: task || null,
-      author: user.id,
+      author: user.id ?? user.pk,
       files,
     }),
   })

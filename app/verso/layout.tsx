@@ -10,6 +10,7 @@ import {
   getFacilities,
   getVentures,
   getVersoUpdates,
+  getYearlyExpenses,
 } from "@/app/lib/dal";
 import { BookingDataProvider } from "@/app/lib/booking-context";
 import { FacilityProvider } from "@/app/lib/facility-context";
@@ -29,14 +30,15 @@ export default async function VersoLayout({ children }: { children: ReactNode })
   const selectedFacility =
     facilities.find((facility) => String(facility.id) === selectedId) ?? facilities[0] ?? null;
 
-  const [bookings, bookingRequests, houseVentures, houseExpenses] = selectedFacility
+  const [bookings, bookingRequests, houseVentures, houseExpenses, yearlyExpenses] = selectedFacility
     ? await Promise.all([
         getBookings(selectedFacility.id),
         getBookingRequests(selectedFacility.id),
         getVentures(selectedFacility.id),
         getExpenses(selectedFacility.id),
+        getYearlyExpenses(selectedFacility.id, new Date().getFullYear()),
       ])
-    : [[], [], [], []];
+    : [[], [], [], [],0];
 
   const bookingIds = new Set(bookings.map((b) => b.id));
   const checkOuts = allCheckOuts.filter((c) => bookingIds.has(c.booking));
@@ -45,12 +47,17 @@ export default async function VersoLayout({ children }: { children: ReactNode })
   const houseTaskIds = new Set(
     ventureTasks.filter((t) => ventureIds.has(t.venture)).map((t) => t.id)
   );
-  const updates = allUpdates.filter(
-    (u) => (u.venture !== null && ventureIds.has(u.venture)) || (u.task !== null && houseTaskIds.has(u.task))
-  );
+  const updates = selectedFacility
+    ? allUpdates.filter(
+        (u) =>
+          String(u.house) === String(selectedFacility.id) ||
+          (u.venture !== null && ventureIds.has(u.venture)) ||
+          (u.task !== null && houseTaskIds.has(u.task))
+      )
+    : [];
 
   return (
-    <FacilityProvider facilities={facilities} selectedFacility={selectedFacility}>
+    <FacilityProvider facilities={facilities} selectedFacility={selectedFacility} yearlyExpenses={yearlyExpenses??0}>
       <BookingDataProvider
         bookings={bookings}
         bookingRequests={bookingRequests}

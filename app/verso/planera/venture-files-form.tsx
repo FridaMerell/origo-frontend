@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { updateVentureFiles, type UpdateVentureFilesState } from "@/app/actions/venture";
 import { Button } from "@/app/components/ui/Button";
 import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload";
@@ -13,6 +14,11 @@ export function VentureFilesForm({ venture }: { venture: Venture }) {
   const [files, setFiles] = useState<UploadedFile[]>(
     venture.files.map((url) => ({ url, name: url.split("/").pop() ?? url }))
   );
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state?.success) router.refresh();
+  }, [state, router]);
 
   return (
     <form action={formAction} className="flex flex-col gap-3">

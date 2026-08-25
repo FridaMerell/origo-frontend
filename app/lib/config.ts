@@ -5,7 +5,7 @@ export const AUTH_ENDPOINTS = {
   csrf: "/api/accounts/csrf/",
   login: "/api/accounts/login/",
   logout: "/api/accounts/logout/",
-  user: "/api/accounts/me/",
+  user: "/api/accounts/self/",
 } as const;
 
 export const ACCOUNTS_ENDPOINTS = {
@@ -20,6 +20,7 @@ export const VERSO_ENDPOINTS = {
   ventures: "/api/verso/ventures/",
   ventureTasks: "/api/verso/venture-tasks/",
   expenses: "/api/verso/expenses/",
+  yearlyExpenses: "/api/verso/expenses/year_expenses/",
   versoUpdates: "/api/verso/updates/",
 } as const;
 

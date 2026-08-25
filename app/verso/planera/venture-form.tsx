@@ -2,36 +2,31 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateVenture, type UpdateVentureState } from "@/app/actions/venture";
+import { createVenture, type CreateVentureState } from "@/app/actions/venture";
 import { Button } from "@/app/components/ui/Button";
-import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload";
-import type { Venture } from "@/app/lib/dal";
 
-const initialState: UpdateVentureState = undefined;
+const initialState: CreateVentureState = undefined;
 
-export function VentureEditForm({ venture }: { venture: Venture }) {
-  const [state, formAction, pending] = useActionState(updateVenture, initialState);
-  const [priority, setPriority] = useState(venture.priority);
-  const [files, setFiles] = useState<UploadedFile[]>(
-    venture.files.map((url) => ({ url, name: url.split("/").pop() ?? url }))
-  );
+export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
+  const [state, formAction, pending] = useActionState(createVenture, initialState);
+  const [priority, setPriority] = useState(3);
   const router = useRouter();
 
   useEffect(() => {
-    if (state?.success) router.refresh();
-  }, [state, router]);
+    if (state?.success) {
+      onSuccess?.();
+      router.refresh();
+    }
+  }, [state, onSuccess, router]);
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
-      <input type="hidden" name="id" value={venture.id} />
-
       <label className="flex flex-col gap-1 text-sm text-text-muted">
         Namn
         <input
           type="text"
           name="name"
           required
-          defaultValue={venture.name}
           className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
@@ -41,7 +36,6 @@ export function VentureEditForm({ venture }: { venture: Venture }) {
         <textarea
           name="description"
           required
-          defaultValue={venture.description}
           className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
@@ -67,19 +61,9 @@ export function VentureEditForm({ venture }: { venture: Venture }) {
           type="text"
           name="budget"
           required
-          defaultValue={venture.budget}
           className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
-
-      <div className="flex flex-col gap-1 text-sm text-text-muted">
-        Bilagor
-        <FileUpload folder="verso" files={files} onChange={setFiles} />
-      </div>
-
-      {files.map((file) => (
-        <input key={file.url} type="hidden" name="files" value={file.url} />
-      ))}
 
       {state?.error && <p className="text-sm text-danger">{state.error}</p>}
 

@@ -1,13 +1,19 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { createExpense, type CreateExpenseState } from "../actions/expense"
 import { Button } from "../components/ui/Button"
 
 const initialState: CreateExpenseState = undefined
 
-const ExpenseForm = ({ venture }: { venture: string }) => {
+const ExpenseForm = ({ venture }: { venture?: string }) => {
   const [state, formAction, pending] = useActionState(createExpense, initialState)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (state?.success) router.refresh()
+  }, [state, router])
 
   return (
     <form action={formAction} className="flex flex-col gap-4">

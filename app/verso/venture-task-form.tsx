@@ -1,6 +1,7 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { createVentureTask, updateVentureTask, type CreateVentureTaskState } from "../actions/venture-task"
 import { Button } from "../components/ui/Button"
 import type { VentureTask } from "../lib/dal"
@@ -12,6 +13,11 @@ const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTas
     task ? updateVentureTask : createVentureTask,
     initialState
   )
+  const router = useRouter()
+
+  useEffect(() => {
+    if (state?.success) router.refresh()
+  }, [state, router])
 
   return (
     <form action={formAction} className="flex flex-col gap-4">

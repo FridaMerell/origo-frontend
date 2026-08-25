@@ -1,6 +1,7 @@
 "use client"
 
-import { useActionState, useState } from "react"
+import { useActionState, useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { VersoUpdate } from "../lib/dal"
 import { createVersoUpdate, type CreateVersoUpdateState } from "../actions/verso-update"
 import { Button } from "../components/ui/Button"
@@ -19,6 +20,11 @@ const UpdateForm = ({
   defaultTask?: string
 }) => {
   const [state, formAction, pending] = useActionState(createVersoUpdate, initialState)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (state?.success) router.refresh()
+  }, [state, router])
   const [files, setFiles] = useState<UploadedFile[]>(
     (update?.files ?? []).map((url) => ({ url, name: url.split("/").pop() ?? url }))
   )

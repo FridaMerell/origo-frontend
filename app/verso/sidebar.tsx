@@ -6,14 +6,15 @@ import { useRef, useState, useEffect } from "react"
 import { Icon } from "../components/ui/Icon"
 import { ChevronDownIcon, ExternalLink, ExternalLinkIcon } from "lucide-react"
 import { useFacilities } from "../lib/facility-context"
+import { useUser } from "../lib/user-context"
 import { ORIGO_VERSION } from "../lib/config"
 import Logo from "./ui/Logo"
+import { Profile } from "../components/ui/Profile"
 
 const NAV_ITEMS = [
   { label: "Kalender", href: "/besok", icon: "calendar" },
   { label: "Planering", href: "/planera", icon: "list-todo" },
-  { label: "Aktivitet", href: "/history", icon: "clock" },
-  { label: "Ekonomi", href: "/money", icon: "receipt" },
+  { label: "Ekonomi", href: "/ekonomi", icon: "receipt" },
   { label: "Uppdateringar", href: "/updates", icon: "bell" },
 ] as const
 
@@ -162,6 +163,7 @@ const Sidebar = ({ mode, onToggleMode }: SidebarProps) => {
       <div className="mt-auto  pt-4">
         <Link href="https://flux.fåvitsko.se" target="_blank" rel="noopener noreferrer"><div className="flex gap-2 ml-3 items-center">Flux <ExternalLinkIcon size={16} /></div> </Link>
         <ModeToggle mode={mode} onToggle={onToggleMode} />
+        <Profile />
       </div>
     </nav>
   )

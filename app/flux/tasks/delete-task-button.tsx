@@ -12,7 +12,7 @@ export function DeleteTaskButton({ id }: { id: number }) {
       type="button"
       aria-label="Delete task"
       disabled={pending}
-      onClick={() => startTransition(() => deleteTask(id))}
+      onClick={() => startTransition(() => { deleteTask(id) })}
       className="text-text-faint hover:text-danger disabled:opacity-50"
     >
       <Icon name="trash-2" size={14} />

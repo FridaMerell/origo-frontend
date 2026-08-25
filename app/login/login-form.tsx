@@ -3,11 +3,12 @@
 import { useActionState } from "react";
 import { login } from "@/app/actions/auth";
 
-export function LoginForm() {
+export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   const [state, action, pending] = useActionState(login, undefined);
 
   return (
     <form action={action} className="flex w-full max-w-sm flex-col gap-4">
+      <input type="hidden" name="redirectTo" value={redirectTo} />
       <div className="flex flex-col gap-1">
         <label htmlFor="username">Username</label>
         <input

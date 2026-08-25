@@ -25,6 +25,6 @@ export async function setSessionCookies(sessionId: string, csrfToken: string) {
 
 export async function clearSessionCookies() {
   const cookieStore = await cookies();
-  cookieStore.delete({ name: SESSION_COOKIE, path: "/", domain: COOKIE_DOMAIN });
-  cookieStore.delete({ name: CSRF_COOKIE, path: "/", domain: COOKIE_DOMAIN });
+  cookieStore.set(SESSION_COOKIE, "", { ...cookieOptions, maxAge: 0 });
+  cookieStore.set(CSRF_COOKIE, "", { ...cookieOptions, maxAge: 0 });
 }

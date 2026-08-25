@@ -7,7 +7,7 @@ export default function FluxLoginPage() {
       <h1 className="text-2xl font-semibold" style={{ color: "var(--accent)" }}>
         Sign in to {TENANTS.flux.name}
       </h1>
-      <LoginForm />
+      <LoginForm redirectTo="/flux" />
     </div>
   );
 }

@@ -42,7 +42,7 @@ export async function createVenture(
   })
 
   if (!response.ok) {
-    return { error: "Kunde inte skapa satsningen. Försök igen." }
+    return { error: "Projektet kunde inte skapas. Försök igen." }
   }
 
   revalidatePath("/planera")

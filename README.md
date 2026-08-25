@@ -1,5 +1,25 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Code map
+
+Multi-tenant frontend with two product areas, routed via `proxy.ts`, which resolves the tenant from the request hostname and rewrites to `/<tenant>` while also gating routes behind session auth.
+
+- `app/verso/` — Verso product: booking/visit flow (`besok/`) and venture planning (`planera/`), plus `sidebar.tsx` and `verso-shell.tsx` for the app shell/layout.
+- `app/flux/` — Flux product: projects, tasks, backlog, and timeline views, plus `flux-shell.tsx`, `toolbar.tsx`, and `product-switcher.tsx` for the app shell/layout.
+- `app/login/`, `app/flux/login/`, `app/verso/login/` — login pages (shared + per-product).
+- `app/actions/` — Next.js server actions (`auth.ts`, `booking.ts`, `venture.ts`, `flux.ts`) that mutate data via the backend API.
+- `app/lib/` — shared client/server utilities:
+  - `api-client.ts` — fetch wrapper for calling the backend API.
+  - `config.ts` — API base URL, auth endpoints, cookie names.
+  - `session.ts`, `dal.ts` — session/auth data access.
+  - `tenant.ts` — hostname → tenant resolution (used by `proxy.ts`).
+  - `*-context.tsx` (`user-context`, `facility-context`, `booking-context`, `venture-context`, `flux-context`) + `flux-providers.tsx` — React context providers for shared client state.
+- `app/components/ui/` — shared, product-agnostic UI primitives (`Button`, `Card`, `Icon`, `Avatar`).
+- `app/components/tenant-home.tsx` — tenant landing page component.
+- `app/styles/tokens/` — design tokens (colors, typography, fonts, effects) as CSS.
+- `proxy.ts` — tenant resolution + auth-gated routing/rewrites, run on every GET request.
+- `flux-design/` — design reference material for the Flux product (not application code).
+
 ## Getting Started
 
 First, run the development server:

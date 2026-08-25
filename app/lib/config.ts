@@ -8,6 +8,10 @@ export const AUTH_ENDPOINTS = {
   user: "/api/accounts/me/",
 } as const;
 
+export const ACCOUNTS_ENDPOINTS = {
+  users: "/api/accounts/users/",
+} as const;
+
 export const VERSO_ENDPOINTS = {
   facilities: "/api/verso/houses/",
   bookings: "/api/verso/bookings/",
@@ -16,6 +20,13 @@ export const VERSO_ENDPOINTS = {
   ventures: "/api/verso/ventures/",
   ventureTasks: "/api/verso/venture-tasks/",
   expenses: "/api/verso/expenses/",
+} as const;
+
+export const FLUX_ENDPOINTS = {
+  projects: "/api/flux/projects/",
+  milestones: "/api/flux/milestones/",
+  tasks: "/api/flux/tasks/",
+  updates: "/api/flux/updates/",
 } as const;
 
 export const SESSION_COOKIE = "origo_sessionid";

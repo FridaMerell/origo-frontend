@@ -7,7 +7,7 @@ export default function VersoLoginPage() {
       <h1 className="text-2xl font-semibold" style={{ color: "var(--accent)" }}>
         Sign in to {TENANTS.verso.name}
       </h1>
-      <LoginForm />
+      <LoginForm redirectTo="/verso" />
     </div>
   );
 }

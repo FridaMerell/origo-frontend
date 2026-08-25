@@ -34,7 +34,7 @@ export function VentureFormModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="m-0 font-display text-lg font-semibold text-text">Ny satsning</h2>
+          <h2 className="m-0 font-display text-lg font-semibold text-text">Nytt projekt</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="text-text-muted">
             <Icon name="x" size={16} />
           </button>

@@ -10,6 +10,7 @@ export type LoginState = { error?: string } | undefined;
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const username = formData.get("username");
   const password = formData.get("password");
+  const redirectTo = formData.get("redirectTo");
 
   if (typeof username !== "string" || typeof password !== "string" || !username || !password) {
     return { error: "Username and password are required." };
@@ -42,7 +43,7 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
   }
 
   await setSessionCookies(sessionId, rotatedCsrfToken);
-  redirect("/");
+  redirect(typeof redirectTo === "string" && redirectTo ? redirectTo : "/");
 }
 
 export async function logout() {

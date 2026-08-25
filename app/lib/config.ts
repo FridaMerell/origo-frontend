@@ -20,6 +20,7 @@ export const VERSO_ENDPOINTS = {
   ventures: "/api/verso/ventures/",
   ventureTasks: "/api/verso/venture-tasks/",
   expenses: "/api/verso/expenses/",
+  versoUpdates: "/api/verso/updates/",
 } as const;
 
 export const FLUX_ENDPOINTS = {

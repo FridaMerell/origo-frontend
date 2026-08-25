@@ -83,6 +83,18 @@ export type Expense = {
   updated_at: string;
 };
 
+export type VersoUpdate = {
+  id: string;
+  venture: string | null;
+  task: string | null;
+  author: string | null;
+  content: string;
+  files: string[];
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type FluxProject = {
   id: number;
   name: string;
@@ -174,11 +186,12 @@ export const getFacilities = cache(
 );
 
 export const getBookings = cache(
-  (): Promise<Booking[]> => fetchVersoList(VERSO_ENDPOINTS.bookings)
+  (house: string): Promise<Booking[]> => fetchVersoList(VERSO_ENDPOINTS.bookings, { house })
 );
 
 export const getBookingRequests = cache(
-  (): Promise<BookingRequest[]> => fetchVersoList(VERSO_ENDPOINTS.bookingRequests)
+  (house: string): Promise<BookingRequest[]> =>
+    fetchVersoList(VERSO_ENDPOINTS.bookingRequests, { house })
 );
 
 export const getCheckOuts = cache(
@@ -199,7 +212,11 @@ export const getAllVentureTasks = cache(
 );
 
 export const getExpenses = cache(
-  (): Promise<Expense[]> => fetchVersoList(VERSO_ENDPOINTS.expenses)
+  (house: string): Promise<Expense[]> => fetchVersoList(VERSO_ENDPOINTS.expenses, { house })
+);
+
+export const getVersoUpdates = cache(
+  (): Promise<VersoUpdate[]> => fetchVersoList(VERSO_ENDPOINTS.versoUpdates)
 );
 
 async function fetchFluxList<T>(
@@ -254,6 +271,8 @@ export const getFluxUsers = cache((ids: number[]): Promise<FluxUser[]> => {
   for (const id of ids) search.append("id", String(id));
   return fetchFluxList(`${ACCOUNTS_ENDPOINTS.users}?${search}`);
 });
+
+export const getUsers = cache((): Promise<FluxUser[]> => fetchFluxList(ACCOUNTS_ENDPOINTS.users));
 
 export const getFluxProjects = cache(
   (params?: { members?: string }): Promise<FluxProject[]> =>

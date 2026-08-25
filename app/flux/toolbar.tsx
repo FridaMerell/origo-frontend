@@ -5,17 +5,19 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { Icon } from "@/app/components/ui/Icon"
 import { Avatar } from "@/app/components/ui/Avatar"
+import { Button } from "@/app/components/ui/Button"
 import { TaskFormModal } from "@/app/flux/tasks/task-form-modal"
 import { ProjectFormModal } from "@/app/flux/projects/project-form-modal"
-import { useFluxTasks } from "@/app/lib/flux-context"
+import { useFluxProjects } from "@/app/lib/flux-context"
+import Logo from "./ui/Logo"
 
-type NavItem = {
-  label: string
-  href: string
-  icon: string
-  count?: number
-  tone?: "accent" | "muted" | "danger"
-}
+type NavLink = { label: string; href: string; icon: string }
+
+const NAV_LINKS: NavLink[] = [
+  { label: "Uppgifter", href: "/tasks", icon: "list" },
+  { label: "Tidslinje", href: "/timeline", icon: "route" },
+  { label: "Backlog", href: "/backlog", icon: "inbox" },
+]
 
 type ToolbarProps = {
   mode: "light" | "dark" | null
@@ -23,205 +25,165 @@ type ToolbarProps = {
   userName: string
 }
 
+function versoHref() {
+  if (typeof window === "undefined") return "#"
+  const { hostname, protocol, port } = window.location
+  const parts = hostname.split(".")
+  parts[0] = "verso"
+  return `${protocol}//${parts.join(".")}${port ? `:${port}` : ""}/`
+}
+
 const Toolbar = ({ mode, onToggleMode, userName }: ToolbarProps) => {
   const pathname = usePathname()
-  const tasks = useFluxTasks()
-  const [showMoreSheet, setShowMoreSheet] = useState(false)
+  const projects = useFluxProjects()
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [drawer, setDrawer] = useState<"task" | "project" | null>(null)
 
   const createLabel = pathname === "/projects" ? "New project" : "New task"
-  const openCreateDrawer = () => setDrawer(pathname === "/projects" ? "project" : "task")
-
-  const backlogCount = tasks.filter((task) => !task.due_date).length
-
-  const left: NavItem[] = [
-    { label: "Projects", href: "/projects", icon: "folder" },
-    { label: "Tasks", href: "/tasks", icon: "square-check", count: tasks.length, tone: "accent" },
-  ]
-  const right: NavItem[] = [
-    { label: "Timeline", href: "/timeline", icon: "route" },
-    { label: "Backlog", href: "/backlog", icon: "inbox", count: backlogCount, tone: "muted" },
-  ]
-  const moreItems = [right[0]!]
-
-  const badge = (item: NavItem) =>
-    !!item.count && (
-      <span
-        className={`absolute -right-2 -top-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 font-mono text-[9px] font-semibold ${
-          item.tone === "danger"
-            ? "bg-danger text-white"
-            : item.tone === "accent"
-              ? "bg-accent text-accent-contrast"
-              : "bg-surface-2 text-text-faint"
-        }`}
-      >
-        {item.count}
-      </span>
-    )
-
-  const dockItem = (item: NavItem) => {
-    const active = pathname === item.href
-    return (
-      <Link
-        key={item.label}
-        href={item.href}
-        className={`relative flex flex-col items-center gap-0.5 rounded-[22px] px-3 py-1.5 no-underline duration-200 ${active ? "bg-accent-wash" : "hover:bg-surface-2"}`}
-      >
-        <span className="relative">
-          <Icon name={item.icon} size={18} className={active ? "text-accent" : "text-text-muted"} />
-          {badge(item)}
-        </span>
-        <span
-          className={`font-mono text-[9px] font-semibold uppercase tracking-wide ${active ? "text-accent" : "text-text-faint"}`}
-        >
-          {item.label}
-        </span>
-      </Link>
-    )
+  const openCreateDrawer = () => {
+    setDesktopMenuOpen(false)
+    setMobileMenuOpen(false)
+    setDrawer(pathname === "/projects" ? "project" : "task")
   }
 
-  const mobileNavItem = (item: NavItem) => {
-    const active = pathname === item.href
-    return (
-      <Link
-        key={item.label}
-        href={item.href}
-        className="flex flex-1 flex-col items-center gap-1 py-1.5 no-underline"
+  const projectName = projects[0]?.name ?? "Projekt"
+
+  const overflowItems = (closeMenu: () => void) => (
+    <>
+      <Button variant="primary" size="md" onClick={openCreateDrawer} className="justify-center">
+        <Icon name="plus" size={16} className="text-accent-contrast" />
+        {createLabel}
+      </Button>
+      <button
+        type="button"
+        className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
       >
-        <span className="relative">
-          <Icon name={item.icon} size={20} className={active ? "text-accent" : "text-text-muted"} />
-          {badge(item)}
-        </span>
-        <span
-          className={`font-body text-[11px] font-medium ${active ? "text-accent" : "text-text-muted"}`}
-        >
-          {item.label}
-        </span>
-      </Link>
-    )
-  }
+        <Icon name="bell" size={16} className="text-text-muted" />
+        Notifications
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onToggleMode()
+          closeMenu()
+        }}
+        className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
+      >
+        <Icon name={mode === "dark" ? "sun" : "moon"} size={16} className="text-text-muted" />
+        {mode === "dark" ? "Light mode" : "Dark mode"}
+      </button>
+      <a
+        href={versoHref()}
+        className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 font-body text-sm text-text no-underline hover:bg-surface-2"
+      >
+        <Icon name="arrow-left-right" size={16} className="text-text" />
+        Go to Verso
+      </a>
+      <div className="flex items-center gap-2.5 px-3 py-2.5">
+        <Avatar name={userName} size={24} />
+        <span className="font-body text-sm text-text-muted">{userName}</span>
+      </div>
+    </>
+  )
 
   return (
     <>
-      {/* Desktop / tablet floating dock */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 hidden items-center justify-center sm:flex">
-        <nav className="pointer-events-auto flex items-center gap-1.5 rounded-[32px] border border-border bg-surface p-2 shadow-lg">
-          {left.map(dockItem)}
+      {/* Desktop floating bar */}
+      <div className="pointer-events-none fixed inset-x-0 top-5 z-40 hidden justify-center sm:flex">
+        <div className="pointer-events-auto relative">
+          <nav className="flex items-center gap-2.5 whitespace-nowrap rounded-[44px] border border-border bg-surface px-4 py-3 shadow-md">
+            <Link href="/" className="flex items-center  no-underline">
+              <Logo width={70} className="text-accent" />
+              <span className="font-display text-[22px] font-bold tracking-tight text-text">flux</span>
+            </Link>
 
-          <button
-            type="button"
-            aria-label={createLabel}
-            onClick={openCreateDrawer}
-            className="mx-1 flex size-13 shrink-0 items-center justify-center rounded-full bg-accent shadow-md hover:bg-accent"
-          >
-            <Icon name="plus" size={24} className="text-accent-contrast" />
-          </button>
+            <div className="h-8 w-px bg-border" />
 
-          {right.map(dockItem)}
-        </nav>
+            <Link
+              href="/projects"
+              className="flex items-center gap-2 rounded-3xl px-3.5 py-2.5 font-body text-base font-semibold text-text no-underline hover:bg-surface-2"
+            >
+              {projectName}
+              <Icon name="chevron-down" size={16} className="text-text-faint" />
+            </Link>
 
-        <div className="pointer-events-auto absolute right-6 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-[32px] border border-border bg-surface p-2 shadow-lg">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={mode === "dark"}
-            aria-label="Toggle dark mode"
-            onClick={onToggleMode}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full text-text-muted hover:bg-surface-2"
-          >
-            <Icon name={mode === "dark" ? "sun" : "moon"} size={16} />
-          </button>
+            {NAV_LINKS.map((item) => {
+              const active = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-3xl px-4 py-2.5 font-body text-base font-medium no-underline ${
+                    active ? "bg-surface-2 text-text" : "text-text-muted hover:bg-surface-2"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              )
+            })}
 
-          <Avatar name={userName} size={34} />
+            <div className="h-8 w-px bg-border" />
+
+            <button
+              type="button"
+              aria-label="More"
+              onClick={() => setDesktopMenuOpen((v) => !v)}
+              className={`flex size-10 shrink-0 items-center justify-center rounded-full ${desktopMenuOpen ? "bg-surface-2" : "hover:bg-surface-2"}`}
+            >
+              <Icon name="ellipsis" size={18} className="text-text-muted" />
+            </button>
+          </nav>
+
+          {desktopMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setDesktopMenuOpen(false)} />
+              <div className="absolute right-0 top-full z-20 mt-2 flex min-w-[200px] flex-col gap-0.5 rounded-2xl border border-border bg-surface p-2 shadow-md">
+                {overflowItems(() => setDesktopMenuOpen(false))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center rounded-t-2xl border border-border bg-surface px-2 pb-[env(safe-area-inset-bottom)] shadow-lg sm:hidden">
-        {mobileNavItem(left[0]!)}
-        {mobileNavItem(left[1]!)}
+      {/* Mobile dock */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 flex justify-center px-2.5 sm:hidden">
+        <div className="pointer-events-auto relative w-full">
+          {mobileMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setMobileMenuOpen(false)} />
+              <div className="absolute inset-x-0 bottom-[68px] z-20 flex flex-col gap-0.5 rounded-2xl border border-border bg-surface p-2 shadow-md">
+                {overflowItems(() => setMobileMenuOpen(false))}
+              </div>
+            </>
+          )}
 
-        <div className="flex flex-1 flex-col items-center py-1.5">
-          <button
-            type="button"
-            aria-label={createLabel}
-            onClick={openCreateDrawer}
-            className="-mt-6 flex size-12 shrink-0 items-center justify-center rounded-full bg-accent shadow-lg hover:bg-accent"
-          >
-            <Icon name="plus" size={22} className="text-accent-contrast" />
-          </button>
-        </div>
-
-        {mobileNavItem(right[1]!)}
-
-        <button
-          type="button"
-          aria-label="More"
-          onClick={() => setShowMoreSheet(true)}
-          className="flex flex-1 flex-col items-center gap-1 py-1.5"
-        >
-          <Icon name="ellipsis" size={20} className="text-text-muted" />
-          <span className="font-body text-[11px] font-medium text-text-muted">More</span>
-        </button>
-      </nav>
-
-      {/* Mobile "More" sheet */}
-      <div
-        className={`fixed inset-0 z-50 sm:hidden ${showMoreSheet ? "pointer-events-auto" : "pointer-events-none"}`}
-        aria-hidden={!showMoreSheet}
-      >
-        <div
-          className={`absolute inset-0 bg-black/35 transition-opacity duration-200 ${showMoreSheet ? "opacity-100" : "opacity-0"}`}
-          onClick={() => setShowMoreSheet(false)}
-        />
-        <div
-          className={`absolute inset-x-0 bottom-0 flex flex-col gap-1 rounded-t-2xl border border-border bg-surface p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] shadow-lg transition-transform duration-200 ${showMoreSheet ? "translate-y-0" : "translate-y-full"}`}
-        >
-          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-border" />
-          <div className="mb-1 flex items-center justify-between">
-            <h2 className="m-0 font-display text-base font-semibold text-text">More</h2>
+          <nav className="flex items-center justify-center gap-1 rounded-[28px] border border-border bg-surface px-2.5 py-2 shadow-md">
+            <Logo height={12} width={18} className="mr-0.5 shrink-0 text-accent" />
+            <Link
+              href="/projects"
+              className="flex items-center gap-1 whitespace-nowrap rounded-2xl px-2 py-1.5 font-body text-xs font-semibold text-text no-underline"
+            >
+              {projectName}
+              <Icon name="chevron-down" size={12} className="text-text-faint" />
+            </Link>
+            <Link
+              href="/tasks"
+              className={`whitespace-nowrap rounded-2xl px-2.5 py-1.5 font-body text-xs font-medium no-underline ${
+                pathname === "/tasks" ? "bg-surface-2 text-text" : "text-text"
+              }`}
+            >
+              Uppgifter
+            </Link>
             <button
               type="button"
-              aria-label="Close"
-              onClick={() => setShowMoreSheet(false)}
-              className="text-text-faint"
+              aria-label="More"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              className={`ml-0.5 flex size-[26px] shrink-0 items-center justify-center rounded-full ${mobileMenuOpen ? "bg-surface-2" : ""}`}
             >
-              <Icon name="x" size={18} />
+              <Icon name="ellipsis" size={16} className="text-text-muted" />
             </button>
-          </div>
-
-          {moreItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              onClick={() => setShowMoreSheet(false)}
-              className="flex items-center gap-3 rounded-lg px-2 py-3 no-underline hover:bg-surface-2"
-            >
-              <Icon name={item.icon} size={18} className="text-text-muted" />
-              <span className="flex-1 font-body text-sm text-text">{item.label}</span>
-              {!!item.count && (
-                <span className="rounded-full bg-surface-2 px-2 py-0.5 font-mono text-xs text-text-faint">
-                  {item.count}
-                </span>
-              )}
-            </Link>
-          ))}
-
-          <button
-            type="button"
-            onClick={onToggleMode}
-            className="flex items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-surface-2"
-          >
-            <Icon name={mode === "dark" ? "sun" : "moon"} size={18} className="text-text-muted" />
-            <span className="flex-1 font-body text-sm text-text">
-              {mode === "dark" ? "Light mode" : "Dark mode"}
-            </span>
-          </button>
-
-          <div className="mt-1 flex items-center gap-3 border-t border-border px-2 pt-3">
-            <Avatar name={userName} size={28} />
-            <span className="font-body text-sm text-text">{userName}</span>
-          </div>
+          </nav>
         </div>
       </div>
 

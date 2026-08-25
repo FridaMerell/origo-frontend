@@ -7,12 +7,14 @@ import { Icon } from "../components/ui/Icon"
 import { ChevronDownIcon, ExternalLink, ExternalLinkIcon } from "lucide-react"
 import { useFacilities } from "../lib/facility-context"
 import { ORIGO_VERSION } from "../lib/config"
+import Logo from "./ui/Logo"
 
 const NAV_ITEMS = [
   { label: "Kalender", href: "/besok", icon: "calendar" },
   { label: "Planering", href: "/planera", icon: "list-todo" },
   { label: "Aktivitet", href: "/history", icon: "clock" },
   { label: "Ekonomi", href: "/money", icon: "receipt" },
+  { label: "Uppdateringar", href: "/updates", icon: "bell" },
 ] as const
 
 const ICON_BASE = "https://unpkg.com/lucide-static@1.28.0/icons/"
@@ -123,11 +125,14 @@ const Sidebar = ({ mode, onToggleMode }: SidebarProps) => {
   const { facilities } = useFacilities()
 
   return (
-    <nav className="flex h-full min-h-screen w-55 shrink-0 flex-col gap-0.5 border-r border-border bg-surface p-3 font-body">
+    <nav className="sticky top-0 flex h-screen w-55 shrink-0 flex-col gap-0.5 border-r border-border bg-surface p-3 font-body">
       <div className="px-2.5 pb-6 pt-3 ">
-        <span className="font-body text-xs">ORIGO 0.0.1</span><br />
-        <a href="/" className="font-display text-3xl font-semibold text-accent">
-          Verso
+        <a href="/" className="font-display text-2xl font-semibold text-accent flex items-center ">
+          <Logo height={75} />
+          <div className="flex flex-col ml-1 gap-0">
+            <span className="leading-5">Verso</span>
+            <span className="font-body text-xs ml-1.5">ORIGO 0.0.1</span>
+          </div>
         </a>
 
         <div className="mt-2 text-sm text-text-muted">

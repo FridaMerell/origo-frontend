@@ -1,4 +1,5 @@
 import { cookies } from "next/headers"
+import Link from "next/link"
 import { FACILITY_COOKIE } from "@/app/lib/config"
 import { getAllVentureTasks, getFacilities, getVentures } from "@/app/lib/dal"
 import { AddVentureButton } from "@/app/verso/planera/add-venture-button"
@@ -19,7 +20,9 @@ const Venture = ({ venture }: { venture: Awaited<ReturnType<typeof getVentures>>
     }
   }
   return (
-    <div className="flex flex-col gap-1 rounded border border-border p-5 w-full 
+    <Link
+      href={`/planera/${venture.id}`}
+      className="flex flex-col gap-1 rounded border border-border p-5 w-full
     md:w-1/3 lg:w-1/4 bg-surface shadow-md hover:shadow-md transition-shadow duration-200 justify-between">
       <div>
 
@@ -63,7 +66,7 @@ const Venture = ({ venture }: { venture: Awaited<ReturnType<typeof getVentures>>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
 

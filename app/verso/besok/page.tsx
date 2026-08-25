@@ -34,11 +34,12 @@ export default async function BesokPage({
 }: {
   searchParams: Promise<{ y?: string; m?: string }>;
 }) {
-  const [facilities, bookings] = await Promise.all([getFacilities(), getBookings()]);
+  const facilities = await getFacilities();
   const cookieStore = await cookies();
   const selectedId = cookieStore.get(FACILITY_COOKIE)?.value;
   const selectedFacility =
     facilities.find((facility) => String(facility.id) === selectedId) ?? facilities[0] ?? null;
+  const bookings = selectedFacility ? await getBookings(selectedFacility.id) : [];
 
   const today = new Date();
   const params = await searchParams;
@@ -71,7 +72,6 @@ export default async function BesokPage({
   );
 
   const stays: Stay[] = bookings
-    .filter((b) => !selectedFacility || String(b.house) === String(selectedFacility.id))
     .map((b, i) => ({
       booking: b,
       who: b.visitor,

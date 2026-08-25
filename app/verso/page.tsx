@@ -1,6 +1,7 @@
 import { TenantHome } from "@/app/components/tenant-home";
 import { TENANTS } from "@/app/lib/tenant";
+import Home from "./Home"
 
-export default function VersoPage() {
-  return <TenantHome tenantName={TENANTS.verso.name} />;
+export default async function VersoPage() {
+  return <Home  />;
 }

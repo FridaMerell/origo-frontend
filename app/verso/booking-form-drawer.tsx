@@ -6,6 +6,7 @@ import { createBooking, updateBooking, type CreateBookingState } from "@/app/act
 import { Button } from "@/app/components/ui/Button";
 import { Drawer } from "@/app/components/ui/Drawer";
 import type { Booking } from "@/app/lib/dal";
+import { useFacilities } from "@/app/lib/facility-context";
 
 const initialState: CreateBookingState = undefined;
 
@@ -22,6 +23,7 @@ export function BookingFormDrawer({
   const [state, formAction, pending] = useActionState(action, initialState);
   const [startDate, setStartDate] = useState(booking?.start_date ?? "");
   const pathname = usePathname();
+  const { selectedFacility } = useFacilities();
 
   useEffect(() => {
     if (state?.success) onClose();
@@ -39,6 +41,7 @@ export function BookingFormDrawer({
     >
       <form action={formAction} className="flex flex-col gap-3">
         <input type="hidden" name="path" value={pathname} />
+        {!booking && <input type="hidden" name="house" value={selectedFacility?.id ?? ""} />}
         <label className="flex flex-col gap-1 text-sm text-text-muted">
           Besökare
           <input

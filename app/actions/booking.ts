@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
-import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 
 export type CreateBookingState = { error?: string; success?: boolean } | undefined
 
@@ -12,14 +11,16 @@ export async function createBooking(
   _prevState: CreateBookingState,
   formData: FormData
 ): Promise<CreateBookingState> {
-  const house = await resolveSelectedHouse()
+  const house = formData.get("house")
   const visitor = formData.get("visitor")
   const start_date = formData.get("start_date")
   const end_date = formData.get("end_date")
   const path = formData.get("path")
 
+  if (typeof house !== "string" || !house) {
+    return { error: "Ingen anläggning vald." }
+  }
   if (
-    typeof house !== "string" || !house ||
     typeof visitor !== "string" || !visitor ||
     typeof start_date !== "string" || !start_date ||
     typeof end_date !== "string" || !end_date

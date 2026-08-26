@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { createExpense, type CreateExpenseState } from "../actions/expense"
 import { Button } from "../components/ui/Button"
 
@@ -10,6 +10,7 @@ const initialState: CreateExpenseState = undefined
 const ExpenseForm = ({ venture }: { venture?: string }) => {
   const [state, formAction, pending] = useActionState(createExpense, initialState)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (state?.success) router.refresh()
@@ -18,6 +19,7 @@ const ExpenseForm = ({ venture }: { venture?: string }) => {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="venture" value={venture} />
+      <input type="hidden" name="path" value={pathname} />
 
       <label className="flex flex-col gap-1 text-sm text-text-muted">
         Beskrivning
@@ -25,7 +27,7 @@ const ExpenseForm = ({ venture }: { venture?: string }) => {
           type="text"
           name="description"
           required
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 
@@ -35,7 +37,7 @@ const ExpenseForm = ({ venture }: { venture?: string }) => {
           type="text"
           name="amount"
           required
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 
@@ -45,7 +47,7 @@ const ExpenseForm = ({ venture }: { venture?: string }) => {
           type="date"
           name="date_incurred"
           required
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 

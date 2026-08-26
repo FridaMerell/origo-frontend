@@ -30,10 +30,14 @@ export function useUsers() {
   return useContext(UserContext).users;
 }
 
+export function formatUserName(user: { first_name?: string; last_name?: string; username: string }): string {
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
+  return fullName || user.username;
+}
+
 export function getUserLabel(users: FluxUser[], id: string | number | null | undefined): string {
   if (id === null || id === undefined) return "Okänd";
   const user = users.find((u) => String(u.id) === String(id));
   if (!user) return "Okänd";
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
-  return fullName || user.username;
+  return formatUserName(user);
 }

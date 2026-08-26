@@ -17,6 +17,7 @@ export async function createVenture(
   const description = formData.get("description")
   const priority = formData.get("priority")
   const budget = formData.get("budget")
+  const path = formData.get("path")
 
   if (
     typeof house !== "string" || !house ||
@@ -44,7 +45,7 @@ export async function createVenture(
     return { error: "Projektet kunde inte skapas. Försök igen." }
   }
 
-  revalidatePath("/planera")
+  revalidatePath(typeof path === "string" && path ? path : "/planera")
 
   return { success: true }
 }
@@ -57,6 +58,7 @@ export async function updateVentureFiles(
 ): Promise<UpdateVentureFilesState> {
   const id = formData.get("id")
   const files = formData.getAll("files").filter((f): f is string => typeof f === "string")
+  const path = formData.get("path")
 
   if (typeof id !== "string" || !id) {
     return { error: "Projektet kunde inte hittas." }
@@ -78,7 +80,7 @@ export async function updateVentureFiles(
     return { error: "Filerna kunde inte sparas. Försök igen." }
   }
 
-  revalidatePath("/planera")
+  revalidatePath(typeof path === "string" && path ? path : "/planera")
 
   return { success: true }
 }
@@ -95,6 +97,7 @@ export async function updateVenture(
   const priority = formData.get("priority")
   const budget = formData.get("budget")
   const files = formData.getAll("files").filter((f): f is string => typeof f === "string")
+  const path = formData.get("path")
 
   if (
     typeof id !== "string" || !id ||
@@ -122,7 +125,7 @@ export async function updateVenture(
     return { error: "Projektet kunde inte uppdateras. Försök igen." }
   }
 
-  revalidatePath("/planera")
+  revalidatePath(typeof path === "string" && path ? path : "/planera")
 
   return { success: true }
 }

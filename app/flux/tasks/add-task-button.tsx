@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { Icon } from "@/app/components/ui/Icon";
-import { TaskFormModal } from "@/app/flux/tasks/task-form-modal";
+import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer";
 
 export function AddTaskButton() {
   const [open, setOpen] = useState(false);
@@ -14,7 +14,7 @@ export function AddTaskButton() {
         <Icon name="plus" size={14} className="text-accent-contrast" />
         New task
       </Button>
-      <TaskFormModal open={open} onClose={() => setOpen(false)} />
+      <TaskFormDrawer open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

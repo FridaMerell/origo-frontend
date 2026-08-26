@@ -17,6 +17,7 @@ export async function createExpense(
   const amount = formData.get("amount")
   const description = formData.get("description")
   const dateIncurred = formData.get("date_incurred")
+  const path = formData.get("path")
 
   if (
     typeof house !== "string" || !house ||
@@ -55,7 +56,7 @@ export async function createExpense(
     return { error: "Utgiften kunde inte skapas. Försök igen." }
   }
 
-  revalidatePath("/planera")
+  revalidatePath(typeof path === "string" && path ? path : "/planera")
 
   return { success: true }
 }

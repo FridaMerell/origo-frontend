@@ -18,6 +18,11 @@ import { VentureDataProvider } from "@/app/lib/venture-context";
 import { UpdateDataProvider } from "@/app/lib/update-context";
 import VersoShell from "./verso-shell";
 
+export const metadata = {
+  title: "Verso | Origo",
+  description: "Verso - Origo",
+};
+
 export default async function VersoLayout({ children }: { children: ReactNode }) {
   const [facilities, allCheckOuts, ventureTasks, allUpdates] = await Promise.all([
     getFacilities(),

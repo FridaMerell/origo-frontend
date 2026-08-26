@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { Card } from "@/app/components/ui/Card";
@@ -5,8 +6,36 @@ import { Icon } from "@/app/components/ui/Icon";
 import { FACILITY_COOKIE } from "@/app/lib/config";
 import { getBookings, getFacilities, type Booking } from "@/app/lib/dal";
 import { BookVisitButton } from "@/app/verso/besok/book-visit-button";
-import { BookingModalProvider } from "@/app/verso/besok/booking-modal-context";
+import { BookingDrawerProvider } from "@/app/verso/besok/booking-drawer-context";
 import { StayBar } from "@/app/verso/besok/stay-bar";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ y?: string; m?: string }>;
+}): Promise<Metadata> {
+  const facilities = await getFacilities();
+  const cookieStore = await cookies();
+  const selectedId = cookieStore.get(FACILITY_COOKIE)?.value;
+  const selectedFacility =
+    facilities.find((facility) => String(facility.id) === selectedId) ?? facilities[0] ?? null;
+
+  const today = new Date();
+  const params = await searchParams;
+  const year = params.y ? Number(params.y) : today.getFullYear();
+  const month = params.m ? Number(params.m) - 1 : today.getMonth();
+  const monthLabel = new Date(year, month, 1).toLocaleDateString("sv-SE", {
+    month: "long",
+    year: "numeric",
+  });
+
+  return {
+    title: selectedFacility ? `Besök – ${monthLabel} – ${selectedFacility.name} | Verso` : "Besök | Verso",
+    description: selectedFacility
+      ? `Bokningar för ${selectedFacility.name}, ${monthLabel}`
+      : "Bokningar och besök",
+  };
+}
 
 const WEEKDAYS = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
 
@@ -108,7 +137,7 @@ export default async function BesokPage({
         <BookVisitButton />
       </div>
 
-      <BookingModalProvider>
+      <BookingDrawerProvider>
         <Card className="overflow-hidden p-0">
           <div className="grid grid-cols-7 border-b border-l border-t border-border">
             {WEEKDAYS.map((d) => (
@@ -153,7 +182,7 @@ export default async function BesokPage({
             })}
           </div>
         </Card>
-      </BookingModalProvider>
+      </BookingDrawerProvider>
 
       <div className="flex gap-5">
         {stays.map((s) => (

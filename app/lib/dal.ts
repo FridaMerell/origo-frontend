@@ -127,6 +127,8 @@ export type FluxMilestone = {
 
 export type FluxTaskPriority = "low" | "medium" | "high"
 
+export type FluxTaskStatus = FluxMilestoneStatus
+
 export type FluxTask = {
   id: number
   project: number
@@ -140,6 +142,7 @@ export type FluxTask = {
   description: string
   due_date: string | null
   priority: FluxTaskPriority
+  status: FluxTaskStatus
   created_at: string
   updated_at: string
 }
@@ -223,6 +226,10 @@ export const getVentures = cache(
   (house: string): Promise<Venture[]> => fetchVersoList(VERSO_ENDPOINTS.ventures, { house })
 )
 
+export const getVenture = cache(
+  (id: string): Promise<Venture | null> => fetchVersoItem(`${VERSO_ENDPOINTS.ventures}${id}/`)
+)
+
 export const getVentureTasks = cache(
   (venture: string): Promise<VentureTask[]> =>
     fetchVersoList(VERSO_ENDPOINTS.ventureTasks, { venture })
@@ -230,6 +237,11 @@ export const getVentureTasks = cache(
 
 export const getAllVentureTasks = cache(
   (): Promise<VentureTask[]> => fetchVersoList(VERSO_ENDPOINTS.ventureTasks)
+)
+
+export const getVentureTask = cache(
+  (id: string): Promise<VentureTask | null> =>
+    fetchVersoItem(`${VERSO_ENDPOINTS.ventureTasks}${id}/`)
 )
 
 export const getExpenses = cache(
@@ -243,6 +255,11 @@ export const getYearlyExpenses = cache(
 
 export const getVersoUpdates = cache(
   (): Promise<VersoUpdate[]> => fetchVersoList(VERSO_ENDPOINTS.versoUpdates)
+)
+
+export const getVersoUpdate = cache(
+  (id: string): Promise<VersoUpdate | null> =>
+    fetchVersoItem(`${VERSO_ENDPOINTS.versoUpdates}${id}/`)
 )
 
 async function fetchFluxList<T>(

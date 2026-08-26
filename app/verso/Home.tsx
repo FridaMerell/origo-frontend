@@ -14,6 +14,7 @@ import { ListTable } from "../components/ui/ListTable"
 import { Avatar } from "../components/ui/Avatar"
 import { Drawer } from "../components/ui/Drawer"
 import UpdateForm from "./update-form"
+import { formatDateShort } from "../lib/format-date"
 
 const WeatherWidget = ({ facility }: { facility: Facility }) => {
   const [weather, setWeather] = useState<any>(null)
@@ -173,7 +174,7 @@ const NextVisitWidget = ({ facility }: { facility: Facility }) => {
           </span>
           <div className="flex flex-col gap-1">
             <span className="text-2xl font-display font-bold">{bookings[index].visitor}</span>
-            <span className="text-sm text-text-muted">{new Date(bookings[index].start_date).toLocaleString("sv-SE", { month: 'short', day: '2-digit' })} - {new Date(bookings[index].end_date).toLocaleString("sv-SE", { month: 'short', day: '2-digit' })}</span>
+            <span className="text-sm text-text-muted">{formatDateShort(bookings[index].start_date)} - {formatDateShort(bookings[index].end_date)}</span>
           </div>
         </div>
       ) : (

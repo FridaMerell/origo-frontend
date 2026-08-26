@@ -4,7 +4,10 @@ import { FACILITY_COOKIE } from "@/app/lib/config"
 import { getAllVentureTasks, getFacilities, getVentures } from "@/app/lib/dal"
 import { AddVentureButton } from "@/app/verso/planera/add-venture-button"
 
-
+export const metadata = {
+  title: "Planering | Verso",
+  description: "Planering - Origo",
+}
 
 const Venture = ({ venture }: { venture: Awaited<ReturnType<typeof getVentures>>[number] }) => {
   const getPriorityLabel = (priority: number) => {

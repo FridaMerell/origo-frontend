@@ -70,7 +70,7 @@ function ModeToggle({
   )
 }
 
-type SidebarProps = {
+export type SidebarProps = {
   mode: "light" | "dark" | null
   onToggleMode: () => void
 }
@@ -121,12 +121,16 @@ const FacilitySelector = () => {
     </div>
   )
 }
-const Sidebar = ({ mode, onToggleMode }: SidebarProps) => {
+export function SidebarContent({
+  mode,
+  onToggleMode,
+  onNavigate,
+}: SidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname()
   const { facilities } = useFacilities()
 
   return (
-    <nav className="sticky top-0 flex h-screen w-55 shrink-0 flex-col gap-0.5 border-r border-border bg-surface p-3 font-body">
+    <div className="flex h-full flex-col gap-0.5 font-body">
       <div className="px-2.5 pb-6 pt-3 ">
         <a href="/" className="font-display text-2xl font-semibold text-accent flex items-center ">
           <Logo height={75} />
@@ -152,6 +156,7 @@ const Sidebar = ({ mode, onToggleMode }: SidebarProps) => {
           <Link
             key={item.label}
             href={item.href}
+            onClick={onNavigate}
             className={`flex items-center gap-2.5 rounded px-2.5 py-2 text-sm no-underline duration-200  ${active ? " bg-accent-wash text-accent hover:bg-accent-wash" : " hover:bg-accent-wash hover:text-accent"}`}
 
           >
@@ -165,6 +170,14 @@ const Sidebar = ({ mode, onToggleMode }: SidebarProps) => {
         <ModeToggle mode={mode} onToggle={onToggleMode} />
         <Profile />
       </div>
+    </div>
+  )
+}
+
+const Sidebar = ({ mode, onToggleMode }: SidebarProps) => {
+  return (
+    <nav className="sticky top-0 hidden h-screen w-55 shrink-0 border-r border-border bg-surface p-3 md:flex">
+      <SidebarContent mode={mode} onToggleMode={onToggleMode} />
     </nav>
   )
 }

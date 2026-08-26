@@ -17,6 +17,7 @@ export async function createBooking(
   const visitor = formData.get("visitor")
   const start_date = formData.get("start_date")
   const end_date = formData.get("end_date")
+  const path = formData.get("path")
 
   if (
     typeof house !== "string" || !house ||
@@ -47,7 +48,7 @@ export async function createBooking(
     return { error: "Kunde inte skapa bokningen. Försök igen." }
   }
 
-  revalidatePath("/besok")
+  revalidatePath(typeof path === "string" && path ? path : "/besok")
 
   return { success: true }
 }
@@ -60,6 +61,7 @@ export async function updateBooking(
   const visitor = formData.get("visitor")
   const start_date = formData.get("start_date")
   const end_date = formData.get("end_date")
+  const path = formData.get("path")
 
   if (
     typeof visitor !== "string" || !visitor ||
@@ -89,7 +91,7 @@ export async function updateBooking(
     return { error: "Kunde inte spara bokningen. Försök igen." }
   }
 
-  revalidatePath("/besok")
+  revalidatePath(typeof path === "string" && path ? path : "/besok")
 
   return { success: true }
 }

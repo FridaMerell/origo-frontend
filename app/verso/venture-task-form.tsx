@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { createVentureTask, updateVentureTask, type CreateVentureTaskState } from "../actions/venture-task"
 import { Button } from "../components/ui/Button"
 import type { VentureTask } from "../lib/dal"
@@ -14,6 +14,7 @@ const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTas
     initialState
   )
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (state?.success) router.refresh()
@@ -26,6 +27,7 @@ const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTas
       ) : (
         <input type="hidden" name="venture" value={venture} />
       )}
+      <input type="hidden" name="path" value={pathname} />
 
       <label className="flex flex-col gap-1 text-sm text-text-muted">
         Namn
@@ -34,7 +36,7 @@ const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTas
           name="name"
           required
           defaultValue={task?.name}
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 
@@ -44,7 +46,7 @@ const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTas
           name="description"
           required
           defaultValue={task?.description}
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 

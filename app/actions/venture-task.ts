@@ -14,6 +14,7 @@ export async function createVentureTask(
   const venture = formData.get("venture")
   const name = formData.get("name")
   const description = formData.get("description")
+  const path = formData.get("path")
 
   if (
     typeof venture !== "string" || !venture ||
@@ -39,7 +40,7 @@ export async function createVentureTask(
     return { error: "Uppgiften kunde inte skapas. Försök igen." }
   }
 
-  revalidatePath("/planera")
+  revalidatePath(typeof path === "string" && path ? path : "/planera")
 
   return { success: true }
 }
@@ -54,6 +55,7 @@ export async function updateVentureTask(
   const name = formData.get("name")
   const description = formData.get("description")
   const completed = formData.get("completed") === "on"
+  const path = formData.get("path")
 
   if (
     typeof id !== "string" || !id ||
@@ -79,12 +81,12 @@ export async function updateVentureTask(
     return { error: "Uppgiften kunde inte uppdateras. Försök igen." }
   }
 
-  revalidatePath("/planera")
+  revalidatePath(typeof path === "string" && path ? path : "/planera")
 
   return { success: true }
 }
 
-export async function setVentureTaskCompleted(id: string, completed: boolean) {
+export async function setVentureTaskCompleted(id: string, completed: boolean, path?: string) {
   const { sessionId, csrfToken } = await getSessionCookies()
 
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.ventureTasks}${id}/`, {
@@ -101,5 +103,5 @@ export async function setVentureTaskCompleted(id: string, completed: boolean) {
     throw new Error("Uppgiften kunde inte uppdateras.")
   }
 
-  revalidatePath("/planera")
+  revalidatePath(path || "/planera")
 }

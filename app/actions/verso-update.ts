@@ -18,6 +18,7 @@ export async function createVersoUpdate(
   const venture = formData.get("venture")
   const task = formData.get("task")
   const files = formData.getAll("files").filter((f): f is string => typeof f === "string")
+  const path = formData.get("path")
 
   if (typeof title !== "string" || !title || typeof content !== "string" || !content) {
     return { error: "Alla fält måste fyllas i." }
@@ -48,7 +49,7 @@ export async function createVersoUpdate(
       house,
       venture: venture || null,
       task: task || null,
-      author: user.id ?? user.pk,
+      author: user.id,
       files,
     }),
   })
@@ -57,7 +58,56 @@ export async function createVersoUpdate(
     return { error: "Uppdateringen kunde inte skapas. Försök igen." }
   }
 
-  revalidatePath("/")
+  revalidatePath(typeof path === "string" && path ? path : "/")
+
+  return { success: true }
+}
+
+export type UpdateVersoUpdateState = { error?: string; success?: boolean } | undefined
+
+export async function updateVersoUpdate(
+  _prevState: UpdateVersoUpdateState,
+  formData: FormData
+): Promise<UpdateVersoUpdateState> {
+  const id = formData.get("id")
+  const title = formData.get("title")
+  const content = formData.get("content")
+  const venture = formData.get("venture")
+  const task = formData.get("task")
+  const files = formData.getAll("files").filter((f): f is string => typeof f === "string")
+  const path = formData.get("path")
+
+  if (typeof id !== "string" || !id) {
+    return { error: "Uppdateringen kunde inte hittas." }
+  }
+
+  if (typeof title !== "string" || !title || typeof content !== "string" || !content) {
+    return { error: "Alla fält måste fyllas i." }
+  }
+
+  const { sessionId, csrfToken } = await getSessionCookies()
+
+  const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.versoUpdates}${id}/`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrfToken ?? "",
+      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
+    },
+    body: JSON.stringify({
+      title,
+      content,
+      venture: venture || null,
+      task: task || null,
+      files,
+    }),
+  })
+
+  if (!response.ok) {
+    return { error: "Uppdateringen kunde inte sparas. Försök igen." }
+  }
+
+  revalidatePath(typeof path === "string" && path ? path : "/")
 
   return { success: true }
 }

@@ -12,14 +12,21 @@ export function TenantHome({ tenantName }: { tenantName: string }) {
         {tenantName}
       </h1>
       {user && (
-        <form action={logout} className="flex items-center gap-3 text-sm">
+        <div className="flex items-center gap-3 text-sm">
           <span className="text-text-muted">
             Signed in as {String(user.username ?? user.email ?? "user")}
           </span>
-          <button type="submit" className="text-text underline">
+          <button
+            type="button"
+            onClick={async () => {
+              await logout();
+              window.location.href = "/login";
+            }}
+            className="text-text underline"
+          >
             Sign out
           </button>
-        </form>
+        </div>
       )}
     </div>
   );

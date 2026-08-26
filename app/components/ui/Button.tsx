@@ -26,7 +26,7 @@ export function Button({
   return (
     <button
       disabled={disabled}
-      className={`inline-flex items-center gap-2 rounded font-body font-semibold transition-colors ${SIZES[size]} ${VARIANTS[variant]} ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${className}`}
+      className={`inline-flex items-center gap-2 rounded font-body font-semibold transition-colors cursor-pointer ${SIZES[size]} ${VARIANTS[variant]} ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${className}`}
       {...rest}
     />
   );

@@ -1,16 +1,14 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { AUTH_ENDPOINTS } from "@/app/lib/config";
 import { buildCookieHeader, extractSetCookie, fetchOrigoApi } from "@/app/lib/api-client";
 import { clearSessionCookies, getSessionCookies, setSessionCookies } from "@/app/lib/session";
 
-export type LoginState = { error?: string } | undefined;
+export type LoginState = { error?: string; success?: true } | undefined;
 
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const username = formData.get("username");
   const password = formData.get("password");
-  const redirectTo = formData.get("redirectTo");
 
   if (typeof username !== "string" || typeof password !== "string" || !username || !password) {
     return { error: "Username and password are required." };
@@ -43,7 +41,7 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
   }
 
   await setSessionCookies(sessionId, rotatedCsrfToken);
-  redirect(typeof redirectTo === "string" && redirectTo ? redirectTo : "/");
+  return { success: true };
 }
 
 export async function logout() {
@@ -60,5 +58,4 @@ export async function logout() {
   }
 
   await clearSessionCookies();
-  redirect("/login");
 }

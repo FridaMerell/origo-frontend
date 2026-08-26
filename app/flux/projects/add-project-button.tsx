@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { Icon } from "@/app/components/ui/Icon";
-import { ProjectFormModal } from "@/app/flux/projects/project-form-modal";
+import { ProjectFormDrawer } from "@/app/flux/projects/project-form-drawer";
 
 export function AddProjectButton() {
   const [open, setOpen] = useState(false);
@@ -14,7 +14,7 @@ export function AddProjectButton() {
         <Icon name="plus" size={14} className="text-accent-contrast" />
         New project
       </Button>
-      <ProjectFormModal open={open} onClose={() => setOpen(false)} />
+      <ProjectFormDrawer open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

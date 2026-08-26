@@ -45,6 +45,8 @@ export async function createProject(
 ): Promise<FluxActionState> {
   const name = formData.get("name")
   const description = formData.get("description")
+  const members = parseIdList(formData, "members")
+  const path = formData.get("path")
 
   if (typeof name !== "string" || !name) {
     return { errors: { name: ["This field is required."] } }
@@ -53,11 +55,12 @@ export async function createProject(
   const { errors } = await fluxRequest(FLUX_ENDPOINTS.projects, "POST", {
     name,
     description: typeof description === "string" ? description : "",
+    members,
   })
 
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(typeof path === "string" && path ? path : "/flux")
   return { success: true }
 }
 
@@ -69,24 +72,25 @@ export async function updateProject(
   const name = formData.get("name")
   const description = formData.get("description")
   const members = parseIdList(formData, "members")
+  const path = formData.get("path")
 
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.projects}${id}/`, "PATCH", {
     ...(typeof name === "string" && name ? { name } : {}),
     ...(typeof description === "string" ? { description } : {}),
-    ...(members.length ? { members } : {}),
+    ...(formData.has("members_field") ? { members } : {}),
   })
 
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(typeof path === "string" && path ? path : "/flux")
   return { success: true }
 }
 
-export async function deleteProject(id: number): Promise<FluxActionState> {
+export async function deleteProject(id: number, path?: string): Promise<FluxActionState> {
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.projects}${id}/`, "DELETE")
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(path || "/flux")
   return { success: true }
 }
 
@@ -99,6 +103,7 @@ export async function createMilestone(
   const description = formData.get("description")
   const status = formData.get("status")
   const targetDate = formData.get("target_date")
+  const path = formData.get("path")
 
   if (typeof project !== "string" || !project) {
     return { errors: { project: ["This field is required."] } }
@@ -117,7 +122,7 @@ export async function createMilestone(
 
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(typeof path === "string" && path ? path : "/flux")
   return { success: true }
 }
 
@@ -130,6 +135,7 @@ export async function updateMilestone(
   const description = formData.get("description")
   const status = formData.get("status")
   const targetDate = formData.get("target_date")
+  const path = formData.get("path")
 
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.milestones}${id}/`, "PATCH", {
     ...(typeof title === "string" && title ? { title } : {}),
@@ -140,15 +146,15 @@ export async function updateMilestone(
 
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(typeof path === "string" && path ? path : "/flux")
   return { success: true }
 }
 
-export async function deleteMilestone(id: number): Promise<FluxActionState> {
+export async function deleteMilestone(id: number, path?: string): Promise<FluxActionState> {
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.milestones}${id}/`, "DELETE")
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(path || "/flux")
   return { success: true }
 }
 
@@ -163,8 +169,10 @@ export async function createTask(
   const parent = formData.get("parent")
   const dueDate = formData.get("due_date")
   const priority = formData.get("priority")
+  const status = formData.get("status")
   const assignees = parseIdList(formData, "assignees")
   const requirements = parseIdList(formData, "requirements")
+  const path = formData.get("path")
 
   if (typeof project !== "string" || !project) {
     return { errors: { project: ["This field is required."] } }
@@ -181,13 +189,14 @@ export async function createTask(
     parent: typeof parent === "string" && parent ? Number(parent) : null,
     due_date: typeof dueDate === "string" && dueDate ? dueDate : null,
     priority: typeof priority === "string" && priority ? priority : "medium",
+    status: typeof status === "string" && status ? status : "not_started",
     assignees,
     requirements,
   })
 
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(typeof path === "string" && path ? path : "/flux")
   return { success: true }
 }
 
@@ -202,8 +211,10 @@ export async function updateTask(
   const parent = formData.get("parent")
   const dueDate = formData.get("due_date")
   const priority = formData.get("priority")
+  const status = formData.get("status")
   const assignees = parseIdList(formData, "assignees")
   const requirements = parseIdList(formData, "requirements")
+  const path = formData.get("path")
 
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.tasks}${id}/`, "PATCH", {
     ...(typeof title === "string" && title ? { title } : {}),
@@ -212,21 +223,22 @@ export async function updateTask(
     ...(typeof parent === "string" ? { parent: parent ? Number(parent) : null } : {}),
     ...(typeof dueDate === "string" ? { due_date: dueDate || null } : {}),
     ...(typeof priority === "string" && priority ? { priority } : {}),
-    ...(assignees.length ? { assignees } : {}),
+    ...(typeof status === "string" && status ? { status } : {}),
+    ...(formData.has("assignees_field") ? { assignees } : {}),
     ...(requirements.length ? { requirements } : {}),
   })
 
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(typeof path === "string" && path ? path : "/flux")
   return { success: true }
 }
 
-export async function deleteTask(id: number): Promise<FluxActionState> {
+export async function deleteTask(id: number, path?: string): Promise<FluxActionState> {
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.tasks}${id}/`, "DELETE")
   if (errors) return { errors }
 
-  revalidatePath("/flux")
+  revalidatePath(path || "/flux")
   return { success: true }
 }
 
@@ -281,5 +293,38 @@ export async function deleteUpdate(id: number): Promise<FluxActionState> {
   if (errors) return { errors }
 
   revalidatePath("/flux")
+  return { success: true }
+}
+
+export async function toggleTaskStatus(id: number, done: boolean, path?: string): Promise<FluxActionState> {
+  const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.tasks}${id}/`, "PATCH", {
+    status: done ? "done" : "not_started",
+  })
+  if (errors) return { errors }
+
+  revalidatePath(path || "/flux")
+  return { success: true }
+}
+
+export async function addSubtask(
+  parentId: number,
+  projectId: number,
+  milestoneId: number | null,
+  title: string,
+  path?: string
+): Promise<FluxActionState> {
+  if (!title.trim()) return { errors: { title: ["This field is required."] } }
+
+  const { errors } = await fluxRequest(FLUX_ENDPOINTS.tasks, "POST", {
+    project: projectId,
+    parent: parentId,
+    milestone: milestoneId,
+    title: title.trim(),
+    priority: "medium",
+    status: "not_started",
+  })
+  if (errors) return { errors }
+
+  revalidatePath(path || "/flux")
   return { success: true }
 }

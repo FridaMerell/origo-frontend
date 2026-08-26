@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createVenture, type CreateVentureState } from "@/app/actions/venture";
 import { Button } from "@/app/components/ui/Button";
 
@@ -11,6 +11,7 @@ export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
   const [state, formAction, pending] = useActionState(createVenture, initialState);
   const [priority, setPriority] = useState(3);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (state?.success) {
@@ -21,13 +22,14 @@ export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      <input type="hidden" name="path" value={pathname} />
       <label className="flex flex-col gap-1 text-sm text-text-muted">
         Namn
         <input
           type="text"
           name="name"
           required
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 
@@ -36,7 +38,7 @@ export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
         <textarea
           name="description"
           required
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 
@@ -61,7 +63,7 @@ export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
           type="text"
           name="budget"
           required
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 

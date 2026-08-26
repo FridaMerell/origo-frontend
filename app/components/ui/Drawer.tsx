@@ -6,11 +6,12 @@ import { Button } from "./Button";
 import { Icon } from "./Icon";
 
 type DrawerProps = {
-  trigger: ReactNode;
+  trigger?: ReactNode;
   triggerVariant?: "primary" | "secondary" | "ghost";
   triggerSize?: "sm" | "md";
   triggerClassName?: string;
   title?: ReactNode;
+  headerActions?: ReactNode;
   children: ReactNode;
   side?: "left" | "right";
   open?: boolean;
@@ -23,6 +24,7 @@ export function Drawer({
   triggerSize = "md",
   triggerClassName,
   title,
+  headerActions,
   children,
   side = "right",
   open: openProp,
@@ -48,15 +50,17 @@ export function Drawer({
 
   return (
     <>
-      <Button
-        type="button"
-        variant={triggerVariant}
-        size={triggerSize}
-        className={triggerClassName}
-        onClick={() => setOpen(true)}
-      >
-        {trigger}
-      </Button>
+      {trigger !== undefined && (
+        <Button
+          type="button"
+          variant={triggerVariant}
+          size={triggerSize}
+          className={triggerClassName}
+          onClick={() => setOpen(true)}
+        >
+          {trigger}
+        </Button>
+      )}
 
       {open && (
         <div
@@ -80,15 +84,18 @@ export function Drawer({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <h2 className="m-0 font-display text-lg font-semibold text-text">{title}</h2>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="text-text-muted hover:text-text"
-              >
-                <Icon name="x" size={16} />
-              </button>
+              <h2 className="m-0 min-w-0 truncate font-display text-lg font-semibold text-text">{title}</h2>
+              <div className="flex shrink-0 items-center gap-3">
+                {headerActions}
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close"
+                  className="text-text-muted hover:text-text"
+                >
+                  <Icon name="x" size={16} />
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4">{children}</div>
           </div>

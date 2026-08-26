@@ -1,6 +1,7 @@
 "use client"
 
 import { useTransition } from "react"
+import { usePathname } from "next/navigation"
 import { setVentureTaskCompleted } from "@/app/actions/venture-task"
 import { Icon } from "@/app/components/ui/Icon"
 
@@ -14,6 +15,7 @@ export function ToggleTaskButton({
   className?: string
 }) {
   const [pending, startTransition] = useTransition()
+  const pathname = usePathname()
 
   return (
     <button
@@ -23,7 +25,7 @@ export function ToggleTaskButton({
         e.preventDefault()
         e.stopPropagation()
         startTransition(() => {
-          setVentureTaskCompleted(id, !completed)
+          setVentureTaskCompleted(id, !completed, pathname)
         })
       }}
       className={`flex items-center gap-1.5 text-sm ${completed ? "text-success" : "text-text-muted hover:text-accent"} ${className}`}

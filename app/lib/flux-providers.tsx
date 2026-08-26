@@ -1,20 +1,23 @@
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
+import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
 import { getFluxMilestones, getFluxProjects, getFluxTasks, getFluxUpdates, getFluxUsers } from "@/app/lib/dal";
-import {
-  FluxMilestonesProvider,
-  FluxProjectsProvider,
-  FluxTasksProvider,
-  FluxUpdatesProvider,
-  FluxUsersProvider,
-} from "@/app/lib/flux-context";
+import { FluxDataProvider } from "@/app/lib/flux-context";
 
 export async function FluxProviders({ children }: { children: ReactNode }) {
-  const [projects, milestones, tasks, updates] = await Promise.all([
-    getFluxProjects(),
-    getFluxMilestones(),
-    getFluxTasks(),
-    getFluxUpdates(),
-  ]);
+  const projects = await getFluxProjects();
+  const cookieStore = await cookies();
+  const selectedId = cookieStore.get(FLUX_PROJECT_COOKIE)?.value;
+  const selectedProject =
+    projects.find((project) => String(project.id) === selectedId) ?? projects[0] ?? null;
+
+  const [milestones, tasks, updates] = selectedProject
+    ? await Promise.all([
+        getFluxMilestones({ project: String(selectedProject.id) }),
+        getFluxTasks({ project: String(selectedProject.id) }),
+        getFluxUpdates({ project: String(selectedProject.id) }),
+      ])
+    : [[], [], []];
 
   const userIds = new Set<number>();
   for (const project of projects) for (const id of project.members) userIds.add(id);
@@ -23,14 +26,15 @@ export async function FluxProviders({ children }: { children: ReactNode }) {
   const users = await getFluxUsers([...userIds]);
 
   return (
-    <FluxProjectsProvider projects={projects}>
-      <FluxMilestonesProvider milestones={milestones}>
-        <FluxTasksProvider tasks={tasks}>
-          <FluxUpdatesProvider updates={updates}>
-            <FluxUsersProvider users={users}>{children}</FluxUsersProvider>
-          </FluxUpdatesProvider>
-        </FluxTasksProvider>
-      </FluxMilestonesProvider>
-    </FluxProjectsProvider>
+    <FluxDataProvider
+      projects={projects}
+      selectedProject={selectedProject}
+      tasks={tasks}
+      milestones={milestones}
+      updates={updates}
+      users={users}
+    >
+      {children}
+    </FluxDataProvider>
   );
 }

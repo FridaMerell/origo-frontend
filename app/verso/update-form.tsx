@@ -1,9 +1,9 @@
 "use client"
 
 import { useActionState, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { VersoUpdate } from "../lib/dal"
-import { createVersoUpdate, type CreateVersoUpdateState } from "../actions/verso-update"
+import { createVersoUpdate, updateVersoUpdate, type CreateVersoUpdateState } from "../actions/verso-update"
 import { Button } from "../components/ui/Button"
 import { FileUpload, type UploadedFile } from "../components/ui/FileUpload"
 import { VentureTaskLinkPicker, type VentureTaskLinkValue } from "./ui/VentureTaskLinkPicker"
@@ -19,8 +19,12 @@ const UpdateForm = ({
   defaultVenture?: string
   defaultTask?: string
 }) => {
-  const [state, formAction, pending] = useActionState(createVersoUpdate, initialState)
+  const [state, formAction, pending] = useActionState(
+    update ? updateVersoUpdate : createVersoUpdate,
+    initialState
+  )
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (state?.success) router.refresh()
@@ -35,6 +39,8 @@ const UpdateForm = ({
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <input type="hidden" name="path" value={pathname} />
+      {update && <input type="hidden" name="id" value={update.id} />}
       <label className="flex flex-col gap-1 text-sm text-text-muted">
         Rubrik
         <input
@@ -42,7 +48,7 @@ const UpdateForm = ({
           name="title"
           required
           defaultValue={update?.title}
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm text-text-muted">
@@ -51,7 +57,7 @@ const UpdateForm = ({
           name="content"
           required
           defaultValue={update?.content}
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 

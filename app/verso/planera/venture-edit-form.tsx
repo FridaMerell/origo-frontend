@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { updateVenture, type UpdateVentureState } from "@/app/actions/venture";
 import { Button } from "@/app/components/ui/Button";
 import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload";
@@ -16,6 +16,7 @@ export function VentureEditForm({ venture }: { venture: Venture }) {
     venture.files.map((url) => ({ url, name: url.split("/").pop() ?? url }))
   );
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (state?.success) router.refresh();
@@ -24,6 +25,7 @@ export function VentureEditForm({ venture }: { venture: Venture }) {
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={venture.id} />
+      <input type="hidden" name="path" value={pathname} />
 
       <label className="flex flex-col gap-1 text-sm text-text-muted">
         Namn
@@ -32,7 +34,7 @@ export function VentureEditForm({ venture }: { venture: Venture }) {
           name="name"
           required
           defaultValue={venture.name}
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 
@@ -42,7 +44,7 @@ export function VentureEditForm({ venture }: { venture: Venture }) {
           name="description"
           required
           defaultValue={venture.description}
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 
@@ -68,7 +70,7 @@ export function VentureEditForm({ venture }: { venture: Venture }) {
           name="budget"
           required
           defaultValue={venture.budget}
-          className="rounded border border-border bg-surface px-2.5 py-1.5 text-text"
+          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
         />
       </label>
 

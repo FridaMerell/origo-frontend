@@ -1,95 +1,89 @@
 "use client";
 
 import { createContext, useContext } from "react";
+import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
 import type { FluxMilestone, FluxProject, FluxTask, FluxUpdate, FluxUser } from "@/app/lib/dal";
+import { formatUserName } from "@/app/lib/user-context";
 
-const FluxProjectsContext = createContext<FluxProject[]>([]);
-
-export function FluxProjectsProvider({
-  projects,
-  children,
-}: {
+type FluxDataContextValue = {
   projects: FluxProject[];
-  children: React.ReactNode;
-}) {
-  return (
-    <FluxProjectsContext.Provider value={projects}>{children}</FluxProjectsContext.Provider>
-  );
-}
-
-export function useFluxProjects() {
-  return useContext(FluxProjectsContext);
-}
-
-const FluxTasksContext = createContext<FluxTask[]>([]);
-
-export function FluxTasksProvider({
-  tasks,
-  children,
-}: {
+  selectedProject: FluxProject | null;
+  selectProject: (id: string) => void;
   tasks: FluxTask[];
-  children: React.ReactNode;
-}) {
-  return <FluxTasksContext.Provider value={tasks}>{children}</FluxTasksContext.Provider>;
-}
-
-export function useFluxTasks() {
-  return useContext(FluxTasksContext);
-}
-
-const FluxMilestonesContext = createContext<FluxMilestone[]>([]);
-
-export function FluxMilestonesProvider({
-  milestones,
-  children,
-}: {
   milestones: FluxMilestone[];
-  children: React.ReactNode;
-}) {
-  return (
-    <FluxMilestonesContext.Provider value={milestones}>{children}</FluxMilestonesContext.Provider>
-  );
-}
-
-export function useFluxMilestones() {
-  return useContext(FluxMilestonesContext);
-}
-
-const FluxUpdatesContext = createContext<FluxUpdate[]>([]);
-
-export function FluxUpdatesProvider({
-  updates,
-  children,
-}: {
   updates: FluxUpdate[];
-  children: React.ReactNode;
-}) {
-  return <FluxUpdatesContext.Provider value={updates}>{children}</FluxUpdatesContext.Provider>;
-}
+  usersById: Map<number, FluxUser>;
+};
 
-export function useFluxUpdates() {
-  return useContext(FluxUpdatesContext);
-}
+const FluxDataContext = createContext<FluxDataContextValue>({
+  projects: [],
+  selectedProject: null,
+  selectProject: () => {},
+  tasks: [],
+  milestones: [],
+  updates: [],
+  usersById: new Map(),
+});
 
-const FluxUsersContext = createContext<Map<number, FluxUser>>(new Map());
-
-export function FluxUsersProvider({
+export function FluxDataProvider({
+  projects,
+  selectedProject,
+  tasks,
+  milestones,
+  updates,
   users,
   children,
 }: {
+  projects: FluxProject[];
+  selectedProject: FluxProject | null;
+  tasks: FluxTask[];
+  milestones: FluxMilestone[];
+  updates: FluxUpdate[];
   users: FluxUser[];
   children: React.ReactNode;
 }) {
   const usersById = new Map(users.map((user) => [user.id, user]));
-  return <FluxUsersContext.Provider value={usersById}>{children}</FluxUsersContext.Provider>;
+
+  const selectProject = (id: string) => {
+    document.cookie = `${FLUX_PROJECT_COOKIE}=${id}; path=/; max-age=31536000`;
+    window.location.reload();
+  };
+
+  return (
+    <FluxDataContext.Provider
+      value={{ projects, selectedProject, selectProject, tasks, milestones, updates, usersById }}
+    >
+      {children}
+    </FluxDataContext.Provider>
+  );
+}
+
+export function useFluxProjects() {
+  return useContext(FluxDataContext).projects;
+}
+
+export function useSelectedFluxProject() {
+  const { selectedProject, selectProject } = useContext(FluxDataContext);
+  return { selectedProject, selectProject };
+}
+
+export function useFluxTasks() {
+  return useContext(FluxDataContext).tasks;
+}
+
+export function useFluxMilestones() {
+  return useContext(FluxDataContext).milestones;
+}
+
+export function useFluxUpdates() {
+  return useContext(FluxDataContext).updates;
 }
 
 export function useFluxUsers() {
-  return useContext(FluxUsersContext);
+  return useContext(FluxDataContext).usersById;
 }
 
 export function fluxUserName(user: FluxUser | undefined, id: number) {
   if (!user) return `Member #${id}`;
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
-  return fullName || user.username;
+  return formatUserName(user);
 }

@@ -1,14 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { login } from "@/app/actions/auth";
 
 export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   const [state, action, pending] = useActionState(login, undefined);
 
+  useEffect(() => {
+    if (state?.success) {
+      window.location.href = redirectTo;
+    }
+  }, [state, redirectTo]);
+
   return (
     <form action={action} className="flex w-full max-w-sm flex-col gap-4">
-      <input type="hidden" name="redirectTo" value={redirectTo} />
       <div className="flex flex-col gap-1">
         <label htmlFor="username">Username</label>
         <input
@@ -16,7 +21,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
           name="username"
           autoComplete="username"
           required
-          className="rounded border border-black/[.08] px-3 py-2 dark:border-white/[.145]"
+          className="rounded border border-field-border bg-surface px-3 py-2 text-text"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -27,7 +32,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
           type="password"
           autoComplete="current-password"
           required
-          className="rounded border border-black/[.08] px-3 py-2 dark:border-white/[.145]"
+          className="rounded border border-field-border bg-surface px-3 py-2 text-text"
         />
       </div>
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}

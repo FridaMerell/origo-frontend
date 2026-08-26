@@ -34,6 +34,7 @@ export const FLUX_ENDPOINTS = {
 export const SESSION_COOKIE = "origo_sessionid";
 export const CSRF_COOKIE = "origo_csrftoken";
 export const FACILITY_COOKIE = "verso_facility";
+export const FLUX_PROJECT_COOKIE = "flux_project";
 
 // Set to a shared parent domain (e.g. ".origo.test") so the session cookie
 // is sent to every subdomain (verso, flux, ...). Leave unset to scope the

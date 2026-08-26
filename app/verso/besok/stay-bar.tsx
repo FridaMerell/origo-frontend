@@ -1,6 +1,6 @@
 "use client";
 
-import { useOpenBookingModal } from "@/app/verso/besok/booking-modal-context";
+import { useOpenBookingDrawer } from "@/app/verso/besok/booking-drawer-context";
 import type { Booking } from "@/app/lib/dal";
 
 export function StayBar({
@@ -16,7 +16,7 @@ export function StayBar({
   roundLeft: boolean;
   roundRight: boolean;
 }) {
-  const openBooking = useOpenBookingModal();
+  const openBooking = useOpenBookingDrawer();
 
   return (
     <button

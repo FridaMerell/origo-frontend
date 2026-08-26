@@ -23,12 +23,13 @@ type ListTableProps<T> = {
   rows: ListTableRow<T>[];
   showHeader?: boolean;
   caption?: ReactNode;
+  onRowClick?: (item: T) => void;
 };
 
 const alignClass = (align: ListTableColumn<unknown>["align"]) =>
   align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 
-export function ListTable<T>({ columns, rows, showHeader = true, caption }: ListTableProps<T>) {
+export function ListTable<T>({ columns, rows, showHeader = true, caption, onRowClick }: ListTableProps<T>) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string | number>>(new Set());
 
   const gridTemplateColumns = columns.map((c) => c.width ?? "1fr").join(" ");
@@ -49,8 +50,9 @@ export function ListTable<T>({ columns, rows, showHeader = true, caption }: List
       return (
         <div key={row.id}>
           <div
-            className="grid items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-surface-2"
+            className={`grid items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-surface-2 ${onRowClick ? "cursor-pointer" : ""}`}
             style={{ gridTemplateColumns }}
+            onClick={onRowClick ? () => onRowClick(row.item) : undefined}
           >
             {columns.map((col, i) => (
               <div

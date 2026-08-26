@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { LoginForm } from "@/app/login/login-form";
+
+export const metadata: Metadata = {
+  title: "Sign in | Origo",
+  description: "Sign in to Origo",
+};
 
 export default function LoginPage() {
   return (

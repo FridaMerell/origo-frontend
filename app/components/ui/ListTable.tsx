@@ -32,7 +32,7 @@ const alignClass = (align: ListTableColumn<unknown>["align"]) =>
 export function ListTable<T>({ columns, rows, showHeader = true, caption, onRowClick }: ListTableProps<T>) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string | number>>(new Set());
 
-  const gridTemplateColumns = columns.map((c) => c.width ?? "1fr").join(" ");
+  const gridTemplateColumns = columns.map((c) => c.width ?? "minmax(160px,1fr)").join(" ");
 
   function toggle(id: string | number) {
     setCollapsedIds((prev) => {
@@ -50,7 +50,7 @@ export function ListTable<T>({ columns, rows, showHeader = true, caption, onRowC
       return (
         <div key={row.id}>
           <div
-            className={`grid items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-surface-2 ${onRowClick ? "cursor-pointer" : ""}`}
+            className={`grid w-max min-w-full items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-surface-2 ${onRowClick ? "cursor-pointer" : ""}`}
             style={{ gridTemplateColumns }}
             onClick={onRowClick ? () => onRowClick(row.item) : undefined}
           >
@@ -82,7 +82,7 @@ export function ListTable<T>({ columns, rows, showHeader = true, caption, onRowC
   }
 
   return (
-    <div className="overflow-hidden rounded-card border border-border bg-surface shadow-sm">
+    <div className="overflow-x-auto rounded-card border border-border bg-surface shadow-sm">
       {caption && (
         <div className="border-b border-border px-4 py-2.5 font-body text-xs font-semibold uppercase tracking-wide text-text-muted">
           {caption}
@@ -90,11 +90,11 @@ export function ListTable<T>({ columns, rows, showHeader = true, caption, onRowC
       )}
       {showHeader && (
         <div
-          className="grid gap-3 border-b border-border bg-surface-2 px-4 py-2 font-body text-xs font-semibold uppercase tracking-wide text-text-muted"
+          className="grid w-max min-w-full gap-3 border-b border-border-strong bg-surface-2 px-4 py-2 font-body text-xs font-semibold uppercase tracking-wide text-text"
           style={{ gridTemplateColumns }}
         >
           {columns.map((col) => (
-            <div key={col.key} className={alignClass(col.align)}>
+            <div key={col.key} className={`min-w-0 truncate ${alignClass(col.align)}`}>
               {col.header}
             </div>
           ))}

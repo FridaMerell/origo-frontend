@@ -269,10 +269,10 @@ const Home = () => {
     )
   }
   return (
-    <div className="flex flex-col gap-4 px-10 py-5">
-      <div className="w-full flex items-center justify-between gap-4">
+    <div className="flex flex-col gap-4 px-4 sm:px-10 py-5">
+      <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-display">Dashboard för {selectedFacility.name}</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Drawer trigger="Lägg till uppdatering" triggerVariant={"secondary"} triggerSize={'sm'} title={'Ny uppdatering'} >
             <UpdateForm />
           </Drawer>

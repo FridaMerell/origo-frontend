@@ -37,9 +37,10 @@ function versoHref() {
 type ProjectSelectorProps = {
   labelClassName: string
   chevronSize: number
+  dropUp?: boolean
 }
 
-const ProjectSelector = ({ labelClassName, chevronSize }: ProjectSelectorProps) => {
+const ProjectSelector = ({ labelClassName, chevronSize, dropUp }: ProjectSelectorProps) => {
   const projects = useFluxProjects()
   const { selectedProject, selectProject } = useSelectedFluxProject()
   const [open, setOpen] = useState(false)
@@ -68,7 +69,10 @@ const ProjectSelector = ({ labelClassName, chevronSize }: ProjectSelectorProps) 
         />
       </button>
       {open && (
-        <div className="absolute left-0 top-full z-20 mt-2 min-w-[180px] overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md">
+        <div
+          className={`absolute left-0 z-20 min-w-[180px] overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md ${dropUp ? "bottom-full mb-2" : "top-full mt-2"
+            }`}
+        >
           {projects.map((project) => (
             <button
               key={project.id}
@@ -230,18 +234,28 @@ const Toolbar = ({ mode, onToggleMode }: ToolbarProps) => {
             </>
           )}
 
-          <nav className="flex items-center justify-center gap-1 rounded-[28px] border border-border bg-surface px-2.5 py-2 shadow-md">
-            <Logo height={12} width={18} className="mr-0.5 shrink-0 text-accent" />
+          <nav className="flex items-center justify-center gap-0.5 rounded-[28px] border border-border bg-surface px-2 py-2 shadow-md">
+            <Link href="/" className="mr-0.5 flex shrink-0 items-center no-underline">
+              <Logo height={36} width={54} className="text-accent" />
+            </Link>
             <ProjectSelector
-              labelClassName="flex items-center gap-1 whitespace-nowrap rounded-2xl px-2 py-1.5 font-body text-xs font-semibold text-text"
+              labelClassName="flex items-center gap-0.5 whitespace-nowrap rounded-2xl px-1.5 py-1.5 font-body text-xs font-semibold text-text"
               chevronSize={12}
+              dropUp
             />
             <Link
               href="/tasks"
-              className={`whitespace-nowrap rounded-2xl px-2.5 py-1.5 font-body text-xs font-medium no-underline ${pathname === "/tasks" ? "bg-surface-2 text-text" : "text-text"
+              className={`whitespace-nowrap rounded-2xl px-1.5 py-1.5 font-body text-xs font-medium no-underline ${pathname === "/tasks" ? "bg-surface-2 text-text" : "text-text"
                 }`}
             >
               Uppgifter
+            </Link>
+            <Link
+              href="/timeline"
+              className={`whitespace-nowrap rounded-2xl px-1.5 py-1.5 font-body text-xs font-medium no-underline ${pathname === "/timeline" ? "bg-surface-2 text-text" : "text-text"
+                }`}
+            >
+              Tidslinje
             </Link>
             <button
               type="button"

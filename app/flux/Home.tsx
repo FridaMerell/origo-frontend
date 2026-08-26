@@ -96,7 +96,7 @@ const MilestonesCard = ({
                   <span className="font-mono text-xs text-text-faint">
                     {milestone.target_date ? formatDate(milestone.target_date) : "Ingen deadline"}
                   </span>
-                  <ProgressBar pct={progress.pct} width={80} />
+                  <ProgressBar pct={progress.pct} width={80} className="hidden sm:block" />
                 </span>
               </Link>
             )
@@ -219,7 +219,7 @@ const Home = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-10 py-5">
+    <div className="flex flex-col gap-4 px-4 sm:px-10 py-5">
       <div className="grid grid-cols-6 gap-4">
         <ProjectOverviewCard project={selectedProject} tasks={tasks} users={users} />
         <MilestonesCard projectId={selectedProject.id} milestones={milestones} tasks={tasks} />

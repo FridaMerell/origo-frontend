@@ -108,6 +108,7 @@ export type FluxProject = {
   name: string
   description: string
   members: number[]
+  files: string[]
   created_at: string
   updated_at: string
 }
@@ -121,6 +122,8 @@ export type FluxMilestone = {
   description: string
   status: FluxMilestoneStatus
   target_date: string | null
+  files: string[]
+  update_count: number
   created_at: string
   updated_at: string
 }
@@ -143,6 +146,8 @@ export type FluxTask = {
   due_date: string | null
   priority: FluxTaskPriority
   status: FluxTaskStatus
+  files: string[]
+  update_count: number
   created_at: string
   updated_at: string
 }
@@ -154,6 +159,7 @@ export type FluxUpdate = {
   task: number | null
   author: number | null
   content: string
+  files: string[]
   created_at: string
   updated_at: string
 }

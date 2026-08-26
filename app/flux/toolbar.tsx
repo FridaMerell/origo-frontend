@@ -87,7 +87,7 @@ const ProjectSelector = ({ labelClassName, chevronSize }: ProjectSelectorProps) 
             onClick={() => setOpen(false)}
             className="block w-full truncate border-t border-border px-3 py-1.5 text-left font-body text-sm text-text-muted no-underline hover:bg-surface-2"
           >
-            All projects
+            Alla projekt
           </Link>
         </div>
       )}
@@ -103,7 +103,7 @@ const Toolbar = ({ mode, onToggleMode }: ToolbarProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [drawer, setDrawer] = useState<"task" | "project" | null>(null)
 
-  const createLabel = pathname === "/projects" ? "New project" : "New task"
+  const createLabel = pathname === "/projects" ? "Nytt projekt" : "Ny uppgift"
   const openCreateDrawer = () => {
     setDesktopMenuOpen(false)
     setMobileMenuOpen(false)
@@ -121,7 +121,7 @@ const Toolbar = ({ mode, onToggleMode }: ToolbarProps) => {
         className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
       >
         <Icon name="bell" size={16} className="text-text-muted" />
-        Notifications
+        Aviseringar
       </button>
       <button
         type="button"
@@ -132,14 +132,14 @@ const Toolbar = ({ mode, onToggleMode }: ToolbarProps) => {
         className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
       >
         <Icon name={mode === "dark" ? "sun" : "moon"} size={16} className="text-text-muted" />
-        {mode === "dark" ? "Light mode" : "Dark mode"}
+        {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
       </button>
       <a
         href={versoHref()}
         className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 font-body text-sm text-text no-underline hover:bg-surface-2"
       >
         <Icon name="arrow-left-right" size={16} className="text-text" />
-        Go to Verso
+        Gå till Verso
       </a>
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <Avatar name={userName} size={24} />

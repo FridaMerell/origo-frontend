@@ -17,11 +17,11 @@ export default function FluxProjectsView() {
   return (
     <div className="flex flex-col gap-4 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="font-display text-2xl font-semibold text-text">Projects</h1>
+        <h1 className="font-display text-2xl font-semibold text-text">Projekt</h1>
         <AddProjectButton />
       </div>
       {projects.length === 0 && (
-        <p className="text-sm text-text-muted">No projects yet.</p>
+        <p className="text-sm text-text-muted">Inga projekt än.</p>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {projects.map((project) => {
@@ -40,7 +40,7 @@ export default function FluxProjectsView() {
                   <p className="text-sm text-text-muted">{project.description}</p>
                 )}
                 <span className="font-mono text-sm text-text-faint">
-                  {projectTasks.length} task{projectTasks.length === 1 ? "" : "s"}
+                  {projectTasks.length} {projectTasks.length === 1 ? "uppgift" : "uppgifter"}
                 </span>
                 <ProgressBar pct={progress.pct} />
                 {project.members.length > 0 && (

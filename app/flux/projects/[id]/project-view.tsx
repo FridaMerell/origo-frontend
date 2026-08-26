@@ -3,13 +3,15 @@
 import { useParams } from "next/navigation";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Card } from "@/app/components/ui/Card";
+import { Gallery } from "@/app/components/ui/Gallery";
 import { Icon } from "@/app/components/ui/Icon";
 import { ProgressBar } from "@/app/components/ui/ProgressBar";
 import { AddMilestoneButton } from "@/app/flux/projects/add-milestone-button";
 import { AddMilestoneTaskButton } from "@/app/flux/projects/add-milestone-task-button";
 import { EditMilestoneButton } from "@/app/flux/projects/edit-milestone-button";
 import { EditProjectButton } from "@/app/flux/projects/edit-project-button";
-import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
+import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
+import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
 import { formatDate } from "@/app/lib/format-date";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
@@ -19,6 +21,12 @@ const PRIORITY_TONE: Record<FluxTaskPriority, string> = {
   high: "text-danger bg-danger-wash",
   medium: "text-warning bg-warning-wash",
   low: "text-text-muted bg-surface-2",
+};
+
+const PRIORITY_LABEL: Record<FluxTaskPriority, string> = {
+  high: "Hög",
+  medium: "Medel",
+  low: "Låg",
 };
 
 function TaskRow({
@@ -41,13 +49,19 @@ function TaskRow({
       <span className="min-w-0 truncate text-text">{task.title}</span>
       <span className="flex shrink-0 items-center gap-3">
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${PRIORITY_TONE[task.priority]}`}
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}
         >
-          {task.priority}
+          {PRIORITY_LABEL[task.priority]}
         </span>
         {subtasks.length > 0 && (
           <span className="font-mono text-xs text-text-faint">
             {subtasks.filter((t) => t.status === "done").length}/{subtasks.length}
+          </span>
+        )}
+        {task.update_count > 0 && (
+          <span className="flex items-center gap-1 font-mono text-xs text-text-faint">
+            <Icon name="message-square" size={12} />
+            {task.update_count}
           </span>
         )}
         <span className="flex gap-1">
@@ -65,6 +79,7 @@ export default function FluxProjectDetailView() {
   const projects = useFluxProjects();
   const milestones = useFluxMilestones();
   const tasks = useFluxTasks();
+  const updates = useFluxUpdates();
   const users = useFluxUsers();
   const { openTask } = useTaskPanel();
 
@@ -87,6 +102,7 @@ export default function FluxProjectDetailView() {
           <EditProjectButton project={project} />
         </div>
         {project.description && <p className="text-[15px] text-text-muted">{project.description}</p>}
+        <Gallery files={project.files} />
         <div className="flex items-center gap-4">
           {project.members.length > 0 && (
             <div className="flex gap-1.5">
@@ -124,12 +140,24 @@ export default function FluxProjectDetailView() {
                   <EditMilestoneButton milestone={milestone} />
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
+                  {milestone.update_count > 0 && (
+                    <span className="flex items-center gap-1 font-mono text-xs text-text-faint">
+                      <Icon name="message-square" size={12} />
+                      {milestone.update_count}
+                    </span>
+                  )}
                   <span className="font-mono text-xs text-text-faint">
                     {milestone.target_date ? formatDate(milestone.target_date) : "Ingen deadline"}
                   </span>
                   <ProgressBar pct={milestoneProgress.pct} width={120} />
                 </div>
               </div>
+
+              {milestone.files.length > 0 && (
+                <div className="border-b border-border px-4 py-3">
+                  <Gallery files={milestone.files} />
+                </div>
+              )}
 
               {milestoneTasks.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-text-muted">Inga uppgifter än.</div>
@@ -169,6 +197,14 @@ export default function FluxProjectDetailView() {
           </Card>
         </div>
       )}
+
+      <UpdatesFeed
+        updates={updates.filter((update) => update.project === project.id)}
+        defaultProject={project.id}
+        defaultMilestone={null}
+        defaultTask={null}
+        showScope
+      />
     </div>
   );
 }

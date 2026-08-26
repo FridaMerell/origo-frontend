@@ -12,7 +12,7 @@ export function AddProjectButton() {
     <>
       <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
         <Icon name="plus" size={14} className="text-accent-contrast" />
-        New project
+        Nytt projekt
       </Button>
       <ProjectFormDrawer open={open} onClose={() => setOpen(false)} />
     </>

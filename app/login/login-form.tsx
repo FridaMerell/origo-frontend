@@ -15,7 +15,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   return (
     <form action={action} className="flex w-full max-w-sm flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label htmlFor="username">Username</label>
+        <label htmlFor="username">Användarnamn</label>
         <input
           id="username"
           name="username"
@@ -25,7 +25,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         />
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="password">Password</label>
+        <label htmlFor="password">Lösenord</label>
         <input
           id="password"
           name="password"
@@ -41,7 +41,7 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
         disabled={pending}
         className="rounded-full bg-foreground px-5 py-2 text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
       >
-        {pending ? "Signing in..." : "Sign in"}
+        {pending ? "Loggar in..." : "Logga in"}
       </button>
     </form>
   );

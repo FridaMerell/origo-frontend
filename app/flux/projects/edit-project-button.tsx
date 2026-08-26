@@ -12,7 +12,7 @@ export function EditProjectButton({ project }: { project: FluxProject }) {
     <>
       <button
         type="button"
-        aria-label="Edit project"
+        aria-label="Redigera projekt"
         onClick={() => setOpen(true)}
         className="text-text-faint hover:text-text"
       >

@@ -1,16 +1,17 @@
 "use client"
 
-import { useActionState, useEffect, useMemo, useRef } from "react"
+import { useActionState, useEffect, useMemo, useRef, useState } from "react"
 import { usePathname } from "next/navigation"
 import { createMilestone, updateMilestone, type FluxActionState } from "@/app/actions/flux"
 import { Button } from "@/app/components/ui/Button"
 import { Drawer } from "@/app/components/ui/Drawer"
+import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload"
 import type { FluxMilestone, FluxMilestoneStatus } from "@/app/lib/dal"
 
 const STATUS_OPTIONS: { value: FluxMilestoneStatus; label: string }[] = [
-  { value: "not_started", label: "Not started" },
-  { value: "in_progress", label: "In progress" },
-  { value: "done", label: "Done" },
+  { value: "not_started", label: "Ej påbörjad" },
+  { value: "in_progress", label: "Pågående" },
+  { value: "done", label: "Klar" },
 ]
 
 const initialState: FluxActionState = undefined
@@ -33,6 +34,9 @@ export function MilestoneFormDrawer({
 
   const [state, formAction, pending] = useActionState(action, initialState)
   const pathname = usePathname()
+  const [files, setFiles] = useState<UploadedFile[]>(
+    (milestone?.files ?? []).map((url) => ({ url, name: url.split("/").pop() ?? url }))
+  )
   const previousSuccess = useRef(false)
 
   useEffect(() => {
@@ -48,7 +52,7 @@ export function MilestoneFormDrawer({
 
   return (
     <Drawer
-      title={milestone ? "Edit milestone" : "New milestone"}
+      title={milestone ? "Redigera delmål" : "Nytt delmål"}
       open={open}
       onOpenChange={(next) => !next && onClose()}
     >
@@ -57,19 +61,19 @@ export function MilestoneFormDrawer({
         <input type="hidden" name="project" value={projectId} />
 
         <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Name
+          Namn
           <input
             type="text"
             name="title"
             required
             defaultValue={milestone?.title}
-            placeholder="e.g. Beta release"
+            placeholder="t.ex. Betasläpp"
             className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
           />
         </label>
 
         <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Description
+          Beskrivning
           <textarea
             name="description"
             rows={3}
@@ -94,7 +98,7 @@ export function MilestoneFormDrawer({
         </label>
 
         <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Due date
+          Deadline
           <input
             type="date"
             name="target_date"
@@ -102,6 +106,15 @@ export function MilestoneFormDrawer({
             className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
           />
         </label>
+
+        <div className="flex flex-col gap-1.5 text-sm text-text-muted">
+          Filer
+          <input type="hidden" name="files_field" value="1" />
+          <FileUpload folder="flux" files={files} onChange={setFiles} />
+          {files.map((file) => (
+            <input key={file.url} type="hidden" name="files" value={file.url} />
+          ))}
+        </div>
 
         {state?.errors?.project && (
           <p className="text-sm text-danger">{state.errors.project[0]}</p>
@@ -113,11 +126,11 @@ export function MilestoneFormDrawer({
 
         <div className="flex items-center justify-end gap-2.5 pt-2">
           <Button type="button" variant="ghost" size="md" onClick={onClose}>
-            Cancel
+            Avbryt
           </Button>
 
           <Button type="submit" variant="primary" size="md" disabled={pending}>
-            {pending ? "Saving..." : milestone ? "Save" : "Create milestone"}
+            {pending ? "Sparar..." : milestone ? "Spara" : "Skapa delmål"}
           </Button>
         </div>
       </form>

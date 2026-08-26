@@ -39,7 +39,7 @@ const ProjectOverviewCard = ({
           <EditProjectButton project={project} />
         </div>
         <Link href={`/projects/${project.id}`} className="text-sm text-accent hover:underline">
-          Open project
+          Öppna projekt
         </Link>
       </div>
       {project.description && <p className="text-sm text-text-muted">{project.description}</p>}
@@ -53,7 +53,7 @@ const ProjectOverviewCard = ({
         )}
         <ProgressBar pct={progress.pct} width={220} />
         <span className="font-mono text-xs text-text-faint">
-          {progress.done}/{progress.total} tasks done
+          {progress.done}/{progress.total} uppgifter klara
         </span>
       </div>
     </Card>
@@ -72,11 +72,11 @@ const MilestonesCard = ({
   return (
     <Card className="col-span-6 flex w-full flex-col gap-3 md:col-span-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Milestones</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Delmål</span>
         <AddMilestoneButton projectId={projectId} />
       </div>
       {milestones.length === 0 ? (
-        <div className="text-sm text-text-muted">No milestones yet.</div>
+        <div className="text-sm text-text-muted">Inga delmål än.</div>
       ) : (
         <div className="flex flex-col gap-2">
           {milestones.map((milestone) => {
@@ -94,7 +94,7 @@ const MilestonesCard = ({
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <span className="font-mono text-xs text-text-faint">
-                    {milestone.target_date ? formatDate(milestone.target_date) : "No due date"}
+                    {milestone.target_date ? formatDate(milestone.target_date) : "Ingen deadline"}
                   </span>
                   <ProgressBar pct={progress.pct} width={80} />
                 </span>
@@ -124,9 +124,9 @@ const UpcomingTasksCard = ({
 
   return (
     <Card className="col-span-6 flex w-full flex-col gap-3 md:col-span-3">
-      <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Upcoming tasks</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Kommande uppgifter</span>
       {upcoming.length === 0 ? (
-        <div className="text-sm text-text-muted">No open tasks.</div>
+        <div className="text-sm text-text-muted">Inga öppna uppgifter.</div>
       ) : (
         <div className="flex flex-col overflow-hidden rounded border border-border">
           {upcoming.map((task) => (
@@ -138,7 +138,7 @@ const UpcomingTasksCard = ({
             >
               <span className="min-w-0 truncate">{task.title}</span>
               <span className="flex shrink-0 items-center gap-2">
-                <span className="font-mono text-xs text-text-faint">{task.due_date ?? "No due date"}</span>
+                <span className="font-mono text-xs text-text-faint">{task.due_date ?? "Ingen deadline"}</span>
                 <span className="flex gap-1">
                   {task.assignees.map((id) => (
                     <Avatar key={id} name={fluxUserName(users.get(id), id)} size={18} />
@@ -167,15 +167,15 @@ const UpdatesCard = ({
 
   return (
     <Card className="col-span-6 flex w-full flex-col gap-3">
-      <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Recent updates</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Senaste uppdateringar</span>
       {recent.length === 0 ? (
-        <div className="text-sm text-text-muted">No updates yet.</div>
+        <div className="text-sm text-text-muted">Inga uppdateringar än.</div>
       ) : (
         <div className="flex flex-col gap-3">
           {recent.map((update) => (
             <div key={update.id} className="flex items-start gap-3">
               <Avatar
-                name={update.author != null ? fluxUserName(users.get(update.author), update.author) : "System"}
+                name={update.author != null ? fluxUserName(users.get(update.author), update.author) : "Systemet"}
                 size={28}
               />
               <div className="flex min-w-0 flex-col">

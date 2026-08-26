@@ -22,7 +22,7 @@ function buildColumns(users: Map<number, FluxUser>): ListTableColumn<FluxTask>[]
         </div>
       ),
     },
-    { key: "due", width: "120px", align: "right", render: (task) => task.due_date ?? "no due date" },
+    { key: "due", width: "120px", align: "right", render: (task) => task.due_date ?? "ingen deadline" },
   ];
 }
 
@@ -43,15 +43,15 @@ export default function FluxTimelineView() {
 
   return (
     <div className="flex flex-col gap-4 p-6">
-      <h1 className="font-display text-2xl font-semibold text-text">Timeline</h1>
-      {byProject.length === 0 && <p className="text-sm text-text-muted">No projects yet.</p>}
+      <h1 className="font-display text-2xl font-semibold text-text">Tidslinje</h1>
+      {byProject.length === 0 && <p className="text-sm text-text-muted">Inga projekt än.</p>}
       {byProject.map(({ project, tasks: projectTasks }) =>
         projectTasks.length === 0 ? (
           <Card key={project.id} className="flex flex-col gap-1 p-0">
             <div className="border-b border-border px-4 py-2.5 text-sm font-semibold text-text">
               {project.name}
             </div>
-            <div className="px-4 py-3 text-sm text-text-muted">No tasks</div>
+            <div className="px-4 py-3 text-sm text-text-muted">Inga uppgifter</div>
           </Card>
         ) : (
           <ListTable

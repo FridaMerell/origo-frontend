@@ -90,7 +90,7 @@ export function Drawer({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Close"
+                  aria-label="Stäng"
                   className="text-text-muted hover:text-text"
                 >
                   <Icon name="x" size={16} />

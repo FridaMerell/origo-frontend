@@ -39,6 +39,10 @@ function parseIdList(formData: FormData, key: string): number[] {
     .filter((value) => !Number.isNaN(value))
 }
 
+function parseStringList(formData: FormData, key: string): string[] {
+  return formData.getAll(key).filter((value): value is string => typeof value === "string")
+}
+
 export async function createProject(
   _prevState: FluxActionState,
   formData: FormData
@@ -46,6 +50,7 @@ export async function createProject(
   const name = formData.get("name")
   const description = formData.get("description")
   const members = parseIdList(formData, "members")
+  const files = parseStringList(formData, "files")
   const path = formData.get("path")
 
   if (typeof name !== "string" || !name) {
@@ -56,6 +61,7 @@ export async function createProject(
     name,
     description: typeof description === "string" ? description : "",
     members,
+    files,
   })
 
   if (errors) return { errors }
@@ -72,12 +78,14 @@ export async function updateProject(
   const name = formData.get("name")
   const description = formData.get("description")
   const members = parseIdList(formData, "members")
+  const files = parseStringList(formData, "files")
   const path = formData.get("path")
 
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.projects}${id}/`, "PATCH", {
     ...(typeof name === "string" && name ? { name } : {}),
     ...(typeof description === "string" ? { description } : {}),
     ...(formData.has("members_field") ? { members } : {}),
+    ...(formData.has("files_field") ? { files } : {}),
   })
 
   if (errors) return { errors }
@@ -103,6 +111,7 @@ export async function createMilestone(
   const description = formData.get("description")
   const status = formData.get("status")
   const targetDate = formData.get("target_date")
+  const files = parseStringList(formData, "files")
   const path = formData.get("path")
 
   if (typeof project !== "string" || !project) {
@@ -118,6 +127,7 @@ export async function createMilestone(
     description: typeof description === "string" ? description : "",
     status: typeof status === "string" && status ? status : "not_started",
     target_date: typeof targetDate === "string" && targetDate ? targetDate : null,
+    files,
   })
 
   if (errors) return { errors }
@@ -135,6 +145,7 @@ export async function updateMilestone(
   const description = formData.get("description")
   const status = formData.get("status")
   const targetDate = formData.get("target_date")
+  const files = parseStringList(formData, "files")
   const path = formData.get("path")
 
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.milestones}${id}/`, "PATCH", {
@@ -142,6 +153,7 @@ export async function updateMilestone(
     ...(typeof description === "string" ? { description } : {}),
     ...(typeof status === "string" && status ? { status } : {}),
     ...(typeof targetDate === "string" ? { target_date: targetDate || null } : {}),
+    ...(formData.has("files_field") ? { files } : {}),
   })
 
   if (errors) return { errors }
@@ -172,6 +184,7 @@ export async function createTask(
   const status = formData.get("status")
   const assignees = parseIdList(formData, "assignees")
   const requirements = parseIdList(formData, "requirements")
+  const files = parseStringList(formData, "files")
   const path = formData.get("path")
 
   if (typeof project !== "string" || !project) {
@@ -192,6 +205,7 @@ export async function createTask(
     status: typeof status === "string" && status ? status : "not_started",
     assignees,
     requirements,
+    files,
   })
 
   if (errors) return { errors }
@@ -214,6 +228,7 @@ export async function updateTask(
   const status = formData.get("status")
   const assignees = parseIdList(formData, "assignees")
   const requirements = parseIdList(formData, "requirements")
+  const files = parseStringList(formData, "files")
   const path = formData.get("path")
 
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.tasks}${id}/`, "PATCH", {
@@ -226,6 +241,7 @@ export async function updateTask(
     ...(typeof status === "string" && status ? { status } : {}),
     ...(formData.has("assignees_field") ? { assignees } : {}),
     ...(requirements.length ? { requirements } : {}),
+    ...(formData.has("files_field") ? { files } : {}),
   })
 
   if (errors) return { errors }
@@ -250,6 +266,7 @@ export async function createUpdate(
   const milestone = formData.get("milestone")
   const task = formData.get("task")
   const content = formData.get("content")
+  const files = parseStringList(formData, "files")
 
   if (typeof project !== "string" || !project) {
     return { errors: { project: ["This field is required."] } }
@@ -263,6 +280,7 @@ export async function createUpdate(
     milestone: typeof milestone === "string" && milestone ? Number(milestone) : null,
     task: typeof task === "string" && task ? Number(task) : null,
     content,
+    files,
   })
 
   if (errors) return { errors }
@@ -277,9 +295,11 @@ export async function updateUpdate(
   formData: FormData
 ): Promise<FluxActionState> {
   const content = formData.get("content")
+  const files = parseStringList(formData, "files")
 
   const { errors } = await fluxRequest(`${FLUX_ENDPOINTS.updates}${id}/`, "PATCH", {
     ...(typeof content === "string" && content ? { content } : {}),
+    ...(formData.has("files_field") ? { files } : {}),
   })
 
   if (errors) return { errors }

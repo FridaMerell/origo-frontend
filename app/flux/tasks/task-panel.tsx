@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import { addSubtask, toggleTaskStatus } from "@/app/actions/flux";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Drawer } from "@/app/components/ui/Drawer";
+import { Gallery } from "@/app/components/ui/Gallery";
 import { Icon } from "@/app/components/ui/Icon";
 import { ProgressBar } from "@/app/components/ui/ProgressBar";
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer";
-import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
+import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
+import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
 import { formatDate } from "@/app/lib/format-date";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
@@ -18,6 +20,12 @@ const PRIORITY_TONE: Record<FluxTaskPriority, string> = {
   high: "text-danger bg-danger-wash",
   medium: "text-warning bg-warning-wash",
   low: "text-text-muted bg-surface-2",
+};
+
+const PRIORITY_LABEL: Record<FluxTaskPriority, string> = {
+  high: "Hög",
+  medium: "Medel",
+  low: "Låg",
 };
 
 function SubtaskRow({ subtask }: { subtask: FluxTask }) {
@@ -75,12 +83,12 @@ function AddSubtaskForm({ task }: { task: FluxTask }) {
             submit();
           }
         }}
-        placeholder="Add subtask"
+        placeholder="Lägg till deluppgift"
         className="flex-1 rounded border border-field-border bg-surface px-2.5 py-1.5 text-sm text-text"
       />
       <button
         type="button"
-        aria-label="Add subtask"
+        aria-label="Lägg till deluppgift"
         disabled={pending || !title.trim()}
         onClick={submit}
         className="flex size-8 shrink-0 items-center justify-center rounded border border-border text-text-muted hover:text-text disabled:opacity-50"
@@ -96,6 +104,7 @@ export function TaskPanel() {
   const tasks = useFluxTasks();
   const projects = useFluxProjects();
   const milestones = useFluxMilestones();
+  const updates = useFluxUpdates();
   const users = useFluxUsers();
   const [editingTask, setEditingTask] = useState<FluxTask | null>(null);
 
@@ -113,7 +122,7 @@ export function TaskPanel() {
           task && (
             <button
               type="button"
-              aria-label="Edit task"
+              aria-label="Redigera uppgift"
               onClick={() => {
                 setEditingTask(task);
                 closeTask();
@@ -136,21 +145,21 @@ export function TaskPanel() {
 
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-text-faint">Priority</span>
+                <span className="text-xs font-semibold text-text-faint">Prioritet</span>
                 <span
-                  className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${PRIORITY_TONE[task.priority]}`}
+                  className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}
                 >
-                  {task.priority}
+                  {PRIORITY_LABEL[task.priority]}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-text-faint">Due date</span>
+                <span className="text-xs font-semibold text-text-faint">Deadline</span>
                 <span className="font-mono text-sm text-text">
-                  {task.due_date ? formatDate(task.due_date) : "No due date"}
+                  {task.due_date ? formatDate(task.due_date) : "Ingen deadline"}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-text-faint">Assignees</span>
+                <span className="text-xs font-semibold text-text-faint">Tilldelade</span>
                 <span className="flex gap-1">
                   {task.assignees.length === 0 && <span className="text-sm text-text-muted">—</span>}
                   {task.assignees.map((id) => (
@@ -158,13 +167,24 @@ export function TaskPanel() {
                   ))}
                 </span>
               </div>
+              {task.update_count > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-text-faint">Uppdateringar</span>
+                  <span className="flex items-center gap-1 font-mono text-sm text-text">
+                    <Icon name="message-square" size={14} />
+                    {task.update_count}
+                  </span>
+                </div>
+              )}
             </div>
 
             {task.description && <p className="text-sm text-text">{task.description}</p>}
 
+            <Gallery files={task.files} />
+
             <div className="flex flex-col gap-2 border-t border-border pt-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Subtasks</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Deluppgifter</span>
                 {subtaskProgress.total > 0 && (
                   <span className="font-mono text-xs text-text-faint">
                     {subtaskProgress.done}/{subtaskProgress.total}
@@ -179,6 +199,13 @@ export function TaskPanel() {
               </div>
               <AddSubtaskForm task={task} />
             </div>
+
+            <UpdatesFeed
+              updates={updates.filter((update) => update.task === task.id)}
+              defaultProject={task.project}
+              defaultMilestone={task.milestone}
+              defaultTask={task.id}
+            />
           </div>
         )}
       </Drawer>

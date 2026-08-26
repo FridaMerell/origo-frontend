@@ -12,7 +12,7 @@ export function AddTaskButton() {
     <>
       <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
         <Icon name="plus" size={14} className="text-accent-contrast" />
-        New task
+        Ny uppgift
       </Button>
       <TaskFormDrawer open={open} onClose={() => setOpen(false)} />
     </>

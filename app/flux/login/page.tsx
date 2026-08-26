@@ -5,8 +5,8 @@ import { Card } from "@/app/components/ui/Card";
 import { LogoMark } from "@/app/flux/ui/LogoMark";
 
 export const metadata: Metadata = {
-  title: `Sign in | ${TENANTS.flux.name}`,
-  description: `Sign in to ${TENANTS.flux.name}`,
+  title: `Logga in | ${TENANTS.flux.name}`,
+  description: `Logga in på ${TENANTS.flux.name}`,
 };
 
 export default function FluxLoginPage() {

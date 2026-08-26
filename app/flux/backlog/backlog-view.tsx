@@ -7,9 +7,9 @@ import { useTaskPanel } from "@/app/lib/task-panel-context";
 import type { FluxTaskPriority } from "@/app/lib/dal";
 
 const COLUMNS: { label: string; priority: FluxTaskPriority }[] = [
-  { label: "High priority", priority: "high" },
-  { label: "Medium priority", priority: "medium" },
-  { label: "Low priority", priority: "low" },
+  { label: "Hög prioritet", priority: "high" },
+  { label: "Medelprioritet", priority: "medium" },
+  { label: "Låg prioritet", priority: "low" },
 ];
 
 export default function FluxBacklogView() {

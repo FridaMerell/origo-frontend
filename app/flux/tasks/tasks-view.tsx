@@ -15,6 +15,12 @@ const PRIORITY_TONE: Record<FluxTaskPriority, string> = {
   low: "text-text-muted bg-surface-2",
 };
 
+const PRIORITY_LABEL: Record<FluxTaskPriority, string> = {
+  high: "Hög",
+  medium: "Medel",
+  low: "Låg",
+};
+
 export default function FluxTasksView() {
   const projects = useFluxProjects();
   const tasks = useFluxTasks();
@@ -23,24 +29,24 @@ export default function FluxTasksView() {
   const projectName = (id: number) => projects.find((p) => p.id === id)?.name ?? "—";
 
   const columns: ListTableColumn<FluxTask>[] = [
-    { key: "title", header: "Task", render: (task) => task.title },
-    { key: "project", header: "Project", width: "160px", render: (task) => projectName(task.project) },
+    { key: "title", header: "Uppgift", render: (task) => task.title },
+    { key: "project", header: "Projekt", width: "160px", render: (task) => projectName(task.project) },
     {
       key: "priority",
-      header: "Priority",
+      header: "Prioritet",
       width: "100px",
       render: (task) => (
         <span
-          className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${PRIORITY_TONE[task.priority]}`}
+          className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}
         >
-          {task.priority}
+          {PRIORITY_LABEL[task.priority]}
         </span>
       ),
     },
-    { key: "due", header: "Due", width: "120px", render: (task) => task.due_date ?? "—" },
+    { key: "due", header: "Deadline", width: "120px", render: (task) => task.due_date ?? "—" },
     {
       key: "assignees",
-      header: "Assignees",
+      header: "Tilldelade",
       width: "140px",
       render: (task) => (
         <span className="flex items-center gap-1.5">

@@ -12,7 +12,7 @@ export function DeleteTaskButton({ id }: { id: number }) {
   return (
     <button
       type="button"
-      aria-label="Delete task"
+      aria-label="Ta bort uppgift"
       disabled={pending}
       onClick={(e) => {
         e.stopPropagation();

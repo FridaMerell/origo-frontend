@@ -12,7 +12,7 @@ export function EditMilestoneButton({ milestone }: { milestone: FluxMilestone })
     <>
       <button
         type="button"
-        aria-label="Edit milestone"
+        aria-label="Redigera delmål"
         onClick={() => setOpen(true)}
         className="text-text-faint hover:text-text"
       >

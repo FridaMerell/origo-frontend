@@ -3,7 +3,7 @@ import FluxBacklogView from "./backlog-view";
 
 export const metadata: Metadata = {
   title: "Backlog | Flux",
-  description: "Unscheduled and overdue Flux tasks by priority",
+  description: "Oplanerade och försenade Flux-uppgifter efter prioritet",
 };
 
 export default function FluxBacklogPage() {

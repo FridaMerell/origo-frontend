@@ -16,7 +16,7 @@ export function UserMultiSelect({
   return (
     <div className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded border border-border bg-bg p-2">
       <input type="hidden" name={`${name}_field`} value="1" />
-      {users.length === 0 && <span className="px-1 py-1 text-sm text-text-faint">No users found.</span>}
+      {users.length === 0 && <span className="px-1 py-1 text-sm text-text-faint">Inga användare hittades.</span>}
       {users.map((user) => (
         <label
           key={user.id}

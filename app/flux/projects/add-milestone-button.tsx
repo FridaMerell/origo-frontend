@@ -12,7 +12,7 @@ export function AddMilestoneButton({ projectId }: { projectId: number }) {
     <>
       <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
         <Icon name="plus" size={14} />
-        New milestone
+        Nytt delmål
       </Button>
       <MilestoneFormDrawer open={open} onClose={() => setOpen(false)} projectId={projectId} />
     </>

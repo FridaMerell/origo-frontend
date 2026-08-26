@@ -3,7 +3,7 @@ import FluxTasksView from "./tasks-view";
 
 export const metadata: Metadata = {
   title: "Uppgifter | Flux",
-  description: "All Flux tasks",
+  description: "Alla Flux-uppgifter",
 };
 
 export default function FluxTasksPage() {

@@ -11,8 +11,8 @@ export async function generateMetadata({
   const project = await getFluxProject(id);
 
   return {
-    title: project ? `${project.name} | Flux` : "Project | Flux",
-    description: project ? project.description || project.name : "Flux project",
+    title: project ? `${project.name} | Flux` : "Projekt | Flux",
+    description: project ? project.description || project.name : "Flux-projekt",
   };
 }
 

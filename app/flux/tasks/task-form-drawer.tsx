@@ -5,16 +5,23 @@ import { usePathname } from "next/navigation";
 import { createTask, updateTask, type FluxActionState } from "@/app/actions/flux";
 import { Button } from "@/app/components/ui/Button";
 import { Drawer } from "@/app/components/ui/Drawer";
+import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload";
 import { UserMultiSelect } from "@/app/flux/user-multiselect";
 import { useFluxMilestones, useFluxProjects, useSelectedFluxProject } from "@/app/lib/flux-context";
 import { useUsers } from "@/app/lib/user-context";
 import type { FluxTask, FluxTaskStatus } from "@/app/lib/dal";
 
 const STATUS_OPTIONS: { value: FluxTaskStatus; label: string }[] = [
-  { value: "not_started", label: "Not started" },
-  { value: "in_progress", label: "In progress" },
-  { value: "done", label: "Done" },
+  { value: "not_started", label: "Ej påbörjad" },
+  { value: "in_progress", label: "Pågående" },
+  { value: "done", label: "Klar" },
 ];
+
+const PRIORITY_LABEL: Record<"low" | "medium" | "high", string> = {
+  low: "Låg",
+  medium: "Medel",
+  high: "Hög",
+};
 
 const initialState: FluxActionState = undefined;
 
@@ -48,6 +55,9 @@ export function TaskFormDrawer({
 
   const [projectId, setProjectId] = useState<number | undefined>(
     task?.project ?? defaultProjectId ?? selectedProject?.id ?? projects[0]?.id
+  );
+  const [files, setFiles] = useState<UploadedFile[]>(
+    (task?.files ?? []).map((url) => ({ url, name: url.split("/").pop() ?? url }))
   );
 
   const previousSuccess = useRef(false);
@@ -160,7 +170,7 @@ export function TaskFormDrawer({
             {(["low", "medium", "high"] as const).map((priority) => (
               <label
                 key={priority}
-                className="flex-1 cursor-pointer rounded border border-border px-0 py-2 text-center text-sm font-medium capitalize text-text-muted has-checked:border-accent has-checked:bg-accent-wash has-checked:font-semibold has-checked:text-accent"
+                className="flex-1 cursor-pointer rounded border border-border px-0 py-2 text-center text-sm font-medium text-text-muted has-checked:border-accent has-checked:bg-accent-wash has-checked:font-semibold has-checked:text-accent"
               >
                 <input
                   type="radio"
@@ -172,7 +182,7 @@ export function TaskFormDrawer({
                   className="sr-only"
                 />
 
-                {priority}
+                {PRIORITY_LABEL[priority]}
               </label>
             ))}
           </div>
@@ -211,6 +221,15 @@ export function TaskFormDrawer({
             users={users}
             defaultSelected={task?.assignees ?? []}
           />
+        </div>
+
+        <div className="flex flex-col gap-1.5 text-sm text-text-muted">
+          Filer
+          <input type="hidden" name="files_field" value="1" />
+          <FileUpload folder="flux" files={files} onChange={setFiles} />
+          {files.map((file) => (
+            <input key={file.url} type="hidden" name="files" value={file.url} />
+          ))}
         </div>
 
         {state?.errors?.project && (

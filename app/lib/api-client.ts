@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { API_BASE_URL } from "@/app/lib/config";
 
 function parseCookieValue(setCookieHeader: string): string {
@@ -18,5 +19,9 @@ export function buildCookieHeader(cookies: Record<string, string | undefined>): 
 }
 
 export async function fetchOrigoApi(path: string, init: RequestInit = {}) {
-  return fetch(`${API_BASE_URL}${path}`, init);
+  const host = (await headers()).get("host");
+  return fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers: { ...init.headers, ...(host ? { Origin: `https://${host}` } : {}) },
+  });
 }

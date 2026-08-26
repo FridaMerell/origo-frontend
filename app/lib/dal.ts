@@ -207,8 +207,8 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   if (!response.ok) {
     return null
   }
-  let responseJson =await  response.json()
-  return responseJson[0] ?? null
+  const responseJson = await response.json()
+  return responseJson ?? null
 })
 
 export const getFacilities = cache(

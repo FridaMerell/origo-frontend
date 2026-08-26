@@ -1,10 +1,10 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { FACILITY_COOKIE, VERSO_ENDPOINTS } from "@/app/lib/config"
+import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
-import { cookies } from "next/headers"
+import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 
 export type CreateBookingState = { error?: string; success?: boolean } | undefined
 
@@ -12,8 +12,7 @@ export async function createBooking(
   _prevState: CreateBookingState,
   formData: FormData
 ): Promise<CreateBookingState> {
-  const cookieStore = await cookies()
-  const house = cookieStore.get(FACILITY_COOKIE)?.value
+  const house = await resolveSelectedHouse()
   const visitor = formData.get("visitor")
   const start_date = formData.get("start_date")
   const end_date = formData.get("end_date")

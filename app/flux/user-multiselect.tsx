@@ -5,17 +5,20 @@ import { formatUserName } from "@/app/lib/user-context";
 import type { FluxUser } from "@/app/lib/dal";
 
 export function UserMultiSelect({
-  name,
   users,
-  defaultSelected,
+  value,
+  onChange,
 }: {
-  name: string;
   users: FluxUser[];
-  defaultSelected: number[];
+  value: number[];
+  onChange: (value: number[]) => void;
 }) {
+  function toggle(userId: number, checked: boolean) {
+    onChange(checked ? [...value, userId] : value.filter((id) => id !== userId));
+  }
+
   return (
     <div className="flex max-h-40 flex-col gap-1 overflow-y-auto rounded border border-border bg-bg p-2">
-      <input type="hidden" name={`${name}_field`} value="1" />
       {users.length === 0 && <span className="px-1 py-1 text-sm text-text-faint">Inga användare hittades.</span>}
       {users.map((user) => (
         <label
@@ -24,9 +27,8 @@ export function UserMultiSelect({
         >
           <input
             type="checkbox"
-            name={name}
-            value={user.id}
-            defaultChecked={defaultSelected.includes(user.id)}
+            checked={value.includes(user.id)}
+            onChange={(e) => toggle(user.id, e.target.checked)}
             className="accent-accent"
           />
           <Avatar name={formatUserName(user)} size={20} />

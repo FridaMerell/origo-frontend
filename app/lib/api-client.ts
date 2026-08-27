@@ -19,9 +19,12 @@ export function buildCookieHeader(cookies: Record<string, string | undefined>): 
 }
 
 export async function fetchOrigoApi(path: string, init: RequestInit = {}) {
-  const host = (await headers()).get("host");
+  const requestHeaders = await headers();
+  const origin = requestHeaders.get("origin");
+  const host = requestHeaders.get("host");
+  const resolvedOrigin = origin ?? (host ? `https://${host}` : undefined);
   return fetch(`${API_BASE_URL}${path}`, {
     ...init,
-    headers: { ...init.headers, ...(host ? { Origin: `https://${host}` } : {}) },
+    headers: { ...init.headers, ...(resolvedOrigin ? { Origin: resolvedOrigin } : {}) },
   });
 }

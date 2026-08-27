@@ -3,16 +3,16 @@
 import { AUTH_ENDPOINTS } from "@/app/lib/config";
 import { buildCookieHeader, extractSetCookie, fetchOrigoApi } from "@/app/lib/api-client";
 import { clearSessionCookies, getSessionCookies, setSessionCookies } from "@/app/lib/session";
+import { loginFormSchema, type LoginFormValues } from "@/app/lib/schemas";
 
 export type LoginState = { error?: string; success?: true } | undefined;
 
-export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const username = formData.get("username");
-  const password = formData.get("password");
-
-  if (typeof username !== "string" || typeof password !== "string" || !username || !password) {
+export async function login(data: LoginFormValues): Promise<LoginState> {
+  const parsed = loginFormSchema.safeParse(data);
+  if (!parsed.success) {
     return { error: "Username and password are required." };
   }
+  const { username, password } = parsed.data;
 
   const csrfResponse = await fetchOrigoApi(AUTH_ENDPOINTS.csrf);
   const csrfToken = extractSetCookie(csrfResponse, "csrftoken");

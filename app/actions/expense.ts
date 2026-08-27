@@ -4,34 +4,30 @@ import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
+import { getCurrentUser } from "@/app/lib/dal"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
+import { expenseFormSchema, type ExpenseFormValues } from "@/app/lib/schemas"
 
 export type CreateExpenseState = { error?: string; success?: boolean } | undefined
 
 export async function createExpense(
-  _prevState: CreateExpenseState,
-  formData: FormData
+  venture: string | undefined,
+  data: ExpenseFormValues,
+  path?: string
 ): Promise<CreateExpenseState> {
-  const house = await resolveSelectedHouse()
-  const venture = formData.get("venture")
-  const amount = formData.get("amount")
-  const description = formData.get("description")
-  const dateIncurred = formData.get("date_incurred")
-  const path = formData.get("path")
-
-  if (
-    typeof house !== "string" || !house ||
-    typeof amount !== "string" || !amount ||
-    typeof description !== "string" || !description ||
-    typeof dateIncurred !== "string" || !dateIncurred
-  ) {
-    console.error("Missing required fields in createExpense:", {
-      house,
-      amount,
-      description,
-      dateIncurred,
-    })
+  const parsed = expenseFormSchema.safeParse(data)
+  if (!parsed.success) {
     return { error: "Alla fält måste fyllas i." }
+  }
+
+  const house = await resolveSelectedHouse()
+  if (!house) {
+    return { error: "Ingen anläggning vald." }
+  }
+
+  const user = await getCurrentUser()
+  if (!user) {
+    return { error: "Du måste vara inloggad." }
   }
 
   const { sessionId, csrfToken } = await getSessionCookies()
@@ -46,17 +42,17 @@ export async function createExpense(
     body: JSON.stringify({
       house,
       venture: venture || null,
-      amount,
-      description,
-      date_incurred: dateIncurred,
+      user: user.id,
+      ...parsed.data,
     }),
   })
 
   if (!response.ok) {
-    return { error: "Utgiften kunde inte skapas. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: `Utgiften kunde inte skapas. Försök igen. (${response.status}: ${detail})` }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/planera")
+  revalidatePath(path || "/planera")
 
   return { success: true }
 }

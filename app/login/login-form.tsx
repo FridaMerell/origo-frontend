@@ -1,47 +1,60 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "@/app/actions/auth";
+import { loginFormSchema, type LoginFormValues } from "@/app/lib/schemas";
 
 export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
-  const [state, action, pending] = useActionState(login, undefined);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: { username: "", password: "" },
+  });
 
-  useEffect(() => {
-    if (state?.success) {
-      window.location.href = redirectTo;
+  const onSubmit = handleSubmit(async (data) => {
+    const result = await login(data);
+    if (result?.error) {
+      setError("root", { message: result.error });
+      return;
     }
-  }, [state, redirectTo]);
+    window.location.href = redirectTo;
+  });
 
   return (
-    <form action={action} className="flex w-full max-w-sm flex-col gap-4">
+    <form onSubmit={onSubmit} className="flex w-full max-w-sm flex-col gap-4">
       <div className="flex flex-col gap-1">
         <label htmlFor="username">Användarnamn</label>
         <input
           id="username"
-          name="username"
           autoComplete="username"
-          required
           className="rounded border border-field-border bg-surface px-3 py-2 text-text"
+          {...register("username")}
         />
+        {errors.username && <p className="text-sm text-red-600">{errors.username.message}</p>}
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="password">Lösenord</label>
         <input
           id="password"
-          name="password"
           type="password"
           autoComplete="current-password"
-          required
           className="rounded border border-field-border bg-surface px-3 py-2 text-text"
+          {...register("password")}
         />
+        {errors.password && <p className="text-sm text-red-600">{errors.password.message}</p>}
       </div>
-      {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+      {errors.root && <p className="text-sm text-red-600">{errors.root.message}</p>}
       <button
         type="submit"
-        disabled={pending}
-        className="rounded-full bg-foreground px-5 py-2 text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
+        disabled={isSubmitting}
+        className="rounded-full bg-accent-wash border-background px-5 py-2 text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
       >
-        {pending ? "Loggar in..." : "Logga in"}
+        {isSubmitting ? "Loggar in..." : "Logga in"}
       </button>
     </form>
   );

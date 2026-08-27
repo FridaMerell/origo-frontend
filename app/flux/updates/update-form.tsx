@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { createUpdate, updateUpdate, type FluxActionState } from "@/app/actions/flux";
-import { Button } from "@/app/components/ui/Button";
-import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createUpdate, updateUpdate } from "@/app/actions/flux";
+import { fluxUpdateFormSchema, type FluxUpdateFormValues } from "@/app/lib/schemas";
+import { FileUpload } from "@/app/components/ui/FileUpload";
+import { useSubmitAction } from "@/app/components/form/useSubmitAction";
+import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
+import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import type { FluxUpdate } from "@/app/lib/dal";
-
-const initialState: FluxActionState = undefined;
 
 export function UpdateForm({
   update,
@@ -21,66 +23,51 @@ export function UpdateForm({
   defaultTask: number | null;
   onDone?: () => void;
 }) {
-  const action = useMemo(
-    () => (update ? updateUpdate.bind(null, update.id) : createUpdate),
-    [update?.id]
-  );
+  const uploadedFiles = useUploadedFiles(update?.files, update?.id ?? null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<FluxUpdateFormValues>({
+    resolver: zodResolver(fluxUpdateFormSchema),
+    defaultValues: { content: update?.content ?? "" },
+  });
 
-  const [state, formAction, pending] = useActionState(action, initialState);
-  const formRef = useRef<HTMLFormElement>(null);
-  const [files, setFiles] = useState<UploadedFile[]>(
-    (update?.files ?? []).map((url) => ({ url, name: url.split("/").pop() ?? url }))
-  );
-  const previousSuccess = useRef(false);
+  const submit = useSubmitAction(setError);
 
-  useEffect(() => {
-    const isSuccess = !!state?.success;
-    if (isSuccess && !previousSuccess.current) {
-      if (update) {
-        onDone?.();
-      } else {
-        formRef.current?.reset();
-        setFiles([]);
+  const onSubmit = handleSubmit((data) =>
+    submit(
+      () =>
+        update
+          ? updateUpdate(update.id, data, uploadedFiles.urls)
+          : createUpdate(defaultProject, defaultMilestone, defaultTask, data, uploadedFiles.urls),
+      () => {
+        if (update) {
+          onDone?.();
+        } else {
+          reset({ content: "" });
+          uploadedFiles.clear();
+        }
       }
-    }
-    previousSuccess.current = isSuccess;
-  }, [state?.success, update, onDone]);
+    )
+  );
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-2.5">
-      <input type="hidden" name="project" value={defaultProject} />
-      <input type="hidden" name="milestone" value={defaultMilestone ?? ""} />
-      <input type="hidden" name="task" value={defaultTask ?? ""} />
-      <input type="hidden" name="files_field" value="1" />
-
+    <form onSubmit={onSubmit} className="flex flex-col gap-2.5">
       <textarea
-        name="content"
-        required
         rows={2}
-        defaultValue={update?.content}
         placeholder="Skriv en uppdatering..."
         className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-sm text-text"
+        {...register("content")}
       />
 
-      <FileUpload folder="flux" files={files} onChange={setFiles} />
-      {files.map((file) => (
-        <input key={file.url} type="hidden" name="files" value={file.url} />
-      ))}
+      <FileUpload folder="flux" files={uploadedFiles.files} onChange={uploadedFiles.setFiles} />
 
-      {state?.errors?.content && (
-        <p className="text-sm text-danger">{state.errors.content[0]}</p>
-      )}
-
-      <div className="flex items-center justify-end gap-2.5">
-        {update && (
-          <Button type="button" variant="ghost" size="sm" onClick={onDone}>
-            Avbryt
-          </Button>
-        )}
-        <Button type="submit" variant="primary" size="sm" disabled={pending}>
-          {pending ? "Sparar..." : update ? "Spara" : "Lägg till uppdatering"}
-        </Button>
-      </div>
+      {errors.content && <p className="text-sm text-danger">{errors.content.message}</p>}
+      <FormRootError error={errors.root} />
+      <FormActions isSubmitting={isSubmitting} submitLabel={update ? "Spara" : "Lägg till uppdatering"} onCancel={update ? onDone : undefined} className="flex items-center justify-end gap-2.5" />
     </form>
   );
 }

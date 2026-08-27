@@ -2,7 +2,7 @@ import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { getSessionCookies } from "@/app/lib/session";
 
-const ALLOWED_FOLDERS = ["verso", "flux"];
+const ALLOWED_FOLDERS = ["verso", "flux", "apsis"];
 
 export async function POST(request: Request): Promise<NextResponse> {
   const { sessionId } = await getSessionCookies();

@@ -1,79 +1,58 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { createVenture, type CreateVentureState } from "@/app/actions/venture";
-import { Button } from "@/app/components/ui/Button";
-
-const initialState: CreateVentureState = undefined;
+import { usePathname } from "next/navigation";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createVenture } from "@/app/actions/venture";
+import { ventureFormSchema, type VentureFormValues } from "@/app/lib/schemas";
+import { Field, fieldInputClass } from "@/app/components/form/Field";
+import { useSubmitAction } from "@/app/components/form/useSubmitAction";
+import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
 
 export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
-  const [state, formAction, pending] = useActionState(createVenture, initialState);
-  const [priority, setPriority] = useState(3);
-  const router = useRouter();
   const pathname = usePathname();
+  const {
+    register,
+    handleSubmit,
+    control,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<VentureFormValues>({
+    resolver: zodResolver(ventureFormSchema),
+    defaultValues: { name: "", description: "", priority: 3, budget: 0 },
+  });
+  const priority = useWatch({ control, name: "priority" });
+  const submit = useSubmitAction(setError);
 
-  useEffect(() => {
-    if (state?.success) {
-      onSuccess?.();
-      router.refresh();
-    }
-  }, [state, onSuccess, router]);
+  const onSubmit = handleSubmit((data) => submit(() => createVenture(data, pathname), onSuccess));
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
-      <input type="hidden" name="path" value={pathname} />
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Namn
-        <input
-          type="text"
-          name="name"
-          required
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <Field label="Namn" error={errors.name}>
+        <input type="text" className={fieldInputClass} {...register("name")} />
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Beskrivning
-        <textarea
-          name="description"
-          required
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+      <Field label="Beskrivning" error={errors.description}>
+        <textarea className={fieldInputClass} {...register("description")} />
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Prioritet ({priority})
+      <Field label={`Prioritet (${priority})`} error={errors.priority}>
         <input
           type="range"
-          name="priority"
           min={1}
           max={5}
           step={1}
-          required
-          value={priority}
-          onChange={(e) => setPriority(Number(e.target.value))}
           className="accent-accent"
+          {...register("priority")}
         />
-      </label>
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Budget
-        <input
-          type="text"
-          name="budget"
-          required
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+      <Field label="Budget" error={errors.budget}>
+        <input type="text" inputMode="decimal" className={fieldInputClass} {...register("budget")} />
+      </Field>
 
-      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-
-      <div className="mt-2 flex justify-end">
-        <Button type="submit" variant="primary" size="sm" disabled={pending}>
-          {pending ? "Sparar..." : "Spara"}
-        </Button>
-      </div>
+      <FormRootError error={errors.root} />
+      <FormActions isSubmitting={isSubmitting} />
     </form>
   );
 }

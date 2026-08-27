@@ -5,28 +5,22 @@ import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
+import { ventureFormSchema, type VentureFormValues } from "@/app/lib/schemas"
 
 export type CreateVentureState = { error?: string; success?: boolean } | undefined
 
 export async function createVenture(
-  _prevState: CreateVentureState,
-  formData: FormData
+  data: VentureFormValues,
+  path?: string
 ): Promise<CreateVentureState> {
-  const house = await resolveSelectedHouse()
-  const name = formData.get("name")
-  const description = formData.get("description")
-  const priority = formData.get("priority")
-  const budget = formData.get("budget")
-  const path = formData.get("path")
-
-  if (
-    typeof house !== "string" || !house ||
-    typeof name !== "string" || !name ||
-    typeof description !== "string" || !description ||
-    typeof priority !== "string" || !priority ||
-    typeof budget !== "string" || !budget
-  ) {
+  const parsed = ventureFormSchema.safeParse(data)
+  if (!parsed.success) {
     return { error: "Alla fält måste fyllas i." }
+  }
+
+  const house = await resolveSelectedHouse()
+  if (!house) {
+    return { error: "Ingen anläggning vald." }
   }
 
   const { sessionId, csrfToken } = await getSessionCookies()
@@ -38,14 +32,14 @@ export async function createVenture(
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ house, name, description, priority, budget }),
+    body: JSON.stringify({ house, tasks: [], ...parsed.data }),
   })
 
   if (!response.ok) {
     return { error: "Projektet kunde inte skapas. Försök igen." }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/planera")
+  revalidatePath(path || "/planera")
 
   return { success: true }
 }
@@ -53,14 +47,11 @@ export async function createVenture(
 export type UpdateVentureFilesState = { error?: string; success?: boolean } | undefined
 
 export async function updateVentureFiles(
-  _prevState: UpdateVentureFilesState,
-  formData: FormData
+  id: string,
+  files: string[],
+  path?: string
 ): Promise<UpdateVentureFilesState> {
-  const id = formData.get("id")
-  const files = formData.getAll("files").filter((f): f is string => typeof f === "string")
-  const path = formData.get("path")
-
-  if (typeof id !== "string" || !id) {
+  if (!id) {
     return { error: "Projektet kunde inte hittas." }
   }
 
@@ -80,7 +71,7 @@ export async function updateVentureFiles(
     return { error: "Filerna kunde inte sparas. Försök igen." }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/planera")
+  revalidatePath(path || "/planera")
 
   return { success: true }
 }
@@ -88,24 +79,13 @@ export async function updateVentureFiles(
 export type UpdateVentureState = { error?: string; success?: boolean } | undefined
 
 export async function updateVenture(
-  _prevState: UpdateVentureState,
-  formData: FormData
+  id: string,
+  data: VentureFormValues,
+  files: string[],
+  path?: string
 ): Promise<UpdateVentureState> {
-  const id = formData.get("id")
-  const name = formData.get("name")
-  const description = formData.get("description")
-  const priority = formData.get("priority")
-  const budget = formData.get("budget")
-  const files = formData.getAll("files").filter((f): f is string => typeof f === "string")
-  const path = formData.get("path")
-
-  if (
-    typeof id !== "string" || !id ||
-    typeof name !== "string" || !name ||
-    typeof description !== "string" || !description ||
-    typeof priority !== "string" || !priority ||
-    typeof budget !== "string" || !budget
-  ) {
+  const parsed = ventureFormSchema.safeParse(data)
+  if (!id || !parsed.success) {
     return { error: "Alla fält måste fyllas i." }
   }
 
@@ -118,14 +98,15 @@ export async function updateVenture(
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ name, description, priority, budget, files }),
+    body: JSON.stringify({ ...parsed.data, files }),
   })
 
   if (!response.ok) {
-    return { error: "Projektet kunde inte uppdateras. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: `Projektet kunde inte uppdateras. Försök igen. (${response.status}: ${detail})` }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/planera")
+  revalidatePath(path || "/planera")
 
   return { success: true }
 }

@@ -11,6 +11,7 @@ import { ProjectFormDrawer } from "@/app/flux/projects/project-form-drawer"
 import { useFluxProjects, useSelectedFluxProject } from "@/app/lib/flux-context"
 import { useUser, formatUserName } from "@/app/lib/user-context"
 import { logout } from "@/app/actions/auth"
+import { ORIGO_VERSION } from "@/app/lib/config"
 import Logo from "./ui/Logo"
 
 type NavLink = { label: string; href: string; icon: string }
@@ -174,7 +175,7 @@ const Toolbar = ({ mode, onToggleMode }: ToolbarProps) => {
               <Logo width={70} className="text-accent" />
               <div className=" flex flex-col items-start">
                 <span className="font-display text-[25px] font-bold tracking-tight text-text leading-5.5">flux</span>
-                <span className="font-body text-[7px] font-medium text-text-muted">ORIGO 0.0.1</span>
+                <span className="font-body text-[7px] font-medium text-text-muted">ORIGO {ORIGO_VERSION}</span>
               </div>
             </Link>
 

@@ -1,6 +1,6 @@
 import { cache } from "react"
 import { redirect } from "next/navigation"
-import { ACCOUNTS_ENDPOINTS, AUTH_ENDPOINTS, FLUX_ENDPOINTS, VERSO_ENDPOINTS } from "@/app/lib/config"
+import { ACCOUNTS_ENDPOINTS, APSIS_ENDPOINTS, AUTH_ENDPOINTS, FLUX_ENDPOINTS, VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
 
@@ -83,6 +83,7 @@ export type Expense = {
   id: string
   house: string
   venture: string | null
+  user: string | null
   amount: string
   description: string
   date_incurred: string
@@ -254,6 +255,10 @@ export const getExpenses = cache(
   (house: string): Promise<Expense[]> => fetchVersoList(VERSO_ENDPOINTS.expenses, { house })
 )
 
+export const getExpense = cache(
+  (id: string): Promise<Expense | null> => fetchVersoItem(`${VERSO_ENDPOINTS.expenses}${id}/`)
+)
+
 export const getYearlyExpenses = cache( 
   (house: string, year: number): Promise<number|null> =>
     fetchVersoItem<number>(`${VERSO_ENDPOINTS.yearlyExpenses}?house=${house}&year=${String(year)}`) 
@@ -367,6 +372,57 @@ export const getFluxUpdates = cache(
 
 export const getFluxUpdate = cache(
   (id: string): Promise<FluxUpdate | null> => fetchFluxItem(`${FLUX_ENDPOINTS.updates}${id}/`)
+)
+
+// Apsis — a church-apse photo catalogue. One flat resource: posts.
+export type ApsisFile = { name: string; url: string }
+
+export type ApsisPost = {
+  id: number
+  files: ApsisFile[]
+  author: number | null
+  geolocation: string
+  content: string
+  name: string
+  created_at: string
+}
+
+async function fetchApsisList<T>(path: string): Promise<T[]> {
+  const { sessionId, csrfToken } = await getSessionCookies()
+  if (!sessionId) return []
+
+  const response = await fetchOrigoApi(path, {
+    headers: {
+      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
+    },
+  })
+
+  if (!response.ok) return []
+
+  return response.json()
+}
+
+async function fetchApsisItem<T>(path: string): Promise<T | null> {
+  const { sessionId, csrfToken } = await getSessionCookies()
+  if (!sessionId) return null
+
+  const response = await fetchOrigoApi(path, {
+    headers: {
+      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
+    },
+  })
+
+  if (!response.ok) return null
+
+  return response.json()
+}
+
+export const getApsisPosts = cache(
+  (): Promise<ApsisPost[]> => fetchApsisList(APSIS_ENDPOINTS.posts)
+)
+
+export const getApsisPost = cache(
+  (id: string): Promise<ApsisPost | null> => fetchApsisItem(`${APSIS_ENDPOINTS.posts}${id}/`)
 )
 
 export async function verifySession() {

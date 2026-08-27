@@ -1,14 +1,16 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { createBooking, updateBooking, type CreateBookingState } from "@/app/actions/booking";
-import { Button } from "@/app/components/ui/Button";
+import { useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createBooking, updateBooking } from "@/app/actions/booking";
+import { bookingFormSchema, type BookingFormValues } from "@/app/lib/schemas";
 import { Drawer } from "@/app/components/ui/Drawer";
+import { Field, fieldInputClass } from "@/app/components/form/Field";
+import { useSubmitAction } from "@/app/components/form/useSubmitAction";
+import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
 import type { Booking } from "@/app/lib/dal";
 import { useFacilities } from "@/app/lib/facility-context";
-
-const initialState: CreateBookingState = undefined;
 
 export function BookingFormDrawer({
   open,
@@ -19,19 +21,40 @@ export function BookingFormDrawer({
   onClose: () => void;
   booking?: Booking;
 }) {
-  const action = booking ? updateBooking.bind(null, booking.id) : createBooking;
-  const [state, formAction, pending] = useActionState(action, initialState);
-  const [startDate, setStartDate] = useState(booking?.start_date ?? "");
-  const pathname = usePathname();
   const { selectedFacility } = useFacilities();
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<BookingFormValues>({
+    resolver: zodResolver(bookingFormSchema),
+    defaultValues: {
+      visitor: booking?.visitor ?? "",
+      start_date: booking?.start_date ?? "",
+      end_date: booking?.end_date ?? "",
+    },
+  });
+  const startDate = useWatch({ control, name: "start_date" });
 
   useEffect(() => {
-    if (state?.success) onClose();
-  }, [state, onClose]);
+    reset({
+      visitor: booking?.visitor ?? "",
+      start_date: booking?.start_date ?? "",
+      end_date: booking?.end_date ?? "",
+    });
+  }, [booking, open, reset]);
 
-  useEffect(() => {
-    setStartDate(booking?.start_date ?? "");
-  }, [booking, open]);
+  const submit = useSubmitAction(setError);
+
+  const onSubmit = handleSubmit((data) =>
+    submit(
+      () => (booking ? updateBooking(booking.id, data) : createBooking(selectedFacility?.id ?? "", data)),
+      onClose
+    )
+  );
 
   return (
     <Drawer
@@ -39,54 +62,26 @@ export function BookingFormDrawer({
       open={open}
       onOpenChange={(next) => !next && onClose()}
     >
-      <form action={formAction} className="flex flex-col gap-3">
-        <input type="hidden" name="path" value={pathname} />
-        {!booking && <input type="hidden" name="house" value={selectedFacility?.id ?? ""} />}
-        <label className="flex flex-col gap-1 text-sm text-text-muted">
-          Besökare
-          <input
-            type="text"
-            name="visitor"
-            required
-            defaultValue={booking?.visitor}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          />
-        </label>
+      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+        <Field label="Besökare" error={errors.visitor}>
+          <input type="text" className={fieldInputClass} {...register("visitor")} />
+        </Field>
 
-        <label className="flex flex-col gap-1 text-sm text-text-muted">
-          Startdatum
+        <Field label="Startdatum" error={errors.start_date}>
+          <input type="date" className={fieldInputClass} {...register("start_date")} />
+        </Field>
+
+        <Field label="Slutdatum" error={errors.end_date}>
           <input
             type="date"
-            name="start_date"
-            required
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1 text-sm text-text-muted">
-          Slutdatum
-          <input
-            type="date"
-            name="end_date"
-            required
             min={startDate || undefined}
-            defaultValue={booking?.end_date}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
+            className={fieldInputClass}
+            {...register("end_date")}
           />
-        </label>
+        </Field>
 
-        {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-
-        <div className="mt-2 flex justify-end gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={onClose}>
-            Avbryt
-          </Button>
-          <Button type="submit" variant="primary" size="sm" disabled={pending}>
-            {pending ? "Sparar..." : "Spara"}
-          </Button>
-        </div>
+        <FormRootError error={errors.root} />
+        <FormActions isSubmitting={isSubmitting} onCancel={onClose} className="mt-2 flex justify-end gap-2" />
       </form>
     </Drawer>
   );

@@ -36,6 +36,20 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Environment variables
+
+Copy `.env.example` to `.env` and fill in the values. See that file for the full
+list; in short:
+
+- `BLOB_READ_WRITE_TOKEN` — required, backs file upload/download via Vercel Blob
+  (`app/api/upload`, `app/api/files`). Run `vercel env pull` to get it locally.
+- `ORIGO_API_URL`, `ORIGO_COOKIE_DOMAIN` — optional overrides for the backend API
+  URL and session-cookie domain. Defaults in `app/lib/config.ts` target local
+  `.origo.test` development.
+- `NEXT_PUBLIC_ORIGO_VERSION` — optional version string shown in the Verso
+  sidebar / Flux toolbar. Public, inlined at build time (needs a rebuild to
+  change). On Vercel, set to `$VERCEL_GIT_COMMIT_SHA` for a per-deploy value.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

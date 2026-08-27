@@ -4,32 +4,21 @@ import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
+import { bookingFormSchema, type BookingFormValues } from "@/app/lib/schemas"
 
 export type CreateBookingState = { error?: string; success?: boolean } | undefined
 
 export async function createBooking(
-  _prevState: CreateBookingState,
-  formData: FormData
+  house: string,
+  data: BookingFormValues,
+  path?: string
 ): Promise<CreateBookingState> {
-  const house = formData.get("house")
-  const visitor = formData.get("visitor")
-  const start_date = formData.get("start_date")
-  const end_date = formData.get("end_date")
-  const path = formData.get("path")
-
-  if (typeof house !== "string" || !house) {
+  if (!house) {
     return { error: "Ingen anläggning vald." }
   }
-  if (
-    typeof visitor !== "string" || !visitor ||
-    typeof start_date !== "string" || !start_date ||
-    typeof end_date !== "string" || !end_date
-  ) {
-    return { error: "Alla fält måste fyllas i." }
-  }
-
-  if (end_date < start_date) {
-    return { error: "Slutdatum kan inte vara före startdatum." }
+  const parsed = bookingFormSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Alla fält måste fyllas i." }
   }
 
   const { sessionId, csrfToken } = await getSessionCookies()
@@ -41,38 +30,27 @@ export async function createBooking(
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ house, visitor, start_date, end_date }),
+    body: JSON.stringify({ house, ...parsed.data }),
   })
 
   if (!response.ok) {
-    return { error: "Kunde inte skapa bokningen. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: `Kunde inte skapa bokningen. Försök igen. (${response.status}: ${detail})` }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/besok")
+  revalidatePath(path || "/besok")
 
   return { success: true }
 }
 
 export async function updateBooking(
   id: string,
-  _prevState: CreateBookingState,
-  formData: FormData
+  data: BookingFormValues,
+  path?: string
 ): Promise<CreateBookingState> {
-  const visitor = formData.get("visitor")
-  const start_date = formData.get("start_date")
-  const end_date = formData.get("end_date")
-  const path = formData.get("path")
-
-  if (
-    typeof visitor !== "string" || !visitor ||
-    typeof start_date !== "string" || !start_date ||
-    typeof end_date !== "string" || !end_date
-  ) {
-    return { error: "Alla fält måste fyllas i." }
-  }
-
-  if (end_date < start_date) {
-    return { error: "Slutdatum kan inte vara före startdatum." }
+  const parsed = bookingFormSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Alla fält måste fyllas i." }
   }
 
   const { sessionId, csrfToken } = await getSessionCookies()
@@ -84,14 +62,15 @@ export async function updateBooking(
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ visitor, start_date, end_date }),
+    body: JSON.stringify(parsed.data),
   })
 
   if (!response.ok) {
-    return { error: "Kunde inte spara bokningen. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: `Kunde inte spara bokningen. Försök igen. (${response.status}: ${detail})` }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/besok")
+  revalidatePath(path || "/besok")
 
   return { success: true }
 }

@@ -1,11 +1,17 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { createTask, updateTask, type FluxActionState } from "@/app/actions/flux";
-import { Button } from "@/app/components/ui/Button";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { createTask, updateTask } from "@/app/actions/flux";
+import { fluxTaskFormSchema, type FluxTaskFormValues } from "@/app/lib/schemas";
 import { Drawer } from "@/app/components/ui/Drawer";
-import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload";
+import { Field, fieldInputClass } from "@/app/components/form/Field";
+import { FileUpload } from "@/app/components/ui/FileUpload";
+import { useSubmitAction } from "@/app/components/form/useSubmitAction";
+import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
+import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import { UserMultiSelect } from "@/app/flux/user-multiselect";
 import { useFluxMilestones, useFluxProjects, useSelectedFluxProject } from "@/app/lib/flux-context";
 import { useUsers } from "@/app/lib/user-context";
@@ -23,8 +29,6 @@ const PRIORITY_LABEL: Record<"low" | "medium" | "high", string> = {
   high: "Hög",
 };
 
-const initialState: FluxActionState = undefined;
-
 export function TaskFormDrawer({
   open,
   onClose,
@@ -40,58 +44,69 @@ export function TaskFormDrawer({
   defaultMilestoneId?: number | null;
   defaultParentId?: number | null;
 }) {
-  const action = useMemo(
-    () => (task ? updateTask.bind(null, task.id) : createTask),
-    [task?.id]
-  );
-
-  const [state, formAction, pending] = useActionState(action, initialState);
-
+  const pathname = usePathname();
   const projects = useFluxProjects();
   const { selectedProject } = useSelectedFluxProject();
   const milestones = useFluxMilestones();
   const users = useUsers();
-  const pathname = usePathname();
 
-  const [projectId, setProjectId] = useState<number | undefined>(
-    task?.project ?? defaultProjectId ?? selectedProject?.id ?? projects[0]?.id
-  );
-  const [files, setFiles] = useState<UploadedFile[]>(
-    (task?.files ?? []).map((url) => ({ url, name: url.split("/").pop() ?? url }))
-  );
+  const uploadedFiles = useUploadedFiles(task?.files, task?.id ?? null);
 
-  const previousSuccess = useRef(false);
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    setValue,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<FluxTaskFormValues>({
+    resolver: zodResolver(fluxTaskFormSchema),
+    defaultValues: {
+      title: task?.title ?? "",
+      description: task?.description ?? "",
+      project: task?.project ?? defaultProjectId ?? selectedProject?.id ?? projects[0]?.id ?? 0,
+      milestone: task?.milestone ?? defaultMilestoneId ?? null,
+      priority: task?.priority ?? "medium",
+      status: task?.status ?? "not_started",
+      due_date: task?.due_date ?? null,
+      assignees: task?.assignees ?? [],
+    },
+  });
 
-  useEffect(() => {
-    const isSuccess = !!state?.success;
-
-    if (isSuccess && !previousSuccess.current) {
-      onClose();
-    }
-
-    previousSuccess.current = isSuccess;
-  }, [state?.success, onClose]);
+  const projectId = useWatch({ control, name: "project" });
+  const assignees = useWatch({ control, name: "assignees" });
 
   useEffect(() => {
     if (open) {
-      setProjectId(
-        task?.project ??
-          defaultProjectId ??
-          selectedProject?.id ??
-          projects[0]?.id
-      );
+      reset({
+        title: task?.title ?? "",
+        description: task?.description ?? "",
+        project: task?.project ?? defaultProjectId ?? selectedProject?.id ?? projects[0]?.id ?? 0,
+        milestone: task?.milestone ?? defaultMilestoneId ?? null,
+        priority: task?.priority ?? "medium",
+        status: task?.status ?? "not_started",
+        due_date: task?.due_date ?? null,
+        assignees: task?.assignees ?? [],
+      });
+      uploadedFiles.reset();
     }
-  }, [
-    open,
-    task?.project,
-    defaultProjectId,
-    selectedProject?.id,
-    projects,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, task?.id]);
 
-  const availableMilestones = milestones.filter(
-    (milestone) => milestone.project === projectId
-  );
+  const availableMilestones = milestones.filter((milestone) => milestone.project === Number(projectId));
+
+  const submit = useSubmitAction(setError);
+
+  const onSubmit = handleSubmit((data) => {
+    return submit(
+      () =>
+        task
+          ? updateTask(task.id, data, uploadedFiles.urls, pathname)
+          : createTask(data, defaultParentId ?? null, uploadedFiles.urls, pathname),
+      onClose
+    );
+  });
 
   return (
     <Drawer
@@ -99,170 +114,91 @@ export function TaskFormDrawer({
       open={open}
       onOpenChange={(next) => !next && onClose()}
     >
-      <form action={formAction} className="flex flex-col gap-4.5">
-        <input type="hidden" name="path" value={pathname} />
-
-        {defaultParentId != null && (
-          <input type="hidden" name="parent" value={defaultParentId} />
-        )}
-
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Namn
+      <form onSubmit={onSubmit} className="flex flex-col gap-4.5">
+        <Field label="Namn" error={errors.title}>
           <input
             type="text"
-            name="title"
-            required
-            defaultValue={task?.title}
             placeholder="t.ex. Kalibrera IMU på rev-C kort"
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
+            className={fieldInputClass}
+            {...register("title")}
           />
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Beskrivning
+        <Field label="Beskrivning" error={errors.description}>
           <textarea
-            name="description"
             rows={3}
-            defaultValue={task?.description}
             placeholder="Vad behöver göras, och varför"
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
+            className={fieldInputClass}
+            {...register("description")}
           />
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Projekt
-          <select
-            name="project"
-            required
-            value={projectId}
-            onChange={(e) => setProjectId(Number(e.target.value))}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          >
+        <Field label="Projekt" error={errors.project}>
+          <select className={fieldInputClass} {...register("project")}>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.name}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Delmål
-          <select
-            name="milestone"
-            defaultValue={task?.milestone ?? defaultMilestoneId ?? ""}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          >
+        <Field label="Delmål" error={errors.milestone}>
+          <select className={fieldInputClass} {...register("milestone")}>
             <option value="">Inget delmål</option>
-
             {availableMilestones.map((milestone) => (
               <option key={milestone.id} value={milestone.id}>
                 {milestone.title}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
         <div className="flex flex-col gap-2">
           <span className="text-sm text-text-muted">Prioritet</span>
-
           <div className="flex gap-2">
             {(["low", "medium", "high"] as const).map((priority) => (
               <label
                 key={priority}
                 className="flex-1 cursor-pointer rounded border border-border px-0 py-2 text-center text-sm font-medium text-text-muted has-checked:border-accent has-checked:bg-accent-wash has-checked:font-semibold has-checked:text-accent"
               >
-                <input
-                  type="radio"
-                  name="priority"
-                  value={priority}
-                  defaultChecked={
-                    (task?.priority ?? "medium") === priority
-                  }
-                  className="sr-only"
-                />
-
+                <input type="radio" value={priority} className="sr-only" {...register("priority")} />
                 {PRIORITY_LABEL[priority]}
               </label>
             ))}
           </div>
         </div>
 
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Status
-          <select
-            name="status"
-            defaultValue={task?.status ?? "not_started"}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          >
+        <Field label="Status" error={errors.status}>
+          <select className={fieldInputClass} {...register("status")}>
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Deadline
-          <input
-            type="date"
-            name="due_date"
-            defaultValue={task?.due_date ?? ""}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          />
-        </label>
+        <Field label="Deadline" error={errors.due_date}>
+          <input type="date" className={fieldInputClass} {...register("due_date")} />
+        </Field>
 
         <div className="flex flex-col gap-1.5 text-sm text-text-muted">
           Tilldelas
-
           <UserMultiSelect
-            name="assignees"
             users={users}
-            defaultSelected={task?.assignees ?? []}
+            value={assignees}
+            onChange={(value) => setValue("assignees", value, { shouldDirty: true })}
           />
         </div>
 
         <div className="flex flex-col gap-1.5 text-sm text-text-muted">
           Filer
-          <input type="hidden" name="files_field" value="1" />
-          <FileUpload folder="flux" files={files} onChange={setFiles} />
-          {files.map((file) => (
-            <input key={file.url} type="hidden" name="files" value={file.url} />
-          ))}
+          <FileUpload folder="flux" files={uploadedFiles.files} onChange={uploadedFiles.setFiles} />
         </div>
 
-        {state?.errors?.project && (
-          <p className="text-sm text-danger">
-            {state.errors.project[0]}
-          </p>
-        )}
-
-        {state?.errors?.title && (
-          <p className="text-sm text-danger">
-            {state.errors.title[0]}
-          </p>
-        )}
-
-        <div className="flex items-center justify-end gap-2.5 pt-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="md"
-            onClick={onClose}
-          >
-            Avbryt
-          </Button>
-
-          <Button
-            type="submit"
-            variant="primary"
-            size="md"
-            disabled={pending}
-          >
-            {pending ? "Sparar..." : task ? "Spara" : "Skapa uppgift"}
-          </Button>
-        </div>
+        <FormRootError error={errors.root} />
+        <FormActions isSubmitting={isSubmitting} submitLabel={task ? "Spara" : "Skapa uppgift"} onCancel={onClose} size="md" className="flex items-center justify-end gap-2.5 pt-2" />
       </form>
     </Drawer>
   );

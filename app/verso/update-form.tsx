@@ -1,14 +1,24 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { useState } from "react"
+import { usePathname } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { VersoUpdate } from "../lib/dal"
-import { createVersoUpdate, updateVersoUpdate, type CreateVersoUpdateState } from "../actions/verso-update"
-import { Button } from "../components/ui/Button"
-import { FileUpload, type UploadedFile } from "../components/ui/FileUpload"
-import { VentureTaskLinkPicker, type VentureTaskLinkValue } from "./ui/VentureTaskLinkPicker"
-
-const initialState: CreateVersoUpdateState = undefined
+import { useVentureData } from "../lib/venture-context"
+import { createVersoUpdate, updateVersoUpdate } from "../actions/verso-update"
+import { versoUpdateFormSchema, type VersoUpdateFormValues } from "../lib/schemas"
+import { Field, fieldInputClass } from "../components/form/Field"
+import { FileUpload } from "../components/ui/FileUpload"
+import { useSubmitAction } from "../components/form/useSubmitAction"
+import { FormActions, FormRootError } from "../components/form/FormFeedback"
+import { useUploadedFiles } from "../components/form/useUploadedFiles"
+import { useDrawerClose } from "../components/ui/Drawer"
+import {
+  VentureTaskLinkPicker,
+  resolveVentureTaskLink,
+  type VentureTaskLinkValue,
+} from "./ui/VentureTaskLinkPicker"
 
 const UpdateForm = ({
   update,
@@ -19,66 +29,54 @@ const UpdateForm = ({
   defaultVenture?: string
   defaultTask?: string
 }) => {
-  const [state, formAction, pending] = useActionState(
-    update ? updateVersoUpdate : createVersoUpdate,
-    initialState
-  )
-  const router = useRouter()
   const pathname = usePathname()
-
-  useEffect(() => {
-    if (state?.success) router.refresh()
-  }, [state, router])
-  const [files, setFiles] = useState<UploadedFile[]>(
-    (update?.files ?? []).map((url) => ({ url, name: url.split("/").pop() ?? url }))
-  )
+  const { ventureTasks } = useVentureData()
+  const uploadedFiles = useUploadedFiles(update?.files, update?.id ?? null)
   const [link, setLink] = useState<VentureTaskLinkValue>({
     linkType: update?.task || defaultTask ? "task" : "venture",
     linkId: update?.task ?? update?.venture ?? defaultTask ?? defaultVenture ?? null,
   })
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<Pick<VersoUpdateFormValues, "title" | "content">>({
+    resolver: zodResolver(versoUpdateFormSchema.pick({ title: true, content: true })),
+    defaultValues: { title: update?.title ?? "", content: update?.content ?? "" },
+  })
+  const submit = useSubmitAction(setError)
+  const closeDrawer = useDrawerClose()
+
+  const onSubmit = handleSubmit((data) => {
+    const { venture, task } = resolveVentureTaskLink(link, ventureTasks)
+    const payload = { ...data, venture, task }
+    return submit(() =>
+      update
+        ? updateVersoUpdate(update.id, payload, uploadedFiles.urls, pathname)
+        : createVersoUpdate(payload, uploadedFiles.urls, pathname),
+      closeDrawer
+    )
+  })
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
-      <input type="hidden" name="path" value={pathname} />
-      {update && <input type="hidden" name="id" value={update.id} />}
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Rubrik
-        <input
-          type="text"
-          name="title"
-          required
-          defaultValue={update?.title}
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Uppdatering
-        <textarea
-          name="content"
-          required
-          defaultValue={update?.content}
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <Field label="Rubrik" error={errors.title}>
+        <input type="text" className={fieldInputClass} {...register("title")} />
+      </Field>
+      <Field label="Uppdatering" error={errors.content}>
+        <textarea className={fieldInputClass} {...register("content")} />
+      </Field>
 
       <VentureTaskLinkPicker value={link} onChange={setLink} />
 
       <div className="flex flex-col gap-1 text-sm text-text-muted">
         Bilagor
-        <FileUpload folder="verso" files={files} onChange={setFiles} />
+        <FileUpload folder="verso" files={uploadedFiles.files} onChange={uploadedFiles.setFiles} />
       </div>
 
-      {files.map((file) => (
-        <input key={file.url} type="hidden" name="files" value={file.url} />
-      ))}
-
-      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-
-      <div className="mt-2 flex justify-end">
-        <Button type="submit" variant="primary" size="sm" disabled={pending}>
-          {pending ? "Sparar..." : "Spara"}
-        </Button>
-      </div>
+      <FormRootError error={errors.root} />
+      <FormActions isSubmitting={isSubmitting} />
     </form>
   )
 }

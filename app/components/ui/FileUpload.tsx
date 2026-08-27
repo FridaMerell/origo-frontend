@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Icon } from "./Icon";
 import { fileProxyUrl } from "@/app/lib/files";
 
-export type UploadFolder = "verso" | "flux";
+export type UploadFolder = "verso" | "flux" | "apsis";
 
 export type UploadedFile = { url: string; name: string };
 

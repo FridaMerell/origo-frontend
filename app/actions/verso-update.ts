@@ -6,21 +6,17 @@ import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
 import { getCurrentUser } from "@/app/lib/dal"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
+import { versoUpdateFormSchema, type VersoUpdateFormValues } from "@/app/lib/schemas"
 
 export type CreateVersoUpdateState = { error?: string; success?: boolean } | undefined
 
 export async function createVersoUpdate(
-  _prevState: CreateVersoUpdateState,
-  formData: FormData
+  data: VersoUpdateFormValues,
+  files: string[],
+  path?: string
 ): Promise<CreateVersoUpdateState> {
-  const title = formData.get("title")
-  const content = formData.get("content")
-  const venture = formData.get("venture")
-  const task = formData.get("task")
-  const files = formData.getAll("files").filter((f): f is string => typeof f === "string")
-  const path = formData.get("path")
-
-  if (typeof title !== "string" || !title || typeof content !== "string" || !content) {
+  const parsed = versoUpdateFormSchema.safeParse(data)
+  if (!parsed.success) {
     return { error: "Alla fält måste fyllas i." }
   }
 
@@ -44,11 +40,11 @@ export async function createVersoUpdate(
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
     body: JSON.stringify({
-      title,
-      content,
+      title: parsed.data.title,
+      content: parsed.data.content,
       house,
-      venture: venture || null,
-      task: task || null,
+      venture: parsed.data.venture || null,
+      task: parsed.data.task || null,
       author: user.id,
       files,
     }),
@@ -58,7 +54,7 @@ export async function createVersoUpdate(
     return { error: "Uppdateringen kunde inte skapas. Försök igen." }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/")
+  revalidatePath(path || "/")
 
   return { success: true }
 }
@@ -66,22 +62,16 @@ export async function createVersoUpdate(
 export type UpdateVersoUpdateState = { error?: string; success?: boolean } | undefined
 
 export async function updateVersoUpdate(
-  _prevState: UpdateVersoUpdateState,
-  formData: FormData
+  id: string,
+  data: VersoUpdateFormValues,
+  files: string[],
+  path?: string
 ): Promise<UpdateVersoUpdateState> {
-  const id = formData.get("id")
-  const title = formData.get("title")
-  const content = formData.get("content")
-  const venture = formData.get("venture")
-  const task = formData.get("task")
-  const files = formData.getAll("files").filter((f): f is string => typeof f === "string")
-  const path = formData.get("path")
-
-  if (typeof id !== "string" || !id) {
+  const parsed = versoUpdateFormSchema.safeParse(data)
+  if (!id) {
     return { error: "Uppdateringen kunde inte hittas." }
   }
-
-  if (typeof title !== "string" || !title || typeof content !== "string" || !content) {
+  if (!parsed.success) {
     return { error: "Alla fält måste fyllas i." }
   }
 
@@ -95,10 +85,10 @@ export async function updateVersoUpdate(
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
     body: JSON.stringify({
-      title,
-      content,
-      venture: venture || null,
-      task: task || null,
+      title: parsed.data.title,
+      content: parsed.data.content,
+      venture: parsed.data.venture || null,
+      task: parsed.data.task || null,
       files,
     }),
   })
@@ -107,7 +97,7 @@ export async function updateVersoUpdate(
     return { error: "Uppdateringen kunde inte sparas. Försök igen." }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/")
+  revalidatePath(path || "/")
 
   return { success: true }
 }

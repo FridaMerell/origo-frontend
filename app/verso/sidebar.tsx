@@ -136,7 +136,7 @@ export function SidebarContent({
           <Logo height={75} />
           <div className="flex flex-col ml-1 gap-0">
             <span className="leading-5">Verso</span>
-            <span className="font-body text-xs ml-1.5">ORIGO 0.0.1</span>
+            <span className="font-body text-xs ml-1.5">ORIGO {ORIGO_VERSION}</span>
           </div>
         </a>
 

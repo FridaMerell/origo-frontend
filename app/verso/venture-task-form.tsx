@@ -1,69 +1,60 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
-import { usePathname, useRouter } from "next/navigation"
-import { createVentureTask, updateVentureTask, type CreateVentureTaskState } from "../actions/venture-task"
-import { Button } from "../components/ui/Button"
+import { usePathname } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { createVentureTask, updateVentureTask } from "../actions/venture-task"
+import { ventureTaskFormSchema, type VentureTaskFormValues } from "../lib/schemas"
+import { Field, fieldInputClass } from "../components/form/Field"
+import { useSubmitAction } from "../components/form/useSubmitAction"
+import { FormActions, FormRootError } from "../components/form/FormFeedback"
+import { useDrawerClose } from "../components/ui/Drawer"
 import type { VentureTask } from "../lib/dal"
 
-const initialState: CreateVentureTaskState = undefined
-
 const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTask }) => {
-  const [state, formAction, pending] = useActionState(
-    task ? updateVentureTask : createVentureTask,
-    initialState
-  )
-  const router = useRouter()
   const pathname = usePathname()
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<VentureTaskFormValues>({
+    resolver: zodResolver(ventureTaskFormSchema),
+    defaultValues: {
+      name: task?.name ?? "",
+      description: task?.description ?? "",
+      completed: task?.completed ?? false,
+    },
+  })
+  const submit = useSubmitAction(setError)
+  const closeDrawer = useDrawerClose()
 
-  useEffect(() => {
-    if (state?.success) router.refresh()
-  }, [state, router])
+  const onSubmit = handleSubmit((data) =>
+    submit(
+      () => (task ? updateVentureTask(task.id, data, pathname) : createVentureTask(venture, data, pathname)),
+      closeDrawer
+    )
+  )
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
-      {task ? (
-        <input type="hidden" name="id" value={task.id} />
-      ) : (
-        <input type="hidden" name="venture" value={venture} />
-      )}
-      <input type="hidden" name="path" value={pathname} />
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <Field label="Namn" error={errors.name}>
+        <input type="text" className={fieldInputClass} {...register("name")} />
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Namn
-        <input
-          type="text"
-          name="name"
-          required
-          defaultValue={task?.name}
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Beskrivning
-        <textarea
-          name="description"
-          required
-          defaultValue={task?.description}
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+      <Field label="Beskrivning" error={errors.description}>
+        <textarea className={fieldInputClass} {...register("description")} />
+      </Field>
 
       {task && (
         <label className="flex items-center gap-2 text-sm text-text-muted">
-          <input type="checkbox" name="completed" defaultChecked={task.completed} className="accent-accent" />
+          <input type="checkbox" className="accent-accent" {...register("completed")} />
           Klar
         </label>
       )}
 
-      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-
-      <div className="mt-2 flex justify-end">
-        <Button type="submit" variant="primary" size="sm" disabled={pending}>
-          {pending ? "Sparar..." : "Spara"}
-        </Button>
-      </div>
+      <FormRootError error={errors.root} />
+      <FormActions isSubmitting={isSubmitting} />
     </form>
   )
 }

@@ -185,8 +185,8 @@ export default async function BesokPage({
       </BookingDrawerProvider>
 
       <div className="flex gap-5">
-        {stays.map((s) => (
-          <div key={s.who} className="flex items-center gap-2 font-body text-sm text-text-muted">
+        {stays.map((s,i) => (
+          <div key={i} className="flex items-center gap-2 font-body text-sm text-text-muted">
             <span className="size-2.5 rounded-[3px]" style={{ background: s.color }} />
             {s.who}
           </div>

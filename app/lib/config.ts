@@ -1,5 +1,5 @@
 export const API_BASE_URL = process.env.ORIGO_API_URL ?? "http://api.origo.test:8000";
-export const ORIGO_VERSION = process.env.ORIGO_VERSION ?? "0.0.0";
+export const ORIGO_VERSION = process.env.NEXT_PUBLIC_ORIGO_VERSION ?? "0.0.1";
 
 export const AUTH_ENDPOINTS = {
   csrf: "/api/accounts/csrf/",
@@ -29,6 +29,10 @@ export const FLUX_ENDPOINTS = {
   milestones: "/api/flux/milestones/",
   tasks: "/api/flux/tasks/",
   updates: "/api/flux/updates/",
+} as const;
+
+export const APSIS_ENDPOINTS = {
+  posts: "/api/apsis/posts/",
 } as const;
 
 export const SESSION_COOKIE = "origo_sessionid";

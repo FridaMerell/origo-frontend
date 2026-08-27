@@ -1,11 +1,17 @@
 "use client"
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { createMilestone, updateMilestone, type FluxActionState } from "@/app/actions/flux"
-import { Button } from "@/app/components/ui/Button"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { createMilestone, updateMilestone } from "@/app/actions/flux"
+import { fluxMilestoneFormSchema, type FluxMilestoneFormValues } from "@/app/lib/schemas"
 import { Drawer } from "@/app/components/ui/Drawer"
-import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload"
+import { Field, fieldInputClass } from "@/app/components/form/Field"
+import { FileUpload } from "@/app/components/ui/FileUpload"
+import { useSubmitAction } from "@/app/components/form/useSubmitAction"
+import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
+import { useUploadedFiles } from "@/app/components/form/useUploadedFiles"
 import type { FluxMilestone, FluxMilestoneStatus } from "@/app/lib/dal"
 
 const STATUS_OPTIONS: { value: FluxMilestoneStatus; label: string }[] = [
@@ -13,8 +19,6 @@ const STATUS_OPTIONS: { value: FluxMilestoneStatus; label: string }[] = [
   { value: "in_progress", label: "Pågående" },
   { value: "done", label: "Klar" },
 ]
-
-const initialState: FluxActionState = undefined
 
 export function MilestoneFormDrawer({
   open,
@@ -27,28 +31,43 @@ export function MilestoneFormDrawer({
   projectId: number
   milestone?: FluxMilestone
 }) {
-  const action = useMemo(
-    () => (milestone ? updateMilestone.bind(null, milestone.id) : createMilestone),
-    [milestone?.id]
-  )
-
-  const [state, formAction, pending] = useActionState(action, initialState)
   const pathname = usePathname()
-  const [files, setFiles] = useState<UploadedFile[]>(
-    (milestone?.files ?? []).map((url) => ({ url, name: url.split("/").pop() ?? url }))
-  )
-  const previousSuccess = useRef(false)
+  const uploadedFiles = useUploadedFiles(milestone?.files, milestone?.id ?? null)
+  const {
+    register,
+    handleSubmit, reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<FluxMilestoneFormValues>({
+    resolver: zodResolver(fluxMilestoneFormSchema),
+    defaultValues: {
+      title: milestone?.title ?? "",
+      description: milestone?.description ?? "",
+      status: milestone?.status ?? "not_started",
+      target_date: milestone?.target_date ?? null,
+    },
+  })
+  const submit = useSubmitAction(setError)
 
   useEffect(() => {
-    const isSuccess = !!state?.success
+    if (!open) return
+    reset({
+      title: milestone?.title ?? "",
+      description: milestone?.description ?? "",
+      status: milestone?.status ?? "not_started",
+      target_date: milestone?.target_date ?? null,
+    })
+  }, [open, milestone, reset])
 
-    if (isSuccess && !previousSuccess.current) {
-      onClose()
-    }
-
-    previousSuccess.current = isSuccess
-
-  }, [state?.success, onClose])
+  const onSubmit = handleSubmit((data) =>
+    submit(
+      () =>
+        milestone
+          ? updateMilestone(milestone.id, data, uploadedFiles.urls, pathname)
+          : createMilestone(projectId, data, uploadedFiles.urls, pathname),
+      onClose
+    )
+  )
 
   return (
     <Drawer
@@ -56,83 +75,36 @@ export function MilestoneFormDrawer({
       open={open}
       onOpenChange={(next) => !next && onClose()}
     >
-      <form action={formAction} className="flex flex-col gap-4.5">
-        <input type="hidden" name="path" value={pathname} />
-        <input type="hidden" name="project" value={projectId} />
+      <form onSubmit={onSubmit} className="flex flex-col gap-4.5">
+        <Field label="Namn" error={errors.title}>
+          <input type="text" placeholder="t.ex. Betasläpp" className={fieldInputClass} {...register("title")} />
+        </Field>
 
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Namn
-          <input
-            type="text"
-            name="title"
-            required
-            defaultValue={milestone?.title}
-            placeholder="t.ex. Betasläpp"
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          />
-        </label>
+        <Field label="Beskrivning" error={errors.description}>
+          <textarea rows={3} className={fieldInputClass} {...register("description")} />
+        </Field>
 
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Beskrivning
-          <textarea
-            name="description"
-            rows={3}
-            defaultValue={milestone?.description}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          />
-        </label>
-
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Status
-          <select
-            name="status"
-            defaultValue={milestone?.status ?? "not_started"}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          >
+        <Field label="Status" error={errors.status}>
+          <select className={fieldInputClass} {...register("status")}>
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </select>
-        </label>
+        </Field>
 
-        <label className="flex flex-col gap-1.5 text-sm text-text-muted">
-          Deadline
-          <input
-            type="date"
-            name="target_date"
-            defaultValue={milestone?.target_date ?? ""}
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-          />
-        </label>
+        <Field label="Deadline" error={errors.target_date}>
+          <input type="date" className={fieldInputClass} {...register("target_date")} />
+        </Field>
 
         <div className="flex flex-col gap-1.5 text-sm text-text-muted">
           Filer
-          <input type="hidden" name="files_field" value="1" />
-          <FileUpload folder="flux" files={files} onChange={setFiles} />
-          {files.map((file) => (
-            <input key={file.url} type="hidden" name="files" value={file.url} />
-          ))}
+          <FileUpload folder="flux" files={uploadedFiles.files} onChange={uploadedFiles.setFiles} />
         </div>
 
-        {state?.errors?.project && (
-          <p className="text-sm text-danger">{state.errors.project[0]}</p>
-        )}
-
-        {state?.errors?.title && (
-          <p className="text-sm text-danger">{state.errors.title[0]}</p>
-        )}
-
-        <div className="flex items-center justify-end gap-2.5 pt-2">
-          <Button type="button" variant="ghost" size="md" onClick={onClose}>
-            Avbryt
-          </Button>
-
-          <Button type="submit" variant="primary" size="md" disabled={pending}>
-            {pending ? "Sparar..." : milestone ? "Spara" : "Skapa delmål"}
-          </Button>
-        </div>
+        <FormRootError error={errors.root} />
+        <FormActions isSubmitting={isSubmitting} submitLabel={milestone ? "Spara" : "Skapa delmål"} onCancel={onClose} size="md" className="flex items-center justify-end gap-2.5 pt-2" />
       </form>
     </Drawer>
   )

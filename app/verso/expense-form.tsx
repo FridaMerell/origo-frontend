@@ -1,63 +1,47 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
-import { usePathname, useRouter } from "next/navigation"
-import { createExpense, type CreateExpenseState } from "../actions/expense"
-import { Button } from "../components/ui/Button"
-
-const initialState: CreateExpenseState = undefined
+import { usePathname } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { createExpense } from "../actions/expense"
+import { expenseFormSchema, type ExpenseFormValues } from "../lib/schemas"
+import { Field, fieldInputClass } from "../components/form/Field"
+import { useSubmitAction } from "../components/form/useSubmitAction"
+import { FormActions, FormRootError } from "../components/form/FormFeedback"
+import { useDrawerClose } from "../components/ui/Drawer"
 
 const ExpenseForm = ({ venture }: { venture?: string }) => {
-  const [state, formAction, pending] = useActionState(createExpense, initialState)
-  const router = useRouter()
   const pathname = usePathname()
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<ExpenseFormValues>({
+    resolver: zodResolver(expenseFormSchema),
+    defaultValues: { description: "", amount: "", date_incurred: "" },
+  })
+  const submit = useSubmitAction(setError)
+  const closeDrawer = useDrawerClose()
 
-  useEffect(() => {
-    if (state?.success) router.refresh()
-  }, [state, router])
+  const onSubmit = handleSubmit((data) => submit(() => createExpense(venture, data, pathname), closeDrawer))
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
-      <input type="hidden" name="venture" value={venture} />
-      <input type="hidden" name="path" value={pathname} />
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <Field label="Beskrivning (valfritt)" error={errors.description}>
+        <input type="text" className={fieldInputClass} {...register("description")} />
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Beskrivning
-        <input
-          type="text"
-          name="description"
-          required
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+      <Field label="Belopp" error={errors.amount}>
+        <input type="text" inputMode="decimal" className={fieldInputClass} {...register("amount")} />
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Belopp
-        <input
-          type="text"
-          name="amount"
-          required
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+      <Field label="Datum" error={errors.date_incurred}>
+        <input type="date" className={fieldInputClass} {...register("date_incurred")} />
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Datum
-        <input
-          type="date"
-          name="date_incurred"
-          required
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
-
-      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-
-      <div className="mt-2 flex justify-end">
-        <Button type="submit" variant="primary" size="sm" disabled={pending}>
-          {pending ? "Sparar..." : "Spara"}
-        </Button>
-      </div>
+      <FormRootError error={errors.root} />
+      <FormActions isSubmitting={isSubmitting} />
     </form>
   )
 }

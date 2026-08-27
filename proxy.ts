@@ -2,19 +2,24 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { API_BASE_URL, AUTH_ENDPOINTS, CSRF_COOKIE, SESSION_COOKIE } from "@/app/lib/config";
 import { buildCookieHeader } from "@/app/lib/api-client";
-import { resolveTenant } from "@/app/lib/tenant";
+import { isPublicPath, resolveTenant } from "@/app/lib/tenant";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get("host")?.split(":")[0] ?? "";
   const tenant = resolveTenant(hostname);
   const isLoginRoute = pathname === "/login";
+  // Routes a tenant has opted into serving without a session. "/login" is always
+  // reachable; everything else stays gated unless the tenant lists it.
+  const isPublicRoute = isLoginRoute || (tenant !== null && isPublicPath(tenant, pathname));
 
   if (request.method === "GET") {
     const sessionId = request.cookies.get(SESSION_COOKIE)?.value;
 
+    // A public route with no session cookie can't be signed in and won't be
+    // redirected — skip the round-trip to the auth API entirely.
     let hasValidSession = false;
-    if (sessionId) {
+    if (sessionId && !(isPublicRoute && !isLoginRoute)) {
       const csrfToken = request.cookies.get(CSRF_COOKIE)?.value;
       try {
         const response = await fetch(`${API_BASE_URL}${AUTH_ENDPOINTS.user}`, {
@@ -28,7 +33,7 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    if (!isLoginRoute && !hasValidSession) {
+    if (!isPublicRoute && !hasValidSession) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 

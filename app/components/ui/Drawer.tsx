@@ -1,9 +1,16 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
+
+const DrawerCloseContext = createContext<(() => void) | null>(null);
+
+export function useDrawerClose() {
+  const close = useContext(DrawerCloseContext);
+  return close ?? (() => {});
+}
 
 type DrawerProps = {
   trigger?: ReactNode;
@@ -97,7 +104,11 @@ export function Drawer({
                 </button>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">{children}</div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <DrawerCloseContext.Provider value={() => setOpen(false)}>
+                {children}
+              </DrawerCloseContext.Provider>
+            </div>
           </div>
         </div>
       )}

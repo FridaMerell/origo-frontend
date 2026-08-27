@@ -4,12 +4,24 @@ import { useMemo, useState } from "react"
 import { useVentureData } from "@/app/lib/venture-context"
 import { PillSelect } from "@/app/components/ui/PillSelect"
 import { Select } from "@/app/components/ui/Select"
+import type { VentureTask } from "@/app/lib/dal"
 
 export type VentureTaskLinkType = "venture" | "task"
 
 export type VentureTaskLinkValue = {
   linkType: VentureTaskLinkType
   linkId: string | null
+}
+
+export function resolveVentureTaskLink(
+  value: VentureTaskLinkValue,
+  ventureTasks: VentureTask[]
+): { venture: string | null; task: string | null } {
+  if (value.linkType === "venture") {
+    return { venture: value.linkId, task: null }
+  }
+  const task = ventureTasks.find((t) => String(t.id) === String(value.linkId))
+  return { venture: task?.venture ?? null, task: value.linkId }
 }
 
 type VentureTaskLinkPickerProps = {
@@ -22,7 +34,7 @@ export function VentureTaskLinkPicker({ value, onChange, className = "" }: Ventu
   const { ventures, ventureTasks } = useVentureData()
   const [taskProjectFilter, setTaskProjectFilter] = useState<string | null>(
     value.linkType === "task"
-      ? ventureTasks.find((t) => t.id === value.linkId)?.venture ?? null
+      ? ventureTasks.find((t) => String(t.id) === String(value.linkId))?.venture ?? null
       : null
   )
 
@@ -38,11 +50,6 @@ export function VentureTaskLinkPicker({ value, onChange, className = "" }: Ventu
         .map((t) => ({ value: t.id, label: t.name })),
     [ventureTasks, taskProjectFilter]
   )
-
-  const derivedVentureId =
-    value.linkType === "venture"
-      ? value.linkId
-      : ventureTasks.find((t) => t.id === value.linkId)?.venture ?? null
 
   function handleLinkTypeChange(next: VentureTaskLinkType) {
     setTaskProjectFilter(null)
@@ -81,8 +88,6 @@ export function VentureTaskLinkPicker({ value, onChange, className = "" }: Ventu
         placeholder={value.linkType === "venture" ? "Välj projekt..." : "Välj uppgift..."}
         className="mt-1"
       />
-      <input type="hidden" name="venture" value={derivedVentureId ?? ""} />
-      <input type="hidden" name="task" value={value.linkType === "task" ? value.linkId ?? "" : ""} />
     </div>
   )
 }

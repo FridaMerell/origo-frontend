@@ -4,23 +4,19 @@ import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
+import { ventureTaskFormSchema, type VentureTaskFormValues } from "@/app/lib/schemas"
 
 export type CreateVentureTaskState = { error?: string; success?: boolean } | undefined
 
 export async function createVentureTask(
-  _prevState: CreateVentureTaskState,
-  formData: FormData
+  venture: string,
+  data: Pick<VentureTaskFormValues, "name" | "description">,
+  path?: string
 ): Promise<CreateVentureTaskState> {
-  const venture = formData.get("venture")
-  const name = formData.get("name")
-  const description = formData.get("description")
-  const path = formData.get("path")
-
-  if (
-    typeof venture !== "string" || !venture ||
-    typeof name !== "string" || !name ||
-    typeof description !== "string" || !description
-  ) {
+  const parsed = ventureTaskFormSchema
+    .pick({ name: true, description: true })
+    .safeParse(data)
+  if (!venture || !parsed.success) {
     return { error: "Alla fält måste fyllas i." }
   }
 
@@ -33,14 +29,15 @@ export async function createVentureTask(
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ venture, name, description, completed: false }),
+    body: JSON.stringify({ venture, ...parsed.data, completed: false }),
   })
 
   if (!response.ok) {
-    return { error: "Uppgiften kunde inte skapas. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: `Uppgiften kunde inte skapas. Försök igen. (${response.status}: ${detail})` }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/planera")
+  revalidatePath(path || "/planera")
 
   return { success: true }
 }
@@ -48,20 +45,12 @@ export async function createVentureTask(
 export type UpdateVentureTaskState = { error?: string; success?: boolean } | undefined
 
 export async function updateVentureTask(
-  _prevState: UpdateVentureTaskState,
-  formData: FormData
+  id: string,
+  data: VentureTaskFormValues,
+  path?: string
 ): Promise<UpdateVentureTaskState> {
-  const id = formData.get("id")
-  const name = formData.get("name")
-  const description = formData.get("description")
-  const completed = formData.get("completed") === "on"
-  const path = formData.get("path")
-
-  if (
-    typeof id !== "string" || !id ||
-    typeof name !== "string" || !name ||
-    typeof description !== "string" || !description
-  ) {
+  const parsed = ventureTaskFormSchema.safeParse(data)
+  if (!id || !parsed.success) {
     return { error: "Alla fält måste fyllas i." }
   }
 
@@ -74,14 +63,15 @@ export async function updateVentureTask(
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ name, description, completed }),
+    body: JSON.stringify(parsed.data),
   })
 
   if (!response.ok) {
-    return { error: "Uppgiften kunde inte uppdateras. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: `Uppgiften kunde inte uppdateras. Försök igen. (${response.status}: ${detail})` }
   }
 
-  revalidatePath(typeof path === "string" && path ? path : "/planera")
+  revalidatePath(path || "/planera")
 
   return { success: true }
 }

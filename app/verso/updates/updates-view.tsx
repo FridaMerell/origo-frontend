@@ -1,14 +1,14 @@
 "use client"
 
-import Link from "next/link"
 import { useUpdateData } from "@/app/lib/update-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
-import { Card } from "@/app/components/ui/Card"
-import { ListTable } from "@/app/components/ui/ListTable"
-import { Avatar } from "@/app/components/ui/Avatar"
+import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
 import { Drawer } from "@/app/components/ui/Drawer"
 import UpdateForm from "@/app/verso/update-form"
-import { formatDateShort } from "@/app/lib/format-date"
+import type { VersoUpdate } from "@/app/lib/dal"
+
+const groupLabel = (date: string) =>
+  new Date(date).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
 
 export default function UpdatesView() {
   const { updates } = useUpdateData()
@@ -17,9 +17,10 @@ export default function UpdatesView() {
   const sorted = [...updates].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )
+  const groups = groupItems(sorted, (u) => groupLabel(u.created_at))
 
   return (
-    <div className="flex flex-1 flex-col gap-5 p-7">
+    <div className="flex flex-1 flex-col gap-4 p-7">
       <div className="flex items-baseline justify-between">
         <h1 className="m-0 font-display text-2xl font-semibold text-text">Uppdateringar</h1>
         <Drawer trigger="Lägg till uppdatering" triggerSize={'sm'} title="Ny uppdatering">
@@ -27,40 +28,23 @@ export default function UpdatesView() {
         </Drawer>
       </div>
 
-      <Card className="overflow-hidden p-0">
-        {sorted.length > 0 ? (
-          <ListTable
-            showHeader={false}
-            columns={[
-              {
-                key: "entry",
-                render: (e) => (
-                  <Link href={`/updates/${e.id}`} className="flex w-full justify-between items-center gap-3 no-underline">
-                    <Avatar name={getUserLabel(users, e.author)} size={28} />
-                    <div className="flex min-w-0 flex-1 flex-col grow">
-                      <span className="truncate text-text">{e.title}</span>
-                      <span className="text-xs text-text-faint">{e.content}</span>
-                    </div>
-
-                  </Link>
-                ),
-              },
-              {
-                key: "date",
-                width: "120px",
-                render: (e) => (
-                  <span className="text-right text-xs text-text-faint">
-                    {formatDateShort(e.created_at)}
-                  </span>
-                ),
-              }
-            ]}
-            rows={sorted.map((e) => ({ id: e.id, item: e }))}
-          />
-        ) : (
-          <div className="p-4 text-text-muted">Inga uppdateringar.</div>
+      <GroupedList<VersoUpdate>
+        groups={groups}
+        emptyMessage="Inga uppdateringar."
+        getKey={(update) => update.id}
+        getHref={(update) => `/updates/${update.id}`}
+        renderRow={(update) => (
+          <>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-sm text-text">{update.title}</span>
+              <span className="truncate text-xs text-text-faint">{update.content}</span>
+            </span>
+            <span className="shrink-0 text-xs text-text-faint">
+              {getUserLabel(users, update.author)}
+            </span>
+          </>
         )}
-      </Card>
+      />
     </div>
   )
 }

@@ -1,95 +1,76 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { updateVenture, type UpdateVentureState } from "@/app/actions/venture";
-import { Button } from "@/app/components/ui/Button";
-import { FileUpload, type UploadedFile } from "@/app/components/ui/FileUpload";
+import { usePathname } from "next/navigation";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { updateVenture } from "@/app/actions/venture";
+import { ventureFormSchema, type VentureFormValues } from "@/app/lib/schemas";
+import { Field, fieldInputClass } from "@/app/components/form/Field";
+import { FileUpload } from "@/app/components/ui/FileUpload";
+import { useSubmitAction } from "@/app/components/form/useSubmitAction";
+import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
+import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
+import { useDrawerClose } from "@/app/components/ui/Drawer";
 import type { Venture } from "@/app/lib/dal";
 
-const initialState: UpdateVentureState = undefined;
-
 export function VentureEditForm({ venture }: { venture: Venture }) {
-  const [state, formAction, pending] = useActionState(updateVenture, initialState);
-  const [priority, setPriority] = useState(venture.priority);
-  const [files, setFiles] = useState<UploadedFile[]>(
-    venture.files.map((url) => ({ url, name: url.split("/").pop() ?? url }))
-  );
-  const router = useRouter();
   const pathname = usePathname();
+  const uploadedFiles = useUploadedFiles(venture.files, venture.id);
+  const {
+    register,
+    handleSubmit,
+    control,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<VentureFormValues>({
+    resolver: zodResolver(ventureFormSchema),
+    defaultValues: {
+      name: venture.name,
+      description: venture.description,
+      priority: venture.priority,
+      budget: venture.budget,
+    },
+  });
+  const priority = useWatch({ control, name: "priority" });
+  const submit = useSubmitAction(setError);
+  const closeDrawer = useDrawerClose();
 
-  useEffect(() => {
-    if (state?.success) router.refresh();
-  }, [state, router]);
+  const onSubmit = handleSubmit((data) =>
+    submit(() => updateVenture(venture.id, data, uploadedFiles.urls, pathname), closeDrawer)
+  );
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
-      <input type="hidden" name="id" value={venture.id} />
-      <input type="hidden" name="path" value={pathname} />
+    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <Field label="Namn" error={errors.name}>
+        <input type="text" className={fieldInputClass} {...register("name")} />
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Namn
-        <input
-          type="text"
-          name="name"
-          required
-          defaultValue={venture.name}
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+      <Field label="Beskrivning" error={errors.description}>
+        <textarea className={fieldInputClass} {...register("description")} />
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Beskrivning
-        <textarea
-          name="description"
-          required
-          defaultValue={venture.description}
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
-
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Prioritet ({priority})
+      <Field label={`Prioritet (${priority})`} error={errors.priority}>
         <input
           type="range"
-          name="priority"
           min={1}
           max={5}
           step={1}
-          required
-          value={priority}
-          onChange={(e) => setPriority(Number(e.target.value))}
           className="accent-accent"
+          {...register("priority")}
         />
-      </label>
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm text-text-muted">
-        Budget
-        <input
-          type="text"
-          name="budget"
-          required
-          defaultValue={venture.budget}
-          className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-text"
-        />
-      </label>
+      <Field label="Budget" error={errors.budget}>
+        <input type="text" inputMode="decimal" className={fieldInputClass} {...register("budget")} />
+      </Field>
 
       <div className="flex flex-col gap-1 text-sm text-text-muted">
         Bilagor
-        <FileUpload folder="verso" files={files} onChange={setFiles} />
+        <FileUpload folder="verso" files={uploadedFiles.files} onChange={uploadedFiles.setFiles} />
       </div>
 
-      {files.map((file) => (
-        <input key={file.url} type="hidden" name="files" value={file.url} />
-      ))}
-
-      {state?.error && <p className="text-sm text-danger">{state.error}</p>}
-
-      <div className="mt-2 flex justify-end">
-        <Button type="submit" variant="primary" size="sm" disabled={pending}>
-          {pending ? "Sparar..." : "Spara"}
-        </Button>
-      </div>
+      <FormRootError error={errors.root} />
+      <FormActions isSubmitting={isSubmitting} />
     </form>
   );
 }

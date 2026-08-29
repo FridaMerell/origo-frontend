@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Card } from "@/app/components/ui/Card"
 import { Chip } from "@/app/components/ui/Chip"
 import { Icon } from "@/app/components/ui/Icon"
-import { MapCardGraphic } from "./maps/components"
 import { species } from "./species-data"
 import { BiotopeMap, SwedenMap } from "./ui/biotope-map"
 
@@ -339,12 +338,6 @@ export default function Home({ activity }: { activity?: Record<string, number[]>
                         "contrast(2.25) brightness(1.34) saturate(1.2) drop-shadow(0 0 0.35px var(--accent))",
                     }}
                   >
-                    <MapCardGraphic
-                      baseline={item.mapBaseline}
-                      className="absolute inset-0 h-full w-full"
-                      feature={item.mapFeature}
-                      variant={item.mapVariant}
-                    />
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/42 to-transparent" />
                 </div>

@@ -1,0 +1,243 @@
+import Link from "next/link"
+import { cookies } from "next/headers"
+import { notFound } from "next/navigation"
+import { Card } from "@/app/components/ui/Card"
+import { Chip } from "@/app/components/ui/Chip"
+import { Icon } from "@/app/components/ui/Icon"
+import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
+import {
+  getTempusGeoAreas,
+  getTempusSpeciesCategories,
+  getTempusSpeciesItem,
+  getTempusSpeciesPhenogram,
+  type TempusHabitat,
+  getTempusSpeciesCategoryItem,
+} from "@/app/lib/dal"
+import Phenogram, { SeasonalStatusBadge } from "@/app/tempus/ui/Phenogram"
+import PhenogramWheel from "@/app/tempus/ui/PhenogramWheel"
+import {
+  BiotopeMap,
+  SwedenMap,
+  type SwedenMapFeature,
+} from "@/app/tempus/ui/biotope-map"
+import { biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
+import FollowButton from "./FollowButton"
+
+const speciesName = (s: { swedish_name?: string; scientific_name: string }) =>
+  s.swedish_name || s.scientific_name
+
+// "stor" (strong association) before "har" (present); unknown grades last.
+const SIGNIFICANCE_RANK: Record<string, number> = { stor: 0, har: 1 }
+const bySignificance = (a: TempusHabitat, b: TempusHabitat) =>
+  (SIGNIFICANCE_RANK[a.significance] ?? 9) - (SIGNIFICANCE_RANK[b.significance] ?? 9) ||
+  a.name.localeCompare(b.name, "sv")
+
+const HabitatChips = ({ items }: { items: TempusHabitat[] }) => (
+  <div className="flex flex-wrap gap-2">
+    {[...items].sort(bySignificance).map((habitat) => (
+      <Chip
+        key={habitat.id}
+        title={`Betydelse: ${habitat.significance}`}
+        variant={habitat.significance === "stor" ? "neutral-active" : "neutral"}
+      >
+        {habitat.name}
+      </Chip>
+    ))}
+  </div>
+)
+
+const PHENOGRAM_MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
+
+const PhenogramPlaceholder = ({ areaName }: { areaName: string }) => (
+  <div className="relative min-h-80 w-full overflow-hidden rounded border border-dashed border-border bg-surface-2/50 md:min-h-96">
+    <svg
+      viewBox="0 0 520 148"
+      className="absolute inset-x-4 bottom-3 w-[calc(100%-2rem)]"
+      aria-hidden="true"
+    >
+      {[32, 66, 100].map((y) => (
+        <line
+          key={y}
+          x1="0"
+          y1={y}
+          x2="520"
+          y2={y}
+          stroke="var(--border)"
+          strokeWidth="1"
+          opacity="0.45"
+        />
+      ))}
+      <path
+        d="M0 107 C48 106 67 97 92 89 C126 78 145 91 171 74 C198 57 220 29 252 42 C284 55 292 91 327 79 C357 69 374 47 403 58 C432 69 441 98 474 102 C492 105 505 106 520 106"
+        fill="none"
+        stroke="var(--border-strong)"
+        strokeWidth="2"
+        strokeDasharray="5 6"
+        opacity="0.6"
+      />
+      <line x1="0" y1="120" x2="520" y2="120" stroke="var(--border-strong)" strokeWidth="1" />
+      {PHENOGRAM_MONTHS.map((month, index) => {
+        const x = (index / 12) * 520
+        return (
+          <g key={`${month}-${index}`}>
+            <line x1={x} y1="120" x2={x} y2="125" stroke="var(--border)" strokeWidth="1" />
+            <text
+              x={x + 2}
+              y="139"
+              fontSize="8"
+              fontFamily="monospace"
+              fill="var(--text-faint)"
+            >
+              {month}
+            </text>
+          </g>
+        )
+      })}
+    </svg>
+    <div className="relative z-10 p-5">
+      <div className="flex max-w-md items-start gap-3 rounded border border-border bg-surface/90 p-4 text-left shadow-sm">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-text-muted">
+          <Icon name="activity" size={17} />
+        </span>
+        <div className="flex flex-col gap-1">
+          <p className="font-display text-base font-semibold text-text">Aktivitetsdata saknas</p>
+          <p className="text-sm leading-relaxed text-text-muted">
+            Ingen säsongskurva har ännu beräknats för den här arten i {areaName}.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+)
+
+const Page = async ({ params }: { params: Promise<{ label: string; id: string }> }) => {
+  const { label: rawLabel, id } = await params
+  const label = decodeURIComponent(rawLabel)
+  const [geoAreas, cookieStore] = await Promise.all([getTempusGeoAreas(), cookies()])
+  const selectedId = cookieStore.get(TEMPUS_GEO_AREA_COOKIE)?.value
+  const selectedGeoArea = selectedId === TEMPUS_ALL_SWEDEN
+    ? null
+    : geoAreas.find((geoArea) => geoArea.id === selectedId) ?? geoAreas[0] ?? null
+
+  const [species, category, phenogram] = await Promise.all([
+    getTempusSpeciesItem(id),
+    getTempusSpeciesCategoryItem(label),
+    getTempusSpeciesPhenogram(id, selectedGeoArea?.id),
+  ])
+  if (!species) notFound()
+
+  const selectedMapAreas: SwedenMapFeature[] = selectedGeoArea?.geometry
+    ? [
+      {
+        type: "Feature",
+        id: selectedGeoArea.id,
+        properties: { name: selectedGeoArea.name },
+        geometry: selectedGeoArea.geometry,
+      },
+    ]
+    : []
+
+  const facts: Array<[string, string]> = [
+    ["Vetenskapligt namn", species.scientific_name],
+    ["Svenskt namn", species.swedish_name || "—"],
+    ["Taxonomisk rang", species.taxon_rank],
+    ["Dyntaxa taxon-ID", String(species.dyntaxa_taxon_id)],
+    ["Status", species.is_active ? "Aktiv" : "Inaktiv"],
+    [
+      "Senast synkad",
+      species.synced_at ? new Date(species.synced_at).toLocaleDateString("sv-SE") : "Aldrig",
+    ],
+  ]
+
+
+  return (
+    <div className="container py-5 mx-auto flex flex-col gap-5">
+      <div className="flex flex-col md:flex-row gap-3 justify-between items-center">
+        <div className="flex flex-col gap-1">
+          <Link
+            href={`/taxa/${encodeURIComponent(label)}`}
+            className="w-fit font-mono text-xs uppercase tracking-wide text-text-muted hover:text-text"
+          >
+            ← {category?.label ?? "Okänd kategori"}
+          </Link>
+          <h1 className="font-display text-3xl font-semibold tracking-tight md:mt-3 capitalize">
+            {speciesName(species)}
+          </h1>
+          {species.swedish_name && species.scientific_name !== species.swedish_name && (
+            <em className="font-mono text-sm text-text-muted">{species.scientific_name}</em>
+          )}
+        </div>
+        <FollowButton taxa={species.id} initial={species.is_followed} />
+      </div>
+      <Card className="relative overflow-hidden shadow-sm min-h-70">
+
+        <BiotopeMap
+          {...biotopePropsFromSpecies(species)}
+          compass={true}
+          aria-hidden="true"
+          preserveAspectRatio="xMaxYMax slice"
+          className="absolute inset-0 z-0 opacity-30"
+          style={{ width: "100%", height: "100%" }}
+        />
+
+        <div className="absolute inset-0 bg-linear-to-r from-surface via-surface/12 to-transparent" />
+        <dl className="relative z-10 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2 w-max">
+          {facts.map(([term, value]) => (
+            <div key={term} className="flex flex-col gap-0.5">
+              <dt className="font-mono text-[10px] uppercase tracking-wide text-text-faint">{term}</dt>
+              <dd className="text-sm text-text">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </Card>
+
+
+      <section className="flex flex-col gap-3">
+        <h2 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">Aktivitet</h2>
+        <Card className="flex flex-col md:flex-row gap-3 items-end">
+          <div className="md:w-2/3 flex-col flex justify-space gap-10">
+            {phenogram ? (
+              <>
+                <SeasonalStatusBadge status={phenogram.seasonal_status} />
+                <Phenogram phenogram={phenogram} />
+
+              </>
+            ) : (
+              <PhenogramPlaceholder areaName={selectedGeoArea?.name ?? "hela Sverige"} />
+            )}
+            <hr className="my-3 border-text-muted" />
+            <section className="flex flex-col gap-3">
+              <h2 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">Livsmiljö</h2>
+              {species.landscape_types?.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">
+                    Landskapstyper
+                  </h3>
+                  <HabitatChips items={species.landscape_types} />
+                </div>
+              )}
+              {species.biotopes?.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <h3 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">
+                    Biotoper
+                  </h3>
+                  <HabitatChips items={species.biotopes.length >6 ? species.biotopes.slice(0, 6) : species.biotopes} />
+                </div>
+              )}
+            </section>
+          </div>
+
+          <SwedenMap
+            className="md:w-1/3"
+            areas={selectedMapAreas}
+            title={selectedGeoArea ? `${selectedGeoArea.name} markerat på Sverigekartan` : "Sverigekarta"}
+          />
+        </Card>
+
+      </section >
+
+    </div >
+  )
+}
+
+export default Page

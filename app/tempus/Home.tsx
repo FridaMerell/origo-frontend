@@ -2,8 +2,11 @@
 
 import { useState } from "react"
 import { Card } from "@/app/components/ui/Card"
+import { Chip } from "@/app/components/ui/Chip"
 import { Icon } from "@/app/components/ui/Icon"
 import { MapCardGraphic } from "./maps/components"
+import { species } from "./species-data"
+import { BiotopeMap, SwedenMap } from "./ui/biotope-map"
 
 function hashSpecies(value: string) {
   return [...value].reduce((hash, character) => {
@@ -216,53 +219,6 @@ const scopes = [
 
 type Scope = (typeof scopes)[number]["id"]
 
-const species = [
-  {
-    name: "Citronfjäril",
-    latin: "Gonepteryx rhamni",
-    status: "Pågående",
-    habitat: "Skogsbryn · trädgårdar · ängsmark",
-    active: [3, 4, 5, 6, 7, 8],
-    mapLandform: "field",
-    mapBaseline: "agricultural",
-    mapVariant: "open",
-    mapFeature: undefined,
-  },
-  {
-    name: "Ängsvädd",
-    latin: "Succisa pratensis",
-    status: "Pågående",
-    habitat: "Fuktäng · betesmark · vägkant",
-    active: [6, 7, 8, 9],
-    mapLandform: "valley",
-    mapBaseline: "wetland",
-    mapVariant: "marsh-corridor",
-    mapFeature: undefined,
-  },
-  {
-    name: "Trattkantarell",
-    latin: "Craterellus tubaeformis",
-    status: "Börjar nu",
-    habitat: "Mossig barrskog · fuktig mark",
-    active: [7, 8, 9, 10],
-    mapLandform: "hill",
-    mapBaseline: "forest",
-    mapVariant: "old-growth",
-    mapFeature: "conifers",
-  },
-  {
-    name: "Större korsnäbb",
-    latin: "Loxia pytyopsittacus",
-    status: "Börjar nu",
-    habitat: "Tallskog · kustnära barrskog",
-    active: [7, 8, 9, 10, 11],
-    mapLandform: null,
-    mapBaseline: "coastal",
-    mapVariant: "sheltered-bay",
-    mapFeature: undefined,
-  },
-] as const
-
 const months = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
 const scopeCopy: Record<Scope, { context: string; title: string; meta: string; count: string }> = {
@@ -286,7 +242,10 @@ const scopeCopy: Record<Scope, { context: string; title: string; meta: string; c
   },
 }
 
-export default function Home() {
+// Real weekly-activity data, keyed by scientific name, is resolved server-side
+// in `page.tsx` from each species' phenogram and passed in here; species with
+// no phenogram fall back to the illustrative `active` months on the mock.
+export default function Home({ activity }: { activity?: Record<string, number[]> }) {
   const [scope, setScope] = useState<Scope>("route")
   const copy = scopeCopy[scope]
 
@@ -310,7 +269,7 @@ export default function Home() {
           </button>
         ))}
       </section>
-
+      
       <section className="grid gap-3 lg:grid-cols-[1fr_250px]">
         <Card
           className="relative min-h-40 overflow-hidden border-l-4 border-l-accent shadow-sm"
@@ -365,56 +324,62 @@ export default function Home() {
           <button className="border-b border-text text-xs">Alla följda arter</button>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          {species.map((item) => (
-            <Card
-              key={item.name}
-              className="relative overflow-hidden border-l-4 border-l-accent shadow-sm"
-            >
-              <div className="pointer-events-none absolute inset-0">
-                <div
-                  className="absolute inset-0"
+          {species.map((item) => {
+            const active: readonly number[] = activity?.[item.latin] ?? item.active
+            return (
+              <Card
+                key={item.name}
+                className="relative overflow-hidden border-l-4 border-l-accent shadow-sm"
+              >
+                <div className="pointer-events-none absolute inset-0">
+                  <div
+                    className="absolute inset-0"
                     style={{
                       filter:
                         "contrast(2.25) brightness(1.34) saturate(1.2) drop-shadow(0 0 0.35px var(--accent))",
                     }}
-                >
-                  <MapCardGraphic
-                    baseline={item.mapBaseline}
-                    className="absolute inset-0 h-full w-full"
-                    feature={item.mapFeature}
-                    variant={item.mapVariant}
-                  />
+                  >
+                    <MapCardGraphic
+                      baseline={item.mapBaseline}
+                      className="absolute inset-0 h-full w-full"
+                      feature={item.mapFeature}
+                      variant={item.mapVariant}
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/42 to-transparent" />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/42 to-transparent" />
-              </div>
-              <div className="relative z-10 flex min-h-48 flex-col">
-                <span className="w-fit rounded border border-secondary/50 bg-secondary-wash px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[.08em] text-secondary">
-                  {item.status}
-                </span>
-                <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <h3 className="font-display text-lg font-semibold">{item.name}</h3>
-                  <em className="font-mono text-xs text-text-muted">{item.latin}</em>
+                <div className="relative z-10 flex min-h-48 flex-col">
+                  <Chip
+                    variant="secondary"
+                    className="w-fit text-[10px] font-semibold uppercase tracking-[.08em]"
+                  >
+                    {item.status}
+                  </Chip>
+                  <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <h3 className="font-display text-lg font-semibold">{item.name}</h3>
+                    <em className="font-mono text-xs text-text-muted">{item.latin}</em>
+                  </div>
+                  <p className="mt-3 font-mono text-[10px] uppercase tracking-wide text-text-faint">
+                    <Icon name="map-pin" size={11} className="mr-1" />
+                    {item.habitat}
+                  </p>
+                  <div className="mt-auto grid grid-cols-12 gap-1 pt-6">
+                    {months.map((month, index) => (
+                      <div key={`${month}-${index}`} className="text-center">
+                        <span
+                          className={`block h-3 rounded-sm border ${active.includes(index)
+                            ? "border-accent bg-accent"
+                            : "border-border bg-surface-2"
+                            } ${index === 7 ? "outline-2 outline-offset-2 outline-text" : ""}`}
+                        />
+                        <span className="mt-1 block text-[8px] text-text-faint">{month}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <p className="mt-3 font-mono text-[10px] uppercase tracking-wide text-text-faint">
-                  <Icon name="map-pin" size={11} className="mr-1" />
-                  {item.habitat}
-                </p>
-                <div className="mt-auto grid grid-cols-12 gap-1 pt-6">
-                  {months.map((month, index) => (
-                    <div key={`${month}-${index}`} className="text-center">
-                      <span
-                        className={`block h-3 rounded-sm border ${item.active.includes(index as never)
-                          ? "border-accent bg-accent"
-                          : "border-border bg-surface-2"
-                          } ${index === 7 ? "outline-2 outline-offset-2 outline-text" : ""}`}
-                      />
-                      <span className="mt-1 block text-[8px] text-text-faint">{month}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            )
+          })}
         </div>
       </section>
 

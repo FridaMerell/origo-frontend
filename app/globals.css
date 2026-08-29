@@ -3,7 +3,10 @@
 @import "./styles/tokens/colors.css";
 @import "./styles/tokens/typography.css";
 @import "./styles/tokens/effects.css";
-
+@utility container {
+  margin-inline: auto;
+  padding-inline: 5rem;
+}
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -64,6 +67,7 @@
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
   --shadow-glow: var(--shadow-glow);
+  --shadow-card: var(--shadow-card);
 }
 
 @media (prefers-color-scheme: dark) {

@@ -48,8 +48,10 @@ export default function TempusShell({ children }: { children: ReactNode }) {
       data-mode={mode ?? undefined}
       className="flex min-h-screen flex-1 flex-col bg-bg font-body text-text"
     >
+      <header className="bg-bg border-b border-border">
       <Nav mode={mode} onToggleMode={toggleMode} />
-      <main className="min-w-0 flex-1">{children}</main>
+      </header>
+      <main className="min-w-0 flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] sm:pb-0">{children}</main>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
+import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton";
 import { Icon } from "@/app/components/ui/Icon";
 import { FileUpload } from "@/app/components/ui/FileUpload";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
@@ -32,19 +33,6 @@ export default function UploadView() {
       </div>
     );
   }
-
-  // Stub: fills fixed coordinates. Swap for the browser Geolocation API
-  // (reverse-geocode to a place name) when that work lands.
-  const getLocation = () => {
-    if (!navigator.geolocation) {
-      setPlace("55.7047° N, 13.1910° E");
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setPlace(`${pos.coords.latitude.toFixed(4)}° N, ${pos.coords.longitude.toFixed(4)}° E`),
-      () => setPlace("55.7047° N, 13.1910° E"),
-    );
-  };
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -89,10 +77,16 @@ export default function UploadView() {
             placeholder="Hämtad plats visas här"
             className="flex-1 rounded border border-field-border bg-surface-2 px-3 py-2 text-text"
           />
-          <Button type="button" variant="secondary" className="whitespace-nowrap" onClick={getLocation}>
-            <Icon name="map-pin" size={15} />
-            Hämta plats
-          </Button>
+          <CurrentLocationButton
+            label="Hämta plats"
+            onLocate={({ latitude, longitude }) => {
+              const ns = latitude >= 0 ? "N" : "S";
+              const ew = longitude >= 0 ? "E" : "W";
+              setPlace(
+                `${Math.abs(latitude).toFixed(4)}° ${ns}, ${Math.abs(longitude).toFixed(4)}° ${ew}`,
+              );
+            }}
+          />
         </div>
       </label>
 

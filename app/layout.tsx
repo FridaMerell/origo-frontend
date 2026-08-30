@@ -17,16 +17,29 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Origo",
   description: "Origo application",
+  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [user, users] = await Promise.all([getCurrentUser(), getUsers()]);
-
+  
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Petrona:wght@400;500;600;700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap"
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <UserProvider user={user} users={users}>{children}</UserProvider>
       </body>

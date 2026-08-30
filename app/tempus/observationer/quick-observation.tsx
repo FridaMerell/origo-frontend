@@ -1,12 +1,72 @@
 "use client"
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useDeferredValue, useEffect, useRef, useState, useTransition } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
+import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps"
 import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
 import { Icon } from "@/app/components/ui/Icon"
 import { createObservation } from "@/app/actions/tempus"
-import { speciesName, useTempusSpecies } from "@/app/lib/tempus-context"
+import { GOOGLE_MAPS_API_KEY } from "@/app/lib/config"
+import { speciesName } from "@/app/lib/tempus-context"
+import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
+
+type SavedPlace = { name: string; lat: string; lon: string }
+const PLACES_KEY = "tempus:observation-places"
+
+function loadPlaces(): SavedPlace[] {
+  if (typeof window === "undefined") return []
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PLACES_KEY) ?? "[]")
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (p): p is SavedPlace =>
+        p &&
+        typeof p.name === "string" &&
+        typeof p.lat === "string" &&
+        typeof p.lon === "string",
+    )
+  } catch {
+    return []
+  }
+}
+
+/** Google Places Autocomplete input, biased to Sweden; resolves to lat/lon. */
+function PlaceSearch({
+  onPick,
+}: {
+  onPick: (coords: { lat: string; lon: string }) => void
+}) {
+  const places = useMapsLibrary("places")
+  const inputRef = useRef<HTMLInputElement>(null)
+  const onPickRef = useRef(onPick)
+  onPickRef.current = onPick
+
+  useEffect(() => {
+    if (!places || !inputRef.current) return
+    const autocomplete = new places.Autocomplete(inputRef.current, {
+      fields: ["geometry"],
+      componentRestrictions: { country: "se" },
+    })
+    const listener = autocomplete.addListener("place_changed", () => {
+      const point = autocomplete.getPlace().geometry?.location
+      if (!point) return
+      onPickRef.current({ lat: point.lat().toFixed(6), lon: point.lng().toFixed(6) })
+    })
+    return () => listener.remove()
+  }, [places])
+
+  return (
+    <input
+      ref={inputRef}
+      type="search"
+      placeholder="Sök plats"
+      autoComplete="off"
+      className="h-10 w-full rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+    />
+  )
+}
 
 function nowLocal() {
   const now = new Date()
@@ -14,8 +74,17 @@ function nowLocal() {
   return now.toISOString().slice(0, 16)
 }
 
-export default function QuickObservation() {
-  const species = useTempusSpecies()
+type PresetSpecies = { id: string; label: string; scientific: string }
+
+export default function QuickObservation({
+  hideTrigger = false,
+  species = null,
+  onConsumed,
+}: {
+  hideTrigger?: boolean
+  species?: PresetSpecies | null
+  onConsumed?: () => void
+} = {}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -23,12 +92,16 @@ export default function QuickObservation() {
   const [entered, setEntered] = useState(false)
 
   const [query, setQuery] = useState("")
-  const [picked, setPicked] = useState<{ id: string; label: string; scientific: string } | null>(null)
+  const [picked, setPicked] = useState<PresetSpecies | null>(null)
   const [count, setCount] = useState("1")
   const [observedAt, setObservedAt] = useState(nowLocal())
   const [lat, setLat] = useState("")
   const [lon, setLon] = useState("")
-  const [showDetails, setShowDetails] = useState(false)
+  const [showTime, setShowTime] = useState(false)
+  const [showPlace, setShowPlace] = useState(false)
+  const [places, setPlaces] = useState<SavedPlace[]>([])
+  const [placeName, setPlaceName] = useState("")
+  const [manualCoords, setManualCoords] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
@@ -58,18 +131,71 @@ export default function QuickObservation() {
     return () => document.removeEventListener("keydown", onKey)
   }, [open])
 
-  const matches = useMemo(() => {
-    const q = deferredQuery.trim().toLowerCase()
-    if (!q || picked) return []
-    return species
-      .filter(
-        (item) =>
-          item.swedish_name.toLowerCase().includes(q) ||
-          item.scientific_name.toLowerCase().includes(q) ||
-          String(item.dyntaxa_taxon_id).includes(q),
-      )
-      .slice(0, 8)
-  }, [deferredQuery, species, picked])
+  const onConsumedRef = useRef(onConsumed)
+  onConsumedRef.current = onConsumed
+
+  useEffect(() => {
+    if (!species) return
+    setPicked(species)
+    setQuery("")
+    setError(null)
+    setSaved(null)
+    setEntered(false)
+    setOpen(true)
+    onConsumedRef.current?.()
+  }, [species])
+
+  const {
+    results: matches,
+    page: speciesPage,
+    setPage: setSpeciesPage,
+    totalPages: speciesTotalPages,
+    loading: speciesLoading,
+  } = useSpeciesPage({
+    search: deferredQuery,
+    pageSize: 8,
+    enabled: deferredQuery.trim().length >= 2 && !picked,
+  })
+
+  useEffect(() => {
+    setPlaces(loadPlaces())
+  }, [])
+
+  const persistPlaces = (next: SavedPlace[]) => {
+    setPlaces(next)
+    try {
+      window.localStorage.setItem(PLACES_KEY, JSON.stringify(next))
+    } catch {
+      // ignore quota/availability errors
+    }
+  }
+
+  const savePlace = () => {
+    const name = placeName.trim()
+    if (!name) return
+    const latNum = Number(lat.trim().replace(",", "."))
+    const lonNum = Number(lon.trim().replace(",", "."))
+    if (
+      !Number.isFinite(latNum) ||
+      Math.abs(latNum) > 90 ||
+      !Number.isFinite(lonNum) ||
+      Math.abs(lonNum) > 180
+    ) {
+      setError("Ogiltig koordinat.")
+      return
+    }
+    persistPlaces(
+      [
+        { name, lat: String(latNum), lon: String(lonNum) },
+        ...places.filter((p) => p.name !== name),
+      ].slice(0, 12),
+    )
+    setPlaceName("")
+  }
+
+  const removePlace = (name: string) => {
+    persistPlaces(places.filter((p) => p.name !== name))
+  }
 
   const reset = () => {
     setQuery("")
@@ -83,7 +209,13 @@ export default function QuickObservation() {
     setOpen(false)
     setSaved(null)
     reset()
-    setShowDetails(false)
+    setObservedAt(nowLocal())
+    setLat("")
+    setLon("")
+    setPlaceName("")
+    setManualCoords(false)
+    setShowTime(false)
+    setShowPlace(false)
   }
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -147,7 +279,6 @@ export default function QuickObservation() {
 
       router.refresh()
       setSaved(`${label} sparad.`)
-      setObservedAt(nowLocal())
       reset()
       setTimeout(() => searchRef.current?.focus(), 0)
     })
@@ -155,20 +286,22 @@ export default function QuickObservation() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          setEntered(false)
-          setOpen(true)
-        }}
-        aria-label="Ny observation"
-        title="Ny observation"
-        className="flex size-10 items-center justify-center rounded bg-accent text-accent-contrast hover:bg-accent-hover"
-      >
-        <Icon name="plus" size={18} />
-      </button>
+      {hideTrigger ? null : (
+        <button
+          type="button"
+          onClick={() => {
+            setEntered(false)
+            setOpen(true)
+          }}
+          aria-label="Ny observation"
+          title="Ny observation"
+          className="flex size-10 items-center justify-center rounded bg-accent text-accent-contrast hover:bg-accent-hover"
+        >
+          <Icon name="plus" size={18} />
+        </button>
+      )}
 
-      {open ? (
+      {open ? createPortal(
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 transition-opacity sm:items-center"
           style={{
@@ -183,7 +316,7 @@ export default function QuickObservation() {
             aria-modal="true"
             aria-label="Snabbregistrera observation"
             onClick={(event) => event.stopPropagation()}
-            className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-lg transition-transform sm:max-w-md sm:rounded-2xl"
+            className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-lg transition-transform sm:max-w-lg sm:rounded-2xl"
             style={{
               transitionDuration: "var(--duration-normal)",
               transitionTimingFunction: "var(--ease-standard)",
@@ -243,8 +376,9 @@ export default function QuickObservation() {
                     />
                   </span>
                 )}
-                {matches.length > 0 ? (
-                  <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded border border-border bg-surface shadow-md">
+                {deferredQuery.trim().length >= 2 && !picked ? (
+                  <div className="mt-1 overflow-hidden rounded border border-border bg-surface shadow-md">
+                  <ul className="max-h-64 overflow-y-auto">
                     {matches.map((item) => (
                       <li key={item.id}>
                         <button
@@ -268,6 +402,16 @@ export default function QuickObservation() {
                       </li>
                     ))}
                   </ul>
+                  {speciesLoading ? <p className="px-3 py-2 text-xs text-text-muted">Hämtar arter…</p> : null}
+                  {!speciesLoading && matches.length === 0 ? <p className="px-3 py-2 text-xs text-text-muted">Inga arter matchar.</p> : null}
+                  {speciesTotalPages > 1 ? (
+                    <div className="flex items-center justify-between border-t border-border px-2 py-1.5 text-xs text-text-muted">
+                      <button type="button" disabled={speciesPage === 1} onClick={() => setSpeciesPage(speciesPage - 1)} className="disabled:text-text-faint">Föregående</button>
+                      <span>{speciesPage} / {speciesTotalPages}</span>
+                      <button type="button" disabled={speciesPage === speciesTotalPages} onClick={() => setSpeciesPage(speciesPage + 1)} className="disabled:text-text-faint">Nästa</button>
+                    </div>
+                  ) : null}
+                  </div>
                 ) : null}
               </div>
 
@@ -282,59 +426,170 @@ export default function QuickObservation() {
                 />
               </label>
 
-              {showDetails ? (
-                <>
-                  <label className="flex flex-col gap-1.5 text-sm font-medium">
-                    Tidpunkt
-                    <input
-                      type="datetime-local"
-                      value={observedAt}
-                      max={nowLocal()}
-                      onChange={(event) => setObservedAt(event.target.value)}
-                      className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
-                    />
-                  </label>
+              {showTime ? (
+                <label className="flex flex-col gap-1.5 text-sm font-medium">
+                  Tidpunkt
+                  <input
+                    type="datetime-local"
+                    value={observedAt}
+                    max={nowLocal()}
+                    onChange={(event) => setObservedAt(event.target.value)}
+                    className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
+                  />
+                </label>
+              ) : null}
 
-                  <fieldset className="flex flex-col gap-2">
+              {showPlace ? (
+                <fieldset className="flex flex-col gap-2">
                     <legend className="mb-1 text-sm font-medium">
                       Position <span className="font-normal text-text-faint">(valfritt)</span>
                     </legend>
-                    <div className="flex flex-wrap items-start gap-2">
-                      <input
-                        inputMode="decimal"
-                        value={lat}
-                        onChange={(event) => setLat(event.target.value)}
-                        placeholder="Latitud"
-                        className="h-10 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
-                      />
-                      <input
-                        inputMode="decimal"
-                        value={lon}
-                        onChange={(event) => setLon(event.target.value)}
-                        placeholder="Longitud"
-                        className="h-10 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
-                      />
+
+                    {lat.trim() && lon.trim() ? (
+                      <div className="flex items-center justify-between gap-2 rounded border border-field-border bg-surface-2 px-3 py-2">
+                        <span className="truncate font-mono text-xs text-text-muted">
+                          {lat}, {lon}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLat("")
+                            setLon("")
+                          }}
+                          className="shrink-0 text-xs text-text-faint hover:text-text"
+                        >
+                          Rensa
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {GOOGLE_MAPS_API_KEY ? (
+                      <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
+                        <PlaceSearch
+                          onPick={({ lat: nextLat, lon: nextLon }) => {
+                            setLat(nextLat)
+                            setLon(nextLon)
+                            setError(null)
+                          }}
+                        />
+                      </APIProvider>
+                    ) : null}
+
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
                       <CurrentLocationButton
                         size="sm"
-                        className="h-10"
+                        className="h-9"
                         onLocate={({ latitude, longitude }) => {
                           setLat(latitude.toFixed(6))
                           setLon(longitude.toFixed(6))
                           setError(null)
                         }}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setManualCoords((value) => !value)}
+                        className="text-text-muted hover:text-text"
+                      >
+                        {manualCoords ? "Dölj koordinater" : "Ange koordinater"}
+                      </button>
                     </div>
-                  </fieldset>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowDetails(true)}
-                  className="self-start text-sm text-text-muted hover:text-text"
-                >
-                  + Tidpunkt och position
-                </button>
-              )}
+
+                    {manualCoords ? (
+                      <div className="flex flex-wrap items-start gap-2">
+                        <input
+                          inputMode="decimal"
+                          value={lat}
+                          onChange={(event) => setLat(event.target.value)}
+                          placeholder="Latitud"
+                          className="h-10 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                        />
+                        <input
+                          inputMode="decimal"
+                          value={lon}
+                          onChange={(event) => setLon(event.target.value)}
+                          placeholder="Longitud"
+                          className="h-10 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                        />
+                      </div>
+                    ) : null}
+
+                    {places.length > 0 ? (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-xs font-normal text-text-faint">Sparade platser</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {places.map((place) => (
+                            <span
+                              key={place.name}
+                              className="inline-flex items-center gap-1 rounded border border-field-border bg-surface-2 py-1 pl-2 pr-1 text-xs"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setLat(place.lat)
+                                  setLon(place.lon)
+                                  setError(null)
+                                }}
+                                className="font-medium text-text hover:text-accent"
+                              >
+                                {place.name}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removePlace(place.name)}
+                                aria-label={`Ta bort ${place.name}`}
+                                className="text-text-faint hover:text-text"
+                              >
+                                <Icon name="x" size={12} />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {lat.trim() && lon.trim() ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <input
+                          value={placeName}
+                          onChange={(event) => setPlaceName(event.target.value)}
+                          placeholder="Namnge platsen"
+                          className="h-9 min-w-0 flex-1 basis-40 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={savePlace}
+                          disabled={!placeName.trim()}
+                          className="h-9 shrink-0 rounded border border-field-border px-3 text-sm text-text-muted hover:text-text disabled:text-text-faint"
+                        >
+                          Spara plats
+                        </button>
+                      </div>
+                    ) : null}
+                </fieldset>
+              ) : null}
+
+              {!showTime || !showPlace ? (
+                <div className="flex flex-wrap gap-3 text-sm">
+                  {!showTime ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowTime(true)}
+                      className="text-text-muted hover:text-text"
+                    >
+                      + Tidpunkt
+                    </button>
+                  ) : null}
+                  {!showPlace ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowPlace(true)}
+                      className="text-text-muted hover:text-text"
+                    >
+                      + Position
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
 
               {error ? (
                 <p className="rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">
@@ -367,7 +622,8 @@ export default function QuickObservation() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.querySelector<HTMLElement>('[data-theme="tempus"]') ?? document.body,
       ) : null}
     </>
   )

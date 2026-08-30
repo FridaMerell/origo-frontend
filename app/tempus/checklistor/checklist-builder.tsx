@@ -1,17 +1,17 @@
 "use client"
 
-import { useDeferredValue, useMemo, useRef, useState, useTransition } from "react"
+import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { Card } from "@/app/components/ui/Card"
 import { Icon } from "@/app/components/ui/Icon"
-import { createChecklist, updateChecklist } from "@/app/actions/tempus"
+import { createChecklist, loadSpeciesItems, matchSpeciesValues, updateChecklist } from "@/app/actions/tempus"
 import {
   speciesName,
   useTempusGeoAreas,
-  useTempusSpecies,
-  useTempusSpeciesCategories,
 } from "@/app/lib/tempus-context"
+import type { TempusSpecies, TempusSpeciesCategory } from "@/app/lib/dal"
+import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
 
 const MAX_CSV_BYTES = 2 * 1024 * 1024
 
@@ -82,10 +82,14 @@ export type ChecklistBuilderData = {
   species: string[]
 }
 
-export default function ChecklistBuilder({ checklist }: { checklist?: ChecklistBuilderData }) {
+export default function ChecklistBuilder({
+  checklist,
+  categories,
+}: {
+  checklist?: ChecklistBuilderData
+  categories: TempusSpeciesCategory[]
+}) {
   const isEdit = Boolean(checklist)
-  const species = useTempusSpecies()
-  const categories = useTempusSpeciesCategories()
   const { geoAreas } = useTempusGeoAreas()
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -99,6 +103,8 @@ export default function ChecklistBuilder({ checklist }: { checklist?: ChecklistB
   const [query, setQuery] = useState("")
   const [categoryId, setCategoryId] = useState("all")
   const [selected, setSelected] = useState<Set<string>>(new Set(checklist?.species ?? []))
+  const [selectedPage, setSelectedPage] = useState(1)
+  const [knownSpecies, setKnownSpecies] = useState<Map<string, TempusSpecies>>(() => new Map())
   const [dragOver, setDragOver] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -106,31 +112,51 @@ export default function ChecklistBuilder({ checklist }: { checklist?: ChecklistB
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const deferredQuery = useDeferredValue(query)
 
-  const visibleSpecies = useMemo(() => {
-    const normalizedQuery = normalize(deferredQuery)
-    const category = categories.find((item) => item.id === categoryId)
-    const categorySpecies = category ? new Set(category.species) : null
+  const activeCategory = categories.find((item) => item.id === categoryId)
+  const {
+    results: visibleSpecies,
+    count: visibleSpeciesCount,
+    page: speciesPage,
+    setPage: setSpeciesPage,
+    totalPages: speciesTotalPages,
+    loading: speciesLoading,
+    error: speciesError,
+  } = useSpeciesPage({
+    search: deferredQuery,
+    categoryTaxonId: activeCategory?.taxon_id,
+  })
 
-    return species.filter((item) => {
-      if (categorySpecies && !categorySpecies.has(item.id)) return false
-      if (!normalizedQuery) return true
-      return (
-        normalize(item.swedish_name).includes(normalizedQuery) ||
-        normalize(item.scientific_name).includes(normalizedQuery) ||
-        String(item.dyntaxa_taxon_id).includes(normalizedQuery)
-      )
-    })
-  }, [categories, categoryId, deferredQuery, species])
-
-  const selectedSpecies = useMemo(
-    () => species.filter((item) => selected.has(item.id)),
-    [selected, species],
+  const selectedIds = useMemo(() => [...selected], [selected])
+  const selectedTotalPages = Math.max(1, Math.ceil(selectedIds.length / 25))
+  const effectiveSelectedPage = Math.min(selectedPage, selectedTotalPages)
+  const selectedPageIds = useMemo(
+    () => selectedIds.slice((effectiveSelectedPage - 1) * 25, effectiveSelectedPage * 25),
+    [effectiveSelectedPage, selectedIds],
   )
+  const selectedSpecies = selectedPageIds
+    .map((id) => knownSpecies.get(id))
+    .filter((item): item is TempusSpecies => Boolean(item))
+
+  useEffect(() => {
+    const missing = selectedPageIds.filter((id) => !knownSpecies.has(id))
+    if (missing.length === 0) return
+    let active = true
+    loadSpeciesItems(missing).then((items) => {
+      if (!active) return
+      setKnownSpecies((current) => {
+        const next = new Map(current)
+        items.forEach((item) => next.set(item.id, item))
+        return next
+      })
+    })
+    return () => { active = false }
+  }, [knownSpecies, selectedPageIds])
 
   const allVisibleSelected =
     visibleSpecies.length > 0 && visibleSpecies.every((item) => selected.has(item.id))
 
-  const toggleSpecies = (id: string) => {
+  const toggleSpecies = (id: string, item?: TempusSpecies) => {
+    if (item) setKnownSpecies((current) => new Map(current).set(item.id, item))
     setSelected((current) => {
       const next = new Set(current)
       if (next.has(id)) next.delete(id)
@@ -184,28 +210,14 @@ export default function ChecklistBuilder({ checklist }: { checklist?: ChecklistB
       )
       const indexes = candidateIndexes.length > 0 ? candidateIndexes : [0]
 
-      const speciesByName = new Map<string, string>()
-      const speciesByTaxonId = new Map<string, string>()
-      species.forEach((item) => {
-        if (item.swedish_name) speciesByName.set(normalize(item.swedish_name), item.id)
-        speciesByName.set(normalize(item.scientific_name), item.id)
-        speciesByTaxonId.set(String(item.dyntaxa_taxon_id), item.id)
-      })
-
-      const matchedIds = new Set<string>()
-      const unmatched: string[] = []
-      rows.forEach((row) => {
+      const values = rows.flatMap((row) => {
         const cells = cellsIn(row, delimiter)
-        const values = indexes.map((index) => cells[index]?.trim()).filter(Boolean)
-        const matchedId = values
-          .map((value) => speciesByTaxonId.get(value) ?? speciesByName.get(normalize(value)))
-          .find(Boolean)
-        if (matchedId) matchedIds.add(matchedId)
-        else if (values[0]) unmatched.push(values[0])
+        return indexes.map((index) => cells[index]?.trim()).filter(Boolean)
       })
+      const { matchedIds, unmatched } = await matchSpeciesValues(values)
 
       setSelected((current) => new Set([...current, ...matchedIds]))
-      setImportResult({ fileName: file.name, matched: matchedIds.size, unmatched })
+      setImportResult({ fileName: file.name, matched: matchedIds.length, unmatched })
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "CSV-filen kunde inte läsas.")
     } finally {
@@ -439,18 +451,20 @@ export default function ChecklistBuilder({ checklist }: { checklist?: ChecklistB
               </div>
 
               <div className="mt-3 flex items-center justify-between border-b border-border pb-2 text-xs text-text-muted">
-                <span>{visibleSpecies.length} arter</span>
+                <span>{visibleSpeciesCount} arter</span>
                 <button type="button" onClick={toggleVisible} disabled={visibleSpecies.length === 0} className="font-medium text-accent hover:text-accent-hover disabled:text-text-faint">
                   {allVisibleSelected ? "Avmarkera visade" : "Välj alla visade"}
                 </button>
               </div>
 
               <div className="max-h-[26rem] overflow-y-auto" style={{ contentVisibility: "auto" }}>
-                {visibleSpecies.length === 0 ? (
+                {speciesLoading ? (
+                  <p className="py-8 text-center text-sm text-text-muted">Hämtar arter…</p>
+                ) : visibleSpecies.length === 0 ? (
                   <p className="py-8 text-center text-sm text-text-muted">Inga arter matchar filtret.</p>
                 ) : visibleSpecies.map((item) => (
                   <label key={item.id} className="flex cursor-pointer items-center gap-3 border-b border-border px-1 py-3 last:border-b-0 hover:bg-accent-wash">
-                    <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSpecies(item.id)} className="size-4 accent-[var(--accent)]" />
+                    <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSpecies(item.id, item)} className="size-4 accent-[var(--accent)]" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium">{speciesName(item)}</span>
                       <span className="block truncate font-mono text-[11px] text-text-muted">{item.scientific_name} · {item.dyntaxa_taxon_id}</span>
@@ -458,6 +472,14 @@ export default function ChecklistBuilder({ checklist }: { checklist?: ChecklistB
                   </label>
                 ))}
               </div>
+              {speciesError ? <p className="border-t border-border py-2 text-sm text-danger">{speciesError}</p> : null}
+              {speciesTotalPages > 1 ? (
+                <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-text-muted">
+                  <button type="button" disabled={speciesPage === 1 || speciesLoading} onClick={() => setSpeciesPage(speciesPage - 1)} className="font-medium text-accent disabled:text-text-faint">Föregående</button>
+                  <span>Sida {speciesPage} av {speciesTotalPages}</span>
+                  <button type="button" disabled={speciesPage === speciesTotalPages || speciesLoading} onClick={() => setSpeciesPage(speciesPage + 1)} className="font-medium text-accent disabled:text-text-faint">Nästa</button>
+                </div>
+              ) : null}
             </div>
           </Card>
         </div>
@@ -488,6 +510,13 @@ export default function ChecklistBuilder({ checklist }: { checklist?: ChecklistB
                   ))}
                 </ul>
               ) : <p className="mt-4 rounded bg-surface-2 px-3 py-4 text-center text-xs text-text-muted">Valda arter visas här.</p>}
+              {selectedTotalPages > 1 ? (
+                <div className="mt-2 flex items-center justify-between text-xs text-text-muted">
+                  <button type="button" disabled={effectiveSelectedPage === 1} onClick={() => setSelectedPage(effectiveSelectedPage - 1)} className="text-accent disabled:text-text-faint">Föregående</button>
+                  <span>{effectiveSelectedPage} / {selectedTotalPages}</span>
+                  <button type="button" disabled={effectiveSelectedPage === selectedTotalPages} onClick={() => setSelectedPage(effectiveSelectedPage + 1)} className="text-accent disabled:text-text-faint">Nästa</button>
+                </div>
+              ) : null}
 
               {error ? <p className="mt-4 rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">{error}</p> : null}
               {savedMessage ? <p className="mt-4 rounded bg-secondary-wash px-3 py-2 text-sm text-text" role="status">{savedMessage}</p> : null}

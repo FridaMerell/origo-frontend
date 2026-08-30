@@ -1,13 +1,11 @@
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config";
-import { getTempusGeoAreas, getTempusSpecies, getTempusSpeciesCategories } from "@/app/lib/dal";
+import { getTempusGeoAreas } from "@/app/lib/dal";
 import { TempusDataProvider } from "@/app/lib/tempus-context";
 
 export async function TempusProviders({ children }: { children: ReactNode }) {
-  const [species, categories, geoAreas, cookieStore] = await Promise.all([
-    getTempusSpecies(),
-    getTempusSpeciesCategories(),
+  const [geoAreas, cookieStore] = await Promise.all([
     getTempusGeoAreas(),
     cookies(),
   ]);
@@ -18,8 +16,6 @@ export async function TempusProviders({ children }: { children: ReactNode }) {
 
   return (
     <TempusDataProvider
-      species={species}
-      categories={categories}
       geoAreas={geoAreas}
       selectedGeoArea={selectedGeoArea}
     >

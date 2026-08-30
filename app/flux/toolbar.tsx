@@ -12,6 +12,7 @@ import { useFluxProjects, useSelectedFluxProject } from "@/app/lib/flux-context"
 import { useUser, formatUserName } from "@/app/lib/user-context"
 import { logout } from "@/app/actions/auth"
 import { ORIGO_VERSION } from "@/app/lib/config"
+import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
 import Logo from "./ui/Logo"
 
 type NavLink = { label: string; href: string; icon: string }
@@ -25,14 +26,6 @@ const NAV_LINKS: NavLink[] = [
 type ToolbarProps = {
   mode: "light" | "dark" | null
   onToggleMode: () => void
-}
-
-function versoHref() {
-  if (typeof window === "undefined") return "#"
-  const { hostname, protocol, port } = window.location
-  const parts = hostname.split(".")
-  parts[0] = "verso"
-  return `${protocol}//${parts.join(".")}${port ? `:${port}` : ""}/`
 }
 
 type ProjectSelectorProps = {
@@ -139,13 +132,19 @@ const Toolbar = ({ mode, onToggleMode }: ToolbarProps) => {
         <Icon name={mode === "dark" ? "sun" : "moon"} size={16} className="text-text-muted" />
         {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
       </button>
-      <a
-        href={versoHref()}
-        className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 font-body text-sm text-text no-underline hover:bg-surface-2"
-      >
-        <Icon name="arrow-left-right" size={16} className="text-text" />
-        Gå till Verso
-      </a>
+      <div className="my-1 border-t border-border" />
+      <div className="flex flex-wrap gap-x-3 gap-y-1 px-3 py-2 font-body text-xs text-text-muted">
+        {APP_LINKS.filter((app) => app.id !== "flux").map((app) => (
+          <a
+            key={app.id}
+            href={appHref(app.id)}
+            className="no-underline hover:text-text hover:underline"
+          >
+            {app.name}
+          </a>
+        ))}
+      </div>
+      <div className="my-1 border-t border-border" />
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <Avatar name={userName} size={24} />
         <span className="font-body text-sm text-text-muted">{userName}</span>

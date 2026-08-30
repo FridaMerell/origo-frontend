@@ -1,15 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useDeferredValue, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
-import { useTempusSpecies, speciesName } from "@/app/lib/tempus-context";
+import { speciesName } from "@/app/lib/tempus-context";
 import { createSpeciesCategory } from "@/app/actions/tempus";
+import { useSpeciesPage } from "@/app/tempus/ui/use-species-page";
 
 export default function SpeciesCategoryForm() {
   const router = useRouter();
-  const species = useTempusSpecies();
-
   const [label, setLabel] = useState("");
   const [taxa, setTaxa] = useState<number|null>(0);
   const [imageUrl, setImageUrl] = useState("");
@@ -17,16 +16,16 @@ export default function SpeciesCategoryForm() {
   const [filter, setFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const deferredFilter = useDeferredValue(filter);
 
-  const visible = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    if (!q) return species;
-    return species.filter(
-      (s) =>
-        s.scientific_name.toLowerCase().includes(q) ||
-        s.swedish_name.toLowerCase().includes(q),
-    );
-  }, [species, filter]);
+  const {
+    results: visible,
+    page,
+    setPage,
+    totalPages,
+    loading,
+    error: loadError,
+  } = useSpeciesPage({ search: deferredFilter });
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -107,7 +106,9 @@ export default function SpeciesCategoryForm() {
           className="rounded border border-field-border bg-surface px-3 py-2 text-text"
         />
         <div className="mt-1 max-h-64 overflow-y-auto rounded border border-border">
-          {visible.length === 0 ? (
+          {loading ? (
+            <p className="px-3 py-2 text-sm text-text-muted">Hämtar arter…</p>
+          ) : visible.length === 0 ? (
             <p className="px-3 py-2 text-sm text-text-muted">Inga arter matchar.</p>
           ) : (
             visible.map((s) => (
@@ -125,6 +126,14 @@ export default function SpeciesCategoryForm() {
             ))
           )}
         </div>
+        {loadError && <p className="text-xs text-danger">{loadError}</p>}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between text-xs text-text-muted">
+            <button type="button" disabled={page === 1 || loading} onClick={() => setPage(page - 1)} className="text-accent disabled:text-text-faint">Föregående</button>
+            <span>Sida {page} av {totalPages}</span>
+            <button type="button" disabled={page === totalPages || loading} onClick={() => setPage(page + 1)} className="text-accent disabled:text-text-faint">Nästa</button>
+          </div>
+        )}
         <span className="text-xs text-text-faint">{selected.size} valda</span>
       </div>
 

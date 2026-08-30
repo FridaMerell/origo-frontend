@@ -6,8 +6,10 @@ import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
 import { Icon } from "@/app/components/ui/Icon"
 import { createObservationsBatch } from "@/app/actions/tempus"
-import { speciesName, useTempusSpecies } from "@/app/lib/tempus-context"
+import { speciesName } from "@/app/lib/tempus-context"
+import type { TempusSpecies } from "@/app/lib/dal"
 import { BiotopeMap, biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
+import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
 
 type Row = {
   key: string
@@ -29,7 +31,6 @@ function nowLocal() {
 }
 
 export default function ObservationForm() {
-  const species = useTempusSpecies()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
@@ -38,35 +39,36 @@ export default function ObservationForm() {
   const [lon, setLon] = useState("")
   const [query, setQuery] = useState("")
   const [rows, setRows] = useState<Row[]>([])
+  const [selectedSpecies, setSelectedSpecies] = useState<Map<string, TempusSpecies>>(() => new Map())
   const [error, setError] = useState<string | null>(null)
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({})
   const deferredQuery = useDeferredValue(query)
 
   const stagedIds = useMemo(() => new Set(rows.map((row) => row.speciesId)), [rows])
 
-  const matches = useMemo(() => {
-    const q = deferredQuery.trim().toLowerCase()
-    if (!q) return []
-    return species
-      .filter(
-        (item) =>
-          !stagedIds.has(item.id) &&
-          (item.swedish_name.toLowerCase().includes(q) ||
-            item.scientific_name.toLowerCase().includes(q) ||
-            String(item.dyntaxa_taxon_id).includes(q)),
-      )
-      .slice(0, 8)
-  }, [deferredQuery, species, stagedIds])
+  const {
+    results: speciesResults,
+    page: speciesPage,
+    setPage: setSpeciesPage,
+    totalPages: speciesTotalPages,
+    loading: speciesLoading,
+  } = useSpeciesPage({
+    search: deferredQuery,
+    pageSize: 8,
+    enabled: deferredQuery.trim().length >= 2,
+  })
+  const matches = speciesResults.filter((item) => !stagedIds.has(item.id))
   const mapSpecies = rows.length > 0
-    ? species.find((item) => item.id === rows[0]?.speciesId)
+    ? selectedSpecies.get(rows[0]?.speciesId)
     : undefined
 
-  const addRow = (speciesId: string) => {
-    if (!speciesId || stagedIds.has(speciesId)) return
+  const addRow = (item: TempusSpecies) => {
+    if (stagedIds.has(item.id)) return
     setRows((current) => [
       ...current,
-      { key: rowKey(), speciesId, count: "1", notes: "" },
+      { key: rowKey(), speciesId: item.id, count: "1", notes: "" },
     ])
+    setSelectedSpecies((current) => new Map(current).set(item.id, item))
     setQuery("")
     setError(null)
   }
@@ -250,13 +252,13 @@ export default function ObservationForm() {
                   className="h-9 w-full rounded border border-field-border bg-surface pl-8 pr-3 font-body text-xs not-italic text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                 />
               </span>
-              {matches.length > 0 ? (
+              {deferredQuery.trim().length >= 2 ? (
                 <ul className="absolute inset-x-3 top-full z-10 mt-1 overflow-hidden rounded border border-border bg-surface shadow-md">
                   {matches.map((item) => (
                     <li key={item.id}>
                       <button
                         type="button"
-                        onClick={() => addRow(item.id)}
+                        onClick={() => addRow(item)}
                         className="block w-full border-b border-border px-3 py-2 text-left font-display text-xs font-normal italic last:border-b-0 hover:bg-accent-wash hover:text-accent"
                       >
                         <span>{speciesName(item)}</span>
@@ -264,6 +266,15 @@ export default function ObservationForm() {
                       </button>
                     </li>
                   ))}
+                  {speciesLoading ? <li className="px-3 py-2 text-xs text-text-muted">Hämtar arter…</li> : null}
+                  {!speciesLoading && matches.length === 0 ? <li className="px-3 py-2 text-xs text-text-muted">Inga arter matchar.</li> : null}
+                  {speciesTotalPages > 1 ? (
+                    <li className="flex items-center justify-between border-t border-border px-2 py-1.5 text-xs text-text-muted">
+                      <button type="button" disabled={speciesPage === 1} onClick={() => setSpeciesPage(speciesPage - 1)} className="disabled:text-text-faint">Föregående</button>
+                      <span>{speciesPage} / {speciesTotalPages}</span>
+                      <button type="button" disabled={speciesPage === speciesTotalPages} onClick={() => setSpeciesPage(speciesPage + 1)} className="disabled:text-text-faint">Nästa</button>
+                    </li>
+                  ) : null}
                 </ul>
               ) : null}
             </div>
@@ -281,7 +292,7 @@ export default function ObservationForm() {
             {rows.length > 0 ? (
               <ol className="border-l border-t border-border sm:border-t-0">
                 {rows.map((row, index) => {
-                  const match = species.find((item) => item.id === row.speciesId)
+                  const match = selectedSpecies.get(row.speciesId)
                   return (
                     <li key={row.key} className="grid grid-cols-[2rem_minmax(0,1fr)_2.5rem] border-b border-border font-display sm:grid-cols-[2.25rem_minmax(12rem,1.5fr)_6rem_minmax(10rem,1fr)_2.5rem]">
                       <span className="row-span-3 flex justify-end border-r border-border px-2 py-2 text-[10px] italic text-text-faint sm:row-span-1">

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Card } from "@/app/components/ui/Card"
 import { Icon } from "@/app/components/ui/Icon"
-import { getTempusObservations, getTempusSpecies } from "@/app/lib/dal"
+import { getTempusObservations, getTempusSpeciesItems } from "@/app/lib/dal"
 
 export const metadata: Metadata = {
   title: "Observationer | Tempus",
@@ -18,10 +18,9 @@ function formatDate(value: string | null) {
 }
 
 export default async function ObservationsPage() {
-  const [observations, species] = await Promise.all([
-    getTempusObservations({ ordering: "-observed_at" }),
-    getTempusSpecies(),
-  ])
+  const observations = await getTempusObservations({ ordering: "-observed_at" })
+  const speciesIds = [...new Set(observations.map((observation) => observation.species))]
+  const species = await getTempusSpeciesItems(speciesIds)
   const speciesById = new Map(species.map((item) => [item.id, item]))
 
   return (

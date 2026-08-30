@@ -137,6 +137,22 @@ export type TempusPhenogram = {
   weeks: TempusPhenogramWeek[]
 }
 
+// Lightweight, paginated home-feed payload. It deliberately contains the
+// season summary needed for discovery without sending all 52 weekly buckets
+// for every species.
+export type TempusSeasonalOverview = {
+  id: string
+  dyntaxa_taxon_id: number
+  scientific_name: string
+  swedish_name: string
+  is_followed: boolean
+  record_count: number
+  seasonal_status: TempusSeasonalStatus
+  activity_window: { start_week: number; end_week: number }
+  peak_week: number
+  confidence: number | null
+}
+
 // A planned species checklist for an outing, inventory or area. Created via the
 // `createChecklist` action, which POSTs the checklist then its items. The list
 // endpoint may return `geo_area`/`route` as ids or as nested objects depending
@@ -184,6 +200,104 @@ export type TempusObservation = {
   count: number | null
   notes: string
   created_at: string
+}
+
+// A planned driving route. `geometry` is the full polyline from a routing
+// provider (GeoJSON LineString, [lon, lat], WGS84). `corridor_metres` is the
+// half-width searched either side of the line for rest-stop suggestions.
+export type TempusRouteGeometry = {
+  type: "LineString"
+  coordinates: [number, number][]
+}
+
+export type TempusRoute = {
+  id: string
+  user: string
+  name: string
+  planned_date: string
+  geometry: TempusRouteGeometry | null
+  corridor_metres: number
+  created_at: string
+  updated_at: string
+}
+
+// A user-authored ordered stop along a route (distinct from the ranked
+// suggestions below). `sequence` is unique per route.
+export type TempusRouteStop = {
+  id: string
+  route: string
+  sequence: number
+  name: string
+  location: { type: "Point"; coordinates: [number, number] }
+  planned_at: string | null
+}
+
+// Rest-stop suggestions — ranked points along the route corridor, scored by
+// species variety + rarity. Live, uncached call to the Artdatabanken API.
+export type TempusStopHighlight = {
+  taxon_id: number
+  scientific_name: string
+  vernacular_name: string
+  count: number
+  last_seen_days: number | null
+  red_list_category: string
+  reason: string
+}
+
+export type TempusStopNotable = {
+  scientific_name: string
+  vernacular_name: string
+  date: string
+  locality: string
+  red_list_category: string
+}
+
+export type TempusStopTopSpecies = {
+  scientific_name: string
+  vernacular_name: string
+  count: number
+}
+
+export type TempusSuggestedStop = {
+  rank: number
+  score: number
+  breakdown: {
+    richness_term: number
+    evenness_term: number
+    rarity_term: number
+    recency_term: number
+    corrected_richness: number
+  }
+  location: { type: "Point"; coordinates: [number, number] }
+  locality: string
+  county: string
+  species_count: number
+  highlights: TempusStopHighlight[]
+  notable_recent: TempusStopNotable[]
+  top_species: TempusStopTopSpecies[]
+  distance_along_route_m: number
+  detour_m: number
+}
+
+// The computation runs in a background worker (dozens of rate-limited external
+// calls), so callers start it with POST and then poll GET until `status` is
+// "succeeded" (read `result`) or "failed" (show `error`). There is one run per
+// route; starting a new one replaces the previous result.
+export type TempusSuggestedStopsRunStatus =
+  | "pending"
+  | "running"
+  | "succeeded"
+  | "failed"
+
+export type TempusSuggestedStopsRun = {
+  route: string
+  status: TempusSuggestedStopsRunStatus
+  params: Record<string, unknown>
+  result: TempusSuggestedStop[]
+  error: string
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
 }
 
 export type TempusListParams = QueryParams
@@ -236,13 +350,22 @@ export async function fetchTempusPage<T>(
 }
 
 export const getTempusSpecies = cache(
-  (params?: TempusListParams): Promise<TempusSpecies[]> =>
-    fetchList(TEMPUS_ENDPOINTS.species, params)
+  async (params?: TempusListParams): Promise<TempusSpecies[]> =>
+    (await getTempusSpeciesPage(params)).results
 )
 
 export const getTempusSpeciesPage = cache(
-  (params?: TempusListParams): Promise<TempusPage<TempusSpecies>> =>
-    fetchTempusPage(TEMPUS_ENDPOINTS.species, params)
+  async (params?: TempusListParams): Promise<TempusPage<TempusSpecies>> => {
+    const requestedPageSize = Number(params?.page_size)
+    const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
+      ? Math.min(requestedPageSize, 50)
+      : 25
+    const page = await fetchTempusPage<TempusSpecies>(TEMPUS_ENDPOINTS.species, {
+      ...params,
+      page_size: pageSize,
+    })
+    return { ...page, pageSize }
+  }
 )
 
 export const getTempusChecklists = cache(
@@ -280,9 +403,41 @@ export const getTempusSpeciesItem = cache(
     fetchItem(`${TEMPUS_ENDPOINTS.species}${id}/`)
 )
 
+export async function getTempusSpeciesItems(ids: Iterable<string>): Promise<TempusSpecies[]> {
+  const uniqueIds = [...new Set(ids)]
+  const wanted = new Set(uniqueIds)
+  const results: TempusSpecies[] = []
+  let page = 1
+  while (wanted.size > 0) {
+    const speciesPage = await getTempusSpeciesPage({ page, page_size: 50 })
+    for (const species of speciesPage.results) {
+      if (!wanted.has(species.id)) continue
+      results.push(species)
+      wanted.delete(species.id)
+    }
+    if (!speciesPage.next) break
+    page += 1
+  }
+  return results
+}
+
 export const getTempusSpeciesCategories = cache(
-  (params?: TempusListParams): Promise<TempusSpeciesCategory[]> =>
-    fetchList(TEMPUS_ENDPOINTS.speciesCategories, params)
+  async (params?: TempusListParams): Promise<TempusSpeciesCategory[]> =>
+    (await getTempusSpeciesCategoriesPage(params)).results
+)
+
+export const getTempusSpeciesCategoriesPage = cache(
+  async (params?: TempusListParams): Promise<TempusPage<TempusSpeciesCategory>> => {
+    const requestedPageSize = Number(params?.page_size)
+    const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
+      ? Math.min(requestedPageSize, 50)
+      : 24
+    const page = await fetchTempusPage<TempusSpeciesCategory>(
+      TEMPUS_ENDPOINTS.speciesCategories,
+      { ...params, page_size: pageSize }
+    )
+    return { ...page, pageSize }
+  }
 )
 
 export const getTempusSpeciesCategoryItem = cache(
@@ -307,12 +462,53 @@ export const getTempusSpeciesPhenogram = cache(
   }
 )
 
-export const getTempusSpeciesByCategory = cache(
-  (taxonId: string, params?: TempusListParams): Promise<TempusSpecies[]> =>
-    fetchList(TEMPUS_ENDPOINTS.species, {
-      ...params,
-      categories__taxon_id: taxonId,
+export const getTempusSeasonalOverviewPage = cache(
+  async (params?: TempusListParams): Promise<TempusPage<TempusSeasonalOverview>> => {
+    const requestedPageSize = Number(params?.page_size)
+    const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
+      ? Math.min(requestedPageSize, 50)
+      : 24
+    const page = await fetchTempusPage<TempusSeasonalOverview>(
+      TEMPUS_ENDPOINTS.speciesSeasonalOverview,
+      { ...params, page_size: pageSize },
+    )
+    return { ...page, pageSize }
+  },
+)
+
+export const getTempusRoutesPage = cache(
+  (params?: TempusListParams): Promise<TempusPage<TempusRoute>> =>
+    fetchTempusPage<TempusRoute>(TEMPUS_ENDPOINTS.routes, params)
+)
+
+export const getTempusRoutes = cache(
+  async (params?: TempusListParams): Promise<TempusRoute[]> =>
+    (await getTempusRoutesPage(params)).results
+)
+
+export const getTempusRouteItem = cache(
+  (id: string): Promise<TempusRoute | null> =>
+    fetchItem(`${TEMPUS_ENDPOINTS.routes}${id}/`)
+)
+
+export const getTempusSuggestedStopsRun = cache(
+  (routeId: string): Promise<TempusSuggestedStopsRun | null> =>
+    fetchItem(TEMPUS_ENDPOINTS.routeSuggestedStops(routeId))
+)
+
+export const getTempusRouteStops = cache(
+  async (routeId: string): Promise<TempusRouteStop[]> => {
+    const page = await fetchTempusPage<TempusRouteStop>(TEMPUS_ENDPOINTS.routeStops, {
+      route: routeId,
+      page_size: 200,
     })
+    return [...page.results].sort((a, b) => a.sequence - b.sequence)
+  }
+)
+
+export const getTempusSpeciesByCategory = cache(
+  async (taxonId: string, params?: TempusListParams): Promise<TempusSpecies[]> =>
+    (await getTempusSpeciesPageByCategory(taxonId, params)).results
 )
 
 export const getTempusSpeciesPageByCategory = cache(
@@ -322,11 +518,11 @@ export const getTempusSpeciesPageByCategory = cache(
   ): Promise<TempusPage<TempusSpecies>> => {
     const requestedPageSize = Number(params?.page_size)
     const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
-      ? requestedPageSize
+      ? Math.min(requestedPageSize, 50)
       : 25
     const page = await fetchTempusPage<TempusSpecies>(TEMPUS_ENDPOINTS.species, {
-      page_size: pageSize,
       ...params,
+      page_size: pageSize,
       categories__taxon_id: taxonId,
     })
     return {

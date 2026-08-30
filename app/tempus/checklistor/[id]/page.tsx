@@ -6,10 +6,11 @@ import {
   getTempusChecklistItem,
   getTempusChecklistItems,
   getTempusObservations,
-  getTempusSpecies,
+  getTempusSpeciesItems,
 } from "@/app/lib/dal"
 import { BiotopeMap, biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import ChecklistActions from "./checklist-actions"
+import ChecklistRegister from "./checklist-register"
 import ObservationMapDialog from "./observation-map-dialog"
 
 type PageProps = { params: Promise<{ id: string }> }
@@ -33,13 +34,28 @@ export default async function ChecklistDetailPage({ params }: PageProps) {
   const checklist = await getTempusChecklistItem(id)
   if (!checklist) notFound()
 
-  const [items, species, observations] = await Promise.all([
+  const [items, observations] = await Promise.all([
     checklist.items ?? getTempusChecklistItems(id),
-    getTempusSpecies(),
     getTempusObservations({ ordering: "-observed_at" }),
+  ])
+  const species = await getTempusSpeciesItems([
+    ...items.map((item) => item.species),
+    ...observations.map((observation) => observation.species),
   ])
   const speciesById = new Map(species.map((item) => [item.id, item]))
   const sortedItems = [...items].sort((a, b) => a.sequence - b.sequence)
+  const registerRows = sortedItems.map((item) => {
+    const match = speciesById.get(item.species)
+    return {
+      id: item.id,
+      sequence: item.sequence,
+      species: item.species,
+      notes: item.notes || "",
+      commonName: match ? match.swedish_name || match.scientific_name : "Okänd art",
+      scientificName: match ? match.scientific_name : null,
+      taxonId: match?.dyntaxa_taxon_id ?? null,
+    }
+  })
   const mapSpecies = sortedItems.map((item) => speciesById.get(item.species)).find(Boolean)
   const startDate = formatDate(checklist.start_date)
   const endDate = formatDate(checklist.end_date)
@@ -160,45 +176,7 @@ export default async function ChecklistDetailPage({ params }: PageProps) {
             ))}
           </div>
 
-          <ol className="register-list border-l border-border">
-          {sortedItems.map((item) => {
-            const match = speciesById.get(item.species)
-            const commonName = match ? match.swedish_name || match.scientific_name : "Okänd art"
-            return (
-              <li
-                key={item.id}
-                className="register-row grid min-h-12 grid-cols-[2.25rem_minmax(0,1fr)_3.25rem] border-b border-border font-display transition-colors hover:bg-surface-2/35 sm:grid-cols-[2.75rem_minmax(12rem,1.75fr)_7rem_3.5rem_minmax(8rem,1fr)]"
-              >
-                <span className="flex items-start justify-end border-r border-border px-2 py-2 text-[10px] italic tabular-nums text-text-faint">
-                  {item.sequence}
-                </span>
-                <span className="register-name min-w-0 border-r border-border px-3 py-1.5">
-                  <span className="block truncate text-sm italic tracking-wide">
-                    {commonName}
-                  </span>
-                  {match ? (
-                    <span className="block truncate text-[10px] italic text-text-muted">
-                      {match.scientific_name}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="register-taxon hidden items-start justify-center border-r border-border px-2 py-2 text-[9px] italic tabular-nums text-text-muted sm:flex">
-                  {match?.dyntaxa_taxon_id ?? "—"}
-                </span>
-                <label className="register-check flex cursor-pointer items-center justify-center border-r border-border">
-                  <input
-                    type="checkbox"
-                    aria-label={`Bocka av ${commonName}`}
-                    className="h-4 w-4 accent-current"
-                  />
-                </label>
-                <span className="register-notes hidden border-r border-border px-3 py-1.5 text-[10px] italic leading-4 text-text-muted sm:block">
-                  {item.notes || ""}
-                </span>
-              </li>
-            )
-          })}
-          </ol>
+          <ChecklistRegister rows={registerRows} />
 
           <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_3.25rem] border-b border-l border-border sm:grid-cols-[2.75rem_minmax(12rem,1.75fr)_7rem_3.5rem_minmax(8rem,1fr)]" aria-hidden="true">
             <span className="h-6 border-r border-border" />
@@ -209,7 +187,7 @@ export default async function ChecklistDetailPage({ params }: PageProps) {
           </div>
 
           <p className="mt-2 text-right font-display text-[9px] italic text-text-faint">
-            Markeringarna är tillfälliga och sparas inte.
+            Bocka i en art för att registrera en observation. Markeringarna sparas inte.
           </p>
         </section>
       </article>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { getTempusChecklistItem, getTempusChecklistItems } from "@/app/lib/dal"
+import { getTempusChecklistItem, getTempusChecklistItems, getTempusSpeciesCategoriesPage } from "@/app/lib/dal"
 import ChecklistBuilder from "../../checklist-builder"
 
 type PageProps = { params: Promise<{ id: string }> }
@@ -16,10 +16,14 @@ export default async function EditChecklistPage({ params }: PageProps) {
   const checklist = await getTempusChecklistItem(id)
   if (!checklist) notFound()
 
-  const items = checklist.items ?? (await getTempusChecklistItems(id))
+  const [items, categoryPage] = await Promise.all([
+    checklist.items ?? getTempusChecklistItems(id),
+    getTempusSpeciesCategoriesPage({ page_size: 50 }),
+  ])
 
   return (
     <ChecklistBuilder
+      categories={categoryPage.results}
       checklist={{
         id: checklist.id,
         name: checklist.name,

@@ -4,10 +4,11 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useRef, useState, useEffect } from "react"
 import { Icon } from "../components/ui/Icon"
-import { ChevronDownIcon, ExternalLink, ExternalLinkIcon } from "lucide-react"
+import { ChevronDownIcon } from "lucide-react"
 import { useFacilities } from "../lib/facility-context"
 import { useUser } from "../lib/user-context"
 import { ORIGO_VERSION } from "../lib/config"
+import { APP_LINKS, appHref } from "../lib/tenant-links"
 import Logo from "./ui/Logo"
 import { Profile } from "../components/ui/Profile"
 
@@ -128,6 +129,13 @@ export function SidebarContent({
 }: SidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname()
   const { facilities } = useFacilities()
+  const [appHrefs, setAppHrefs] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    setAppHrefs(
+      Object.fromEntries(APP_LINKS.map((app) => [app.id, appHref(app.id)])),
+    )
+  }, [])
 
   return (
     <div className="flex h-full flex-col gap-0.5 font-body">
@@ -166,7 +174,17 @@ export function SidebarContent({
         )
       })}
       <div className="mt-auto  pt-4">
-        <Link href="https://flux.fåvitsko.se" target="_blank" rel="noopener noreferrer"><div className="flex gap-2 ml-3 items-center">Flux <ExternalLinkIcon size={16} /></div> </Link>
+        <div className="mb-2 flex flex-wrap gap-x-2.5 gap-y-1 border-t border-border px-2.5 pt-2 text-xs text-text-muted">
+          {APP_LINKS.filter((app) => app.id !== "verso").map((app) => (
+            <a
+              key={app.id}
+              href={appHrefs[app.id] ?? "#"}
+              className="no-underline hover:text-accent hover:underline"
+            >
+              {app.name}
+            </a>
+          ))}
+        </div>
         <ModeToggle mode={mode} onToggle={onToggleMode} />
         <Profile />
       </div>

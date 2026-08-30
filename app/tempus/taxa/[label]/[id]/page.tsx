@@ -7,14 +7,12 @@ import { Icon } from "@/app/components/ui/Icon"
 import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
 import {
   getTempusGeoAreas,
-  getTempusSpeciesCategories,
   getTempusSpeciesItem,
   getTempusSpeciesPhenogram,
   type TempusHabitat,
   getTempusSpeciesCategoryItem,
 } from "@/app/lib/dal"
 import Phenogram, { SeasonalStatusBadge } from "@/app/tempus/ui/Phenogram"
-import PhenogramWheel from "@/app/tempus/ui/PhenogramWheel"
 import {
   BiotopeMap,
   SwedenMap,
@@ -113,6 +111,7 @@ const PhenogramPlaceholder = ({ areaName }: { areaName: string }) => (
 const Page = async ({ params }: { params: Promise<{ label: string; id: string }> }) => {
   const { label: rawLabel, id } = await params
   const label = decodeURIComponent(rawLabel)
+  const fromHomeOverview = label === "foljda" || label === "oversikt"
   const [geoAreas, cookieStore] = await Promise.all([getTempusGeoAreas(), cookies()])
   const selectedId = cookieStore.get(TEMPUS_GEO_AREA_COOKIE)?.value
   const selectedGeoArea = selectedId === TEMPUS_ALL_SWEDEN
@@ -121,7 +120,7 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
 
   const [species, category, phenogram] = await Promise.all([
     getTempusSpeciesItem(id),
-    getTempusSpeciesCategoryItem(label),
+    fromHomeOverview ? Promise.resolve(null) : getTempusSpeciesCategoryItem(label),
     getTempusSpeciesPhenogram(id, selectedGeoArea?.id),
   ])
   if (!species) notFound()
@@ -155,10 +154,10 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
       <div className="flex flex-col md:flex-row gap-3 justify-between items-center">
         <div className="flex flex-col gap-1">
           <Link
-            href={`/taxa/${encodeURIComponent(label)}`}
+            href={label === "oversikt" ? "/?view=all" : fromHomeOverview ? "/" : `/taxa/${encodeURIComponent(label)}`}
             className="w-fit font-mono text-xs uppercase tracking-wide text-text-muted hover:text-text"
           >
-            ← {category?.label ?? "Okänd kategori"}
+            ← {label === "oversikt" ? "Alla arter" : fromHomeOverview ? "Säsongsöversikt" : category?.label ?? "Okänd kategori"}
           </Link>
           <h1 className="font-display text-3xl font-semibold tracking-tight md:mt-3 capitalize">
             {speciesName(species)}
@@ -167,7 +166,7 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
             <em className="font-mono text-sm text-text-muted">{species.scientific_name}</em>
           )}
         </div>
-        <FollowButton taxa={species.id} initial={species.is_followed} />
+        <FollowButton taxa={String(species.dyntaxa_taxon_id)} initial={species.is_followed} />
       </div>
       <Card className="relative overflow-hidden shadow-sm min-h-70">
 

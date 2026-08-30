@@ -7,8 +7,15 @@ import { getSessionCookies } from "@/app/lib/session"
 import {
   getCurrentUser,
   getTempusChecklistItems,
+  getTempusRouteStops,
+  getTempusSpeciesPage,
+  getTempusSpeciesPageByCategory,
+  getTempusSpeciesItems,
+  type TempusPage,
   type TempusTaxonHit,
-  TempusSpecies,
+  type TempusSpecies,
+  type TempusSuggestedStop,
+  type TempusSuggestedStopsRun,
 } from "@/app/lib/dal"
 import {
   checklistFormSchema,
@@ -18,11 +25,78 @@ import {
   observationFormSchema,
   type ObservationFormValues,
   registerSpeciesFormSchema,
+  routeFormSchema,
+  type RouteFormValues,
   speciesCategoryFormSchema,
   type SpeciesCategoryFormValues,
 } from "@/app/lib/schemas"
 
 export type TempusActionState = { error?: string; success?: boolean } | undefined
+
+export type LoadSpeciesPageInput = {
+  page?: number
+  pageSize?: number
+  search?: string
+  categoryTaxonId?: number | null
+}
+
+export async function loadSpeciesPage(
+  input: LoadSpeciesPageInput = {}
+): Promise<TempusPage<TempusSpecies>> {
+  const page = Number.isInteger(input.page) && (input.page ?? 0) > 0 ? input.page : 1
+  const pageSize = Number.isInteger(input.pageSize) && (input.pageSize ?? 0) > 0
+    ? Math.min(input.pageSize ?? 25, 50)
+    : 25
+  const params = {
+    page,
+    page_size: pageSize,
+    search: input.search?.trim() || undefined,
+  }
+
+  return input.categoryTaxonId && input.categoryTaxonId > 0
+    ? getTempusSpeciesPageByCategory(String(input.categoryTaxonId), params)
+    : getTempusSpeciesPage(params)
+}
+
+export async function matchSpeciesValues(values: string[]): Promise<{
+  matchedIds: string[]
+  unmatched: string[]
+}> {
+  const candidates = [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, 2000)
+  const normalized = new Map(candidates.map((value) => [
+    value.toLocaleLowerCase("sv").replace(/[\s-]+/g, "_"),
+    value,
+  ]))
+  const pending = new Set(normalized.keys())
+  const matchedIds = new Set<string>()
+  let pageNumber = 1
+
+  while (pending.size > 0) {
+    const page = await getTempusSpeciesPage({ page: pageNumber, page_size: 50 })
+    for (const species of page.results) {
+      const keys = [
+        species.swedish_name,
+        species.scientific_name,
+        String(species.dyntaxa_taxon_id),
+      ].map((value) => value.toLocaleLowerCase("sv").replace(/[\s-]+/g, "_"))
+      if (keys.some((key) => pending.has(key))) {
+        matchedIds.add(species.id)
+        keys.forEach((key) => pending.delete(key))
+      }
+    }
+    if (!page.next) break
+    pageNumber += 1
+  }
+
+  return {
+    matchedIds: [...matchedIds],
+    unmatched: [...pending].map((key) => normalized.get(key) ?? key),
+  }
+}
+
+export async function loadSpeciesItems(ids: string[]): Promise<TempusSpecies[]> {
+  return getTempusSpeciesItems([...new Set(ids)].slice(0, 25))
+}
 
 export type CreateChecklistResult = {
   success?: boolean
@@ -563,6 +637,57 @@ export type RegisterSpeciesResult = {
   error?: string
 }
 
+export type ImportSpeciesChecklistState = {
+  success?: boolean
+  message?: string
+  error?: string
+}
+
+export async function importSpeciesChecklist(
+  speciesCategory: string,
+  _previousState: ImportSpeciesChecklistState,
+  formData: FormData
+): Promise<ImportSpeciesChecklistState> {
+  if (!speciesCategory.trim()) {
+    return { error: "Artkategorin saknas." }
+  }
+
+  const file = formData.get("file")
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Välj en CSV-fil att importera." }
+  }
+
+  const user = await getCurrentUser()
+  if (!user) {
+    return { error: "Du måste vara inloggad." }
+  }
+
+  const { sessionId, csrfToken } = await getSessionCookies()
+  const body = new FormData()
+  body.set("species_category", speciesCategory)
+  body.set("file", file, file.name)
+
+  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesImportChecklist, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": csrfToken ?? "",
+      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
+    },
+    body,
+  })
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  revalidatePath("/taxa")
+  return {
+    success: true,
+    message: "Filen har validerats och arterna har lagts i importkön.",
+  }
+}
+
 export async function registerSpeciesBatch(
   speciesCategory: string,
   taxonIds: number[]
@@ -622,7 +747,15 @@ export async function registerSpeciesBatch(
 }
 
 
-export async function followSpecies(taxonId: string): Promise<{ ok: boolean; error?: string }> {
+type FollowSpeciesOptions = {
+  priority?: number
+  notificationsEnabled?: boolean
+}
+
+export async function followSpecies(
+  taxonId: string,
+  options: FollowSpeciesOptions = {},
+): Promise<{ ok: boolean; error?: string }> {
   const user = await getCurrentUser()
   if (!user) {
     return { ok: false, error: "Du måste vara inloggad." }
@@ -637,7 +770,11 @@ export async function followSpecies(taxonId: string): Promise<{ ok: boolean; err
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ id: taxonId }),
+    body: JSON.stringify({
+      species: Number(taxonId),
+      priority: options.priority ?? 2,
+      notifications_enabled: options.notificationsEnabled ?? false,
+    }),
   })
 
   if (response.ok) {
@@ -663,7 +800,7 @@ export const unfollowSpecies = async (taxonId: string): Promise<{ ok: boolean; e
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ id: taxonId }),
+    body: JSON.stringify({ species: Number(taxonId) }),
   })
 
   if (response.ok) {
@@ -676,25 +813,286 @@ export const unfollowSpecies = async (taxonId: string): Promise<{ ok: boolean; e
 
 export const getFollowedSpecies = async (): Promise<TempusSpecies[]> => {
   const user = await getCurrentUser()
-  if (!user) {
-    return []
+  if (!user) return []
+
+  const followed: TempusSpecies[] = []
+  let pageNumber = 1
+
+  while (true) {
+    const page = await getTempusSpeciesPage({
+      is_followed: true,
+      page: pageNumber,
+      page_size: 50,
+    })
+    followed.push(...page.results)
+
+    if (!page.next) break
+    pageNumber += 1
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
+  return followed
+}
 
-  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesFollow, {
-    method: "GET",
+export type RouteResult = { success?: boolean; routeId?: string; error?: string }
+
+export async function createRoute(input: RouteFormValues): Promise<RouteResult> {
+  const parsed = routeFormSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Kontrollera fälten och försök igen." }
+  }
+
+  const user = await getCurrentUser()
+  if (!user) return { error: "Du måste vara inloggad." }
+
+  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.routes, {
+    method: "POST",
+    headers: await authedJsonHeaders(),
+    body: JSON.stringify(parsed.data),
+  })
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  const created = (await response.json().catch(() => null)) as { id?: unknown } | null
+  revalidatePath("/rutt")
+  return {
+    success: true,
+    routeId: typeof created?.id === "string" ? created.id : undefined,
+  }
+}
+
+export async function updateRoute(
+  id: string,
+  input: Partial<RouteFormValues>,
+): Promise<RouteResult> {
+  const parsed = routeFormSchema.partial().safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Kontrollera fälten och försök igen." }
+  }
+
+  const user = await getCurrentUser()
+  if (!user) return { error: "Du måste vara inloggad." }
+
+  const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.routes}${id}/`, {
+    method: "PATCH",
+    headers: await authedJsonHeaders(),
+    body: JSON.stringify(parsed.data),
+  })
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  revalidatePath("/rutt")
+  revalidatePath(`/rutt/${id}`)
+  return { success: true, routeId: id }
+}
+
+export async function deleteRoute(id: string): Promise<{ success?: boolean; error?: string }> {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Du måste vara inloggad." }
+
+  const { sessionId, csrfToken } = await getSessionCookies()
+  const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.routes}${id}/`, {
+    method: "DELETE",
     headers: {
-      "Content-Type": "application/json",
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
   })
 
-  if (response.ok) {
-    const species = await response.json().catch(() => [])
-    return  species ?? []
-  } else {
-    return []
+  if (!response.ok && response.status !== 404) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
   }
+
+  revalidatePath("/rutt")
+  return { success: true }
+}
+
+export type AddRouteStopInput = {
+  route: string
+  name: string
+  location: { type: "Point"; coordinates: [number, number] }
+  planned_at?: string | null
+}
+
+export async function createRouteStop(
+  input: AddRouteStopInput,
+): Promise<{ success?: boolean; error?: string }> {
+  if (!input.route || !input.name.trim()) {
+    return { error: "Ruttstoppet saknar namn eller rutt." }
+  }
+  if (input.location?.type !== "Point" || input.location.coordinates.length !== 2) {
+    return { error: "Ruttstoppet saknar en giltig position." }
+  }
+
+  const user = await getCurrentUser()
+  if (!user) return { error: "Du måste vara inloggad." }
+
+  const existing = await getTempusRouteStops(input.route)
+  const nextSequence = existing.reduce((max, stop) => Math.max(max, stop.sequence), 0) + 1
+
+  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.routeStops, {
+    method: "POST",
+    headers: await authedJsonHeaders(),
+    body: JSON.stringify({
+      route: input.route,
+      sequence: nextSequence,
+      name: input.name.trim(),
+      location: input.location,
+      planned_at: input.planned_at ?? null,
+    }),
+  })
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  revalidatePath(`/rutt/${input.route}`)
+  return { success: true }
+}
+
+export async function deleteRouteStop(
+  routeId: string,
+  stopId: string,
+): Promise<{ success?: boolean; error?: string }> {
+  const user = await getCurrentUser()
+  if (!user) return { error: "Du måste vara inloggad." }
+
+  const { sessionId, csrfToken } = await getSessionCookies()
+  const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.routeStops}${stopId}/`, {
+    method: "DELETE",
+    headers: {
+      "X-CSRFToken": csrfToken ?? "",
+      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
+    },
+  })
+
+  if (!response.ok && response.status !== 404) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  revalidatePath(`/rutt/${routeId}`)
+  return { success: true }
+}
+
+export type SuggestedStopsParams = {
+  taxon_id?: number | null
+  since_days?: number
+  notable_days?: number
+  max_detour_m?: number | null
+  num_stops?: number
+  refresh?: boolean
+}
+
+export type SuggestedStopsRunResult = {
+  data?: TempusSuggestedStopsRun
+  error?: string
+}
+
+function suggestedStopsQuery(params: SuggestedStopsParams): string {
+  const search = new URLSearchParams()
+  if (params.taxon_id && params.taxon_id > 0) search.set("taxon_id", String(params.taxon_id))
+  if (params.since_days) search.set("since_days", String(params.since_days))
+  if (params.notable_days) search.set("notable_days", String(params.notable_days))
+  if (typeof params.max_detour_m === "number" && params.max_detour_m >= 0) {
+    search.set("max_detour_m", String(params.max_detour_m))
+  }
+  if (params.num_stops) search.set("num_stops", String(params.num_stops))
+  if (params.refresh) search.set("refresh", "true")
+  const query = search.toString()
+  return query ? `?${query}` : ""
+}
+
+function parseSuggestedStopsRun(body: unknown): TempusSuggestedStopsRun | null {
+  if (!body || typeof body !== "object") return null
+  const run = body as Partial<TempusSuggestedStopsRun>
+  if (typeof run.status !== "string") return null
+  return {
+    route: typeof run.route === "string" ? run.route : "",
+    status: run.status as TempusSuggestedStopsRun["status"],
+    params:
+      run.params && typeof run.params === "object"
+        ? (run.params as Record<string, unknown>)
+        : {},
+    result: Array.isArray(run.result) ? (run.result as TempusSuggestedStop[]) : [],
+    error: typeof run.error === "string" ? run.error : "",
+    created_at: typeof run.created_at === "string" ? run.created_at : "",
+    started_at: typeof run.started_at === "string" ? run.started_at : null,
+    finished_at: typeof run.finished_at === "string" ? run.finished_at : null,
+  }
+}
+
+// Kick off (or re-attach to) the background computation. 202 = started, 200 = a
+// fresh result already existed; both carry the run object. Treat them the same:
+// read `status`, and poll if it is not yet succeeded/failed.
+export async function startSuggestedStops(
+  routeId: string,
+  params: SuggestedStopsParams = {},
+): Promise<SuggestedStopsRunResult> {
+  const { sessionId, csrfToken } = await getSessionCookies()
+  if (!sessionId) return { error: "Du måste vara inloggad." }
+
+  let response: Response
+  try {
+    response = await fetchOrigoApi(
+      `${TEMPUS_ENDPOINTS.routeSuggestedStops(routeId)}${suggestedStopsQuery(params)}`,
+      {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken ?? "",
+          Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
+        },
+      },
+    )
+  } catch {
+    return { error: "Kunde inte nå servern. Försök igen om en stund." }
+  }
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  const run = parseSuggestedStopsRun(await response.json().catch(() => null))
+  if (!run) return { error: "Kunde inte tolka svaret från servern." }
+  return { data: run }
+}
+
+// Poll the current run for a route. Call every ~3 s while status is
+// "pending"/"running"; stop on "succeeded" or "failed".
+export async function pollSuggestedStops(
+  routeId: string,
+): Promise<SuggestedStopsRunResult> {
+  const { sessionId, csrfToken } = await getSessionCookies()
+  if (!sessionId) return { error: "Du måste vara inloggad." }
+
+  let response: Response
+  try {
+    response = await fetchOrigoApi(TEMPUS_ENDPOINTS.routeSuggestedStops(routeId), {
+      headers: {
+        Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
+      },
+    })
+  } catch {
+    return { error: "Kunde inte nå servern. Försök igen om en stund." }
+  }
+
+  if (response.status === 404) {
+    return { error: "Ingen sökning har startats för den här rutten." }
+  }
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  const run = parseSuggestedStopsRun(await response.json().catch(() => null))
+  if (!run) return { error: "Kunde inte tolka svaret från servern." }
+  return { data: run }
 }

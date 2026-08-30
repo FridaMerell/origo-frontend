@@ -3,11 +3,12 @@ import Link from "next/link"
 import { Icon } from "@/app/components/ui/Icon"
 import FollowButton from "./[id]/FollowButton"
 import TaxonSearch from "./taxon-search"
+import ImportSpeciesChecklistForm from "../import-species-checklist-form"
 
 const Page = async ({ params, searchParams }: {
-  params: {
+  params: Promise<{
     label: string,
-  },
+  }>,
   searchParams: Promise<{
     [key: string]: string | string[] | undefined
   }>
@@ -22,7 +23,7 @@ const Page = async ({ params, searchParams }: {
   const page = typeof p === "string" && parseInt(p) > 0 ? parseInt(p) : 1
 
   const category = await getTempusSpeciesCategoryByTaxonId(label)
-  const { results: species, count, next, previous, pageSize = species.length || 1 } = await getTempusSpeciesPageByCategory(label, {
+  const { results: species, count, next, previous, pageSize = 25 } = await getTempusSpeciesPageByCategory(label, {
     search,
     page,
   })
@@ -47,6 +48,11 @@ const Page = async ({ params, searchParams }: {
 
       <TaxonSearch />
 
+      <ImportSpeciesChecklistForm
+        categoryId={category.id}
+        categoryLabel={category.label}
+      />
+
       <dl className="flex-col ">
         {species.length === 0 && (
           <p className="py-4 text-sm text-text-muted">
@@ -65,7 +71,7 @@ const Page = async ({ params, searchParams }: {
                 </span>
               </div>
             </Link>
-            <FollowButton props={{ variant: "primary", size: 'sm' }} taxa={sp.id} initial={sp.is_followed} />
+            <FollowButton props={{ variant: "primary", size: 'sm' }} taxa={String(sp.dyntaxa_taxon_id)} initial={sp.is_followed} />
           </div>
         ))}
       </dl>

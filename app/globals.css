@@ -3,21 +3,27 @@
 @import "./styles/tokens/colors.css";
 @import "./styles/tokens/typography.css";
 @import "./styles/tokens/effects.css";
+
 @utility container {
-  margin-inline: auto;
-  padding-inline: 5rem;
+	margin-inline: auto;
+	padding-inline: 5rem;
+
+	@media (max-width: 768px) {
+		padding-inline: 2rem;
+	}
 }
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --accent: #171717;
+	--background: #ffffff;
+	--foreground: #171717;
+	--accent: #171717;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
 
-  /*
+	/*
    * Origo design-system tokens, registered into Tailwind's theme so they
    * generate real utilities (bg-bg, text-text, text-accent, font-display,
    * font-body, rounded-card, shadow-md, ...). Each var resolves against
@@ -25,69 +31,68 @@
    * is rendered under (see tokens/colors.css, typography.css, effects.css) —
    * no per-element or per-tenant overrides needed here, it's automatic.
    */
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-surface-raised: var(--surface-raised);
-  --color-border: var(--border);
-  --color-border-strong: var(--border-strong);
-  --color-field-border: var(--field-border);
-  --color-text: var(--text);
-  --color-text-muted: var(--text-muted);
-  --color-text-faint: var(--text-faint);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-accent-active: var(--accent-active);
-  --color-accent-contrast: var(--accent-contrast);
-  --color-accent-wash: var(--accent-wash);
-  --color-secondary: var(--secondary);
-  --color-secondary-wash: var(--secondary-wash);
-  --color-danger: var(--danger);
-  --color-danger-wash: var(--danger-wash);
-  --color-warning: var(--warning);
-  --color-warning-wash: var(--warning-wash);
-  --color-success: var(--success);
-  --color-success-wash: var(--success-wash);
-  --color-link: var(--link);
-  --color-link-hover: var(--link-hover);
-  --color-focus-ring: var(--focus-ring);
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-surface-raised: var(--surface-raised);
+	--color-border: var(--border);
+	--color-border-strong: var(--border-strong);
+	--color-field-border: var(--field-border);
+	--color-text: var(--text);
+	--color-text-muted: var(--text-muted);
+	--color-text-faint: var(--text-faint);
+	--color-accent: var(--accent);
+	--color-accent-hover: var(--accent-hover);
+	--color-accent-active: var(--accent-active);
+	--color-accent-contrast: var(--accent-contrast);
+	--color-accent-wash: var(--accent-wash);
+	--color-secondary: var(--secondary);
+	--color-secondary-wash: var(--secondary-wash);
+	--color-danger: var(--danger);
+	--color-danger-wash: var(--danger-wash);
+	--color-warning: var(--warning);
+	--color-warning-wash: var(--warning-wash);
+	--color-success: var(--success);
+	--color-success-wash: var(--success-wash);
+	--color-link: var(--link);
+	--color-link-hover: var(--link-hover);
+	--color-focus-ring: var(--focus-ring);
 
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
-  --font-sans: var(--font-body);
-  --font-mono: var(--font-mono);
+	--font-display: var(--font-display);
+	--font-body: var(--font-body);
+	--font-sans: var(--font-body);
+	--font-mono: var(--font-mono);
 
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-card: var(--radius-card);
-  --radius: var(--radius);
+	--radius-sm: var(--radius-sm);
+	--radius-md: var(--radius-md);
+	--radius-lg: var(--radius-lg);
+	--radius-card: var(--radius-card);
+	--radius: var(--radius);
 
-  --shadow-sm: var(--shadow-sm);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
-  --shadow-glow: var(--shadow-glow);
-  --shadow-card: var(--shadow-card);
+	--shadow-sm: var(--shadow-sm);
+	--shadow-md: var(--shadow-md);
+	--shadow-lg: var(--shadow-lg);
+	--shadow-glow: var(--shadow-glow);
+	--shadow-card: var(--shadow-card);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+	:root {
+		--background: #0a0a0a;
+		--foreground: #ededed;
+	}
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+	background: var(--background);
+	color: var(--foreground);
+	font-family: Arial, Helvetica, sans-serif;
 }
 
 [data-theme="verso"] .tenant-heading {
-  color: var(--accent);
+	color: var(--accent);
 }
 
-
 svg {
-  display: inline-block;
+	display: inline-block;
 }

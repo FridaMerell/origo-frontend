@@ -1,16 +1,104 @@
 import type { Metadata } from "next"
-import Home from "./NewHome"
-import { species as speciesCards } from "./species-data"
-import { getTempusSpecies, getTempusSpeciesPhenogram } from "@/app/lib/dal"
-import { getFollowedSpecies } from "../actions/tempus"
+import { cookies } from "next/headers"
+import { getFollowedSpecies } from "@/app/actions/tempus"
+import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
+import {
+  getTempusGeoAreas,
+  getTempusRoutes,
+  getTempusRouteStops,
+  getTempusSeasonalOverviewPage,
+  getTempusSpeciesPhenogram,
+  getTempusSuggestedStopsRun,
+} from "@/app/lib/dal"
+import Home, { type HomeSpecies } from "./NewHome"
 
 export const metadata: Metadata = {
   title: "Tempus | Origo",
   description: "Säsongsöversikt och ruttplanering.",
 }
+export default async function TempusPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; p?: string }>
+}) {
+  const { view: rawView, p: rawPage } = await searchParams
+  const view = rawView === "all" ? "all" : "followed"
+  const overviewPage = Number.isInteger(Number(rawPage)) && Number(rawPage) > 0
+    ? Number(rawPage)
+    : 1
+  const [followedSpecies, geoAreas, cookieStore, routes] = await Promise.all([
+    getFollowedSpecies(),
+    getTempusGeoAreas(),
+    cookies(),
+    getTempusRoutes({ page_size: 100 }),
+  ])
+  const selectedId = cookieStore.get(TEMPUS_GEO_AREA_COOKIE)?.value
+  const selectedGeoArea = selectedId === TEMPUS_ALL_SWEDEN
+    ? null
+    : geoAreas.find((geoArea) => geoArea.id === selectedId) ?? geoAreas[0] ?? null
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const nextRoute = [...routes]
+    .filter((route) => route.planned_date >= todayKey)
+    .sort((first, second) => first.planned_date.localeCompare(second.planned_date))[0] ?? null
 
+  const overviewParams = {
+    geo_area: selectedGeoArea?.id,
+    min_records: 20,
+  }
+  const [items, overview, overviewIncoming, overviewOutgoing] = await Promise.all([
+    Promise.all(
+      followedSpecies.map(async (species) => ({
+        species,
+        phenogram: await getTempusSpeciesPhenogram(species.id, selectedGeoArea?.id),
+      })),
+    ) as Promise<HomeSpecies[]>,
+    getTempusSeasonalOverviewPage({
+      ...overviewParams,
+      page: overviewPage,
+      page_size: 24,
+    }),
+    getTempusSeasonalOverviewPage({
+      ...overviewParams,
+      status: "coming_into_season",
+      page_size: 3,
+    }),
+    getTempusSeasonalOverviewPage({
+      ...overviewParams,
+      status: "going_out_of_season",
+      page_size: 3,
+    }),
+  ])
+  const routeOverview = nextRoute
+    ? await Promise.all([
+        getTempusRouteStops(nextRoute.id),
+        getTempusSuggestedStopsRun(nextRoute.id),
+      ]).then(([stops, run]) => ({
+        route: nextRoute,
+        stops,
+        suggestions: run?.status === "succeeded" ? run.result : [],
+      }))
+    : null
+  const today = new Date()
 
-export default async function TempusPage() {
-  const followedSpecies = await getFollowedSpecies()
-  return <Home followedSpecies={followedSpecies} />
+  return (
+    <Home
+      items={items}
+      areaName={selectedGeoArea?.name ?? "Hela Sverige"}
+      todayLabel={today.toLocaleDateString("sv-SE", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}
+      currentMonth={today.getMonth()}
+      view={view}
+      overview={overview.results}
+      overviewCount={overview.count}
+      overviewPage={overviewPage}
+      overviewHasNext={Boolean(overview.next)}
+      overviewHasPrevious={Boolean(overview.previous)}
+      overviewIncoming={overviewIncoming.results}
+      overviewOutgoing={overviewOutgoing.results}
+      routeOverview={routeOverview}
+    />
+  )
 }

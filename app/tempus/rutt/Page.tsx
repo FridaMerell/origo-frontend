@@ -1,140 +1,112 @@
-"use client"
+import type { Metadata } from "next"
+import Link from "next/link"
+import { getTempusRoutes } from "@/app/lib/dal"
 
-import { useState } from "react"
-import { Card } from "@/app/components/ui/Card"
-import { Chip } from "@/app/components/ui/Chip"
-import { Icon } from "@/app/components/ui/Icon"
-
-type Stop = {
-  name: string
-  arrival: string
-  habitat: string
-  targets: string[]
-  note: string
+export const metadata: Metadata = {
+  title: "Rutter | Tempus",
+  description: "Planerade körsträckor med stoppställen rankade efter artdata.",
 }
 
-const stops: Stop[] = [
-  {
-    name: "Malmö · Bulltofta rekreationsområde",
-    arrival: "07:30",
-    habitat: "Ängsmark · skogsbryn",
-    targets: ["Citronfjäril", "Ängsvädd"],
-    note: "Morgonvärme samlar fjärilar längs de södervända brynen.",
-  },
-  {
-    name: "Vombs fure",
-    arrival: "09:10",
-    habitat: "Tallskog · sandmark",
-    targets: ["Större korsnäbb", "Sandödla"],
-    note: "Lyssna efter korsnäbb i toppen av tallarna vid parkeringen.",
-  },
-  {
-    name: "Fyledalen",
-    arrival: "10:40",
-    habitat: "Dalgång · betesmark",
-    targets: ["Klockgentiana"],
-    note: "Fuktängarna i dalbotten står i sen blomning.",
-  },
-  {
-    name: "Kivik · Stenshuvud",
-    arrival: "12:15",
-    habitat: "Kustnära lövskog",
-    targets: ["Trattkantarell"],
-    note: "Avslutande stopp – mossig mark på nordsidan.",
-  },
-]
+function formatDate(value: string | null) {
+  if (!value) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
+}
 
-const summary = [
-  { label: "Sträcka", value: "126 km" },
-  { label: "Stopp", value: "4" },
-  { label: "Sökkorridor", value: "5 km" },
-  { label: "Datum", value: "30 aug 2026" },
-]
-
-export default function RuttPage() {
-  const [corridor, setCorridor] = useState(5)
+export default async function RoutesPage() {
+  const routes = await getTempusRoutes({ page_size: 100 })
+  const sorted = [...routes].sort((a, b) =>
+    (b.planned_date ?? "").localeCompare(a.planned_date ?? ""),
+  )
 
   return (
-    <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-8 px-4 py-6 sm:px-8">
-      <header className="flex flex-col gap-3">
-        <span className="font-mono text-[10px] uppercase tracking-[.14em] text-accent">
-          Ruttplanering · exempeldata
-        </span>
-        <h1 className="font-display text-3xl font-semibold tracking-tight text-text">
-          Malmö → Kivik
-        </h1>
-        <p className="max-w-2xl text-sm leading-relaxed text-text-muted">
-          En planerad dagsrutt med stopp valda efter vilka arter som är aktuella längs vägen.
-          Data är statisk tills Tempus ruttlager kopplas in.
-        </p>
-      </header>
+    <div className="container mx-auto max-w-4xl py-5 max-sm:px-3 sm:py-7">
+      <article className="overflow-hidden rounded-card border border-border bg-surface text-text">
+        <header className="px-4 pb-2 pt-3 sm:px-5">
+          <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
+            <span>Ruttförteckning</span>
+            <span>{sorted.length} {sorted.length === 1 ? "rutt" : "rutter"}</span>
+          </div>
+          <div className="flex flex-wrap items-baseline justify-between gap-2 py-3">
+            <h1 className="font-display text-2xl font-medium italic tracking-wide sm:text-3xl">
+              Dina rutter
+            </h1>
+            <Link
+              href="/rutt/ny"
+              className="font-display text-sm italic text-accent no-underline hover:text-accent-hover"
+            >
+              Ny rutt
+            </Link>
+          </div>
+        </header>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {summary.map((item) => (
-          <Card key={item.label} className="flex flex-col gap-1 shadow-sm">
-            <span className="font-mono text-[10px] uppercase tracking-wide text-text-faint">
-              {item.label}
-            </span>
-            <strong className="font-display text-xl font-semibold">{item.value}</strong>
-          </Card>
-        ))}
-      </section>
+        <section className="px-3 pb-4 sm:px-5 sm:pb-6">
+          <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_7rem] border-l border-t border-border font-display text-[9px] italic leading-tight text-text-muted sm:grid-cols-[2.75rem_minmax(0,1.6fr)_9rem_6rem_4rem]">
+            <span className="border-b border-r border-border px-2 py-1.5 text-center">Nr</span>
+            <span className="border-b border-r border-border px-3 py-1.5">Namn</span>
+            <span className="border-b border-r border-border px-3 py-1.5">Datum</span>
+            <span className="hidden border-b border-r border-border px-3 py-1.5 sm:block">Korridor</span>
+            <span className="hidden border-b border-r border-border px-2 py-1.5 text-center sm:block">Punkter</span>
+          </div>
 
-      <Card className="flex flex-col gap-3 shadow-sm">
-        <label className="flex items-center justify-between gap-4 font-mono text-xs uppercase tracking-wide text-text-muted">
-          Sökkorridor
-          <output className="text-text">{corridor} km</output>
-        </label>
-        <input
-          aria-label="Sökkorridor i kilometer"
-          className="w-full accent-accent"
-          max={20}
-          min={1}
-          onChange={(event) => setCorridor(Number(event.target.value))}
-          step={1}
-          type="range"
-          value={corridor}
-        />
-      </Card>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="font-display text-xl font-semibold tracking-tight">Stopp längs rutten</h2>
-        <ol className="flex flex-col gap-3">
-          {stops.map((stop, index) => (
-            <li key={stop.name}>
-              <Card className="relative flex flex-col gap-3 border-l-4 border-l-accent shadow-sm sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex gap-4">
-                  <span className="font-display text-2xl text-accent">{index + 1}</span>
-                  <div>
-                    <h3 className="font-display text-lg font-semibold">{stop.name}</h3>
-                    <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-text-faint">
-                      <Icon name="map-pin" size={11} className="mr-1" />
-                      {stop.habitat}
-                    </p>
-                    <p className="mt-2 text-sm text-text-muted">{stop.note}</p>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {stop.targets.map((target) => (
-                        <Chip
-                          key={target}
-                          variant="secondary"
-                          className="px-2 py-0.5 text-[10px] uppercase tracking-wide"
-                        >
-                          {target}
-                        </Chip>
-                      ))}
-                    </div>
-                  </div>
+          {sorted.length === 0 ? (
+            <div className="border-l border-border">
+              {[0, 1, 2, 3].map((line) => (
+                <div
+                  key={line}
+                  className="grid h-11 grid-cols-[2.25rem_minmax(0,1fr)_7rem] border-b border-r border-border sm:grid-cols-[2.75rem_minmax(0,1.6fr)_9rem_6rem_4rem]"
+                >
+                  <span className="border-r border-border" />
+                  <span className="border-r border-border" />
+                  <span className="border-r border-border" />
+                  <span className="hidden border-r border-border sm:block" />
+                  <span className="hidden border-r border-border sm:block" />
                 </div>
-                <span className="shrink-0 font-mono text-sm text-text">{stop.arrival}</span>
-              </Card>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <p className="font-mono text-[10px] text-text-faint">
-        Exempeldata. Stopp och artträffar verifieras när ruttlagret och artdata kopplas in.
-      </p>
+              ))}
+              <p className="border-b border-r border-border px-3 py-4 text-center font-display text-sm italic text-text-muted">
+                Inga rutter än.{" "}
+                <Link href="/rutt/ny" className="text-accent hover:text-accent-hover">
+                  Planera din första
+                </Link>
+                .
+              </p>
+            </div>
+          ) : (
+            <ol className="border-l border-border">
+              {sorted.map((route, index) => {
+                const plannedDate = formatDate(route.planned_date)
+                const pointCount = route.geometry?.coordinates.length ?? 0
+                return (
+                  <li key={route.id}>
+                    <Link
+                      href={`/rutt/${route.id}`}
+                      className="grid min-h-12 grid-cols-[2.25rem_minmax(0,1fr)_7rem] border-b border-r border-border font-display no-underline transition-colors hover:bg-surface-2/40 sm:grid-cols-[2.75rem_minmax(0,1.6fr)_9rem_6rem_4rem]"
+                    >
+                      <span className="flex items-center justify-end border-r border-border px-2 py-2 text-[10px] italic tabular-nums text-text-faint">
+                        {index + 1}
+                      </span>
+                      <span className="flex min-w-0 items-center border-r border-border px-3 py-2 text-sm italic tracking-wide text-text">
+                        <span className="truncate">{route.name}</span>
+                      </span>
+                      <span className="flex items-center border-r border-border px-3 py-2 text-xs italic text-text-muted">
+                        {plannedDate ?? "—"}
+                      </span>
+                      <span className="hidden items-center border-r border-border px-3 py-2 text-xs italic tabular-nums text-text-muted sm:flex">
+                        {(route.corridor_metres / 1000).toLocaleString("sv-SE")} km
+                      </span>
+                      <span className="hidden items-center justify-center border-r border-border px-2 py-2 text-xs italic tabular-nums text-text-muted sm:flex">
+                        {pointCount || "—"}
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
+        </section>
+      </article>
     </div>
   )
 }

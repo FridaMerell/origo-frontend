@@ -1,11 +1,14 @@
 import Link from "next/link"
 import { Drawer } from "@/app/components/ui/Drawer"
 import SpeciesCategoryForm from "./species-category-form"
-import { getTempusSpeciesCategories } from "@/app/lib/dal"
+import { getTempusSpeciesCategoriesPage } from "@/app/lib/dal"
 import { Card } from "@/app/components/ui/Card"
 
-const Page = async () => {
-  const categories = await getTempusSpeciesCategories()
+const Page = async ({ searchParams }: { searchParams: Promise<{ p?: string }> }) => {
+  const { p } = await searchParams
+  const page = p && Number.isInteger(Number(p)) && Number(p) > 0 ? Number(p) : 1
+  const { results: categories, count, pageSize = 24 } = await getTempusSpeciesCategoriesPage({ page })
+  const totalPages = Math.max(1, Math.ceil(count / pageSize))
   return (
     <div className="container py-5 mx-auto flex flex-col gap-5 ">
       <div className="w-full flex  flex-col md:flex-row justify-between items-center">
@@ -27,13 +30,20 @@ const Page = async () => {
                   {
                     category.species_count === 0 ? 'Inga arter'
                       :
-                      `${category.species_count} ${category.species.length > 1 ? 'arter' : 'art'}`}</p>
+                      `${category.species_count} ${category.species_count === 1 ? 'art' : 'arter'}`}</p>
               </Card>
             </Link>
           }
           )}
         </div>
       </section>
+      {totalPages > 1 ? (
+        <nav className="flex items-center justify-between text-sm text-text-muted" aria-label="Sidnavigering för taxonomier">
+          {page > 1 ? <Link href={page === 2 ? "?" : `?p=${page - 1}`}>Föregående</Link> : <span />}
+          <span>Sida {page} av {totalPages}</span>
+          {page < totalPages ? <Link href={`?p=${page + 1}`}>Nästa</Link> : <span />}
+        </nav>
+      ) : null}
     </div>
   )
 }

@@ -164,6 +164,30 @@ export const checklistUpdateSchema = z.object({
   )
 export type ChecklistUpdateValues = z.infer<typeof checklistUpdateSchema>
 
+export const routeLineStringSchema = z.object({
+  type: z.literal("LineString"),
+  coordinates: z
+    .array(
+      z.tuple([
+        z.number().min(-180).max(180),
+        z.number().min(-90).max(90),
+      ]),
+    )
+    .min(2, "Rita minst två punkter längs rutten."),
+})
+export type RouteLineString = z.infer<typeof routeLineStringSchema>
+
+export const routeFormSchema = z.object({
+  name: z.string().trim().min(1, "Namn krävs."),
+  planned_date: z.string().min(1, "Datum krävs."),
+  corridor_metres: z
+    .coerce.number()
+    .int()
+    .positive("Sökkorridoren måste vara ett positivt tal."),
+  geometry: routeLineStringSchema,
+})
+export type RouteFormValues = z.infer<typeof routeFormSchema>
+
 // The `location` JSONField stores GeoJSON — a Point as [longitude, latitude],
 // or an empty object when no position was given.
 export const observationPointSchema = z.object({

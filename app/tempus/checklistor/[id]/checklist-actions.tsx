@@ -27,7 +27,11 @@ export default function ChecklistActions({ id, name }: { id: string; name: strin
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
-        <Button type="button" onClick={() => router.push(`/checklistor/${id}/redigera`)}>
+        <Button type="button" onClick={() => router.push(`/checklistor/${id}/redigera`)}
+          rounded="rounded-none"
+          size="sm"
+          
+        >
           <Icon name="pencil" size={15} />
           Redigera
         </Button>

@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Icon } from "@/app/components/ui/Icon"
-import { getTempusObservationItem, getTempusSpecies } from "@/app/lib/dal"
+import { getTempusObservationItem, getTempusSpeciesItems } from "@/app/lib/dal"
 import { BiotopeMap, biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import ObservationEditor from "./observation-editor"
 
@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params
   const observation = await getTempusObservationItem(id)
   if (!observation) return { title: "Observation | Tempus" }
-  const species = (await getTempusSpecies()).find((item) => item.id === observation.species)
+  const species = (await getTempusSpeciesItems([observation.species]))[0] ?? null
   const name = species?.swedish_name || species?.scientific_name
   return { title: name ? `${name} | Observationer` : "Observation | Tempus" }
 }
@@ -36,7 +36,7 @@ export default async function ObservationDetailPage({ params }: PageProps) {
   const observation = await getTempusObservationItem(id)
   if (!observation) notFound()
 
-  const species = (await getTempusSpecies()).find((item) => item.id === observation.species)
+  const species = (await getTempusSpeciesItems([observation.species]))[0] ?? null
   const speciesLabel = species?.swedish_name || species?.scientific_name || "Okänd art"
   const observedAt = formatDateTime(observation.observed_at)
   const point =

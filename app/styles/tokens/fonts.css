@@ -1,1 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Petrona:wght@400;500;600;700&family=Karla:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap');
+/*
+ * Web fonts are loaded via <link> tags in app/layout.tsx <head>.
+ * Turbopack strips remote `@import url(...)` from nested CSS modules, so the
+ * Google Fonts import cannot live here — it silently disappears from the build.
+ */

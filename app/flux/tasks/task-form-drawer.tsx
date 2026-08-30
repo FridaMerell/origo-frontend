@@ -15,12 +15,20 @@ import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import { UserMultiSelect } from "@/app/flux/user-multiselect";
 import { useFluxMilestones, useFluxProjects, useSelectedFluxProject } from "@/app/lib/flux-context";
 import { useUsers } from "@/app/lib/user-context";
-import type { FluxTask, FluxTaskStatus } from "@/app/lib/dal";
+import type { FluxTask, FluxTaskRecurrence, FluxTaskStatus } from "@/app/lib/dal";
 
 const STATUS_OPTIONS: { value: FluxTaskStatus; label: string }[] = [
   { value: "not_started", label: "Ej påbörjad" },
   { value: "in_progress", label: "Pågående" },
   { value: "done", label: "Klar" },
+];
+
+const RECURRENCE_OPTIONS: { value: FluxTaskRecurrence; label: string }[] = [
+  { value: "none", label: "Ingen" },
+  { value: "daily", label: "Dagligen" },
+  { value: "weekly", label: "Veckovis" },
+  { value: "monthly", label: "Månadsvis" },
+  { value: "yearly", label: "Årsvis" },
 ];
 
 const PRIORITY_LABEL: Record<"low" | "medium" | "high", string> = {
@@ -70,6 +78,9 @@ export function TaskFormDrawer({
       priority: task?.priority ?? "medium",
       status: task?.status ?? "not_started",
       due_date: task?.due_date ?? null,
+      recurrence: task?.recurrence ?? "none",
+      recurrence_interval: task?.recurrence_interval ?? 1,
+      recurrence_end_date: task?.recurrence_end_date ?? null,
       assignees: task?.assignees ?? [],
     },
   });
@@ -87,6 +98,9 @@ export function TaskFormDrawer({
         priority: task?.priority ?? "medium",
         status: task?.status ?? "not_started",
         due_date: task?.due_date ?? null,
+        recurrence: task?.recurrence ?? "none",
+        recurrence_interval: task?.recurrence_interval ?? 1,
+        recurrence_end_date: task?.recurrence_end_date ?? null,
         assignees: task?.assignees ?? [],
       });
       uploadedFiles.reset();
@@ -182,6 +196,31 @@ export function TaskFormDrawer({
         <Field label="Deadline" error={errors.due_date}>
           <input type="date" className={fieldInputClass} {...register("due_date")} />
         </Field>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Field label="Återkommande" error={errors.recurrence}>
+            <select className={fieldInputClass} {...register("recurrence")}>
+              {RECURRENCE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Intervall" error={errors.recurrence_interval}>
+            <input
+              type="number"
+              min={1}
+              className={fieldInputClass}
+              {...register("recurrence_interval")}
+            />
+          </Field>
+
+          <Field label="Slutdatum för återkommande" error={errors.recurrence_end_date}>
+            <input type="date" className={fieldInputClass} {...register("recurrence_end_date")} />
+          </Field>
+        </div>
 
         <div className="flex flex-col gap-1.5 text-sm text-text-muted">
           Tilldelas

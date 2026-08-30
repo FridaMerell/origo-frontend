@@ -7,8 +7,8 @@ export default function Home() {
   const posts = useApsisPosts();
 
   return (
-    <div>
-      <p className="max-w-[760px] px-6 pt-7 pb-2 text-sm leading-relaxed text-text-muted sm:px-12">
+    <div className="container">
+      <p className="px-6 pt-7 pb-2 text-sm leading-relaxed text-text-muted sm:px-12">
         En samling foton av kyrkoabsider — det halvrunda utrymmet bakom altaret.
         Bläddra i väggen nedan, eller låt Slumpa välja en åt dig. Logga in för att
         lägga till egna bilder.

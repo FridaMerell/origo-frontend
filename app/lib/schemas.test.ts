@@ -282,6 +282,9 @@ describe("fluxTaskFormSchema", () => {
     priority: "medium" as const,
     status: "not_started" as const,
     due_date: null,
+    recurrence: "none" as const,
+    recurrence_interval: 1,
+    recurrence_end_date: null,
     assignees: [],
   }
 
@@ -314,6 +317,16 @@ describe("fluxTaskFormSchema", () => {
   it("rejects an invalid priority", () => {
     const result = fluxTaskFormSchema.safeParse({ ...base, milestone: null, priority: "urgent" })
     expect(result.success).toBe(false)
+  })
+
+  it("normalizes an empty recurrence end date to null", () => {
+    const result = fluxTaskFormSchema.safeParse({
+      ...base,
+      milestone: null,
+      recurrence_end_date: "",
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.recurrence_end_date).toBeNull()
   })
 })
 

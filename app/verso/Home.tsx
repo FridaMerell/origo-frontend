@@ -264,7 +264,7 @@ const Home = () => {
     return (
       <div className="flex flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-bold">Välkommen till Origo</h1>
-        <p className="text-lg text-gray-600">Vänligen välj en anläggning för att fortsätta.</p>
+        <p className="text-lg text-text-muted">Vänligen välj en anläggning för att fortsätta.</p>
       </div>
     )
   }

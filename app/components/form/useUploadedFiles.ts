@@ -2,26 +2,27 @@
 
 import { useState } from "react";
 import type { UploadedFile } from "@/app/components/ui/FileUpload";
+import { normalizeFileUrls, type FileLike } from "@/app/lib/files";
 
-export function uploadedFilesFromUrls(urls: string[] = []): UploadedFile[] {
-  return urls.map((url) => ({ url, name: url.split("/").pop() ?? url }));
+export function uploadedFilesFromUrls(files: FileLike[] = []): UploadedFile[] {
+  return normalizeFileUrls(files).map((url) => ({ url, name: url.split("/").pop() ?? url }));
 }
 
 /**
  * Owns the references returned by the direct Next -> Vercel Blob upload.
  * Django only receives `urls` when the surrounding model form is submitted.
  */
-export function useUploadedFiles(sourceUrls: string[] = [], resetKey?: string | number | null) {
+export function useUploadedFiles(sourceFiles: FileLike[] = [], resetKey?: string | number | null) {
   const [state, setState] = useState(() => ({
     resetKey,
-    files: uploadedFilesFromUrls(sourceUrls),
+    files: uploadedFilesFromUrls(sourceFiles),
   }));
 
   if (state.resetKey !== resetKey) {
-    setState({ resetKey, files: uploadedFilesFromUrls(sourceUrls) });
+    setState({ resetKey, files: uploadedFilesFromUrls(sourceFiles) });
   }
 
-  const files = state.resetKey === resetKey ? state.files : uploadedFilesFromUrls(sourceUrls);
+  const files = state.resetKey === resetKey ? state.files : uploadedFilesFromUrls(sourceFiles);
   const setFiles = (next: UploadedFile[] | ((current: UploadedFile[]) => UploadedFile[])) => {
     setState((current) => ({
       resetKey,
@@ -33,7 +34,7 @@ export function useUploadedFiles(sourceUrls: string[] = [], resetKey?: string | 
     files,
     setFiles,
     urls: files.map((file) => file.url),
-    reset: () => setFiles(uploadedFilesFromUrls(sourceUrls)),
+    reset: () => setFiles(uploadedFilesFromUrls(sourceFiles)),
     clear: () => setFiles([]),
   };
 }

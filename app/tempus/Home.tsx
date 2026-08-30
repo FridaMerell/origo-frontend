@@ -249,7 +249,7 @@ export default function Home({ activity }: { activity?: Record<string, number[]>
   const copy = scopeCopy[scope]
 
   return (
-    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-8 px-4 py-6 sm:px-8">
+    <div className="container flex w-full flex-col gap-8 py-6">
       <section className="flex flex-wrap items-center gap-2">
         <span className="mr-1 font-mono text-[10px] uppercase tracking-wide text-text-faint">
           Analysera för

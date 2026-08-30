@@ -10,6 +10,7 @@ import { AddMilestoneButton } from "@/app/flux/projects/add-milestone-button";
 import { AddMilestoneTaskButton } from "@/app/flux/projects/add-milestone-task-button";
 import { EditMilestoneButton } from "@/app/flux/projects/edit-milestone-button";
 import { EditProjectButton } from "@/app/flux/projects/edit-project-button";
+import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
 import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
@@ -46,7 +47,10 @@ function TaskRow({
       onClick={onClick}
       className="flex cursor-pointer items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-surface-2"
     >
-      <span className="min-w-0 truncate text-text">{task.title}</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <TaskCompletionButton id={task.id} status={task.status} />
+        <span className="min-w-0 truncate text-text">{task.title}</span>
+      </div>
       <span className="flex shrink-0 items-center gap-3">
         <span
           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}

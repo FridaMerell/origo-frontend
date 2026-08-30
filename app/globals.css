@@ -9,7 +9,7 @@
 	padding-inline: 5rem;
 
 	@media (max-width: 768px) {
-		padding-inline: 2rem;
+		padding-inline: 1rem;
 	}
 }
 
@@ -74,6 +74,20 @@
 	--shadow-lg: var(--shadow-lg);
 	--shadow-glow: var(--shadow-glow);
 	--shadow-card: var(--shadow-card);
+}
+
+[data-theme="flux"] {
+	--text-xs: .8125rem;
+	--text-sm: .875rem;
+	--text-base: 1rem;
+	--text-md: 1.125rem;
+}
+
+[data-theme="tempus"] {
+	--text-xs: .8125rem;
+	--text-sm: .875rem;
+	--text-base: 1rem;
+	--text-md: 1.125rem;
 }
 
 @media (prefers-color-scheme: dark) {

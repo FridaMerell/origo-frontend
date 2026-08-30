@@ -116,7 +116,7 @@ function PhenoStrip({
   tone: "accent" | "secondary"
 }) {
   return (
-    <span className="grid grid-cols-12 gap-px" role="img" aria-label="Artens aktiva månader">
+    <span className="grid grid-cols-12 gap-1" role="img" aria-label="Artens aktiva månader">
       {MONTHS.map((month, index) => (
         <span key={`${month}-${index}`} className="flex flex-col items-center gap-0.5">
           <span
@@ -128,7 +128,7 @@ function PhenoStrip({
                 : "border-border bg-surface-2/70"
             } ${index === currentMonth ? "outline outline-offset-1 outline-text" : ""}`}
           />
-          <span className="font-mono text-[7px] leading-none text-text-faint">{month}</span>
+          <span className="font-mono text-[9px] leading-none text-text-faint">{month}</span>
         </span>
       ))}
     </span>
@@ -167,28 +167,21 @@ function RegisterRow({
         aria-label={`Visa ${name}`}
         className="block border-b border-border px-2 py-2.5 no-underline transition-colors hover:bg-surface-2/45"
       >
-        <div className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-x-3 sm:grid-cols-[2.5rem_minmax(0,1.7fr)_minmax(0,1fr)_7rem_8rem]">
-          <span className="text-right font-mono text-[11px] tabular-nums text-text-faint">
+        <div className="grid min-w-[58rem] grid-cols-[2.5rem_minmax(9rem,13rem)_minmax(12rem,1fr)_minmax(9rem,12rem)_minmax(15rem,18rem)] items-center gap-x-4">
+          <span className="text-right font-mono text-[12px] tabular-nums text-text-faint">
             {String(index).padStart(2, "0")}
           </span>
-          <span className="min-w-0">
-            <span className="block truncate font-display text-[15px] text-text">{name}</span>
+          <span className="min-w-0 truncate whitespace-nowrap">
+            <span className="font-display text-[15px] text-text">{name}</span>
             {scientificName ? (
-              <span className="block truncate font-mono text-[10px] italic text-text-muted">{scientificName}</span>
+              <span className="ml-2 font-mono text-[11px] italic text-text-muted">{scientificName}</span>
             ) : null}
           </span>
-          <span className="hidden min-w-0 truncate text-xs text-text-muted sm:block">{meta}</span>
-          <span
-            className={`justify-self-end whitespace-nowrap font-display text-[11px] italic sm:justify-self-start sm:text-xs ${statusInk}`}
-          >
+          <span className="truncate text-[13px] leading-relaxed text-text-muted">{meta}</span>
+          <span className={`truncate font-display text-xs italic ${statusInk}`}>
             {statusLabel}
             {hint ? <span className="text-text-faint"> · {hint}</span> : null}
           </span>
-          <span className="hidden sm:block">
-            <PhenoStrip months={months} currentMonth={currentMonth} tone={tone} />
-          </span>
-        </div>
-        <div className="mt-2 pl-[calc(1.75rem+0.75rem)] sm:hidden">
           <PhenoStrip months={months} currentMonth={currentMonth} tone={tone} />
         </div>
       </Link>
@@ -211,7 +204,7 @@ function SeasonWindow({
 }) {
   return (
     <div className="border border-border bg-surface">
-      <div className="border-b border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">
+      <div className="border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[.16em] text-text-faint">
         {title}
       </div>
       {entries.length > 0 ? (
@@ -222,11 +215,11 @@ function SeasonWindow({
                 href={entry.href}
                 className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-baseline gap-x-3 border-b border-border px-4 py-2.5 no-underline transition-colors last:border-b-0 hover:bg-surface-2/45"
               >
-                <span className="font-mono text-[11px] tabular-nums text-text-faint">
+                <span className="font-mono text-[12px] tabular-nums text-text-faint">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span className="min-w-0 truncate font-display text-sm text-text">{entry.name}</span>
-                <span className={`shrink-0 font-display text-xs italic tabular-nums ${ink}`}>
+                <span className={`shrink-0 font-display text-sm italic tabular-nums ${ink}`}>
                   {entry.days != null ? `${entry.days} d` : "—"}
                 </span>
               </Link>
@@ -244,19 +237,19 @@ function RouteOverview({ routeOverview }: { routeOverview: HomeRouteOverview | n
   if (!routeOverview) {
     return (
       <section className="border border-border bg-surface">
-        <div className="border-b border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">
+        <div className="border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[.16em] text-text-faint">
           Nästa rutt
         </div>
         <div className="flex flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-display text-lg font-semibold">Ingen kommande rutt</h2>
-            <p className="mt-1 text-sm text-text-muted">
+            <h2 className="font-display text-xl font-semibold">Ingen kommande rutt</h2>
+            <p className="mt-1 text-base text-text-muted">
               Planera en tur så förs föreslagna arter och stopp längs vägen in här.
             </p>
           </div>
           <Link
             href="/rutt/ny"
-            className="w-fit shrink-0 border border-accent px-3 py-2 text-sm text-accent no-underline hover:bg-accent-wash"
+            className="w-fit shrink-0 border border-accent px-3 py-2 text-base text-accent no-underline hover:bg-accent-wash"
           >
             Planera en rutt
           </Link>
@@ -321,47 +314,52 @@ function RouteOverview({ routeOverview }: { routeOverview: HomeRouteOverview | n
 
   return (
     <section className="border border-border bg-surface">
-      <div className="border-b border-border px-4 py-2 font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">
+      <div className="border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[.16em] text-text-faint">
         Nästa rutt
       </div>
-      <div className="grid sm:grid-cols-[minmax(0,1fr)_14rem] lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <div className="flex flex-col p-4 sm:p-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <div className="grid lg:grid-cols-[18rem_minmax(0,1fr)_20rem]">
+        <div className="flex flex-col justify-between gap-6 p-5 lg:border-r lg:border-border">
+          <div>
             <h2 className="font-display text-2xl font-semibold tracking-tight">{route.name}</h2>
-            <Link
-              href={`/rutt/${route.id}`}
-              className="font-mono text-[10px] uppercase tracking-[.14em] text-accent no-underline hover:underline"
-            >
-              Visa rutt ›
-            </Link>
+            <p className="mt-2 font-mono text-[11px] uppercase leading-relaxed tracking-[.13em] text-text-faint">
+              {formatRouteDate(route.planned_date)}<br />
+              {(route.corridor_metres / 1000).toLocaleString("sv-SE")} km korridor · {stops.length} stopp
+            </p>
           </div>
-          <p className="mt-2 font-mono text-[10px] uppercase tracking-[.13em] text-text-faint">
-            {formatRouteDate(route.planned_date)} · {(route.corridor_metres / 1000).toLocaleString("sv-SE")} km korridor · {stops.length} stopp
-          </p>
+          <Link
+            href={`/rutt/${route.id}`}
+            className="w-fit border-b border-accent pb-0.5 font-mono text-[10px] uppercase tracking-[.14em] text-accent no-underline"
+          >
+            Visa rutt ›
+          </Link>
+        </div>
+
+        <div className="border-t border-border p-4 lg:border-t-0">
+          <span className="block pb-2 font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">
+            Högst rankade längs vägen
+          </span>
           {suggestions.length > 0 ? (
-            <div className="mt-5 border border-border">
-              <span className="block border-b border-border px-3 py-1.5 font-mono text-[9px] uppercase tracking-[.16em] text-text-faint">
-                Högst rankade längs vägen
-              </span>
+            <div className="border border-border">
               {suggestions.slice(0, 3).map((stop) => (
                 <div
                   key={stop.rank}
-                  className="flex items-baseline justify-between gap-3 border-b border-border px-3 py-2 last:border-b-0"
+                  className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4 border-b border-border px-3 py-2.5 last:border-b-0"
                 >
-                  <span className="min-w-0 truncate font-display text-sm">{stop.locality || `Förslag ${stop.rank}`}</span>
-                  <span className="shrink-0 font-mono text-[10px] uppercase tracking-[.1em] tabular-nums text-text-muted">
+                  <span className="truncate font-display text-sm">{stop.locality || `Förslag ${stop.rank}`}</span>
+                  <span className="font-mono text-[11px] uppercase tracking-[.1em] tabular-nums text-text-muted">
                     {stop.species_count} arter · {Math.round(stop.detour_m)} m
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="mt-5 border-t border-border pt-4 text-sm text-text-muted">
+            <p className="border-t border-border pt-4 text-base text-text-muted">
               Kör en stoppanalys på ruttsidan för att hitta artrika platser längs vägen.
             </p>
           )}
         </div>
-        <div className="relative aspect-[4/3] overflow-hidden border-t border-border bg-surface-2/30 sm:self-start sm:border-l sm:border-t-0">
+
+        <div className="relative min-h-56 overflow-hidden border-t border-border bg-surface-2/30 lg:border-l lg:border-t-0">
           <div
             className="absolute inset-0"
             style={{ transformOrigin: "0 0", transform: mapTransform }}
@@ -479,23 +477,23 @@ export default function NewHome({
   const registerCount = isAll ? overviewCount : items.length
 
   return (
-    <div className="mx-auto w-full max-w-[1160px] px-4 py-8 sm:px-8">
+    <div className="container  py-8 ">
       <div className="flex flex-col gap-10 text-text">
           {/* Sidhuvud */}
           <header className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 font-mono text-[10px] uppercase tracking-[.18em] text-text-faint">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 font-mono text-[11px] uppercase tracking-[.18em] text-text-faint">
               <span className="text-text-muted">{areaName}</span>
               <span>{todayLabel}</span>
             </div>
 
-            <div className={`grid gap-6 sm:items-end ${habitat ? "sm:grid-cols-[minmax(0,1fr)_16rem]" : ""}`}>
+            <div className={`grid gap-6 sm:items-start ${habitat ? "sm:grid-cols-[minmax(0,1fr)_16rem]" : ""}`}>
               <div>
                 <h1 className="font-display text-[2rem] font-semibold tracking-tight text-text sm:text-4xl lg:text-5xl">
                   Säsongsöversikt
                 </h1>
                 <span aria-hidden="true" className="mt-3 block h-px w-20 bg-text" />
                 <span aria-hidden="true" className="mt-[3px] block h-px w-12 bg-text/50" />
-                <p className="mt-4 max-w-md text-sm leading-relaxed text-text-muted">
+                <p className="mt-4 max-w-md text-base leading-relaxed text-text-muted">
                   {isAll
                     ? "Rapportstarka arter för området och var i sin årscykel de befinner sig just nu."
                     : "Arterna du bevakar, ordnade efter var i sin årscykel de befinner sig just nu."}
@@ -523,9 +521,9 @@ export default function NewHome({
                         <span className="flex-1 bg-text" />
                         <span className="flex-1" />
                       </span>
-                      <span className="font-mono text-[10px] uppercase tracking-[.14em] text-text">{habitat.name}</span>
+                      <span className="font-mono text-[11px] uppercase tracking-[.14em] text-text">{habitat.name}</span>
                     </span>
-                    <span className="mt-1 block font-display text-[11px] italic text-text-muted">{habitatNote}</span>
+                    <span className="mt-1 block font-display text-sm italic text-text-muted">{habitatNote}</span>
                   </figcaption>
                 </figure>
               ) : null}
@@ -536,7 +534,7 @@ export default function NewHome({
               <Link
                 href="/"
                 aria-current={view === "followed" ? "page" : undefined}
-                className={`-mb-px border-b-2 pb-2 font-mono text-[11px] uppercase tracking-[.16em] no-underline ${
+                className={`-mb-px border-b-2 pb-2 font-mono text-[12px] uppercase tracking-[.16em] no-underline ${
                   view === "followed"
                     ? "border-accent text-text"
                     : "border-transparent text-text-muted hover:text-text"
@@ -547,7 +545,7 @@ export default function NewHome({
               <Link
                 href="/?view=all"
                 aria-current={view === "all" ? "page" : undefined}
-                className={`-mb-px border-b-2 pb-2 font-mono text-[11px] uppercase tracking-[.16em] no-underline ${
+                className={`-mb-px border-b-2 pb-2 font-mono text-[12px] uppercase tracking-[.16em] no-underline ${
                   view === "all"
                     ? "border-accent text-text"
                     : "border-transparent text-text-muted hover:text-text"
@@ -561,7 +559,7 @@ export default function NewHome({
             <dl className="grid grid-cols-3 border-y border-border divide-x divide-border">
               {tally.map((cell) => (
                 <div key={cell.label} className="px-2.5 py-3 sm:px-4">
-                  <dt className="font-mono text-[8px] uppercase tracking-[.12em] text-text-faint sm:text-[9px] sm:tracking-[.16em]">{cell.label}</dt>
+                  <dt className="font-mono text-[10px] uppercase tracking-[.12em] text-text-faint sm:text-[11px] sm:tracking-[.16em]">{cell.label}</dt>
                   <dd
                     className={`mt-1 font-display text-2xl font-semibold tabular-nums sm:text-3xl ${
                       cell.lead ? "text-accent" : "text-text"
@@ -582,7 +580,7 @@ export default function NewHome({
               <h2 className="font-display text-xl font-semibold tracking-tight">
                 {isAll ? "Hela urvalet" : "Följda arter"}
               </h2>
-              <span className="font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">
+              <span className="font-mono text-[11px] uppercase tracking-[.16em] text-text-faint">
                 {isAll
                   ? `${overviewCount.toLocaleString("sv-SE")} arter · minst 20 rapporter`
                   : registerCount > 0
@@ -591,15 +589,16 @@ export default function NewHome({
               </span>
             </div>
 
-            <div className="hidden grid-cols-[2.5rem_minmax(0,1.7fr)_minmax(0,1fr)_7rem_8rem] gap-x-3 border-b border-border px-2 py-1.5 font-mono text-[8px] uppercase tracking-[.14em] text-text-faint sm:grid">
-              <span className="text-right">Nr</span>
-              <span>Art</span>
-              <span>{isAll ? "Underlag" : "Livsmiljö"}</span>
-              <span>Status</span>
-              <span>Aktiv period</span>
-            </div>
+            <div className="overflow-x-auto">
+              <div className="grid min-w-[58rem] grid-cols-[2.5rem_minmax(9rem,13rem)_minmax(12rem,1fr)_minmax(9rem,12rem)_minmax(15rem,18rem)] gap-x-4 border-b border-border px-2 py-1.5 font-mono text-[10px] uppercase tracking-[.14em] text-text-faint">
+                <span className="text-right">Nr</span>
+                <span>Art</span>
+                <span>{isAll ? "Underlag" : "Livsmiljö"}</span>
+                <span>Status</span>
+                <span>Aktiv period</span>
+              </div>
 
-            {isAll ? (
+              {isAll ? (
               overview.length > 0 ? (
                 <ol>
                   {overview.map((item, index) => {
@@ -670,10 +669,11 @@ export default function NewHome({
                   </Link>
                 </div>
               </div>
-            )}
+              )}
+            </div>
 
             {/* Förklaring */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 border border-border bg-surface-2/30 px-3 py-2 font-mono text-[9px] uppercase tracking-[.13em] text-text-faint">
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 border border-border bg-surface-2/30 px-3 py-2 font-mono text-[10px] uppercase tracking-[.13em] text-text-faint">
               <span className="text-text-muted">Förklaring</span>
               <span className="flex items-center gap-1.5">
                 <span
@@ -745,7 +745,7 @@ export default function NewHome({
             />
           </section>
 
-          <p className="text-right font-display text-[9px] italic text-text-faint">
+          <p className="text-right font-display text-[10px] italic text-text-faint">
             Sammanställt ur Dyntaxa · aktuellt per {todayLabel}
           </p>
       </div>

@@ -9,6 +9,7 @@ import { Gallery } from "@/app/components/ui/Gallery";
 import { Icon } from "@/app/components/ui/Icon";
 import { ProgressBar } from "@/app/components/ui/ProgressBar";
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer";
+import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
 import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
@@ -120,17 +121,20 @@ export function TaskPanel() {
         title={task?.title}
         headerActions={
           task && (
-            <button
-              type="button"
-              aria-label="Redigera uppgift"
-              onClick={() => {
-                setEditingTask(task);
-                closeTask();
-              }}
-              className="text-text-faint hover:text-text"
-            >
-              <Icon name="pencil" size={16} />
-            </button>
+            <div className="flex items-center gap-2">
+              <TaskCompletionButton id={task.id} status={task.status} />
+              <button
+                type="button"
+                aria-label="Redigera uppgift"
+                onClick={() => {
+                  setEditingTask(task);
+                  closeTask();
+                }}
+                className="text-text-faint hover:text-text"
+              >
+                <Icon name="pencil" size={16} />
+              </button>
+            </div>
           )
         }
       >

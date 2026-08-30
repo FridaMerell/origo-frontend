@@ -146,9 +146,8 @@ function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
                 setOpen(false)
                 if (geoArea.id !== selectedGeoArea?.id) selectGeoArea(geoArea.id)
               }}
-              className={`flex w-full items-center justify-between gap-3 whitespace-nowrap px-3 py-2 text-left text-sm hover:bg-accent-wash hover:text-accent ${
-                geoArea.id === selectedGeoArea?.id ? "font-semibold text-accent" : "text-text-muted"
-              }`}
+              className={`flex w-full items-center justify-between gap-3 whitespace-nowrap px-3 py-2 text-left text-sm hover:bg-accent-wash hover:text-accent ${geoArea.id === selectedGeoArea?.id ? "font-semibold text-accent" : "text-text-muted"
+                }`}
             >
               {geoArea.name}
               {geoArea.id === selectedGeoArea?.id ? <Icon name="check" size={16} /> : null}
@@ -181,7 +180,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
         aria-label="Huvudnavigation"
         className="sticky top-0 z-40 flex min-h-0 items-center border-0 bg-transparent shadow-none sm:min-h-18 sm:border-b sm:border-border sm:bg-surface/95 sm:shadow-[0_1px_0_rgba(var(--shadow-color),0.05)] sm:backdrop-blur"
       >
-        <div className="container relative mx-auto flex min-h-0 w-full items-center gap-0 max-sm:px-0 sm:min-h-18 sm:gap-6">
+        <div className="container relative flex min-h-0 w-full items-center gap-0  sm:min-h-18 sm:gap-6">
           <Link
             href="/"
             onClick={() => setMenuOpen(false)}
@@ -294,7 +293,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                         className={`flex min-h-11 items-center gap-3 rounded-md px-3 text-sm no-underline transition-colors focus-visible:outline-2 focus-visible:outline-focus-ring ${active
                           ? "bg-accent-wash font-semibold text-accent"
                           : "text-text-muted hover:bg-accent-wash hover:text-text"
-                        }`}
+                          }`}
                       >
                         <FieldIcon name={link.icon} className="size-5" />
                         {link.label}
@@ -319,7 +318,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                         className={`flex min-h-11 items-center gap-3 rounded-md px-3 text-sm no-underline transition-colors focus-visible:outline-2 focus-visible:outline-focus-ring ${active
                           ? "bg-accent-wash font-semibold text-accent"
                           : "text-text-muted hover:bg-accent-wash hover:text-text"
-                        }`}
+                          }`}
                       >
                         <FieldIcon name={link.icon} className="size-5" />
                         {link.label}

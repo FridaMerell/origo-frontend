@@ -165,6 +165,7 @@ export async function createTask(
   }
 
   const { error } = await fluxRequest(FLUX_ENDPOINTS.tasks, "POST", {
+    requirements: [],
     ...parsed.data,
     parent: parentId,
     files,
@@ -281,8 +282,16 @@ export async function addSubtask(
     parent: parentId,
     milestone: milestoneId,
     title: title.trim(),
+    description: "",
+    requirements: [],
+    assignees: [],
+    due_date: null,
+    recurrence: "none",
+    recurrence_interval: 1,
+    recurrence_end_date: null,
     priority: "medium",
     status: "not_started",
+    files: [],
   })
   if (error) return { error }
 

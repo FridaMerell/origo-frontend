@@ -3,7 +3,7 @@
 [data-theme="verso"]{
 --bg:#F6EFDC;--surface:#FFFBF2;--surface-2:#EFE4C8;--surface-raised:#FFFBF2;
 --border:#E0D3AE;--border-strong:#C9852E;--field-border:#A89E83;
---text:#22190E;--text-muted:#6B5C48;--text-faint:#7A6A52;
+--text:#22190E;--text-muted:#5A4B39;--text-faint:#6B5B45;
 --accent:#C9852E;--accent-hover:#B8862E;--accent-active:#A6752A;--accent-contrast:#22190E;--accent-wash:#F1E4C8;
 --secondary:#5C7E8C;--secondary-wash:#E3EBEE;
 --danger:#B14B3C;--danger-wash:#F2DED8;
@@ -17,7 +17,7 @@
 [data-theme="verso"]:not([data-mode="light"]){
 --bg:#2E3A44;--surface:#3A4750;--surface-2:#445561;--surface-raised:#3A4750;
 --border:#445560;--border-strong:#5A6C78;--field-border:var(--border);
---text:#F2E9D8;--text-muted:#9FAAB0;--text-faint:#9FAAB0;
+--text:#F2E9D8;--text-muted:#B9C2C7;--text-faint:#9FAAB0;
 --accent:#E7B15C;--accent-hover:#F0C179;--accent-active:#D3A04F;--accent-contrast:#22190E;--accent-wash:#4E5C67;
 --secondary:#7C5A8A;--secondary-wash:#4E5C67;
 --danger:#C97463;--danger-wash:#4E5C67;
@@ -31,7 +31,7 @@
 [data-theme="verso"][data-mode="dark"]{
 --bg:#2E3A44;--surface:#3A4750;--surface-2:#445561;--surface-raised:#3A4750;
 --border:#445560;--border-strong:#5A6C78;--field-border:var(--border);
---text:#F2E9D8;--text-muted:#9FAAB0;--text-faint:#9FAAB0;
+--text:#F2E9D8;--text-muted:#B9C2C7;--text-faint:#9FAAB0;
 --accent:#E7B15C;--accent-hover:#F0C179;--accent-active:#D3A04F;--accent-contrast:#22190E;--accent-wash:#4E5C67;
 --secondary:#7C5A8A;--secondary-wash:#4E5C67;
 --danger:#C97463;--danger-wash:#4E5C67;
@@ -45,7 +45,7 @@
 [data-theme="flux"]{
 --bg:#EEF3F5;--surface:#FFFFFF;--surface-2:#E3EBEE;--surface-raised:#FFFFFF;
 --border:#D2DBDF;--border-strong:#AEB9C0;--field-border:#9EA4A7;
---text:#12232E;--text-muted:#55636A;--text-faint:#55636A;
+--text:#12232E;--text-muted:#415058;--text-faint:#56646B;
 --accent:#C9702F;--accent-hover:#B8631F;--accent-active:#A65618;--accent-contrast:#FFF6EE;--accent-wash:#F5E4D5;
 --secondary:#0E7C86;--secondary-wash:#DCE3E6;
 --danger:#D6483F;--danger-wash:#F5DAD8;
@@ -59,7 +59,7 @@
 [data-theme="flux"]:not([data-mode="light"]){
 --bg:#1B1B2F;--surface:#2A2A45;--surface-2:#333355;--surface-raised:#2A2A45;
 --border:#38385A;--border-strong:#4A4A73;--field-border:var(--border);
---text:#ECE9F5;--text-muted:#A9A6C0;--text-faint:#A9A6C0;
+--text:#ECE9F5;--text-muted:#C0BED2;--text-faint:#A9A6C0;
 --accent:#FF6B5B;--accent-hover:#FF8272;--accent-active:#E85A4B;--accent-contrast:#1B1B2F;--accent-wash:#3D3D60;
 --secondary:#4FD8E8;--secondary-wash:#3D3D60;
 --danger:#E84870;--danger-wash:#3D3D60;
@@ -73,7 +73,7 @@
 [data-theme="flux"][data-mode="dark"]{
 --bg:#1B1B2F;--surface:#2A2A45;--surface-2:#333355;--surface-raised:#2A2A45;
 --border:#38385A;--border-strong:#4A4A73;--field-border:var(--border);
---text:#ECE9F5;--text-muted:#A9A6C0;--text-faint:#A9A6C0;
+--text:#ECE9F5;--text-muted:#C0BED2;--text-faint:#A9A6C0;
 --accent:#FF6B5B;--accent-hover:#FF8272;--accent-active:#E85A4B;--accent-contrast:#1B1B2F;--accent-wash:#3D3D60;
 --secondary:#4FD8E8;--secondary-wash:#3D3D60;
 --danger:#E84870;--danger-wash:#3D3D60;
@@ -88,7 +88,7 @@
 [data-theme="tempus"]{
 --bg:#F3EDDF;--surface:#FBF8F0;--surface-2:#E9E2D5;--surface-raised:#FFFDF7;
 --border:#CFC2AE;--border-strong:#A4410D;--field-border:#B8AA94;
---text:#271B13;--text-muted:#7E6D5D;--text-faint:#93816F;
+--text:#271B13;--text-muted:#655749;--text-faint:#766655;
 --accent:#A4410D;--accent-hover:#8F3509;--accent-active:#762C07;--accent-contrast:#FBF8F0;--accent-wash:#F2DED0;
 --secondary:#596B54;--secondary-wash:#E1E5DA;
 --danger:#A63425;--danger-wash:#F2DCD6;
@@ -103,7 +103,7 @@
 [data-theme="tempus"]:not([data-mode="light"]){
 --bg:#171512;--surface:#302C25;--surface-2:#3A352D;--surface-raised:#373129;
 --border:#5A5145;--border-strong:#D8733C;--field-border:#746858;
---text:#EEE4D3;--text-muted:#B7A895;--text-faint:#988A7A;
+--text:#EEE4D3;--text-muted:#CDBEAA;--text-faint:#AA9C8B;
 --accent:#D8733C;--accent-hover:#E48957;--accent-active:#C7602F;--accent-contrast:#1B1713;--accent-wash:#3C2A20;
 --secondary:#96AA8D;--secondary-wash:#2B352D;
 --danger:#E27868;--danger-wash:#3A2926;
@@ -118,7 +118,7 @@
 [data-theme="tempus"][data-mode="dark"]{
 --bg:#171512;--surface:#302C25;--surface-2:#3A352D;--surface-raised:#373129;
 --border:#5A5145;--border-strong:#D8733C;--field-border:#746858;
---text:#EEE4D3;--text-muted:#B7A895;--text-faint:#988A7A;
+--text:#EEE4D3;--text-muted:#CDBEAA;--text-faint:#AA9C8B;
 --accent:#D8733C;--accent-hover:#E48957;--accent-active:#C7602F;--accent-contrast:#1B1713;--accent-wash:#3C2A20;
 --secondary:#96AA8D;--secondary-wash:#2B352D;
 --danger:#E27868;--danger-wash:#3A2926;
@@ -134,7 +134,7 @@
 [data-theme="apsis"]{
 --bg:#EDE7D8;--surface:#F7F3E7;--surface-2:#E1DAC4;--surface-raised:#F7F3E7;
 --border:#CBC0A0;--border-strong:#4B5A3E;--field-border:#A89B7C;
---text:#2E2A21;--text-muted:#5C563F;--text-faint:#7A7358;
+--text:#2E2A21;--text-muted:#4F4A37;--text-faint:#665F49;
 --accent:#4B5A3E;--accent-hover:#3E4A32;--accent-active:#333D29;--accent-contrast:#F7F3E7;--accent-wash:#DEE2D3;
 --secondary:#A25C3B;--secondary-wash:#EBDACB;
 --danger:#A3402F;--danger-wash:#EFDBD6;
@@ -148,7 +148,7 @@
 [data-theme="apsis"]:not([data-mode="light"]){
 --bg:#1E2119;--surface:#262A20;--surface-2:#2F3427;--surface-raised:#262A20;
 --border:#3A4030;--border-strong:#6B7A54;--field-border:var(--border);
---text:#E9E4D2;--text-muted:#A8A98E;--text-faint:#8B8C72;
+--text:#E9E4D2;--text-muted:#C0C2A7;--text-faint:#A4A78C;
 --accent:#8CA06B;--accent-hover:#9DB07C;--accent-active:#7C905C;--accent-contrast:#1E2119;--accent-wash:#3A4432;
 --secondary:#C48561;--secondary-wash:#3D3226;
 --danger:#C4695A;--danger-wash:#3D3226;
@@ -162,7 +162,7 @@
 [data-theme="apsis"][data-mode="dark"]{
 --bg:#1E2119;--surface:#262A20;--surface-2:#2F3427;--surface-raised:#262A20;
 --border:#3A4030;--border-strong:#6B7A54;--field-border:var(--border);
---text:#E9E4D2;--text-muted:#A8A98E;--text-faint:#8B8C72;
+--text:#E9E4D2;--text-muted:#C0C2A7;--text-faint:#A4A78C;
 --accent:#8CA06B;--accent-hover:#9DB07C;--accent-active:#7C905C;--accent-contrast:#1E2119;--accent-wash:#3A4432;
 --secondary:#C48561;--secondary-wash:#3D3226;
 --danger:#C4695A;--danger-wash:#3D3226;

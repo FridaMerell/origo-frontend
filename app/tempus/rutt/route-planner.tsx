@@ -21,19 +21,19 @@ export type PlannedRoute = {
   summary: string
 }
 
-// Google's overview_path can carry hundreds of vertices. Thin it so the stored
+// Google's route path can carry hundreds of vertices. Thin it so the stored
 // LineString stays a reasonable payload while still tracing the road closely.
 const MAX_GEOMETRY_POINTS = 250
 
-function thin(path: google.maps.LatLng[]): LonLat[] {
+function thin(path: google.maps.LatLngAltitude[]): LonLat[] {
   if (path.length <= MAX_GEOMETRY_POINTS) {
-    return path.map((point) => [point.lng(), point.lat()])
+    return path.map((point) => [point.lng, point.lat])
   }
   const step = (path.length - 1) / (MAX_GEOMETRY_POINTS - 1)
   const out: LonLat[] = []
   for (let index = 0; index < MAX_GEOMETRY_POINTS; index += 1) {
     const point = path[Math.round(index * step)]!
-    out.push([point.lng(), point.lat()])
+    out.push([point.lng, point.lat])
   }
   return out
 }
@@ -51,7 +51,7 @@ function formatDuration(seconds: number) {
 
 type Endpoint = { description: string; location: LonLat } | null
 
-/** A text input wired to Google Places Autocomplete, biased to Sweden. */
+/** Google's autocomplete widget, restricted to Swedish results. */
 function PlaceField({
   label,
   value,
@@ -68,50 +68,68 @@ function PlaceField({
   placeholder?: string
 }) {
   const places = useMapsLibrary("places")
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [text, setText] = useState(value)
+  const mountRef = useRef<HTMLDivElement>(null)
+  const autocompleteRef = useRef<google.maps.places.PlaceAutocompleteElement>(null)
   const onResolvedRef = useRef(onResolved)
+  const onClearedRef = useRef(onCleared)
   onResolvedRef.current = onResolved
+  onClearedRef.current = onCleared
 
   useEffect(() => {
-    setText(value)
-  }, [value])
-
-  useEffect(() => {
-    if (!places || !inputRef.current) return
-    const autocomplete = new places.Autocomplete(inputRef.current, {
-      fields: ["geometry", "formatted_address", "name"],
-      componentRestrictions: { country: "se" },
+    if (!places || !mountRef.current) return
+    const autocomplete = new places.PlaceAutocompleteElement({
+      includedRegionCodes: ["se"],
+      requestedLanguage: "sv",
+      requestedRegion: "se",
+      noInputIcon: true,
     })
-    const listener = autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace()
-      const point = place.geometry?.location
+    const listenerController = new AbortController()
+    autocomplete.className = "mt-1 block h-9 w-full rounded border border-field-border bg-surface font-body text-xs not-italic text-text disabled:opacity-50"
+    autocomplete.style.colorScheme = "light"
+
+    const handleSelect = async (event: google.maps.places.PlacePredictionSelectEvent) => {
+      const place = event.placePrediction.toPlace()
+      await place.fetchFields({ fields: ["displayName", "formattedAddress", "location"] })
+      const point = place.location
       if (!point) return
-      const description = place.formatted_address || place.name || ""
-      setText(description)
+      const description = place.formattedAddress || place.displayName || ""
+      autocomplete.value = description
       onResolvedRef.current({ description, location: [point.lng(), point.lat()] })
-    })
-    return () => listener.remove()
+    }
+    const handleInput = () => {
+      if (!autocomplete.value.trim()) onClearedRef.current()
+    }
+
+    autocomplete.addEventListener("gmp-select", handleSelect, { signal: listenerController.signal })
+    autocomplete.addEventListener("input", handleInput, { signal: listenerController.signal })
+    mountRef.current.appendChild(autocomplete)
+    autocompleteRef.current = autocomplete
+
+    return () => {
+      listenerController.abort()
+      autocomplete.remove()
+      autocompleteRef.current = null
+    }
   }, [places])
+
+  useEffect(() => {
+    const autocomplete = autocompleteRef.current
+    if (!autocomplete) return
+    autocomplete.value = value
+    autocomplete.disabled = disabled ?? false
+    autocomplete.placeholder = placeholder ?? ""
+    autocomplete.description = label
+  }, [disabled, label, placeholder, value])
 
   return (
     <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint">
       {label}
-      <input
-        ref={inputRef}
-        type="text"
-        value={text}
-        disabled={disabled}
-        placeholder={placeholder}
-        onChange={(event) => {
-          setText(event.target.value)
-          if (!event.target.value.trim()) onCleared()
-        }}
+      <div
+        ref={mountRef}
         onKeyDown={(event) => {
           // Don't let Enter (incl. picking an autocomplete row) submit the form.
           if (event.key === "Enter") event.preventDefault()
         }}
-        className="mt-1 h-9 rounded border border-field-border bg-surface px-2.5 font-body text-xs not-italic text-text placeholder:text-text-faint focus:border-accent focus:outline-none disabled:opacity-50"
       />
     </label>
   )
@@ -184,7 +202,7 @@ function RoutePreview({
   )
 }
 
-/** Runs the headless Directions request whenever the endpoints change. */
+/** Computes a route whenever the endpoints change. */
 function useDirections(
   origin: Endpoint,
   destination: Endpoint,
@@ -196,14 +214,8 @@ function useDirections(
   },
 ) {
   const routesLibrary = useMapsLibrary("routes")
-  const [service, setService] = useState<google.maps.DirectionsService>()
   const handlersRef = useRef(handlers)
   handlersRef.current = handlers
-
-  useEffect(() => {
-    if (!routesLibrary) return
-    setService(new routesLibrary.DirectionsService())
-  }, [routesLibrary])
 
   const stops = useMemo(
     () => waypoints.filter((point): point is NonNullable<Endpoint> => point != null),
@@ -211,42 +223,34 @@ function useDirections(
   )
 
   useEffect(() => {
-    if (!service) return
+    if (!routesLibrary) return
     if (!origin || !destination) return
 
     handlersRef.current.onPending()
     let cancelled = false
-    service
-      .route({
+    routesLibrary.Route
+      .computeRoutes({
         origin: { lat: origin.location[1], lng: origin.location[0] },
         destination: { lat: destination.location[1], lng: destination.location[0] },
-        waypoints: stops.map((stop) => ({
+        intermediates: stops.map((stop) => ({
           location: { lat: stop.location[1], lng: stop.location[0] },
-          stopover: true,
         })),
-        travelMode: google.maps.TravelMode.DRIVING,
+        travelMode: routesLibrary.TravelMode.DRIVING,
+        fields: ["path", "distanceMeters", "durationMillis", "description"],
       })
       .then((response) => {
         if (cancelled) return
-        const route = response.routes[0]
-        const path = route?.overview_path ?? []
+        const route = response.routes?.[0]
+        const path = route?.path ?? []
         if (!route || path.length < 2) {
           handlersRef.current.onError("Rutten saknar geometri. Prova andra punkter.")
           return
         }
-        const distanceMetres = route.legs.reduce(
-          (sum, part) => sum + (part.distance?.value ?? 0),
-          0,
-        )
-        const durationSeconds = route.legs.reduce(
-          (sum, part) => sum + (part.duration?.value ?? 0),
-          0,
-        )
         handlersRef.current.onResult({
           geometry: { type: "LineString", coordinates: thin(path) },
-          distanceMetres,
-          durationSeconds,
-          summary: route.summary || "",
+          distanceMetres: route.distanceMeters ?? 0,
+          durationSeconds: Math.round((route.durationMillis ?? 0) / 1000),
+          summary: route.description || "",
         })
       })
       .catch((error: unknown) => {
@@ -265,7 +269,7 @@ function useDirections(
     return () => {
       cancelled = true
     }
-  }, [service, origin, destination, stops])
+  }, [routesLibrary, origin, destination, stops])
 }
 
 function PlannerBody({

@@ -91,6 +91,12 @@ export const fluxTaskFormSchema = z.object({
     .string()
     .nullable()
     .transform((value) => (value ? value : null)),
+  recurrence: z.enum(["none", "daily", "weekly", "monthly", "yearly"]),
+  recurrence_interval: z.coerce.number().int().min(1),
+  recurrence_end_date: z
+    .string()
+    .nullable()
+    .transform((value) => (value ? value : null)),
   assignees: z.array(numericId),
 })
 export type FluxTaskFormValues = z.infer<typeof fluxTaskFormSchema>

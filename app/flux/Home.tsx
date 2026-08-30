@@ -201,7 +201,7 @@ const Home = () => {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="container mx-auto flex flex-col items-center justify-center py-2">
+      <div className="container flex flex-col items-center justify-center py-2">
         <h1 className="font-display text-2xl font-semibold text-text">Inga projekt</h1>
         <p className="text-sm text-text-muted">
           Du har inga projekt än. Kontakta din administratör för att bli tillagd i ett projekt.
@@ -212,14 +212,14 @@ const Home = () => {
 
   if (!selectedProject) {
     return (
-      <div className="container mx-auto flex flex-col items-center justify-center py-2">
+      <div className="container flex flex-col items-center justify-center py-2">
         <div>Välj ett projekt</div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 sm:px-10 py-5">
+    <div className="container flex flex-col gap-4 py-5">
       <div className="grid grid-cols-6 gap-4">
         <ProjectOverviewCard project={selectedProject} tasks={tasks} users={users} />
         <MilestonesCard projectId={selectedProject.id} milestones={milestones} tasks={tasks} />

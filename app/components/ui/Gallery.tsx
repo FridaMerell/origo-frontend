@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
-import { fileProxyUrl } from "@/app/lib/files";
+import { fileProxyUrl, normalizeFileUrls, type FileLike } from "@/app/lib/files";
 
 const IMAGE_EXTENSION = /\.(png|jpe?g|gif|webp|avif|svg)$/i;
 
@@ -82,13 +82,15 @@ function Lightbox({
   );
 }
 
-export function Gallery({ files }: { files: string[] }) {
+export function Gallery({ files }: { files: FileLike[] }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-  if (files.length === 0) return null;
+  const urls = normalizeFileUrls(files);
 
-  const images = files.filter((url) => IMAGE_EXTENSION.test(url));
-  const others = files.filter((url) => !IMAGE_EXTENSION.test(url));
+  if (urls.length === 0) return null;
+
+  const images = urls.filter((url) => IMAGE_EXTENSION.test(url));
+  const others = urls.filter((url) => !IMAGE_EXTENSION.test(url));
 
   return (
     <div className="flex flex-col gap-3">

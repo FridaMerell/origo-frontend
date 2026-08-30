@@ -6,6 +6,7 @@ import { ListTable, type ListTableColumn } from "@/app/components/ui/ListTable";
 import { useFluxProjects, useFluxTasks, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { AddTaskButton } from "@/app/flux/tasks/add-task-button";
 import { DeleteTaskButton } from "@/app/flux/tasks/delete-task-button";
+import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
 import type { FluxTask, FluxTaskPriority } from "@/app/lib/dal";
 
@@ -29,6 +30,13 @@ export default function FluxTasksView() {
   const projectName = (id: number) => projects.find((p) => p.id === id)?.name ?? "—";
 
   const columns: ListTableColumn<FluxTask>[] = [
+    {
+      key: "status",
+      header: "Klar",
+      width: "64px",
+      align: "center",
+      render: (task) => <TaskCompletionButton id={task.id} status={task.status} />,
+    },
     { key: "title", header: "Uppgift", render: (task) => task.title },
     { key: "project", header: "Projekt", width: "160px", render: (task) => projectName(task.project) },
     {
@@ -56,7 +64,15 @@ export default function FluxTasksView() {
         </span>
       ),
     },
-    { key: "actions", width: "32px", render: (task) => <DeleteTaskButton id={task.id} /> },
+    {
+      key: "actions",
+      width: "64px",
+      render: (task) => (
+        <div className="flex items-center justify-end gap-1.5">
+          <DeleteTaskButton id={task.id} />
+        </div>
+      ),
+    },
   ];
 
   return (

@@ -27,29 +27,58 @@ export type FluxMilestone = {
   updated_at: string
 }
 
-export type FluxTaskPriority = "low" | "medium" | "high"
+export type TaskPriority = "low" | "medium" | "high"
 
-export type FluxTaskStatus = FluxMilestoneStatus
+export type TaskStatus = "not_started" | "in_progress" | "done"
 
-export type FluxTask = {
-  id: number
+export type TaskRecurrence = "none" | "daily" | "weekly" | "monthly" | "yearly"
+
+export interface TaskFile {
+  [key: string]: unknown
+}
+
+export interface TaskBase {
   project: number
   milestone: number | null
   parent: number | null
-  subtasks: number[]
   requirements: number[]
-  required_by: number[]
   assignees: number[]
   title: string
   description: string
   due_date: string | null
-  priority: FluxTaskPriority
-  status: FluxTaskStatus
-  files: string[]
-  update_count: number
+  recurrence: TaskRecurrence
+  recurrence_interval: number
+  recurrence_end_date: string | null
+  priority: TaskPriority
+  status: TaskStatus
+  files: TaskFile[]
+}
+
+export interface Task extends TaskBase {
+  id: number
+  subtasks: number[]
+  required_by: number[]
+  recurrence_source: number | null
   created_at: string
   updated_at: string
+  update_count: number
 }
+
+export type TaskCreatePayload = TaskBase
+
+export type TaskUpdatePayload = Partial<TaskBase>
+
+export type FluxTaskPriority = TaskPriority
+
+export type FluxTaskStatus = TaskStatus
+
+export type FluxTaskRecurrence = TaskRecurrence
+
+export type FluxTaskFile = TaskFile
+
+export type FluxTaskBase = TaskBase
+
+export type FluxTask = Task
 
 export type FluxUpdate = {
   id: number

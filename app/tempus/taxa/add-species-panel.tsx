@@ -175,6 +175,7 @@ export default function AddSpeciesPanel({
           className="flex-1 rounded border border-field-border bg-surface px-3 py-2 text-text placeholder:text-text-faint"
         />
         <Button
+          variant="paper"
           type="submit"
           className="shrink-0 whitespace-nowrap"
           disabled={searching || visibleHits.length === 0}
@@ -218,7 +219,7 @@ export default function AddSpeciesPanel({
 
       {staged.length > 0 && (
         <div className="flex items-center gap-3">
-          <Button type="button" onClick={register} disabled={registering}>
+          <Button type="button" variant="paper" onClick={register} disabled={registering}>
             {registering
               ? "Registrerar…"
               : `Registrera ${staged.length} ${staged.length === 1 ? "art" : "arter"}`}

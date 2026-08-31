@@ -7,10 +7,12 @@ import { Icon } from "@/app/components/ui/Icon"
 import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
 import {
   getTempusGeoAreas,
+  getTempusSpeciesCategoriesAll,
   getTempusSpeciesItem,
   getTempusSpeciesPhenogram,
   type TempusHabitat,
   getTempusSpeciesCategoryItem,
+  type TempusSpeciesCategory,
 } from "@/app/lib/dal"
 import Phenogram, { SeasonalStatusBadge } from "@/app/tempus/ui/Phenogram"
 import {
@@ -45,6 +47,47 @@ const HabitatChips = ({ items }: { items: TempusHabitat[] }) => (
 )
 
 const PHENOGRAM_MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
+
+type CategoryMembership = {
+  category: TempusSpeciesCategory
+}
+
+const CategoryChips = ({ memberships }: { memberships: CategoryMembership[] }) => (
+  <div className="flex flex-wrap gap-2">
+    {memberships.map(({ category }) => (
+      category.taxon_id ? (
+        <Link key={category.id} href={`/taxa/${category.taxon_id}`} className="no-underline">
+          <Chip
+            variant={category.is_primary ? "accent" : "neutral"}
+            title={category.is_primary ? "Primär kategori" : "Kategori"}
+            className="gap-1"
+          >
+            <span>{category.label}</span>
+            {category.is_primary ? (
+              <span className="rounded-full bg-current/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                Primär
+              </span>
+            ) : null}
+          </Chip>
+        </Link>
+      ) : (
+        <Chip
+          key={category.id}
+          variant={category.is_primary ? "accent" : "neutral"}
+          title={category.is_primary ? "Primär kategori" : "Kategori"}
+          className="gap-1"
+        >
+          <span>{category.label}</span>
+          {category.is_primary ? (
+            <span className="rounded-full bg-current/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+              Primär
+            </span>
+          ) : null}
+        </Chip>
+      )
+    ))}
+  </div>
+)
 
 const PhenogramPlaceholder = ({ areaName }: { areaName: string }) => (
   <div className="relative min-h-80 w-full overflow-hidden rounded border border-dashed border-border bg-surface-2/50 md:min-h-96">
@@ -112,7 +155,11 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
   const { label: rawLabel, id } = await params
   const label = decodeURIComponent(rawLabel)
   const fromHomeOverview = label === "foljda" || label === "oversikt"
-  const [geoAreas, cookieStore] = await Promise.all([getTempusGeoAreas(), cookies()])
+  const [geoAreas, cookieStore, allCategories] = await Promise.all([
+    getTempusGeoAreas(),
+    cookies(),
+    getTempusSpeciesCategoriesAll(),
+  ])
   const selectedId = cookieStore.get(TEMPUS_GEO_AREA_COOKIE)?.value
   const selectedGeoArea = selectedId === TEMPUS_ALL_SWEDEN
     ? null
@@ -124,6 +171,18 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
     getTempusSpeciesPhenogram(id, selectedGeoArea?.id),
   ])
   if (!species) notFound()
+
+  const categoryMemberships = allCategories
+    .flatMap<CategoryMembership>((category) => {
+      if (category.species.includes(id)) {
+        return [{ category }]
+      }
+      return []
+    })
+    .sort((a, b) =>
+      Number(Boolean(b.category.is_primary)) - Number(Boolean(a.category.is_primary)) ||
+      a.category.label.localeCompare(b.category.label, "sv"),
+    )
 
   const selectedMapAreas: SwedenMapFeature[] = selectedGeoArea?.geometry
     ? [
@@ -165,8 +224,18 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
           {species.swedish_name && species.scientific_name !== species.swedish_name && (
             <em className="font-mono text-sm text-text-muted">{species.scientific_name}</em>
           )}
+          <a
+            href={`https://artfakta.se/taxa/${species.dyntaxa_taxon_id}/information`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 w-fit font-display text-sm italic text-accent underline decoration-accent/40 underline-offset-4 transition-colors hover:text-accent-hover"
+          >
+            Visa artfakta
+          </a>
         </div>
-        <FollowButton taxa={String(species.dyntaxa_taxon_id)} initial={species.is_followed} />
+        <div className="flex items-center justify-end">
+          <FollowButton taxa={String(species.dyntaxa_taxon_id)} initial={species.is_followed} />
+        </div>
       </div>
       <Card className="relative overflow-hidden shadow-sm min-h-70">
 
@@ -189,6 +258,20 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
           ))}
         </dl>
       </Card>
+
+      {categoryMemberships.length > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">
+            Kategorier
+          </h2>
+          <Card className="flex flex-col gap-3">
+            <p className="text-sm leading-6 text-text-muted">
+              Arten finns i dessa kategorier. Primär kategori är markerad tydligt.
+            </p>
+            <CategoryChips memberships={categoryMemberships} />
+          </Card>
+        </section>
+      ) : null}
 
 
       <section className="flex flex-col gap-3">

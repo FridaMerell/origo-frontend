@@ -357,7 +357,7 @@ export default function ObservationForm() {
         ) : null}
 
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={pending || rows.length === 0}>
+          <Button type="submit" variant="paper" disabled={pending || rows.length === 0}>
             <Icon name={pending ? "loader" : "check"} size={16} className={pending ? "animate-spin" : ""} />
             {pending
               ? "Sparar…"

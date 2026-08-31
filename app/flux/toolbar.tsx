@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react"
 import { Icon } from "@/app/components/ui/Icon"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Button } from "@/app/components/ui/Button"
+import { NotificationMenu } from "@/app/components/ui/NotificationMenu"
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer"
 import { ProjectFormDrawer } from "@/app/flux/projects/project-form-drawer"
 import { useFluxProjects, useSelectedFluxProject } from "@/app/lib/flux-context"
@@ -114,13 +115,25 @@ const Toolbar = ({ mode, onToggleMode }: ToolbarProps) => {
         <Icon name="plus" size={16} className="text-accent-contrast" />
         {createLabel}
       </Button>
-      <button
-        type="button"
-        className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
-      >
-        <Icon name="bell" size={16} className="text-text-muted" />
-        Aviseringar
-      </button>
+      <NotificationMenu dropUp>
+        {({ unreadCount, notificationLabel, toggle }) => (
+          <button
+            type="button"
+            onClick={toggle}
+            className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
+          >
+            <span className="relative">
+              <Icon name="bell" size={16} className="text-text-muted" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-2 -top-2 flex min-w-4 h-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold text-accent-contrast ring-2 ring-surface">
+                  {notificationLabel}
+                </span>
+              )}
+            </span>
+            Aviseringar
+          </button>
+        )}
+      </NotificationMenu>
       <button
         type="button"
         onClick={() => {

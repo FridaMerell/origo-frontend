@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { logout } from "@/app/actions/auth"
 import { Icon } from "@/app/components/ui/Icon"
+import { NotificationMenu } from "@/app/components/ui/NotificationMenu"
 import { useTempusGeoAreas } from "@/app/lib/tempus-context"
 import { useUser } from "@/app/lib/user-context"
 import QuickObservation from "./observationer/quick-observation"
@@ -20,6 +21,7 @@ const primaryLinks = [
   { href: "/rutt", label: "Rutt", icon: "route" },
   { href: "/checklistor", label: "Checklistor", icon: "list-checks" },
   { href: "/observationer", label: "Observationer", icon: "binoculars" },
+  { href: "/birdnet", label: "Birdnet", icon: "bird" },
   { href: "/taxa", label: "Taxonomier", icon: "leaf" },
 ] as const
 
@@ -62,6 +64,12 @@ function FieldIcon({ name, className = "" }: { name: FieldIconName; className?: 
           <circle {...line} cx="7.1" cy="15.5" r="3.2" />
           <circle {...line} cx="16.9" cy="15.5" r="3.2" />
           <path {...line} d="M10.3 8.6h3.4m-2.5 3.7h1.6" />
+        </>
+      ) : name === "bird" ? (
+        <>
+          <path {...line} d="M5.1 14.7c1.2-3.2 3.6-5.1 7-5.4 1.6-.1 3 .3 4.2 1.1l1.6-1 .8 1.3-1.2.7c.2.5.3 1.1.3 1.7 0 2.7-2.2 4.9-5 4.9-1.7 0-3.1-.7-4.1-1.9l-2.3 1.2-1-1.8 1.7-1c-.2-.6-.2-1.2 0-1.8Z" />
+          <circle {...line} cx="14.7" cy="11" r=".55" />
+          <path {...line} d="M10.7 15.6h-2m6.9 1.7 1.3 1.4" />
         </>
       ) : name === "folio" ? (
         <>
@@ -192,7 +200,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
             </span>
           </Link>
 
-          <div className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
+          <div className="hidden min-w-0 flex-1 items-center gap-1 xl:flex">
             {primaryLinks.map((link) => {
               const active = isActiveLink(pathname, link.href)
 
@@ -220,6 +228,26 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
               <QuickObservation />
             </div>
             <div className="hidden items-center gap-1 border-l border-border pl-1 sm:flex">
+              {user ? (
+                <NotificationMenu>
+                  {({ unreadCount, notificationLabel, toggle }) => (
+                    <button
+                      type="button"
+                      onClick={toggle}
+                      aria-label="Visa notifikationer"
+                      title="Notifikationer"
+                      className="relative flex size-10 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                    >
+                      <Icon name="bell" size={18} />
+                      {unreadCount > 0 && (
+                        <span className="absolute right-0.5 top-0.5 flex min-w-4 h-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold text-accent-contrast ring-2 ring-surface">
+                          {notificationLabel}
+                        </span>
+                      )}
+                    </button>
+                  )}
+                </NotificationMenu>
+              ) : null}
               <button
                 type="button"
                 onClick={onToggleMode}
@@ -259,7 +287,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
               aria-controls="tempus-responsive-menu"
               aria-label={menuOpen ? "Stäng meny" : "Öppna meny"}
               onClick={() => setMenuOpen((current) => !current)}
-              className="hidden size-10 items-center justify-center rounded-md border border-border text-text-muted transition-colors hover:border-border-strong hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex lg:hidden"
+              className="hidden size-10 items-center justify-center rounded-md border border-border text-text-muted transition-colors hover:border-border-strong hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex xl:hidden"
             >
               <Icon name={menuOpen ? "x" : "menu"} size={19} />
             </button>
@@ -271,16 +299,16 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                 type="button"
                 aria-label="Stäng meny"
                 onClick={() => setMenuOpen(false)}
-                className="fixed inset-0 z-10 cursor-default bg-black/10 backdrop-blur-[1px] lg:hidden"
+                className="fixed inset-0 z-10 cursor-default bg-black/10 backdrop-blur-[1px] xl:hidden"
               />
               <section
                 id="tempus-responsive-menu"
                 aria-label="Kompaktmeny"
-                className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-lg border border-border bg-surface p-2 shadow-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-20 sm:top-[calc(100%-4px)] sm:w-80 lg:hidden"
+                className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-lg border border-border bg-surface p-2 shadow-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-20 sm:top-[calc(100%-4px)] sm:w-80 xl:hidden"
               >
                 <nav aria-label="Sidnavigation" className="hidden gap-1 sm:grid">
                   <p className="px-3 pb-1 pt-2 font-mono text-[10px] uppercase tracking-wide text-text-faint">
-                    Navigation
+                    Sidor
                   </p>
                   {primaryLinks.map((link) => {
                     const active = isActiveLink(pathname, link.href)
@@ -291,7 +319,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMenuOpen(false)}
                         className={`flex min-h-11 items-center gap-3 rounded-md px-3 text-sm no-underline transition-colors focus-visible:outline-2 focus-visible:outline-focus-ring ${active
-                          ? "bg-accent-wash font-semibold text-accent"
+                          ? "font-semibold text-accent"
                           : "text-text-muted hover:bg-accent-wash hover:text-text"
                           }`}
                       >
@@ -305,9 +333,9 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
 
                 <nav aria-label="Fler sidor" className="grid gap-1 sm:hidden">
                   <p className="px-3 pb-1 pt-2 font-mono text-[10px] uppercase tracking-wide text-text-faint">
-                    Fler sidor
+                    Sidor
                   </p>
-                  {primaryLinks.filter((link) => link.href === "/observationer" || link.href === "/taxa").map((link) => {
+                  {primaryLinks.filter((link) => link.href === "/observationer" || link.href === "/birdnet" || link.href === "/taxa").map((link) => {
                     const active = isActiveLink(pathname, link.href)
                     return (
                       <Link
@@ -316,7 +344,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                         aria-current={active ? "page" : undefined}
                         onClick={() => setMenuOpen(false)}
                         className={`flex min-h-11 items-center gap-3 rounded-md px-3 text-sm no-underline transition-colors focus-visible:outline-2 focus-visible:outline-focus-ring ${active
-                          ? "bg-accent-wash font-semibold text-accent"
+                          ? "font-semibold text-accent"
                           : "text-text-muted hover:bg-accent-wash hover:text-text"
                           }`}
                       >
@@ -340,6 +368,27 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                     <Icon name={mode === "dark" ? "sun" : "moon"} size={18} />
                     {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
                   </button>
+                  {user ? (
+                    <NotificationMenu dropUp align="left">
+                      {({ unreadCount, notificationLabel, toggle }) => (
+                        <button
+                          type="button"
+                          onClick={toggle}
+                          className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
+                        >
+                          <span className="relative">
+                            <Icon name="bell" size={18} />
+                            {unreadCount > 0 && (
+                              <span className="absolute -right-2 -top-2 flex min-w-4 h-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold text-accent-contrast ring-2 ring-surface">
+                                {notificationLabel}
+                              </span>
+                            )}
+                          </span>
+                          Notifikationer
+                        </button>
+                      )}
+                    </NotificationMenu>
+                  ) : null}
                   {user ? (
                     <button
                       type="button"
@@ -372,15 +421,15 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
 
       <nav
         aria-label="Mobilnavigation"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(var(--shadow-color),0.12)] backdrop-blur sm:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(var(--shadow-color),0.12)] sm:hidden"
       >
-        <div className="mx-auto grid h-[4.5rem] max-w-md grid-cols-5 bg-[radial-gradient(ellipse_at_50%_130%,var(--accent-wash),transparent_65%)] px-1.5">
+        <div className="mx-auto grid h-[4.5rem] max-w-md grid-cols-5 px-1.5">
           <Link
             href="/"
             aria-current={pathname === "/" ? "page" : undefined}
             className={`group flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-md no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-focus-ring ${pathname === "/" ? "text-accent" : "text-text-muted hover:bg-accent-wash hover:text-text"}`}
           >
-            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${pathname === "/" ? "border-accent/60 bg-accent-wash shadow-[inset_0_0_0_1px_var(--accent-wash)]" : "border-transparent group-hover:border-border"}`}>
+            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${pathname === "/" ? "border-accent/60 bg-surface" : "border-transparent group-hover:border-border"}`}>
               <Logo height={27} />
             </span>
             <span className={`font-mono text-[9px] uppercase tracking-[0.04em] ${pathname === "/" ? "font-semibold" : ""}`}>
@@ -393,7 +442,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
             aria-current={isActiveLink(pathname, "/rutt") ? "page" : undefined}
             className={`group flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-md no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-focus-ring ${isActiveLink(pathname, "/rutt") ? "text-accent" : "text-text-muted hover:bg-accent-wash hover:text-text"}`}
           >
-            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${isActiveLink(pathname, "/rutt") ? "border-accent/60 bg-accent-wash shadow-[inset_0_0_0_1px_var(--accent-wash)]" : "border-transparent group-hover:border-border"}`}>
+            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${isActiveLink(pathname, "/rutt") ? "border-accent/60 bg-surface" : "border-transparent group-hover:border-border"}`}>
               <FieldIcon name="route" />
             </span>
             <span className={`font-mono text-[9px] uppercase tracking-[0.04em] ${isActiveLink(pathname, "/rutt") ? "font-semibold" : ""}`}>
@@ -411,7 +460,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
             aria-current={isActiveLink(pathname, "/checklistor") ? "page" : undefined}
             className={`group flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-md no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-focus-ring ${isActiveLink(pathname, "/checklistor") ? "text-accent" : "text-text-muted hover:bg-accent-wash hover:text-text"}`}
           >
-            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${isActiveLink(pathname, "/checklistor") ? "border-accent/60 bg-accent-wash shadow-[inset_0_0_0_1px_var(--accent-wash)]" : "border-transparent group-hover:border-border"}`}>
+            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${isActiveLink(pathname, "/checklistor") ? "border-accent/60 bg-surface" : "border-transparent group-hover:border-border"}`}>
               <FieldIcon name="list-checks" />
             </span>
             <span className={`max-w-full truncate font-mono text-[9px] uppercase tracking-[0.04em] ${isActiveLink(pathname, "/checklistor") ? "font-semibold" : ""}`}>
@@ -426,7 +475,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
             onClick={() => setMenuOpen((current) => !current)}
             className={`group flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-focus-ring ${menuOpen ? "text-accent" : "text-text-muted hover:bg-accent-wash hover:text-text"}`}
           >
-            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${menuOpen ? "border-accent/60 bg-accent-wash shadow-[inset_0_0_0_1px_var(--accent-wash)]" : "border-transparent group-hover:border-border"}`}>
+            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${menuOpen ? "border-accent/60 bg-surface" : "border-transparent group-hover:border-border"}`}>
               <FieldIcon name="folio" />
             </span>
             <span className={`font-mono text-[9px] uppercase tracking-[0.04em] ${menuOpen ? "font-semibold" : ""}`}>

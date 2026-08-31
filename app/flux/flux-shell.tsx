@@ -43,7 +43,9 @@ export default function FluxShell({
       data-mode={mode ?? undefined}
       className="flex h-full min-h-screen flex-1 flex-col bg-bg text-text font-body"
     >
-      <div className="flex-1 overflow-auto pb-24 pt-4 sm:pb-14 sm:pt-24 md:mt-5">{children}</div>
+      <div className="flex-1 overflow-auto pb-24 pt-4 sm:pb-14 sm:pt-24 md:mt-5">
+        <div className="container">{children}</div>
+      </div>
       <Toolbar mode={mode} onToggleMode={toggleMode} />
       <TaskPanel />
     </div>

@@ -116,7 +116,7 @@ export default function BirdnetDeviceManager({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-8 px-4 py-6 sm:px-8 sm:py-10">
+    <div className="mx-auto flex container flex-col gap-8   py-6   sm:py-10">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
         <div className="flex flex-col gap-2">
           <p className="font-mono text-[10px] uppercase tracking-[.16em] text-accent">BirdNET</p>

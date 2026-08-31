@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
 import { deleteChecklist } from "@/app/actions/tempus"
 
 export default function ChecklistActions({ id, name }: { id: string; name: string }) {
@@ -27,21 +26,19 @@ export default function ChecklistActions({ id, name }: { id: string; name: strin
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
-        <Button type="button" onClick={() => router.push(`/checklistor/${id}/redigera`)}
+        <Button type="button" variant="paper" className="underline underline-offset-4" onClick={() => router.push(`/checklistor/${id}/redigera`)}
           rounded="rounded-none"
           size="sm"
           
         >
-          <Icon name="pencil" size={15} />
           Redigera
         </Button>
         <button
           type="button"
           onClick={remove}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-danger disabled:opacity-50"
+          className="font-display text-sm italic text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-50"
         >
-          <Icon name="trash-2" size={15} />
           {pending ? "Tar bort…" : "Ta bort"}
         </button>
       </div>

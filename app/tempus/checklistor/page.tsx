@@ -1,7 +1,5 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Card } from "@/app/components/ui/Card"
-import { Icon } from "@/app/components/ui/Icon"
 import { getTempusChecklists } from "@/app/lib/dal"
 
 export const metadata: Metadata = {
@@ -21,11 +19,10 @@ export default async function ChecklistsPage() {
   const checklists = await getTempusChecklists({ ordering: "-created_at" })
 
   return (
-    <div className="container mx-auto flex flex-col gap-6 py-6 max-sm:px-4 sm:py-10">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.16em] text-accent">
-            <Icon name="list-checks" size={14} />
+    <div className="container mx-auto flex flex-col gap-4 py-5 max-sm:px-4 sm:py-7">
+      <header className="flex flex-wrap items-end justify-between gap-6 border-b border-border pb-4">
+        <div className="flex flex-col gap-1">
+          <div className="font-mono text-[10px] uppercase tracking-[.2em] text-accent">
             Checklistor
           </div>
           <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -34,25 +31,28 @@ export default async function ChecklistsPage() {
         </div>
         <Link
           href="/checklistor/ny"
-          className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2.5 text-sm font-semibold text-accent-contrast no-underline hover:bg-accent-hover"
+          className="inline-flex items-center gap-2 rounded-none border border-border bg-transparent px-4 py-2.5 font-display text-sm font-medium italic tracking-wide text-accent no-underline hover:text-accent-hover"
         >
-          <Icon name="plus" size={16} />
           Ny checklista
         </Link>
       </header>
 
       {checklists.length === 0 ? (
-        <Card className="flex flex-col items-center gap-3 py-14 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-surface-2 text-accent">
-            <Icon name="list-checks" size={22} />
-          </span>
+        <section className="flex flex-col items-center gap-3 border-y border-border py-14 text-center">
           <p className="text-sm text-text-muted">Du har inga checklistor än.</p>
           <Link href="/checklistor/ny" className="text-sm font-medium text-accent hover:text-accent-hover">
             Skapa din första checklista
           </Link>
-        </Card>
+        </section>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <section>
+          <div className="grid grid-cols-[minmax(0,1.5fr)_minmax(12rem,1fr)_7rem_minmax(12rem,1fr)] border-b border-border py-2 font-mono text-[10px] uppercase tracking-[.16em] text-text-faint max-sm:hidden">
+            <span>Checklista</span>
+            <span>Beskrivning</span>
+            <span className="text-right">Arter</span>
+            <span className="text-right">Område / tid</span>
+          </div>
+          <ul className="divide-y divide-border border-b border-border">
           {checklists.map((checklist) => {
             const count =
               checklist.species_count ??
@@ -68,33 +68,29 @@ export default async function ChecklistsPage() {
               : endDate
             return (
               <li key={checklist.id}>
-                <Link href={`/checklistor/${checklist.id}`} className="block h-full no-underline">
-                  <Card className="flex h-full flex-col gap-3 transition-colors hover:border-border-strong">
-                    <h2 className="font-display text-lg font-semibold">{checklist.name}</h2>
-                    {checklist.description ? (
-                      <p className="line-clamp-2 text-sm text-text-muted">{checklist.description}</p>
-                    ) : null}
-                    <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-wide text-text-muted">
-                      <span>{count} {count === 1 ? "art" : "arter"}</span>
-                      {checklist.geo_area_name ? (
-                        <span className="flex items-center gap-1">
-                          <Icon name="map-pin" size={12} />
-                          {checklist.geo_area_name}
-                        </span>
-                      ) : null}
-                      {dateRange ? (
-                        <span className="flex items-center gap-1">
-                          <Icon name="calendar" size={12} />
-                          {dateRange}
-                        </span>
-                      ) : null}
-                    </div>
-                  </Card>
+                <Link
+                  href={`/checklistor/${checklist.id}`}
+                  className="grid gap-2 py-4 no-underline transition-colors hover:bg-surface-2/40 sm:grid-cols-[minmax(0,1.5fr)_minmax(12rem,1fr)_7rem_minmax(12rem,1fr)] sm:items-center sm:gap-3"
+                >
+                  <span className="min-w-0 font-display text-base font-semibold tracking-tight text-text sm:text-lg">
+                    <span className="block truncate">{checklist.name}</span>
+                  </span>
+                  <span className="line-clamp-2 text-sm text-text-muted">
+                    {checklist.description || "—"}
+                  </span>
+                  <span className="font-mono text-xs tabular-nums text-text-muted sm:text-right">
+                    {count} {count === 1 ? "art" : "arter"}
+                  </span>
+                  <span className="text-sm text-text-muted sm:text-right">
+                    {checklist.geo_area_name || "—"}
+                    {dateRange ? <span className="block text-xs text-text-faint">{dateRange}</span> : null}
+                  </span>
                 </Link>
               </li>
             )
           })}
-        </ul>
+          </ul>
+        </section>
       )}
     </div>
   )

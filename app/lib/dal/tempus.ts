@@ -64,11 +64,19 @@ export type TempusSpeciesCategory = {
   id: string
   label: string
   image_url: string
+  is_primary: boolean
+  parent_category?: string | null
   species: string[]
+  species_memberships?: TempusSpeciesMembership[]
   species_count: number
   // Dyntaxa taxon the category is rooted at; passed to the taxon search as
   // `under_taxon_id` to scope hits to this branch of the tree.
   taxon_id: number | null
+}
+
+export type TempusSpeciesMembership = {
+  id: string
+  species: string
 }
 
 // A normalized taxon hit from the Dyntaxa-backed search endpoint. The Dyntaxa
@@ -163,6 +171,18 @@ export type TempusChecklistItem = {
   species: string
   sequence: number
   notes: string
+}
+
+export type TempusChecklistRegisterRow = {
+  id: string
+  sequence: number
+  notes: string
+  species_id: string
+  swedish_name: string
+  scientific_name: string
+  dyntaxa_taxon_id: number
+  is_observed: boolean
+  latest_observation_id: string | null
 }
 
 export type TempusChecklist = {
@@ -349,6 +369,27 @@ export async function fetchTempusPage<T>(
   return { results, count: results.length, next: null, previous: null }
 }
 
+function paginationQuery(
+  params: TempusListParams | undefined,
+  defaultPageSize: number,
+  maxPageSize: number
+): TempusListParams & { page: number; page_size: number; limit: number; offset: number } {
+  const requestedPage = Number(params?.page)
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
+  const requestedPageSize = Number(params?.page_size)
+  const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
+    ? Math.min(requestedPageSize, maxPageSize)
+    : defaultPageSize
+
+  return {
+    ...params,
+    page,
+    page_size: pageSize,
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+  }
+}
+
 export const getTempusSpecies = cache(
   async (params?: TempusListParams): Promise<TempusSpecies[]> =>
     (await getTempusSpeciesPage(params)).results
@@ -356,15 +397,9 @@ export const getTempusSpecies = cache(
 
 export const getTempusSpeciesPage = cache(
   async (params?: TempusListParams): Promise<TempusPage<TempusSpecies>> => {
-    const requestedPageSize = Number(params?.page_size)
-    const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
-      ? Math.min(requestedPageSize, 50)
-      : 25
-    const page = await fetchTempusPage<TempusSpecies>(TEMPUS_ENDPOINTS.species, {
-      ...params,
-      page_size: pageSize,
-    })
-    return { ...page, pageSize }
+    const query = paginationQuery(params, 25, 50)
+    const page = await fetchTempusPage<TempusSpecies>(TEMPUS_ENDPOINTS.species, query)
+    return { ...page, pageSize: query.page_size }
   }
 )
 
@@ -381,6 +416,20 @@ export const getTempusChecklistItem = cache(
 export const getTempusChecklistItems = cache(
   (checklistId: string): Promise<TempusChecklistItem[]> =>
     fetchList(TEMPUS_ENDPOINTS.checklistItems, { checklist: checklistId })
+)
+
+export const getTempusChecklistRegisterPage = cache(
+  async (
+    checklistId: string,
+    params?: TempusListParams,
+  ): Promise<TempusPage<TempusChecklistRegisterRow>> => {
+    const query = paginationQuery(params, 250, 250)
+    const page = await fetchTempusPage<TempusChecklistRegisterRow>(
+      TEMPUS_ENDPOINTS.checklistRegister(checklistId),
+      query,
+    )
+    return { ...page, pageSize: query.page_size }
+  },
 )
 
 export const getTempusObservations = cache(
@@ -426,17 +475,28 @@ export const getTempusSpeciesCategories = cache(
     (await getTempusSpeciesCategoriesPage(params)).results
 )
 
+export const getTempusSpeciesCategoriesAll = cache(
+  async (): Promise<TempusSpeciesCategory[]> => {
+    const categories: TempusSpeciesCategory[] = []
+    let page = 1
+    while (true) {
+      const categoryPage = await getTempusSpeciesCategoriesPage({ page, page_size: 50 })
+      categories.push(...categoryPage.results)
+      if (!categoryPage.next) break
+      page += 1
+    }
+    return categories
+  }
+)
+
 export const getTempusSpeciesCategoriesPage = cache(
   async (params?: TempusListParams): Promise<TempusPage<TempusSpeciesCategory>> => {
-    const requestedPageSize = Number(params?.page_size)
-    const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
-      ? Math.min(requestedPageSize, 50)
-      : 24
+    const query = paginationQuery(params, 24, 50)
     const page = await fetchTempusPage<TempusSpeciesCategory>(
       TEMPUS_ENDPOINTS.speciesCategories,
-      { ...params, page_size: pageSize }
+      query
     )
-    return { ...page, pageSize }
+    return { ...page, pageSize: query.page_size }
   }
 )
 
@@ -464,15 +524,12 @@ export const getTempusSpeciesPhenogram = cache(
 
 export const getTempusSeasonalOverviewPage = cache(
   async (params?: TempusListParams): Promise<TempusPage<TempusSeasonalOverview>> => {
-    const requestedPageSize = Number(params?.page_size)
-    const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
-      ? Math.min(requestedPageSize, 50)
-      : 24
+    const query = paginationQuery(params, 24, 50)
     const page = await fetchTempusPage<TempusSeasonalOverview>(
       TEMPUS_ENDPOINTS.speciesSeasonalOverview,
-      { ...params, page_size: pageSize },
+      query,
     )
-    return { ...page, pageSize }
+    return { ...page, pageSize: query.page_size }
   },
 )
 
@@ -516,18 +573,14 @@ export const getTempusSpeciesPageByCategory = cache(
     taxonId: string,
     params?: TempusListParams
   ): Promise<TempusPage<TempusSpecies>> => {
-    const requestedPageSize = Number(params?.page_size)
-    const pageSize = Number.isInteger(requestedPageSize) && requestedPageSize > 0
-      ? Math.min(requestedPageSize, 50)
-      : 25
+    const query = paginationQuery(params, 25, 50)
     const page = await fetchTempusPage<TempusSpecies>(TEMPUS_ENDPOINTS.species, {
-      ...params,
-      page_size: pageSize,
+      ...query,
       categories__taxon_id: taxonId,
     })
     return {
       ...page,
-      pageSize,
+      pageSize: query.page_size,
     }
   }
 )

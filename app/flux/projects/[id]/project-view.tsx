@@ -15,6 +15,8 @@ import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
 import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
 import { formatDate } from "@/app/lib/format-date";
+import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
+import { isTaskOverdue } from "@/app/lib/flux-task-dates";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
 import type { FluxTask, FluxTaskPriority, FluxUser } from "@/app/lib/dal";
 
@@ -45,7 +47,7 @@ function TaskRow({
   return (
     <div
       onClick={onClick}
-      className="flex cursor-pointer items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 hover:bg-surface-2"
+      className={`flex cursor-pointer items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 ${isTaskOverdue(task.due_date, task.status) ? "bg-danger-wash/20 hover:bg-danger-wash/30" : "hover:bg-surface-2"}`}
     >
       <div className="flex min-w-0 items-center gap-2">
         <TaskCompletionButton id={task.id} status={task.status} />
@@ -57,6 +59,7 @@ function TaskRow({
         >
           {PRIORITY_LABEL[task.priority]}
         </span>
+        <TaskDueDate dueDate={task.due_date} status={task.status} compact />
         {subtasks.length > 0 && (
           <span className="font-mono text-xs text-text-faint">
             {subtasks.filter((t) => t.status === "done").length}/{subtasks.length}
@@ -90,7 +93,7 @@ export default function FluxProjectDetailView() {
   const project = projects.find((p) => String(p.id) === id);
 
   if (!project) {
-    return <div className="p-6 text-sm text-text-muted">Projektet hittades inte.</div>;
+    return <div className="text-sm text-text-muted">Projektet hittades inte.</div>;
   }
 
   const projectTasks = tasks.filter((task) => task.project === project.id);
@@ -99,7 +102,7 @@ export default function FluxProjectDetailView() {
   const overallProgress = progressOf(projectTasks);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <h1 className="m-0 font-display text-[28px] font-semibold text-text">{project.name}</h1>

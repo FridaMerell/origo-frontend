@@ -11,11 +11,12 @@ export async function FluxProviders({ children }: { children: ReactNode }) {
   const selectedProject =
     projects.find((project) => String(project.id) === selectedId) ?? projects[0] ?? null;
 
-  const [milestones, tasks, updates] = selectedProject
+  const projectId = selectedProject ? String(selectedProject.id) : undefined;
+  const [milestones, tasks, updates] = projectId
     ? await Promise.all([
-        getFluxMilestones({ project: String(selectedProject.id) }),
-        getFluxTasks({ project: String(selectedProject.id) }),
-        getFluxUpdates({ project: String(selectedProject.id) }),
+        getFluxMilestones({ project: projectId }),
+        getFluxTasks({ project: projectId }),
+        getFluxUpdates({ project: projectId }),
       ])
     : [[], [], []];
 

@@ -1,22 +1,22 @@
-"use client";
+"use client"
 
-import { useDeferredValue, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/app/components/ui/Button";
-import { speciesName } from "@/app/lib/tempus-context";
-import { createSpeciesCategory } from "@/app/actions/tempus";
-import { useSpeciesPage } from "@/app/tempus/ui/use-species-page";
+import { useDeferredValue, useState } from "react"
+import { useRouter } from "next/navigation"
+import { Button } from "@/app/components/ui/Button"
+import { speciesName } from "@/app/lib/tempus-context"
+import { createSpeciesCategory } from "@/app/actions/tempus"
+import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
 
 export default function SpeciesCategoryForm() {
-  const router = useRouter();
-  const [label, setLabel] = useState("");
-  const [taxa, setTaxa] = useState<number|null>(0);
-  const [imageUrl, setImageUrl] = useState("");
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [filter, setFilter] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const deferredFilter = useDeferredValue(filter);
+  const router = useRouter()
+  const [label, setLabel] = useState("")
+  const [taxa, setTaxa] = useState<number | null>(0)
+  const [imageUrl, setImageUrl] = useState("")
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [filter, setFilter] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const deferredFilter = useDeferredValue(filter)
 
   const {
     results: visible,
@@ -25,41 +25,41 @@ export default function SpeciesCategoryForm() {
     totalPages,
     loading,
     error: loadError,
-  } = useSpeciesPage({ search: deferredFilter });
+  } = useSpeciesPage({ search: deferredFilter })
 
   const toggle = (id: string) => {
     setSelected((prev) => {
-      const next = new Set(prev);
+      const next = new Set(prev)
       if (next.has(id)) {
-        next.delete(id);
+        next.delete(id)
       } else {
-        next.add(id);
+        next.add(id)
       }
-      return next;
-    });
-  };
+      return next
+    })
+  }
 
   const onSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError(null);
-    setSubmitting(true);
-    if(!taxa) return false
+    event.preventDefault()
+    setError(null)
+    setSubmitting(true)
+    if (!taxa) return false
     const result = await createSpeciesCategory({
       label,
       image_url: imageUrl,
       taxon_id: taxa,
       species: [...selected],
-    });
-    setSubmitting(false);
+    })
+    setSubmitting(false)
     if (result?.error) {
-      setError(result.error);
-      return;
+      setError(result.error)
+      return
     }
-    setLabel("");
-    setImageUrl("");
-    setSelected(new Set());
-    router.refresh();
-  };
+    setLabel("")
+    setImageUrl("")
+    setSelected(new Set())
+    router.refresh()
+  }
 
   return (
     <form className="flex max-w-[520px] flex-col gap-4" onSubmit={onSubmit}>
@@ -140,12 +140,13 @@ export default function SpeciesCategoryForm() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <Button
+        variant="paper-bordered"
         type="submit"
-        className="w-fit whitespace-nowrap"
+        className="w-max"
         disabled={submitting || !label.trim() || !taxa}
       >
         {submitting ? "Sparar…" : "Skapa kategori"}
       </Button>
     </form>
-  );
+  )
 }

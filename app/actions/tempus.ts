@@ -6,12 +6,14 @@ import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
 import {
   getCurrentUser,
+  getTempusChecklistRegisterPage,
   getTempusChecklistItems,
   getTempusRouteStops,
   getTempusSpeciesPage,
   getTempusSpeciesPageByCategory,
   getTempusSpeciesItems,
   type TempusPage,
+  type TempusChecklistRegisterRow,
   type TempusTaxonHit,
   type TempusSpecies,
   type TempusSuggestedStop,
@@ -179,6 +181,8 @@ export async function createChecklist(
       end_date: parsed.data.end_date,
       geo_area: parsed.data.geo_area,
       route: null,
+      species: parsed.data.species,
+      species_category_ids: parsed.data.species_category_ids,
     }),
   })
 
@@ -192,38 +196,63 @@ export async function createChecklist(
     return { error: "Checklistan skapades, men svaret saknade ett checklist-ID." }
   }
 
-  const itemResponses = await Promise.all(
-    parsed.data.species.map((speciesId, index) =>
-      fetchOrigoApi(TEMPUS_ENDPOINTS.checklistItems, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          checklist: checklist.id,
-          species: speciesId,
-          sequence: index + 1,
-          notes: "",
-        }),
-      })
-    )
-  )
-  const createdItems = itemResponses.filter((response) => response.ok).length
-  const failedResponse = itemResponses.find((response) => !response.ok)
-
   revalidatePath("/checklistor")
   revalidatePath(`/checklistor/${checklist.id}`)
-  if (failedResponse) {
-    const detail = await failedResponse.text().catch(() => "")
-    return {
-      checklistId: checklist.id,
-      createdItems,
-      error: `Checklistan skapades, men ${itemResponses.length - createdItems} arter kunde inte läggas till. ${firstErrorMessage(detail, failedResponse.status)}`,
-    }
-  }
-
   return {
     success: true,
     checklistId: checklist.id,
-    createdItems,
+  }
+}
+
+export type LoadChecklistRegisterPageInput = {
+  checklistId: string
+  page?: number
+  search?: string
+}
+
+export async function loadChecklistRegisterPage({
+  checklistId,
+  page = 1,
+  search = "",
+}: LoadChecklistRegisterPageInput): Promise<TempusPage<TempusChecklistRegisterRow>> {
+  const requestedPage = Number.isInteger(page) && page > 0 ? page : 1
+  const normalizedSearch = search.trim().toLocaleLowerCase("sv")
+
+  if (!normalizedSearch) {
+    return getTempusChecklistRegisterPage(checklistId, {
+      page: requestedPage,
+      page_size: 250,
+    })
+  }
+
+  const firstPage = await getTempusChecklistRegisterPage(checklistId, {
+    page: 1,
+    page_size: 250,
+  })
+  const totalSourcePages = Math.max(1, Math.ceil(firstPage.count / 250))
+  const remainingPages = await Promise.all(
+    Array.from({ length: totalSourcePages - 1 }, (_, index) =>
+      getTempusChecklistRegisterPage(checklistId, {
+        page: index + 2,
+        page_size: 250,
+      }),
+    ),
+  )
+  const matches = [firstPage, ...remainingPages]
+    .flatMap((result) => result.results)
+    .filter((row) =>
+      [row.swedish_name, row.scientific_name, String(row.dyntaxa_taxon_id)].some((value) =>
+        value.toLocaleLowerCase("sv").includes(normalizedSearch),
+      ),
+    )
+  const start = (requestedPage - 1) * 250
+
+  return {
+    results: matches.slice(start, start + 250),
+    count: matches.length,
+    previous: requestedPage > 1 ? String(requestedPage - 1) : null,
+    next: start + 250 < matches.length ? String(requestedPage + 1) : null,
+    pageSize: 250,
   }
 }
 

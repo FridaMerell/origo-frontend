@@ -1,9 +1,6 @@
 "use client"
 
-import { startTransition, useCallback, useEffect, useRef, useState } from "react"
-import { Avatar } from "./Avatar"
-import { Icon } from "./Icon"
-import { logout } from "@/app/actions/auth"
+import { startTransition, useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import {
   getNotificationSummary,
   getNotification,
@@ -11,7 +8,17 @@ import {
   markNotificationAsRead,
   type NotificationPreview,
 } from "@/app/actions/notifications"
-import { useUser, formatUserName } from "@/app/lib/user-context"
+
+type NotificationMenuProps = {
+  align?: "left" | "right"
+  dropUp?: boolean
+  children: (props: {
+    unreadCount: number
+    notificationLabel: string | number
+    isOpen: boolean
+    toggle: () => void
+  }) => ReactNode
+}
 
 function formatNotificationTime(value: string) {
   const date = new Date(value)
@@ -23,41 +30,36 @@ function formatNotificationTime(value: string) {
   }).format(date)
 }
 
-export function Profile() {
+export function NotificationMenu({ align = "right", dropUp = false, children }: NotificationMenuProps) {
   const [open, setOpen] = useState(false)
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<NotificationPreview[]>([])
   const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null)
   const [markingAllAsRead, setMarkingAllAsRead] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const user = useUser()
-
-  const name = user ? formatUserName(user) : "Okänd"
-
-  useEffect(() => {
-    const onClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", onClickOutside)
-    return () => document.removeEventListener("mousedown", onClickOutside)
-  }, [])
 
   const loadNotifications = useCallback(() => {
     startTransition(() => {
       void getNotificationSummary().then((summary) => {
-        setUnreadNotificationCount(summary.unreadCount)
+        setUnreadCount(summary.unreadCount)
         setNotifications(summary.notifications)
       })
     })
   }, [])
 
   useEffect(() => {
+    const onClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", onClickOutside)
+    return () => document.removeEventListener("mousedown", onClickOutside)
+  }, [])
+
+  useEffect(() => {
     loadNotifications()
   }, [loadNotifications])
 
-  const notificationLabel = unreadNotificationCount > 99 ? "99+" : unreadNotificationCount
-
-  const toggleMenu = () => {
+  const toggle = () => {
     const willOpen = !open
     setOpen(willOpen)
     if (willOpen) loadNotifications()
@@ -72,7 +74,7 @@ export function Profile() {
       setNotifications((current) => current.map((item) => (
         item.id === notification.id ? { ...item, isRead: true } : item
       )))
-      setUnreadNotificationCount((current) => Math.max(0, current - 1))
+      setUnreadCount((current) => Math.max(0, current - 1))
     }
 
     const detailedNotification = await getNotification(notification.id)
@@ -90,34 +92,23 @@ export function Profile() {
     if (!didMarkAll) return
 
     setNotifications((current) => current.map((notification) => ({ ...notification, isRead: true })))
-    setUnreadNotificationCount(0)
+    setUnreadCount(0)
   }
+
+  const notificationLabel = unreadCount > 99 ? "99+" : unreadCount
+  const panelPosition = dropUp ? "bottom-full mb-2" : "top-full mt-2"
 
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={toggleMenu}
-        className="flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left text-sm text-text-muted hover:bg-accent-wash hover:text-accent"
-      >
-        <span className="relative shrink-0">
-          <Avatar name={name} size={24} />
-          {unreadNotificationCount > 0 && (
-            <span
-              aria-label={`${unreadNotificationCount} olästa notifieringar`}
-              className="absolute -right-1.5 -top-1.5 flex min-w-4.5 h-4.5 items-center justify-center rounded-full bg-accent px-1 font-body text-[10px] font-semibold leading-none text-accent-contrast ring-2 ring-surface"
-            >
-              {notificationLabel}
-            </span>
-          )}
-        </span>
-        <span className="truncate">{name}</span>
-      </button>
+      {children({ unreadCount, notificationLabel, isOpen: open, toggle })}
       {open && (
-        <div className="absolute bottom-full left-0 z-10 mb-1 w-[28rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-md border border-border bg-surface py-1 shadow-sm">
+        <section
+          aria-label="Notifikationer"
+          className={`absolute ${align}-0 z-50 w-[28rem] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-md border border-border bg-surface py-1 shadow-md ${panelPosition}`}
+        >
           <div className="flex items-center justify-between gap-3 px-3 py-2">
             <span className="font-display text-sm font-semibold text-text">Notifikationer</span>
-            {unreadNotificationCount > 0 && (
+            {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={() => void markAllAsRead()}
@@ -167,18 +158,7 @@ export function Profile() {
               <p className="px-3 py-5 text-center text-sm text-text-muted">Inga notifikationer ännu.</p>
             )}
           </div>
-          <button
-            type="button"
-            onClick={async () => {
-              await logout();
-              window.location.href = "/login";
-            }}
-            className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm text-text hover:bg-accent-wash hover:text-accent"
-          >
-            <Icon name="log-out" size={14} />
-            Logga ut
-          </button>
-        </div>
+        </section>
       )}
     </div>
   )

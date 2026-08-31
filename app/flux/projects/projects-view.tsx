@@ -15,7 +15,7 @@ export default function FluxProjectsView() {
   const users = useFluxUsers();
 
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold text-text">Projekt</h1>
         <AddProjectButton />

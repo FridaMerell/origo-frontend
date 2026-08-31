@@ -142,8 +142,13 @@ export const checklistFormSchema = z.object({
     .nullable()
     .transform((value) => (value ? value : null)),
   geo_area: z.string().uuid("Välj ett giltigt område.").nullable(),
-  species: z.array(z.string().uuid()).min(1, "Välj minst en art."),
+  species: z.array(z.string().uuid()),
+  species_category_ids: z.array(z.string().uuid()).default([]),
 })
+  .refine(
+    (data) => data.species.length > 0 || data.species_category_ids.length > 0,
+    { message: "Välj minst en art eller kategori.", path: ["species"] },
+  )
   .refine(
     (data) => !data.start_date || !data.end_date || data.end_date >= data.start_date,
     { message: "Slutdatum kan inte vara före startdatum.", path: ["end_date"] },

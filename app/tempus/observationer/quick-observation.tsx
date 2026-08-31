@@ -604,7 +604,7 @@ export default function QuickObservation({
               ) : null}
 
               <div className="flex items-center gap-3 pt-1">
-                <Button type="submit" disabled={pending || !picked} className="flex-1 justify-center">
+                <Button type="submit" variant="paper" disabled={pending || !picked} className="flex-1 justify-center">
                   <Icon
                     name={pending ? "loader" : "check"}
                     size={16}

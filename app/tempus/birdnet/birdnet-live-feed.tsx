@@ -189,7 +189,7 @@ export default function BirdnetLiveFeed({ devices }: { devices: BirdnetDevice[] 
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">BirdNET · ström</p>
-          <h2 className="mt-1 font-display text-xl font-semibold">Detektioner live</h2>
+          <h2 className="mt-1 font-display text-xl font-semibold">Liveflöde</h2>
         </div>
         <span
           className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-wide ${

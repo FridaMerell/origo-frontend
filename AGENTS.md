@@ -22,5 +22,13 @@ This fallback must:
 - preserve unrelated user changes;
 - be followed by reading the affected sections back for verification.
 
-Do not use Python, sed, awk, regular-expression scripts, or other programmatic
-text transformations to modify project files.
+If a patch reports a reparse-point or path limitation, verify the target path
+once with a read-only filesystem check. If the path is normal, treat it as a
+tooling or sandbox false positive: do not retry multiple path variants or
+spend time repeatedly attempting the same edit. Switch immediately to an
+available alternative edit path or report the blocker with the exact patch.
+
+Use `apply_patch` or direct editor tools for ordinary changes. Do not use
+Python, sed, awk, or regex-based scripts for broad or automatic rewrites. A
+limited, explicit one-off shell edit is allowed when editor tools do not work,
+provided the target file and change are clearly scoped.

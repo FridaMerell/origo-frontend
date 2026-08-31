@@ -1,10 +1,10 @@
 "use client"
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
-import { Card } from "@/app/components/ui/Card"
-import { Icon } from "@/app/components/ui/Icon"
+import { CategoryTreeSelect } from "@/app/components/ui/CategoryTreeSelect"
 import { createChecklist, loadSpeciesItems, matchSpeciesValues, updateChecklist } from "@/app/actions/tempus"
 import {
   speciesName,
@@ -101,8 +101,9 @@ export default function ChecklistBuilder({
   const [startDate, setStartDate] = useState(checklist?.start_date ?? "")
   const [endDate, setEndDate] = useState(checklist?.end_date ?? "")
   const [query, setQuery] = useState("")
-  const [categoryId, setCategoryId] = useState("all")
+  const [categoryId, setCategoryId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set(checklist?.species ?? []))
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
   const [selectedPage, setSelectedPage] = useState(1)
   const [knownSpecies, setKnownSpecies] = useState<Map<string, TempusSpecies>>(() => new Map())
   const [dragOver, setDragOver] = useState(false)
@@ -112,7 +113,11 @@ export default function ChecklistBuilder({
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
   const deferredQuery = useDeferredValue(query)
 
-  const activeCategory = categories.find((item) => item.id === categoryId)
+  const activeCategory = categories.find((item) => item.id === categoryId) ?? null
+  const selectedCategory = categories.find((item) => selectedCategoryIds.includes(item.id)) ?? null
+  const selectedSpeciesCount = selectedCategory
+    ? Math.max(selected.size, selectedCategory.species_count)
+    : selected.size
   const {
     results: visibleSpecies,
     count: visibleSpeciesCount,
@@ -177,6 +182,13 @@ export default function ChecklistBuilder({
     })
   }
 
+  const selectAllInCategory = () => {
+    if (!activeCategory) return
+    setSelectedCategoryIds([activeCategory.id])
+    setSavedMessage(`Alla arter i ${activeCategory.label} läggs till när checklistan skapas.`)
+    setError(null)
+  }
+
   const importCsv = async (file: File) => {
     setError(null)
     setSavedMessage(null)
@@ -233,8 +245,8 @@ export default function ChecklistBuilder({
       setError("Ge checklistan ett namn.")
       return
     }
-    if (selected.size === 0) {
-      setError("Välj minst en art.")
+    if (selected.size === 0 && selectedCategoryIds.length === 0) {
+      setError("Välj minst en art eller kategori.")
       return
     }
     if (startDate && endDate && endDate < startDate) {
@@ -250,6 +262,7 @@ export default function ChecklistBuilder({
         end_date: endDate || null,
         geo_area: geoAreaId || null,
         species: [...selected],
+        species_category_ids: selectedCategoryIds,
       }
       const result = checklist
         ? await updateChecklist(checklist.id, payload)
@@ -267,33 +280,39 @@ export default function ChecklistBuilder({
   }
 
   return (
-    <div className="container mx-auto flex flex-col gap-6 py-6 max-sm:px-4 sm:py-10">
-      <header className="flex flex-col gap-2 border-b border-border pb-5">
-        <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.16em] text-accent">
-          <Icon name="list-checks" size={14} />
-          Checklistor
-        </div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-          {isEdit ? "Redigera checklista" : "Skapa en checklista"}
-        </h1>
-        <p className="max-w-2xl text-sm leading-6 text-text-muted">
-          Samla arterna för ett område, en inventering eller en egen utflykt. Välj manuellt
-          eller importera en befintlig artlista som CSV.
-        </p>
-      </header>
+    <div className="container mx-auto flex flex-col gap-3 py-5 max-sm:px-3 sm:py-7">
+      <Link
+        href="/checklistor"
+        className="flex w-fit items-center font-mono text-[10px] uppercase tracking-[.16em] text-text-muted no-underline hover:text-accent"
+      >
+        ← Checklistor
+      </Link>
 
-      <form className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]" onSubmit={submit}>
-        <div className="flex min-w-0 flex-col gap-6">
-          <Card className="p-0">
-            <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-              <span className="flex size-7 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-contrast">1</span>
+      <form className="flex flex-col gap-3" onSubmit={submit}>
+        <article className="rounded-card border border-border bg-surface text-text shadow-card">
+          <header className="px-4 pb-3 pt-3 sm:px-5 sm:pb-4">
+            <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
+              <span>Checklistförteckning</span>
+              <span>{isEdit ? "Redigera checklista" : "Ny checklista"}</span>
+            </div>
+            <div className="border-b border-border px-3 py-4 text-center sm:py-5">
+              <h1 className="font-display text-2xl font-medium italic tracking-wide sm:text-3xl">
+                {isEdit ? "Redigera checklista" : "Ny checklista"}
+              </h1>
+            </div>
+          </header>
+
+        <div className="grid items-start gap-6 px-4 pb-5 sm:px-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <div className="contents">
+          <section className="border-t border-border lg:col-start-1 lg:row-start-1">
+            <div className="flex items-baseline justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
               <div>
-                <h2 className="font-display text-xl font-semibold">Grunduppgifter</h2>
-                <p className="text-xs text-text-muted">Det går att ändra allt senare.</p>
+                <span className="font-mono text-[10px] uppercase tracking-[.14em] text-secondary">01</span>
+                <h2 className="mt-1 font-display text-2xl font-semibold">Grunduppgifter</h2>
               </div>
             </div>
-            <div className="grid gap-4 p-5 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5 text-sm font-medium sm:col-span-2">
+            <div className="grid gap-5 px-4 py-5 sm:grid-cols-2 sm:px-5">
+              <label className="flex flex-col gap-1.5 font-display text-[11px] italic text-text-faint sm:col-span-2">
                 Checklistans namn
                 <input
                   value={name}
@@ -302,25 +321,24 @@ export default function ChecklistBuilder({
                     setSavedMessage(null)
                   }}
                   placeholder="T.ex. Vårfåglar vid Hjälstaviken"
-                  className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                  className="rounded-none border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                 />
               </label>
-              <label className="flex flex-col gap-1.5 text-sm font-medium sm:col-span-2">
+              <label className="flex flex-col gap-1.5 font-display text-[11px] italic text-text-faint sm:col-span-2">
                 Beskrivning <span className="font-normal text-text-faint">(valfritt)</span>
                 <textarea
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
-                  placeholder="Vad ska följas upp och varför?"
                   rows={3}
-                  className="resize-y rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                  className="resize-y rounded-none border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                 />
               </label>
-              <label className="flex flex-col gap-1.5 text-sm font-medium">
+              <label className="flex flex-col gap-1.5 font-display text-[11px] italic text-text-faint sm:col-span-2">
                 Område <span className="font-normal text-text-faint">(valfritt)</span>
                 <select
                   value={geoAreaId}
                   onChange={(event) => setGeoAreaId(event.target.value)}
-                  className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
+                  className="rounded-none border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
                 >
                   <option value="">Inget område</option>
                   {geoAreas.map((geoArea) => (
@@ -328,38 +346,37 @@ export default function ChecklistBuilder({
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1.5 text-sm font-medium">
+              <label className="flex flex-col gap-1.5 font-display text-[11px] italic text-text-faint">
                 Startdatum <span className="font-normal text-text-faint">(valfritt)</span>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(event) => setStartDate(event.target.value)}
-                  className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
+                  className="rounded-none border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
                 />
               </label>
-              <label className="flex flex-col gap-1.5 text-sm font-medium">
+              <label className="flex flex-col gap-1.5 font-display text-[11px] italic text-text-faint">
                 Slutdatum <span className="font-normal text-text-faint">(valfritt)</span>
                 <input
                   type="date"
                   value={endDate}
                   min={startDate || undefined}
                   onChange={(event) => setEndDate(event.target.value)}
-                  className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
+                  className="rounded-none border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
                 />
               </label>
             </div>
-          </Card>
+          </section>
 
-          <Card className="p-0">
-            <div className="flex items-center gap-3 border-b border-border px-5 py-4">
-              <span className="flex size-7 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-contrast">2</span>
+          <section className="border-t border-border lg:col-start-1 lg:row-start-2">
+            <div className="flex items-baseline justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
               <div>
-                <h2 className="font-display text-xl font-semibold">Välj arter</h2>
-                <p className="text-xs text-text-muted">Importera en CSV eller sök i artregistret.</p>
+                <span className="font-mono text-[10px] uppercase tracking-[.14em] text-secondary">02</span>
+                <h2 className="mt-1 font-display text-2xl font-semibold">Välj arter</h2>
               </div>
             </div>
 
-            <div className="border-b border-border p-5">
+            <div className="border-b border-border px-4 py-4 sm:px-5">
               <div
                 role="button"
                 tabIndex={0}
@@ -378,15 +395,12 @@ export default function ChecklistBuilder({
                   const file = event.dataTransfer.files[0]
                   if (file) void importCsv(file)
                 }}
-                className={`flex cursor-pointer flex-col items-center gap-2 rounded border border-dashed px-5 py-7 text-center transition-colors ${
+                className={`flex cursor-pointer items-center justify-between gap-4 rounded-none border border-dashed px-4 py-4 text-left transition-colors ${
                   dragOver
                     ? "border-accent bg-accent-wash text-accent"
                     : "border-border bg-surface-2 text-text-muted hover:border-accent hover:text-text"
                 }`}
               >
-                <span className="flex size-10 items-center justify-center rounded-full bg-surface text-accent shadow-sm">
-                  <Icon name={importing ? "loader" : "upload"} size={19} className={importing ? "animate-spin" : ""} />
-                </span>
                 <div>
                   <p className="text-sm font-semibold text-text">
                     {importing ? "Läser artlistan…" : "Släpp en CSV här eller välj fil"}
@@ -407,48 +421,57 @@ export default function ChecklistBuilder({
               </div>
 
               {importResult ? (
-                <div className="mt-3 rounded border border-border bg-surface px-3 py-3 text-sm" aria-live="polite">
-                  <div className="flex items-start gap-2">
-                    <Icon name="file-check" size={16} className="mt-0.5 text-success" />
-                    <div className="min-w-0">
-                      <p className="font-medium"><span className="break-all">{importResult.fileName}</span> · {importResult.matched} matchade</p>
-                      {importResult.unmatched.length > 0 ? (
-                        <details className="mt-1 text-text-muted">
-                          <summary className="cursor-pointer">{importResult.unmatched.length} kunde inte matchas</summary>
-                          <p className="mt-1 break-words text-xs">{importResult.unmatched.slice(0, 12).join(", ")}{importResult.unmatched.length > 12 ? " …" : ""}</p>
-                        </details>
-                      ) : null}
-                    </div>
+                <div className="mt-3 border-y border-border py-3 text-sm" aria-live="polite">
+                  <div className="min-w-0">
+                    <p className="font-medium"><span className="break-all">{importResult.fileName}</span> · {importResult.matched} matchade</p>
+                    {importResult.unmatched.length > 0 ? (
+                      <details className="mt-1 text-text-muted">
+                        <summary className="cursor-pointer">{importResult.unmatched.length} kunde inte matchas</summary>
+                        <p className="mt-1 break-words text-xs">{importResult.unmatched.slice(0, 12).join(", ")}{importResult.unmatched.length > 12 ? " …" : ""}</p>
+                      </details>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
             </div>
 
-            <div className="p-5">
+            <div className="px-4 py-4 sm:px-5">
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
-                <label className="relative">
+                <label>
                   <span className="sr-only">Sök art</span>
-                  <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
                   <input
                     type="search"
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder="Sök namn eller Dyntaxa-ID"
-                    className="w-full rounded border border-field-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                    className="w-full rounded-none border border-field-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                   />
                 </label>
-                <label>
-                  <span className="sr-only">Filtrera taxonomi</span>
-                  <select
+                <div className="min-w-0">
+                  <CategoryTreeSelect
+                    categories={categories}
                     value={categoryId}
-                    onChange={(event) => setCategoryId(event.target.value)}
-                    className="w-full rounded border border-field-border bg-surface px-3 py-2.5 text-sm text-text focus:border-accent focus:outline-none"
-                  >
-                    <option value="all">Alla taxonomier</option>
-                    {categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}
-                  </select>
-                </label>
+                    onChange={setCategoryId}
+                    placeholder="Alla kategorier"
+                    allLabel="Alla kategorier"
+                    searchPlaceholder="Sök kategori eller grupp"
+                  />
+                </div>
               </div>
+
+              {activeCategory ? (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
+                  <span className="text-xs text-text-muted">Kategori: {activeCategory.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => void selectAllInCategory()}
+                    disabled={speciesLoading}
+                    className="font-medium text-accent hover:text-accent-hover disabled:text-text-faint"
+                  >
+                    Välj alla i kategorin
+                  </button>
+                </div>
+              ) : null}
 
               <div className="mt-3 flex items-center justify-between border-b border-border pb-2 text-xs text-text-muted">
                 <span>{visibleSpeciesCount} arter</span>
@@ -481,20 +504,19 @@ export default function ChecklistBuilder({
                 </div>
               ) : null}
             </div>
-          </Card>
-        </div>
+          </section>
 
-        <aside className="lg:sticky lg:top-24">
-          <Card className="p-0 shadow-md">
-            <div className="border-b border-border px-5 py-4">
+        <aside className="lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1">
+          <section className="border-t border-border">
+            <div className="border-b border-border px-4 py-3 sm:px-5">
               <span className="font-mono text-[10px] uppercase tracking-[.14em] text-secondary">Sammanfattning</span>
               <h2 className="mt-1 font-display text-xl font-semibold">{name.trim() || "Namnlös checklista"}</h2>
-              {geoAreaId ? <p className="mt-1 flex items-center gap-1.5 text-xs text-text-muted"><Icon name="map-pin" size={13} />{geoAreas.find((geoArea) => geoArea.id === geoAreaId)?.name}</p> : null}
+              {geoAreaId ? <p className="mt-1 text-xs text-text-muted">{geoAreas.find((geoArea) => geoArea.id === geoAreaId)?.name}</p> : null}
             </div>
-            <div className="p-5">
+            <div className="px-4 py-4 sm:px-5">
               <div className="flex items-end justify-between">
                 <div>
-                  <strong className="font-display text-4xl font-semibold text-accent">{selected.size}</strong>
+                  <strong className="font-display text-4xl font-semibold text-accent">{selectedSpeciesCount}</strong>
                   <span className="ml-2 text-sm text-text-muted">valda arter</span>
                 </div>
                 {selected.size > 0 ? <button type="button" onClick={() => setSelected(new Set())} className="text-xs text-text-muted hover:text-danger">Rensa</button> : null}
@@ -505,11 +527,15 @@ export default function ChecklistBuilder({
                   {selectedSpecies.map((item) => (
                     <li key={item.id} className="flex items-center justify-between gap-2 text-xs">
                       <span className="truncate">{speciesName(item)}</span>
-                      <button type="button" onClick={() => toggleSpecies(item.id)} aria-label={`Ta bort ${speciesName(item)}`} className="shrink-0 text-text-faint hover:text-danger"><Icon name="x" size={13} /></button>
+                      <button type="button" onClick={() => toggleSpecies(item.id)} aria-label={`Ta bort ${speciesName(item)}`} className="shrink-0 text-xs text-text-muted underline-offset-2 hover:text-danger hover:underline">Ta bort</button>
                     </li>
                   ))}
                 </ul>
-              ) : <p className="mt-4 rounded bg-surface-2 px-3 py-4 text-center text-xs text-text-muted">Valda arter visas här.</p>}
+              ) : selectedCategory ? (
+                <p className="mt-4 border-y border-border py-4 text-center text-xs text-text-muted">
+                  Alla arter i {selectedCategory.label} läggs till vid skapandet.
+                </p>
+              ) : <p className="mt-4 border-y border-border py-4 text-center text-xs text-text-muted">Valda arter visas här.</p>}
               {selectedTotalPages > 1 ? (
                 <div className="mt-2 flex items-center justify-between text-xs text-text-muted">
                   <button type="button" disabled={effectiveSelectedPage === 1} onClick={() => setSelectedPage(effectiveSelectedPage - 1)} className="text-accent disabled:text-text-faint">Föregående</button>
@@ -518,18 +544,20 @@ export default function ChecklistBuilder({
                 </div>
               ) : null}
 
-              {error ? <p className="mt-4 rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">{error}</p> : null}
-              {savedMessage ? <p className="mt-4 rounded bg-secondary-wash px-3 py-2 text-sm text-text" role="status">{savedMessage}</p> : null}
+              {error ? <p className="mt-4 border-y border-danger py-2 text-sm text-danger" role="alert">{error}</p> : null}
+              {savedMessage ? <p className="mt-4 border-y border-border py-2 text-sm text-text" role="status">{savedMessage}</p> : null}
 
-              <Button type="submit" className="mt-5 w-full justify-center" disabled={pending || !name.trim() || selected.size === 0}>
-                <Icon name={pending ? "loader" : "check"} size={16} className={pending ? "animate-spin" : ""} />
+              <Button type="submit" variant="paper-bordered" className="mt-5 w-full justify-center rounded-none" disabled={pending || !name.trim() || (selected.size === 0 && selectedCategoryIds.length === 0)}>
                 {pending
                   ? isEdit ? "Sparar…" : "Skapar…"
                   : isEdit ? "Spara ändringar" : "Skapa checklista"}
               </Button>
             </div>
-          </Card>
+          </section>
         </aside>
+        </div>
+        </div>
+        </article>
       </form>
     </div>
   )

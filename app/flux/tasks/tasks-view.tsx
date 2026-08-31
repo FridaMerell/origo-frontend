@@ -6,9 +6,11 @@ import { ListTable, type ListTableColumn } from "@/app/components/ui/ListTable";
 import { useFluxProjects, useFluxTasks, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { AddTaskButton } from "@/app/flux/tasks/add-task-button";
 import { DeleteTaskButton } from "@/app/flux/tasks/delete-task-button";
+import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
 import type { FluxTask, FluxTaskPriority } from "@/app/lib/dal";
+import { isTaskOverdue } from "@/app/lib/flux-task-dates";
 
 const PRIORITY_TONE: Record<FluxTaskPriority, string> = {
   high: "text-danger bg-danger-wash",
@@ -33,34 +35,38 @@ export default function FluxTasksView() {
     {
       key: "status",
       header: "Klar",
-      width: "64px",
+      width: "88px",
       align: "center",
       render: (task) => <TaskCompletionButton id={task.id} status={task.status} />,
     },
     { key: "title", header: "Uppgift", render: (task) => task.title },
-    { key: "project", header: "Projekt", width: "160px", render: (task) => projectName(task.project) },
     {
-      key: "priority",
-      header: "Prioritet",
-      width: "100px",
+      key: "meta",
+      header: "Projekt / prioritet",
+      width: "220px",
       render: (task) => (
-        <span
-          className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}
-        >
-          {PRIORITY_LABEL[task.priority]}
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="min-w-0 truncate text-text">{projectName(task.project)}</span>
+          <span
+            className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}
+          >
+            {PRIORITY_LABEL[task.priority]}
+          </span>
         </span>
       ),
     },
-    { key: "due", header: "Deadline", width: "120px", render: (task) => task.due_date ?? "—" },
     {
-      key: "assignees",
-      header: "Tilldelade",
-      width: "140px",
+      key: "schedule",
+      header: "Deadline / tilldelade",
+      width: "220px",
       render: (task) => (
-        <span className="flex items-center gap-1.5">
-          {task.assignees.map((id) => (
-            <Avatar key={id} name={fluxUserName(users.get(id), id)} size={20} />
-          ))}
+        <span className="flex min-w-0 items-center justify-end gap-2">
+          <TaskDueDate dueDate={task.due_date} status={task.status} compact className="shrink-0" />
+          <span className="flex shrink-0 items-center gap-1.5">
+            {task.assignees.map((id) => (
+              <Avatar key={id} name={fluxUserName(users.get(id), id)} size={20} />
+            ))}
+          </span>
         </span>
       ),
     },
@@ -76,7 +82,7 @@ export default function FluxTasksView() {
   ];
 
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold text-text">Uppgifter</h1>
         <AddTaskButton />
@@ -87,6 +93,7 @@ export default function FluxTasksView() {
         <ListTable
           columns={columns}
           rows={tasks.map((task) => ({ id: task.id, item: task }))}
+          rowClassName={(task) => (isTaskOverdue(task.due_date, task.status) ? "bg-danger-wash/20 hover:bg-danger-wash/30" : "hover:bg-surface-2")}
           onRowClick={(task) => openTask(task.id)}
         />
       )}

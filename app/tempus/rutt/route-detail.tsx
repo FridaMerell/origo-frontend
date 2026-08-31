@@ -87,7 +87,7 @@ function RedListMark({ category }: { category: string }) {
   return (
     <span
       title={RED_LIST_LABELS[category] ?? category}
-      className="ml-1.5 border-b border-danger font-mono text-[9px] not-italic uppercase tracking-wide text-danger"
+      className="ml-1.5 border-b border-danger font-mono text-xs not-italic uppercase tracking-wide text-danger"
     >
       {category}
     </span>
@@ -141,7 +141,7 @@ function SuggestionEntry({
           <span className="block text-base italic tracking-wide">
             {stop.locality || "Namnlöst område"}
           </span>
-          <span className="mt-0.5 block font-mono text-[9px] not-italic uppercase tracking-wide text-text-faint">
+          <span className="mt-0.5 block font-mono text-xs not-italic uppercase tracking-wide text-text-faint">
             {stop.county ? `${stop.county} · ` : ""}
             {stop.species_count} arter · {km(stop.distance_along_route_m)} in ·{" "}
             ≈{Math.round(stop.detour_m)} m från vägen (fågelväg)
@@ -163,7 +163,7 @@ function SuggestionEntry({
                 <span className="text-[15px] italic tracking-wide">
                   {highlight.vernacular_name || highlight.scientific_name}
                 </span>
-                <span className="ml-1.5 text-[11px] italic text-text-muted">
+                <span className="ml-1.5 text-xs italic text-text-muted">
                   {highlight.scientific_name}
                 </span>
                 <RedListMark category={highlight.red_list_category} />
@@ -181,7 +181,7 @@ function SuggestionEntry({
 
         {stop.notable_recent.length > 0 ? (
           <div className="mt-2.5 border-l border-border pl-2.5">
-            <p className="font-mono text-[9px] not-italic uppercase tracking-wide text-text-faint">
+            <p className="font-mono text-xs not-italic uppercase tracking-wide text-text-faint">
               Setts nyligen
             </p>
             <ul className="mt-1 flex flex-col gap-0.5 text-xs italic text-text-muted">
@@ -201,7 +201,7 @@ function SuggestionEntry({
           <div className="mt-2.5 flex flex-col gap-2 text-xs italic text-text-muted">
             {stop.top_species.length > 0 ? (
               <p>
-                <span className="font-mono text-[9px] not-italic uppercase tracking-wide text-text-faint">
+                <span className="font-mono text-xs not-italic uppercase tracking-wide text-text-faint">
                   Vanligast rapporterade:
                 </span>{" "}
                 {stop.top_species
@@ -213,7 +213,7 @@ function SuggestionEntry({
               </p>
             ) : null}
             <p>
-              <span className="font-mono text-[9px] not-italic uppercase tracking-wide text-text-faint">
+              <span className="font-mono text-xs not-italic uppercase tracking-wide text-text-faint">
                 Poängkomponenter:
               </span>{" "}
               artrikedom {stop.breakdown.richness_term.toFixed(1)} · jämnhet{" "}
@@ -225,7 +225,7 @@ function SuggestionEntry({
         ) : null}
 
         <div className="mt-3 flex flex-wrap items-center gap-4">
-          <Button type="button" size="sm" onClick={add} disabled={pending}>
+          <Button type="button" variant="paper" size="sm" onClick={add} disabled={pending}>
             {pending ? "Lägger till…" : "Lägg till som stopp"}
           </Button>
           <button
@@ -248,7 +248,7 @@ function SuggestionEntry({
 
 function SectionRule({ children }: { children: React.ReactNode }) {
   return (
-    <p className="border-b border-l border-r border-border px-3 py-1.5 font-display text-[9px] italic text-text-faint">
+    <p className="border-b border-l border-r border-border px-3 py-1.5 font-display text-xs italic text-text-faint">
       {children}
     </p>
   )
@@ -403,7 +403,7 @@ export default function RouteDetail({
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <Link
           href="/rutt"
-          className="font-mono text-[10px] uppercase tracking-[.16em] text-text-muted no-underline hover:text-accent"
+          className="font-mono text-xs uppercase tracking-[.16em] text-text-muted no-underline hover:text-accent"
         >
           ‹ Rutter
         </Link>
@@ -431,7 +431,7 @@ export default function RouteDetail({
 
       <article className="overflow-hidden rounded-card border border-border bg-surface text-text">
         <header className="px-4 pb-3 pt-3 sm:px-5 sm:pb-4">
-          <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
+          <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-xs italic text-text-faint">
             <span>Ruttförteckning</span>
             <span>Blad {route.id.slice(0, 6).toUpperCase()}</span>
           </div>
@@ -455,7 +455,7 @@ export default function RouteDetail({
               ["Stopp", stops.length ? String(stops.length) : "—"],
             ].map(([label, value]) => (
               <div key={label} className="border-b border-r border-border px-3 py-2">
-                <dt className="text-[9px] italic text-text-faint">{label}</dt>
+                <dt className="text-xs italic text-text-faint">{label}</dt>
                 <dd className="mt-0.5 text-xs italic">{value}</dd>
               </div>
             ))}
@@ -529,12 +529,12 @@ export default function RouteDetail({
             </p>
 
             <div className="grid border-b border-l border-t border-border font-display sm:grid-cols-3">
-              <label className="flex flex-col border-b border-r border-border px-3 py-2 text-[9px] italic text-text-faint">
+              <label className="flex flex-col border-b border-r border-border px-3 py-2 text-sm italic text-text-faint">
                 Observationsfönster
                 <select
                   value={sinceDays}
                   onChange={(event) => setSinceDays(Number(event.target.value))}
-                  className="mt-1 h-9 rounded border border-field-border bg-surface px-2 font-body text-xs not-italic text-text focus:border-accent focus:outline-none"
+                  className="mt-1 h-10 rounded border border-field-border bg-surface px-2 font-body text-sm not-italic text-text focus:border-accent focus:outline-none"
                 >
                   {[7, 14, 30, 60, 90, 180, 365].map((days) => (
                     <option key={days} value={days}>
@@ -543,12 +543,12 @@ export default function RouteDetail({
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col border-b border-r border-border px-3 py-2 text-[9px] italic text-text-faint">
+              <label className="flex flex-col border-b border-r border-border px-3 py-2 text-sm italic text-text-faint">
                 Antal stopp
                 <select
                   value={numStops}
                   onChange={(event) => setNumStops(Number(event.target.value))}
-                  className="mt-1 h-9 rounded border border-field-border bg-surface px-2 font-body text-xs not-italic text-text focus:border-accent focus:outline-none"
+                  className="mt-1 h-10 rounded border border-field-border bg-surface px-2 font-body text-sm not-italic text-text focus:border-accent focus:outline-none"
                 >
                   {[3, 5, 8, 10, 15, 25].map((count) => (
                     <option key={count} value={count}>
@@ -557,19 +557,19 @@ export default function RouteDetail({
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col border-b border-r border-border px-3 py-2 text-[9px] italic text-text-faint">
+              <label className="flex flex-col border-b border-r border-border px-3 py-2 text-sm italic text-text-faint">
                 Max avstickare (km)
                 <input
                   inputMode="decimal"
                   value={maxDetourKm}
                   onChange={(event) => setMaxDetourKm(event.target.value)}
                   placeholder="valfritt"
-                  className="mt-1 h-9 rounded border border-field-border bg-surface px-2.5 font-body text-xs not-italic text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                  className="mt-1 h-10 rounded border border-field-border bg-surface px-2.5 font-body text-sm not-italic text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                 />
               </label>
             </div>
 
-            <p className="border-b border-l border-border px-3 py-2 font-display text-[11px] not-italic leading-snug text-text-muted">
+            <p className="border-b border-l border-border px-3 py-2 font-display text-sm not-italic leading-6 text-text-muted">
               Avstickare = punktens fågelvägsavstånd från ruttlinjen, aldrig mer
               än sökkorridoren ({km(route.corridor_metres)}). Filtret gör bara
               nytta när det är mindre än så — sätt det till hur långt från vägen
@@ -578,7 +578,7 @@ export default function RouteDetail({
             </p>
 
             <div className="flex flex-wrap items-center gap-4 border-b border-border px-3 py-3">
-              <Button type="button" onClick={runSearch} disabled={loading}>
+              <Button type="button" variant="paper" onClick={runSearch} disabled={loading}>
                 {loading ? "Söker längs rutten…" : "Sök stoppställen"}
               </Button>
               <span className="font-display text-xs italic text-text-faint">
@@ -620,7 +620,7 @@ export default function RouteDetail({
             ) : null}
           </div>
 
-          <p className="mt-2 text-right font-display text-[9px] italic text-text-faint">
+          <p className="mt-2 text-right font-display text-xs italic text-text-faint">
             Punkterna är artrika platser, inte verifierade rastplatser.
           </p>
         </section>

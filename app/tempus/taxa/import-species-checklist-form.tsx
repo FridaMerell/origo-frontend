@@ -109,9 +109,12 @@ export default function ImportSpeciesChecklistForm({ categoryId, categoryLabel }
             onChange={(event) => setFileName(event.target.files?.[0]?.name ?? null)}
           />
         </div>
+        {pending && (
+          <p className="text-sm text-text-faint" role="status">Filen importeras asynkront. Kom tillbaka om en stund</p>
+        )}
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={pending || !fileName}>
+          <Button type="submit" variant="paper-bordered" disabled={pending || !fileName}>
             {pending ? "Importerar…" : "Importera arter"}
           </Button>
           <p className="text-xs text-text-faint">Endast personal kan genomföra importen.</p>

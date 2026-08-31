@@ -7,6 +7,7 @@ import { Avatar } from "../components/ui/Avatar"
 import { ProgressBar } from "../components/ui/ProgressBar"
 import { EditProjectButton } from "./projects/edit-project-button"
 import { AddMilestoneButton } from "./projects/add-milestone-button"
+import { TaskDueDate } from "./tasks/task-due-date"
 import {
   useFluxProjects,
   useSelectedFluxProject,
@@ -19,6 +20,7 @@ import {
 import { useTaskPanel } from "../lib/task-panel-context"
 import { progressOf } from "../lib/flux-progress"
 import { formatDate } from "../lib/format-date"
+import { isTaskOverdue } from "../lib/flux-task-dates"
 import type { FluxProject, FluxTask, FluxUser } from "../lib/dal"
 
 const ProjectOverviewCard = ({
@@ -134,11 +136,11 @@ const UpcomingTasksCard = ({
               key={task.id}
               type="button"
               onClick={() => onOpenTask(task.id)}
-              className="flex items-center justify-between gap-3 border-b border-border px-3 py-2 text-left text-sm text-text last:border-b-0 hover:bg-surface-2"
+              className={`flex items-center justify-between gap-3 border-b border-border px-3 py-2 text-left text-sm text-text last:border-b-0 ${isTaskOverdue(task.due_date, task.status) ? "bg-danger-wash/20 hover:bg-danger-wash/30" : "hover:bg-surface-2"}`}
             >
               <span className="min-w-0 truncate">{task.title}</span>
               <span className="flex shrink-0 items-center gap-2">
-                <span className="font-mono text-xs text-text-faint">{task.due_date ?? "Ingen deadline"}</span>
+                <TaskDueDate dueDate={task.due_date} status={task.status} compact className="shrink-0" />
                 <span className="flex gap-1">
                   {task.assignees.map((id) => (
                     <Avatar key={id} name={fluxUserName(users.get(id), id)} size={18} />
@@ -201,7 +203,7 @@ const Home = () => {
 
   if (!projects || projects.length === 0) {
     return (
-      <div className="container flex flex-col items-center justify-center py-2">
+      <div className="flex flex-col items-center justify-center">
         <h1 className="font-display text-2xl font-semibold text-text">Inga projekt</h1>
         <p className="text-sm text-text-muted">
           Du har inga projekt än. Kontakta din administratör för att bli tillagd i ett projekt.
@@ -212,14 +214,14 @@ const Home = () => {
 
   if (!selectedProject) {
     return (
-      <div className="container flex flex-col items-center justify-center py-2">
+      <div className="flex flex-col items-center justify-center">
         <div>Välj ett projekt</div>
       </div>
     )
   }
 
   return (
-    <div className="container flex flex-col gap-4 py-5">
+    <div className="flex flex-col gap-4">
       <div className="grid grid-cols-6 gap-4">
         <ProjectOverviewCard project={selectedProject} tasks={tasks} users={users} />
         <MilestonesCard projectId={selectedProject.id} milestones={milestones} tasks={tasks} />

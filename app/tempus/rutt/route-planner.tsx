@@ -84,7 +84,7 @@ function PlaceField({
       noInputIcon: true,
     })
     const listenerController = new AbortController()
-    autocomplete.className = "mt-1 block h-9 w-full rounded border border-field-border bg-surface font-body text-xs not-italic text-text disabled:opacity-50"
+    autocomplete.className = "mt-1 block h-10 w-full rounded border border-field-border bg-surface px-2.5 font-body text-sm not-italic text-text disabled:opacity-50"
     autocomplete.style.colorScheme = "light"
 
     const handleSelect = async (event: google.maps.places.PlacePredictionSelectEvent) => {
@@ -122,7 +122,7 @@ function PlaceField({
   }, [disabled, label, placeholder, value])
 
   return (
-    <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint">
+    <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-sm italic text-text-faint">
       {label}
       <div
         ref={mountRef}
@@ -384,7 +384,7 @@ function PlannerBody({
         >
           Lägg till delmål
         </Button>
-        <span className="font-display text-xs italic text-text-faint" aria-live="polite">
+        <span className="font-display text-sm italic text-text-faint" aria-live="polite">
           {!apiLoaded
             ? "Laddar Google Maps…"
             : status === "pending"
@@ -408,7 +408,7 @@ function PlannerBody({
 
       <RoutePreview geometry={planned?.geometry ?? null} endpoints={endpoints} />
 
-      <p className="font-display text-[11px] italic leading-5 text-text-muted">
+      <p className="font-display text-sm italic leading-6 text-text-muted">
         Google beräknar körvägen mellan punkterna. Den lagrade ruttlinjen följer
         vägnätet — sökkorridoren läggs sedan runt den.
       </p>

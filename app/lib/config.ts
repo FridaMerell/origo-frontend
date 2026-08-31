@@ -14,6 +14,11 @@ export const AUTH_ENDPOINTS = {
 
 export const ACCOUNTS_ENDPOINTS = {
   users: "/api/accounts/users/",
+  notifications: "/api/accounts/notifications/",
+  notification: (id: string) => `/api/accounts/notifications/${encodeURIComponent(id)}/`,
+  notificationsSummary: "/api/accounts/notifications/summary/",
+  notificationRead: (id: string) => `/api/accounts/notifications/${encodeURIComponent(id)}/read/`,
+  notificationsReadAll: "/api/accounts/notifications/read-all/",
 } as const;
 
 export const VERSO_ENDPOINTS = {
@@ -53,6 +58,7 @@ export const APSIS_ENDPOINTS = {
 export const TEMPUS_ENDPOINTS = {
   birdnetDevices: "/api/tempus/birdnet-devices/",
   checklists: "/api/tempus/checklists/",
+  checklistRegister: (id: string) => `/api/tempus/checklists/${id}/register/`,
   checklistItems: "/api/tempus/checklist-items/",
   observations: "/api/tempus/observations/",
   geoAreas: "/api/tempus/geo-areas/",

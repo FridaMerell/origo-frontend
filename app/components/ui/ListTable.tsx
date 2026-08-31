@@ -24,12 +24,20 @@ type ListTableProps<T> = {
   showHeader?: boolean;
   caption?: ReactNode;
   onRowClick?: (item: T) => void;
+  rowClassName?: (item: T) => string;
 };
 
 const alignClass = (align: ListTableColumn<unknown>["align"]) =>
   align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
 
-export function ListTable<T>({ columns, rows, showHeader = true, caption, onRowClick }: ListTableProps<T>) {
+export function ListTable<T>({
+  columns,
+  rows,
+  showHeader = true,
+  caption,
+  onRowClick,
+  rowClassName,
+}: ListTableProps<T>) {
   const [collapsedIds, setCollapsedIds] = useState<Set<string | number>>(new Set());
 
   const gridTemplateColumns = columns.map((c) => c.width ?? "minmax(160px,1fr)").join(" ");
@@ -50,7 +58,7 @@ export function ListTable<T>({ columns, rows, showHeader = true, caption, onRowC
       return (
         <div key={row.id}>
           <div
-            className={`grid w-max min-w-full items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-surface-2 ${onRowClick ? "cursor-pointer" : ""}`}
+            className={`grid w-max min-w-full items-center gap-3 border-b border-border px-4 py-2.5 last:border-b-0 ${rowClassName?.(row.item) ?? "hover:bg-surface-2"} ${onRowClick ? "cursor-pointer" : ""}`}
             style={{ gridTemplateColumns }}
             onClick={onRowClick ? () => onRowClick(row.item) : undefined}
           >

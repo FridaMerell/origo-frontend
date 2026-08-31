@@ -85,6 +85,7 @@ export default function MapsPage() {
 
             <Button
               type="submit"
+              variant="paper"
               className="w-fit"
               disabled={submitting || !name.trim() || !geometry}
             >

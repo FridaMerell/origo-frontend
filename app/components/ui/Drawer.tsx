@@ -14,7 +14,7 @@ export function useDrawerClose() {
 
 type DrawerProps = {
   trigger?: ReactNode;
-  triggerVariant?: "primary" | "secondary" | "ghost";
+  triggerVariant?: "primary" | "secondary" | "ghost" | "paper" | "paper-bordered";
   triggerSize?: "sm" | "md";
   triggerClassName?: string;
   title?: ReactNode;

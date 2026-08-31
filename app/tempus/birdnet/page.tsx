@@ -19,7 +19,7 @@ export default async function BirdnetPage() {
   return (
     <>
       {!deviceCollection.loadError ? (
-        <div className="container px-4 pt-6 sm:px-8">
+        <div className="container  pt-6 ">
           <BirdnetLiveFeed devices={deviceCollection.devices} />
         </div>
       ) : null}

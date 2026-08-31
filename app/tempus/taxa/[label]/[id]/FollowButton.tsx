@@ -1,6 +1,7 @@
 'use client'
 import { followSpecies, unfollowSpecies } from "@/app/actions/tempus"
 import { Button } from "@/app/components/ui/Button"
+import { Icon } from "@/app/components/ui/Icon"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 
@@ -32,24 +33,27 @@ const FollowButton = ({ initial, taxa, props }: { initial: boolean, taxa: string
 
   return (
     <div className="relative flex flex-col items-end gap-1.5">
-      <div className="inline-flex">
+      <div className="inline-flex overflow-hidden rounded-md border border-accent bg-surface">
         <Button
+          variant="paper"
           {...props}
           disabled={isPending}
-          className={`rounded-r-none ${isFollowing ? "button-following" : "button-follow"} ${props?.className ?? ""}`}
+          className={`h-10 min-h-0 rounded-none border-0 bg-transparent px-3 !text-accent hover:bg-accent-wash ${isFollowing ? "font-semibold" : ""} ${props?.className ?? ""}`}
           onClick={toggle}
         >
+          {isFollowing ? <Icon name="check" size={15} /> : null}
           {isFollowing ? "Sparad" : "Spara"}
         </Button>
         <Button
+          variant="paper"
           {...props}
           disabled={isPending}
           aria-label="Fler alternativ"
           aria-expanded={menuOpen}
-          className={`rounded-l-none border-l border-accent-contrast/20 px-2 ${props?.className ?? ""}`}
+          className={`h-10 min-h-0 rounded-none border-0 border-l border-accent/30 bg-transparent px-2 !text-accent hover:bg-accent-wash ${props?.className ?? ""}`}
           onClick={() => setMenuOpen((v) => !v)}
         >
-          <span aria-hidden className={`transition-transform ${menuOpen ? "rotate-180" : ""}`}>▾</span>
+          <Icon name="chevron-down" size={15} className={`transition-transform ${menuOpen ? "rotate-180" : ""}`} />
         </Button>
       </div>
 

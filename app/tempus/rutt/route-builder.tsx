@@ -57,7 +57,7 @@ export default function RouteBuilder() {
     <div className="container mx-auto max-w-4xl py-5 max-sm:px-3 sm:py-7">
       <Link
         href="/rutt"
-        className="mb-3 flex w-fit items-center font-mono text-[10px] uppercase tracking-[.16em] text-text-muted no-underline hover:text-accent"
+        className="mb-3 flex w-fit items-center font-mono text-xs uppercase tracking-[.16em] text-text-muted no-underline hover:text-accent"
       >
         ‹ Rutter
       </Link>
@@ -65,7 +65,7 @@ export default function RouteBuilder() {
       <form className="flex flex-col gap-3" onSubmit={submit}>
         <article className="overflow-hidden rounded-card border border-border bg-surface text-text shadow-card">
           <header className="px-4 pb-3 pt-3 sm:px-5 sm:pb-4">
-            <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
+            <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-xs italic text-text-faint">
               <span>Ruttförteckning</span>
               <span>Ny rutt</span>
             </div>
@@ -84,32 +84,32 @@ export default function RouteBuilder() {
 
           <section className="px-3 pb-3 sm:px-5 sm:pb-5">
             <div className="grid border-l border-t border-border sm:grid-cols-[1.4fr_1fr]">
-              <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint">
+              <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-sm italic text-text-faint">
                 Namn
                 <input
                   type="text"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   placeholder="T.ex. Stockholm → Uppsala"
-                  className="mt-1 h-9 rounded border border-field-border bg-surface px-2.5 font-body text-xs not-italic text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                  className="mt-1 h-10 rounded border border-field-border bg-surface px-2.5 font-body text-sm not-italic text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                 />
               </label>
 
-              <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint">
+              <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-sm italic text-text-faint">
                 Planerat datum
                 <input
                   type="date"
                   value={plannedDate}
                   onChange={(event) => setPlannedDate(event.target.value)}
-                  className="mt-1 h-9 rounded border border-field-border bg-surface px-2.5 font-body text-xs not-italic text-text focus:border-accent focus:outline-none"
+                  className="mt-1 h-10 rounded border border-field-border bg-surface px-2.5 font-body text-sm not-italic text-text focus:border-accent focus:outline-none"
                 />
               </label>
             </div>
 
-            <div className="border-x border-b border-border px-3 py-2 font-display text-[9px] italic text-text-faint">
+            <div className="border-x border-b border-border px-3 py-2 font-display text-sm italic text-text-faint">
               <span className="flex items-center justify-between">
                 Sökkorridor
-                <output className="font-mono text-xs not-italic text-text-muted">
+                <output className="font-mono text-sm not-italic text-text-muted">
                   {corridorKm} km · {(corridorKm * 1000).toLocaleString("sv-SE")} m
                 </output>
               </span>
@@ -123,7 +123,7 @@ export default function RouteBuilder() {
                 onChange={(event) => setCorridorKm(Number(event.target.value))}
                 className="mt-1.5 w-full accent-accent"
               />
-              <span className="mt-1 block not-italic text-text-muted">
+              <span className="mt-1 block text-sm leading-6 not-italic text-text-muted">
                 Sökområdets radie — en slang med den här bredden runt hela
                 ruttlinjen. Fågelvägsavstånd, inte körväg. Inget utanför slangen
                 föreslås någonsin, så sätt den hellre vidd (3–5 km) och begränsa
@@ -132,7 +132,7 @@ export default function RouteBuilder() {
             </div>
 
             <div className="border-x border-b border-border px-3 py-3">
-              <p className="font-display text-[9px] italic text-text-faint">
+              <p className="font-display text-sm italic text-text-faint">
                 Ruttlinje
               </p>
               <div className="mt-2">
@@ -149,11 +149,11 @@ export default function RouteBuilder() {
         ) : null}
 
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={pending || !name.trim() || !geometry}>
+          <Button type="submit" variant="paper" disabled={pending || !name.trim() || !geometry}>
             {pending ? "Sparar…" : "Spara rutt"}
           </Button>
           {planned ? (
-            <span className="font-mono text-[10px] uppercase tracking-[.14em] text-text-muted">
+            <span className="font-mono text-xs uppercase tracking-[.14em] text-text-muted">
               {(planned.distanceMetres / 1000).toLocaleString("sv-SE", {
                 maximumFractionDigits: 1,
               })}{" "}

@@ -4,7 +4,6 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
-import { Icon } from "@/app/components/ui/Icon"
 import { deleteObservation, updateObservation } from "@/app/actions/tempus"
 import type { TempusObservation } from "@/app/lib/dal"
 
@@ -97,17 +96,15 @@ export default function ObservationEditor({ observation }: { observation: Tempus
       <div className="flex flex-col gap-3">
         {error ? <p className="text-sm text-danger">{error}</p> : null}
         <div className="flex gap-3">
-          <Button type="button" onClick={() => setEditing(true)}>
-            <Icon name="pencil" size={15} />
+          <Button type="button" variant="paper" className="underline underline-offset-4" onClick={() => setEditing(true)}>
             Redigera
           </Button>
           <button
             type="button"
             onClick={remove}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-danger disabled:opacity-50"
+            className="font-display text-sm italic text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-50"
           >
-            <Icon name="trash-2" size={15} />
             Ta bort
           </button>
         </div>
@@ -126,10 +123,10 @@ export default function ObservationEditor({ observation }: { observation: Tempus
           type="button"
           onClick={() => setEditing(false)}
           disabled={pending}
-          className="flex size-7 items-center justify-center rounded-full text-text-muted hover:bg-surface-2 hover:text-text disabled:opacity-50"
+          className="text-xs text-text-muted hover:text-text disabled:opacity-50"
           aria-label="Stäng redigeringen"
         >
-          <Icon name="x" size={15} />
+          Stäng
         </button>
       </header>
 
@@ -206,7 +203,7 @@ export default function ObservationEditor({ observation }: { observation: Tempus
       {error ? <p className="border-b border-border bg-danger-wash px-4 py-2 text-xs text-danger">{error}</p> : null}
 
       <div className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
-        <Button type="button" size="sm" className="rounded-none" onClick={save} disabled={pending}>
+        <Button type="button" variant="paper" size="sm" className="rounded-none" onClick={save} disabled={pending}>
           {pending ? "Sparar…" : "Spara ändringar"}
         </Button>
         <button

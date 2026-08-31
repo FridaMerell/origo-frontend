@@ -13,7 +13,7 @@ import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
 import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
-import { formatDate } from "@/app/lib/format-date";
+import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
 import type { FluxTask, FluxTaskPriority } from "@/app/lib/dal";
 
@@ -158,9 +158,7 @@ export function TaskPanel() {
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-text-faint">Deadline</span>
-                <span className="font-mono text-sm text-text">
-                  {task.due_date ? formatDate(task.due_date) : "Ingen deadline"}
-                </span>
+                <TaskDueDate dueDate={task.due_date} status={task.status} />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-text-faint">Tilldelade</span>

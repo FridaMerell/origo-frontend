@@ -167,22 +167,24 @@ function RegisterRow({
         aria-label={`Visa ${name}`}
         className="block border-b border-border px-2 py-2.5 no-underline transition-colors hover:bg-surface-2/45"
       >
-        <div className="grid min-w-[58rem] grid-cols-[2.5rem_minmax(9rem,13rem)_minmax(12rem,1fr)_minmax(9rem,12rem)_minmax(15rem,18rem)] items-center gap-x-4">
-          <span className="text-right font-mono text-[12px] tabular-nums text-text-faint">
+        <div className="grid min-w-0 grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 gap-y-1 xl:min-w-[58rem] xl:grid-cols-[2.5rem_minmax(9rem,13rem)_minmax(12rem,1fr)_minmax(9rem,12rem)_minmax(15rem,18rem)] xl:items-center xl:gap-x-4 xl:gap-y-0">
+          <span className="row-span-2 self-start pt-0.5 text-right font-mono text-[12px] tabular-nums text-text-faint xl:row-span-1 xl:self-auto xl:pt-0">
             {String(index).padStart(2, "0")}
           </span>
-          <span className="min-w-0 truncate whitespace-nowrap">
+          <span className="col-start-2 min-w-0 truncate whitespace-nowrap xl:col-auto">
             <span className="font-display text-[15px] text-text">{name}</span>
             {scientificName ? (
               <span className="ml-2 font-mono text-[11px] italic text-text-muted">{scientificName}</span>
             ) : null}
           </span>
-          <span className="truncate text-[13px] leading-relaxed text-text-muted">{meta}</span>
-          <span className={`truncate font-display text-xs italic ${statusInk}`}>
+          <span className="col-start-2 truncate text-[13px] leading-relaxed text-text-muted xl:col-auto">{meta}</span>
+          <span className={`col-span-2 truncate font-display text-xs italic ${statusInk} xl:col-auto`}>
             {statusLabel}
             {hint ? <span className="text-text-faint"> · {hint}</span> : null}
           </span>
-          <PhenoStrip months={months} currentMonth={currentMonth} tone={tone} />
+          <span className="col-span-2 min-w-0 xl:col-auto">
+            <PhenoStrip months={months} currentMonth={currentMonth} tone={tone} />
+          </span>
         </div>
       </Link>
     </li>
@@ -590,7 +592,7 @@ export default function NewHome({
             </div>
 
             <div className="overflow-x-auto">
-              <div className="grid min-w-[58rem] grid-cols-[2.5rem_minmax(9rem,13rem)_minmax(12rem,1fr)_minmax(9rem,12rem)_minmax(15rem,18rem)] gap-x-4 border-b border-border px-2 py-1.5 font-mono text-[10px] uppercase tracking-[.14em] text-text-faint">
+              <div className="hidden min-w-[58rem] grid-cols-[2.5rem_minmax(9rem,13rem)_minmax(12rem,1fr)_minmax(9rem,12rem)_minmax(15rem,18rem)] gap-x-4 border-b border-border px-2 py-1.5 font-mono text-[10px] uppercase tracking-[.14em] text-text-faint xl:grid">
                 <span className="text-right">Nr</span>
                 <span>Art</span>
                 <span>{isAll ? "Underlag" : "Livsmiljö"}</span>

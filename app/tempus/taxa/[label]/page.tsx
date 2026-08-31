@@ -44,7 +44,17 @@ const Page = async ({ params, searchParams }: {
 
   return (
     <div className="container py-5 mx-auto flex flex-col gap-5">
-      <h1 className="font-display text-3xl font-semibold tracking-tight md:mt-5">{category?.label}</h1>
+      <div className="flex flex-wrap items-baseline justify-between gap-3 md:mt-5">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">{category?.label}</h1>
+        <a
+          href={`https://artfakta.se/taxa/${category.taxon_id}/information`}
+          target="_blank"
+          rel="noreferrer"
+          className="font-display text-sm italic text-accent underline decoration-accent/40 underline-offset-4 hover:text-accent-hover"
+        >
+          Visa artfakta
+        </a>
+      </div>
 
       <TaxonSearch />
 
@@ -60,13 +70,13 @@ const Page = async ({ params, searchParams }: {
           </p>
         )}
         {species.map((sp) => (
-          <div  key={sp.id} className="py-2 border-b flex justify-between  border-field-border">
-            <Link href={`/taxa/${label}/${sp.dyntaxa_taxon_id}`}>
-              <div className="flex flex-col md:flex-row gap-4  items-baseline">
+          <div key={sp.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-field-border py-2">
+            <Link href={`/taxa/${label}/${sp.dyntaxa_taxon_id}`} className="min-w-0">
+              <div className="grid min-w-0 grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-4">
                 <span className="font-display text-md capitalize">
                   {sp.swedish_name}
                 </span>
-                <span className="font-mono italic text-sm text-text-muted">
+                <span className="min-w-0 truncate font-mono text-sm italic text-text-muted">
                   {sp.scientific_name}
                 </span>
               </div>

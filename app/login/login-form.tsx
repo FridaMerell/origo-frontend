@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { login } from "@/app/actions/auth";
-import { loginFormSchema, type LoginFormValues } from "@/app/lib/schemas";
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { login } from "@/app/actions/auth"
+import { loginFormSchema, type LoginFormValues } from "@/app/lib/schemas"
 
-export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
+export function LoginForm({ redirectTo = "/", buttonClass=null }: { redirectTo?: string, buttonClass?: any }) {
   const {
     register,
     handleSubmit,
@@ -14,16 +14,16 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
     defaultValues: { username: "", password: "" },
-  });
+  })
 
   const onSubmit = handleSubmit(async (data) => {
-    const result = await login(data);
+    const result = await login(data)
     if (result?.error) {
-      setError("root", { message: result.error });
-      return;
+      setError("root", { message: result.error })
+      return
     }
-    window.location.href = redirectTo;
-  });
+    window.location.href = redirectTo
+  })
 
   return (
     <form onSubmit={onSubmit} className="flex w-full max-w-sm flex-col gap-4">
@@ -52,10 +52,10 @@ export function LoginForm({ redirectTo = "/" }: { redirectTo?: string }) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-full bg-accent-wash border-background px-5 py-2 text-background transition-colors hover:bg-[#383838] disabled:opacity-50 dark:hover:bg-[#ccc]"
+        className={`rounded-full  px-5 py-2 transition-colors cursor-pointer ${buttonClass ?? ""}`}
       >
         {isSubmitting ? "Loggar in..." : "Logga in"}
       </button>
     </form>
-  );
+  )
 }

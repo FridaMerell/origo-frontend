@@ -14,7 +14,7 @@ export default function VersoLoginPage() {
     <div className="flex flex-1 flex-col items-center justify-center px-16 py-32">
       <Card className="flex w-full max-w-sm flex-col items-center gap-6 p-8">
         <LogoMark />
-        <LoginForm redirectTo="/" />
+        <LoginForm redirectTo="/" buttonClass={'bg-accent text-surface'} />
       </Card>
     </div>
   );

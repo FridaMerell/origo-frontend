@@ -14,7 +14,7 @@ export default function ApsisLoginPage() {
     <div className="flex min-h-screen flex-1 flex-col items-center justify-center px-6 py-24">
       <Card className="flex w-full max-w-sm flex-col items-center gap-6 p-8">
         <LogoMark />
-        <LoginForm redirectTo="/" />
+        <LoginForm redirectTo="/"  buttonClass={'bg-accent text-surface'}/>
       </Card>
     </div>
   );

@@ -10,6 +10,7 @@ import { Icon } from "@/app/components/ui/Icon";
 import { ProgressBar } from "@/app/components/ui/ProgressBar";
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
+import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
 import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
@@ -34,7 +35,7 @@ function SubtaskRow({ subtask }: { subtask: FluxTask }) {
   const pathname = usePathname();
   const done = subtask.status === "done";
 
-  const toggle = () => startTransition(() => { toggleTaskStatus(subtask.id, !done, pathname) });
+  const toggle = () => startTransition(() => { toggleTaskStatus(subtask.id, subtask.status, pathname) });
 
   return (
     <label className="flex cursor-pointer items-center gap-2.5 py-1.5">
@@ -119,6 +120,7 @@ export function TaskPanel() {
         open={Boolean(task)}
         onOpenChange={(next) => !next && closeTask()}
         title={task?.title}
+        panelClassName="max-w-3xl"
         headerActions={
           task && (
             <div className="flex items-center gap-2">
@@ -159,6 +161,10 @@ export function TaskPanel() {
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-text-faint">Deadline</span>
                 <TaskDueDate dueDate={task.due_date} status={task.status} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-text-faint">Status</span>
+                <TaskStatusBadge status={task.status} />
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-text-faint">Tilldelade</span>

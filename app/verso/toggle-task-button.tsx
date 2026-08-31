@@ -2,16 +2,17 @@
 
 import { useTransition } from "react"
 import { usePathname } from "next/navigation"
-import { setVentureTaskCompleted } from "@/app/actions/venture-task"
+import { setVentureTaskStatus } from "@/app/actions/venture-task"
 import { Icon } from "@/app/components/ui/Icon"
+import type { VentureTaskStatus } from "./venture-task-status"
 
 export function ToggleTaskButton({
   id,
-  completed,
+  status,
   className = "",
 }: {
   id: string
-  completed: boolean
+  status: VentureTaskStatus
   className?: string
 }) {
   const [pending, startTransition] = useTransition()
@@ -25,13 +26,15 @@ export function ToggleTaskButton({
         e.preventDefault()
         e.stopPropagation()
         startTransition(() => {
-          setVentureTaskCompleted(id, !completed, pathname)
+          setVentureTaskStatus(id, status === "done" ? "in_progress" : "done", pathname)
         })
       }}
-      className={`flex items-center gap-1.5 text-sm ${completed ? "text-success" : "text-text-muted hover:text-accent"} ${className}`}
+      aria-label={status === "done" ? "Öppna uppgift" : "Stäng uppgift"}
+      aria-pressed={status === "done"}
+      className={`flex items-center gap-1.5 text-sm ${status === "done" ? "text-success" : "text-text-muted hover:text-accent"} ${className}`}
     >
-      <Icon name={completed ? "check-circle-2" : "circle"} size={14} />
-      {completed ? "Klarmarkerad" : "Markera som klar"}
+      <Icon name={status === "done" ? "check-circle-2" : "circle"} size={14} />
+      {status === "done" ? "Stängd" : "Öppen"}
     </button>
   )
 }

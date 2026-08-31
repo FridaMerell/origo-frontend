@@ -74,6 +74,7 @@ export function MilestoneFormDrawer({
       title={milestone ? "Redigera delmål" : "Nytt delmål"}
       open={open}
       onOpenChange={(next) => !next && onClose()}
+      panelClassName="max-w-3xl"
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4.5">
         <Field label="Namn" error={errors.title}>

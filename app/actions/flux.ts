@@ -6,10 +6,12 @@ import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
 import {
   fluxMilestoneFormSchema,
+  fluxDocumentFormSchema,
   fluxProjectFormSchema,
   fluxTaskFormSchema,
   fluxUpdateFormSchema,
   type FluxMilestoneFormValues,
+  type FluxDocumentFormValues,
   type FluxProjectFormValues,
   type FluxTaskFormValues,
   type FluxUpdateFormValues,
@@ -230,6 +232,51 @@ export async function createUpdate(
   return { success: true }
 }
 
+export async function createDocument(
+  projectId: number,
+  data: FluxDocumentFormValues,
+  path?: string
+): Promise<FluxActionState> {
+  const parsed = fluxDocumentFormSchema.safeParse(data)
+  if (!parsed.success) return { error: "Kontrollera dokumentets uppgifter." }
+
+  if (parsed.data.milestone && parsed.data.task) {
+    return { error: "Välj antingen en milstolpe eller en uppgift." }
+  }
+
+  const { error } = await fluxRequest(FLUX_ENDPOINTS.documents, "POST", {
+    project: projectId,
+    ...parsed.data,
+  })
+  if (error) return { error }
+
+  revalidatePath(path || "/flux")
+  return { success: true }
+}
+
+export async function updateDocument(
+  id: number,
+  projectId: number,
+  data: FluxDocumentFormValues,
+  path?: string
+): Promise<FluxActionState> {
+  const parsed = fluxDocumentFormSchema.safeParse(data)
+  if (!parsed.success) return { error: "Kontrollera dokumentets uppgifter." }
+
+  if (parsed.data.milestone && parsed.data.task) {
+    return { error: "Välj antingen en milstolpe eller en uppgift." }
+  }
+
+  const { error } = await fluxRequest(`${FLUX_ENDPOINTS.documents}${id}/`, "PATCH", {
+    project: projectId,
+    ...parsed.data,
+  })
+  if (error) return { error }
+
+  revalidatePath(path || "/flux")
+  return { success: true }
+}
+
 export async function updateUpdate(
   id: number,
   data: FluxUpdateFormValues,
@@ -258,9 +305,13 @@ export async function deleteUpdate(id: number): Promise<FluxActionState> {
   return { success: true }
 }
 
-export async function toggleTaskStatus(id: number, done: boolean, path?: string): Promise<FluxActionState> {
+export async function toggleTaskStatus(
+  id: number,
+  status: FluxTaskFormValues["status"],
+  path?: string
+): Promise<FluxActionState> {
   const { error } = await fluxRequest(`${FLUX_ENDPOINTS.tasks}${id}/`, "PATCH", {
-    status: done ? "done" : "not_started",
+    status: status === "done" ? "in_progress" : "done",
   })
   if (error) return { error }
 

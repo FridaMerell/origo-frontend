@@ -11,8 +11,10 @@ import { AddMilestoneTaskButton } from "@/app/flux/projects/add-milestone-task-b
 import { EditMilestoneButton } from "@/app/flux/projects/edit-milestone-button";
 import { EditProjectButton } from "@/app/flux/projects/edit-project-button";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
+import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
-import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
+import { DocumentsSection } from "@/app/flux/documents/documents-section";
+import { useFluxDocuments, useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
 import { formatDate } from "@/app/lib/format-date";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
@@ -54,6 +56,7 @@ function TaskRow({
         <span className="min-w-0 truncate text-text">{task.title}</span>
       </div>
       <span className="flex shrink-0 items-center gap-3">
+        <TaskStatusBadge status={task.status} />
         <span
           className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}
         >
@@ -87,6 +90,7 @@ export default function FluxProjectDetailView() {
   const milestones = useFluxMilestones();
   const tasks = useFluxTasks();
   const updates = useFluxUpdates();
+  const documents = useFluxDocuments();
   const users = useFluxUsers();
   const { openTask } = useTaskPanel();
 
@@ -204,6 +208,8 @@ export default function FluxProjectDetailView() {
           </Card>
         </div>
       )}
+
+      <DocumentsSection projectId={project.id} documents={documents.filter((document) => document.project === project.id)} milestones={projectMilestones} tasks={projectTasks} />
 
       <UpdatesFeed
         updates={updates.filter((update) => update.project === project.id)}

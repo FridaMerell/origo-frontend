@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
-import { getFluxMilestones, getFluxProjects, getFluxTasks, getFluxUpdates, getFluxUsers } from "@/app/lib/dal";
+import { getFluxDocuments, getFluxMilestones, getFluxProjects, getFluxTasks, getFluxUpdates, getFluxUsers } from "@/app/lib/dal";
 import { FluxDataProvider } from "@/app/lib/flux-context";
 
 export async function FluxProviders({ children }: { children: ReactNode }) {
@@ -12,13 +12,14 @@ export async function FluxProviders({ children }: { children: ReactNode }) {
     projects.find((project) => String(project.id) === selectedId) ?? projects[0] ?? null;
 
   const projectId = selectedProject ? String(selectedProject.id) : undefined;
-  const [milestones, tasks, updates] = projectId
+  const [milestones, tasks, updates, documents] = projectId
     ? await Promise.all([
         getFluxMilestones({ project: projectId }),
         getFluxTasks({ project: projectId }),
         getFluxUpdates({ project: projectId }),
+        getFluxDocuments({ project: projectId }),
       ])
-    : [[], [], []];
+    : [[], [], [], []];
 
   const userIds = new Set<number>();
   for (const project of projects) for (const id of project.members) userIds.add(id);
@@ -33,6 +34,7 @@ export async function FluxProviders({ children }: { children: ReactNode }) {
       tasks={tasks}
       milestones={milestones}
       updates={updates}
+      documents={documents}
       users={users}
     >
       {children}

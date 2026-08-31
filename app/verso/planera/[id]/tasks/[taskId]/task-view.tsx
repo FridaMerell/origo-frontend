@@ -12,6 +12,7 @@ import { Drawer } from "@/app/components/ui/Drawer"
 import UpdateForm from "@/app/verso/update-form"
 import VentureTaskForm from "@/app/verso/venture-task-form"
 import { formatDate } from "@/app/lib/format-date"
+import { VentureTaskStatusBadge } from "@/app/verso/venture-task-status"
 
 export default function VentureTaskView() {
   const { id, taskId } = useParams<{ id: string; taskId: string }>()
@@ -49,9 +50,7 @@ export default function VentureTaskView() {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h1 className="m-0 font-display text-2xl font-semibold text-text">{task.name}</h1>
-          <Badge variant={task.completed ? "success" : "neutral"}>
-            {task.completed ? "Klar" : "Pågående"}
-          </Badge>
+          <VentureTaskStatusBadge task={task} />
         </div>
         <div className="flex items-center gap-2">
           <Drawer trigger="Redigera" triggerVariant="ghost" triggerSize="sm" title="Redigera uppgift">

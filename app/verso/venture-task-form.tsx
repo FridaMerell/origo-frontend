@@ -10,6 +10,13 @@ import { useSubmitAction } from "../components/form/useSubmitAction"
 import { FormActions, FormRootError } from "../components/form/FormFeedback"
 import { useDrawerClose } from "../components/ui/Drawer"
 import type { VentureTask } from "../lib/dal"
+import { ventureTaskStatus } from "./venture-task-status"
+
+const STATUS_OPTIONS = [
+  { value: "not_started", label: "Ej påbörjad" },
+  { value: "in_progress", label: "Under arbete" },
+  { value: "done", label: "Klar" },
+] as const
 
 const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTask }) => {
   const pathname = usePathname()
@@ -23,7 +30,7 @@ const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTas
     defaultValues: {
       name: task?.name ?? "",
       description: task?.description ?? "",
-      completed: task?.completed ?? false,
+      status: task ? ventureTaskStatus(task) : "not_started",
     },
   })
   const submit = useSubmitAction(setError)
@@ -46,12 +53,15 @@ const VentureTaskForm = ({ venture, task }: { venture: string; task?: VentureTas
         <textarea className={fieldInputClass} {...register("description")} />
       </Field>
 
-      {task && (
-        <label className="flex items-center gap-2 text-sm text-text-muted">
-          <input type="checkbox" className="accent-accent" {...register("completed")} />
-          Klar
-        </label>
-      )}
+      <Field label="Status" error={errors.status}>
+        <select className={fieldInputClass} {...register("status")}>
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <FormRootError error={errors.root} />
       <FormActions isSubmitting={isSubmitting} />

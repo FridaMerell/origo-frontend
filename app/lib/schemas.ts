@@ -11,7 +11,7 @@ export type VentureFormValues = z.infer<typeof ventureFormSchema>
 export const ventureTaskFormSchema = z.object({
   name: z.string().min(1, "Namn krävs."),
   description: z.string().min(1, "Beskrivning krävs."),
-  completed: z.boolean(),
+  status: z.enum(["not_started", "in_progress", "done"]),
 })
 export type VentureTaskFormValues = z.infer<typeof ventureTaskFormSchema>
 
@@ -105,6 +105,15 @@ export const fluxUpdateFormSchema = z.object({
   content: z.string().min(1, "Innehåll krävs."),
 })
 export type FluxUpdateFormValues = z.infer<typeof fluxUpdateFormSchema>
+
+export const fluxDocumentFormSchema = z.object({
+  title: z.string().trim().min(1, "Rubrik krävs."),
+  kind: z.enum(["markdown", "flowchart", "database_schema"]),
+  content: z.string().trim().min(1, "Innehåll krävs."),
+  milestone: optionalNumericId,
+  task: optionalNumericId,
+})
+export type FluxDocumentFormValues = z.infer<typeof fluxDocumentFormSchema>
 
 export const apsisPostFormSchema = z.object({
   name: z.string().optional(),

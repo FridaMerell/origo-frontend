@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
-import type { FluxMilestone, FluxProject, FluxTask, FluxUpdate, FluxUser } from "@/app/lib/dal";
+import type { FluxDocument, FluxMilestone, FluxProject, FluxTask, FluxUpdate, FluxUser } from "@/app/lib/dal";
 import { formatUserName } from "@/app/lib/user-context";
 
 type FluxDataContextValue = {
@@ -12,6 +12,7 @@ type FluxDataContextValue = {
   tasks: FluxTask[];
   milestones: FluxMilestone[];
   updates: FluxUpdate[];
+  documents: FluxDocument[];
   usersById: Map<number, FluxUser>;
 };
 
@@ -22,6 +23,7 @@ const FluxDataContext = createContext<FluxDataContextValue>({
   tasks: [],
   milestones: [],
   updates: [],
+  documents: [],
   usersById: new Map(),
 });
 
@@ -31,6 +33,7 @@ export function FluxDataProvider({
   tasks,
   milestones,
   updates,
+  documents,
   users,
   children,
 }: {
@@ -39,6 +42,7 @@ export function FluxDataProvider({
   tasks: FluxTask[];
   milestones: FluxMilestone[];
   updates: FluxUpdate[];
+  documents: FluxDocument[];
   users: FluxUser[];
   children: React.ReactNode;
 }) {
@@ -51,7 +55,7 @@ export function FluxDataProvider({
 
   return (
     <FluxDataContext.Provider
-      value={{ projects, selectedProject, selectProject, tasks, milestones, updates, usersById }}
+      value={{ projects, selectedProject, selectProject, tasks, milestones, updates, documents, usersById }}
     >
       {children}
     </FluxDataContext.Provider>
@@ -77,6 +81,10 @@ export function useFluxMilestones() {
 
 export function useFluxUpdates() {
   return useContext(FluxDataContext).updates;
+}
+
+export function useFluxDocuments() {
+  return useContext(FluxDataContext).documents;
 }
 
 export function useFluxUsers() {

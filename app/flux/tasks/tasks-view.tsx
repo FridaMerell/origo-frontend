@@ -8,6 +8,7 @@ import { AddTaskButton } from "@/app/flux/tasks/add-task-button";
 import { DeleteTaskButton } from "@/app/flux/tasks/delete-task-button";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
+import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
 import type { FluxTask, FluxTaskPriority } from "@/app/lib/dal";
 import { isTaskOverdue } from "@/app/lib/flux-task-dates";
@@ -34,10 +35,16 @@ export default function FluxTasksView() {
   const columns: ListTableColumn<FluxTask>[] = [
     {
       key: "status",
-      header: "Klar",
+      header: "Öppen/stängd",
       width: "88px",
       align: "center",
       render: (task) => <TaskCompletionButton id={task.id} status={task.status} />,
+    },
+    {
+      key: "taskStatus",
+      header: "Status",
+      width: "132px",
+      render: (task) => <TaskStatusBadge status={task.status} />,
     },
     { key: "title", header: "Uppgift", render: (task) => task.title },
     {

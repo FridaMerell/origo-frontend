@@ -21,6 +21,7 @@ type DrawerProps = {
   headerActions?: ReactNode;
   children: ReactNode;
   side?: "left" | "right";
+  panelClassName?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
@@ -34,6 +35,7 @@ export function Drawer({
   headerActions,
   children,
   side = "right",
+  panelClassName = "",
   open: openProp,
   onOpenChange,
 }: DrawerProps) {
@@ -42,15 +44,13 @@ export function Drawer({
 
   const [entered, setEntered] = useState(false);
   useEffect(() => {
-    if (!open) {
-      setEntered(false);
-      return;
-    }
+    if (!open || entered) return;
     const id = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(id);
-  }, [open]);
+  }, [open, entered]);
 
   function setOpen(value: boolean) {
+    if (!value) setEntered(false);
     setOpenState(value);
     onOpenChange?.(value);
   }
@@ -82,7 +82,7 @@ export function Drawer({
           <div
             role="dialog"
             aria-modal="true"
-            className={`flex h-full w-full max-w-sm flex-col bg-surface shadow-lg transition-transform ${side === "right" ? "ml-auto" : "mr-auto"}`}
+            className={`flex h-full w-full max-w-sm flex-col bg-surface shadow-lg transition-transform ${panelClassName} ${side === "right" ? "ml-auto" : "mr-auto"}`}
             style={{
               transitionDuration: "var(--duration-normal)",
               transitionTimingFunction: "var(--ease-standard)",

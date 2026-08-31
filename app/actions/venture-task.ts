@@ -10,11 +10,11 @@ export type CreateVentureTaskState = { error?: string; success?: boolean } | und
 
 export async function createVentureTask(
   venture: string,
-  data: Pick<VentureTaskFormValues, "name" | "description">,
+  data: Pick<VentureTaskFormValues, "name" | "description" | "status">,
   path?: string
 ): Promise<CreateVentureTaskState> {
   const parsed = ventureTaskFormSchema
-    .pick({ name: true, description: true })
+    .pick({ name: true, description: true, status: true })
     .safeParse(data)
   if (!venture || !parsed.success) {
     return { error: "Alla fält måste fyllas i." }
@@ -29,7 +29,11 @@ export async function createVentureTask(
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ venture, ...parsed.data, completed: false }),
+    body: JSON.stringify({
+      venture,
+      ...parsed.data,
+      completed: parsed.data.status === "done",
+    }),
   })
 
   if (!response.ok) {
@@ -63,7 +67,10 @@ export async function updateVentureTask(
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify(parsed.data),
+    body: JSON.stringify({
+      ...parsed.data,
+      completed: parsed.data.status === "done",
+    }),
   })
 
   if (!response.ok) {
@@ -76,7 +83,11 @@ export async function updateVentureTask(
   return { success: true }
 }
 
-export async function setVentureTaskCompleted(id: string, completed: boolean, path?: string) {
+export async function setVentureTaskStatus(
+  id: string,
+  status: VentureTaskFormValues["status"],
+  path?: string
+) {
   const { sessionId, csrfToken } = await getSessionCookies()
 
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.ventureTasks}${id}/`, {
@@ -86,7 +97,7 @@ export async function setVentureTaskCompleted(id: string, completed: boolean, pa
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ completed }),
+    body: JSON.stringify({ status, completed: status === "done" }),
   })
 
   if (!response.ok) {

@@ -38,7 +38,7 @@ export const formContracts: FormContract[] = [
   {
     name: "venture task",
     schema: ventureTaskFormSchema,
-    validValues: { name: "Kalibrera", description: "IMU", completed: false },
+    validValues: { name: "Kalibrera", description: "IMU", status: "not_started" },
   },
   {
     name: "expense",

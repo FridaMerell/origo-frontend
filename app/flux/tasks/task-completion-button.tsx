@@ -22,8 +22,8 @@ export function TaskCompletionButton({
   const [pending, startTransition] = useTransition();
   const pathname = usePathname();
   const done = status === "done";
-  const label = done ? "Återställ uppgift" : "Markera uppgift som klar";
-  const stateLabel = done ? "Klar" : "Öppen";
+  const label = done ? "Öppna uppgift" : "Stäng uppgift";
+  const stateLabel = done ? "Stängd" : "Öppen";
 
   return (
     <button
@@ -35,7 +35,7 @@ export function TaskCompletionButton({
       onClick={(e) => {
         if (stopPropagation) e.stopPropagation();
         startTransition(() => {
-          toggleTaskStatus(id, !done, pathname);
+          toggleTaskStatus(id, status, pathname);
         });
       }}
       className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border px-2 py-1 text-text-faint transition hover:text-text disabled:opacity-50 ${

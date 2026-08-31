@@ -38,6 +38,7 @@ export const FLUX_ENDPOINTS = {
   milestones: "/api/flux/milestones/",
   tasks: "/api/flux/tasks/",
   updates: "/api/flux/updates/",
+  documents: "/api/flux/documents/",
 } as const;
 
 // BirdNET acoustic detections. The detection stream sits *outside* the

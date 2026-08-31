@@ -92,6 +92,20 @@ export type FluxUpdate = {
   updated_at: string
 }
 
+export type FluxDocumentKind = "markdown" | "flowchart" | "database_schema"
+
+export type FluxDocument = {
+  id: number
+  project: number
+  milestone: number | null
+  task: number | null
+  title: string
+  kind: FluxDocumentKind
+  content: string
+  created_at: string
+  updated_at: string
+}
+
 export type FluxUser = {
   id: number
   username: string
@@ -153,4 +167,9 @@ export const getFluxUpdates = cache(
 
 export const getFluxUpdate = cache(
   (id: string): Promise<FluxUpdate | null> => fetchItem(`${FLUX_ENDPOINTS.updates}${id}/`)
+)
+
+export const getFluxDocuments = cache(
+  (params?: { project?: string; milestone?: string; task?: string }): Promise<FluxDocument[]> =>
+    fetchList(FLUX_ENDPOINTS.documents, params)
 )

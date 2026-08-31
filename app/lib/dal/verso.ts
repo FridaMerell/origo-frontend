@@ -64,6 +64,7 @@ export type VentureTask = {
   venture: string
   name: string
   description: string
+  status?: "not_started" | "in_progress" | "done"
   completed: boolean
   created_at: string
   updated_at: string

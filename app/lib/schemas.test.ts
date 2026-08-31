@@ -73,12 +73,12 @@ describe("ventureTaskFormSchema", () => {
     const result = ventureTaskFormSchema.safeParse({
       name: "Task",
       description: "Desc",
-      completed: false,
+      status: "not_started",
     })
     expect(result.success).toBe(true)
   })
 
-  it("rejects a missing completed flag", () => {
+  it("rejects a missing status", () => {
     const result = ventureTaskFormSchema.safeParse({
       name: "Task",
       description: "Desc",

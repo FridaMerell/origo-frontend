@@ -68,6 +68,7 @@ export function ProjectFormDrawer({
       title={project ? "Redigera projekt" : "Nytt projekt"}
       open={open}
       onOpenChange={(next) => !next && onClose()}
+      panelClassName="max-w-3xl"
     >
       <form onSubmit={onSubmit} className="flex flex-col gap-4.5">
         <Field label="Namn" error={errors.name}>

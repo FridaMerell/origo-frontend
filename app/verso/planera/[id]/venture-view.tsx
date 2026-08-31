@@ -16,6 +16,7 @@ import VentureTaskForm from "@/app/verso/venture-task-form"
 import { VentureEditForm } from "@/app/verso/planera/venture-edit-form"
 import { VentureFilesForm } from "@/app/verso/planera/venture-files-form"
 import { ToggleTaskButton } from "@/app/verso/toggle-task-button"
+import { ventureTaskStatus, VentureTaskStatusBadge } from "@/app/verso/venture-task-status"
 import { formatDate } from "@/app/lib/format-date"
 
 const PRIORITY_LABEL: Record<number, string> = {
@@ -128,14 +129,15 @@ export default function VentureView() {
               >
                 <span className="flex items-center gap-2">
                   <Icon
-                    name={task.completed ? "check-circle-2" : "circle"}
+                    name={ventureTaskStatus(task) === "done" ? "check-circle-2" : "circle"}
                     size={14}
-                    className={task.completed ? "text-success" : "text-text-faint"}
+                    className={ventureTaskStatus(task) === "done" ? "text-success" : "text-text-faint"}
                   />
                   {task.name}
                 </span>
                 <span className="flex items-center gap-3">
-                  <ToggleTaskButton id={task.id} completed={task.completed} />
+                  <VentureTaskStatusBadge task={task} />
+                  <ToggleTaskButton id={task.id} status={ventureTaskStatus(task)} />
                   <Icon name="chevron-right" size={14} className="text-text-faint" />
                 </span>
               </Link>

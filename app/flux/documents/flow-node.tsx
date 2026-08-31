@@ -6,6 +6,7 @@ import {
   type NodeProps,
   NodeResizer,
   NodeToolbar,
+  type NodeTypes,
   Position,
   useReactFlow,
 } from "@xyflow/react"
@@ -134,4 +135,4 @@ export function ShapeNode({ id, data, selected }: NodeProps) {
   )
 }
 
-export const flowNodeTypes = { shape: ShapeNode }
+export const flowNodeTypes: NodeTypes = { shape: ShapeNode }

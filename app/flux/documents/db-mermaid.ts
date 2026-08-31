@@ -85,8 +85,8 @@ function bestEffortParse(content: string): DbSchema {
     if (open) { current = { name: open[1], fields: [] }; braced = true; continue }
 
     // Legacy plain format: bare table name, then indented `field: type` lines.
-    const legacyField = indented && current ? line.match(/^([A-Za-z0-9_]+)\s*[:\s]\s*([A-Za-z0-9_]+)/) : null
-    if (legacyField) {
+    const legacyField = indented ? line.match(/^([A-Za-z0-9_]+)\s*[:\s]\s*([A-Za-z0-9_]+)/) : null
+    if (legacyField && current) {
       current.fields.push({ name: legacyField[1], type: legacyField[2], key: "" })
       continue
     }

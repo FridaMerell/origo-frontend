@@ -5,6 +5,7 @@ import {
   BaseEdge,
   EdgeLabelRenderer,
   type EdgeProps,
+  type EdgeTypes,
   getSmoothStepPath,
   useReactFlow,
 } from "@xyflow/react"
@@ -95,4 +96,4 @@ export function LabeledEdge({
   )
 }
 
-export const flowEdgeTypes = { labeled: LabeledEdge }
+export const flowEdgeTypes: EdgeTypes = { labeled: LabeledEdge }

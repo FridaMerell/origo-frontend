@@ -27,7 +27,7 @@ const APP_DESCRIPTION: Record<string, string> = {
 
 // Add a public path here when a product screenshot is available, for example
 // { flux: "/screenshots/flux.png" }. The layout automatically uses it.
-const APP_SCREENSHOTS: Record<string, string | undefined> = {}
+const APP_SCREENSHOTS: Record<string, string> = {}
 
 export default function RootHome() {
   const user = useUser()
@@ -60,12 +60,14 @@ export default function RootHome() {
         {!user && <aside className="w-full max-w-sm border-l border-[#1B252B] bg-[#E7E5DE]/90 pl-5 pb-2"><p className="font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.16em] text-[#58636A]">Identifiera dig</p><p className="mt-2 text-sm text-[#58636A]">För att komma åt resten av dumheterna.</p><div className="mt-5 [&_button]:rounded-sm [&_button]:bg-[#1B252B] [&_button]:font-[family-name:var(--font-geist-mono)] [&_button]:text-xs [&_button]:uppercase [&_button]:tracking-[0.12em] [&_button]:text-[#F4F2EC] [&_input]:rounded-sm [&_input]:border-[#1B252B]/30 [&_input]:bg-transparent [&_input]:px-3 [&_input]:py-2 [&_input]:text-[#1B252B] [&_label]:font-[family-name:var(--font-geist-mono)] [&_label]:text-[10px] [&_label]:uppercase [&_label]:tracking-[0.12em] [&_label]:text-[#58636A]"><LoginForm buttonClass="hover:bg-[#58636A]" /></div></aside>}
         </div>
         <div className="mt-10 max-w-4xl border-l border-[#1B252B] bg-[#E7E5DE]/90">
-          {apps.map((app, index) => <a key={app.id} href={hrefs[app.id] ?? "#"} onPointerEnter={(event) => updatePreview(app.id, event.clientX, event.clientY)} onPointerMove={(event) => updatePreview(app.id, event.clientX, event.clientY)} onPointerLeave={() => setPreview(null)} className="group flex items-center gap-4 border-b border-[#1B252B]/20 px-5 py-4 no-underline transition-colors hover:bg-[#1B252B] hover:text-[#F4F2EC] sm:gap-6 sm:px-6 sm:py-5">
+          {apps.map((app, index) => {
+            const screenshot = APP_SCREENSHOTS[app.id]
+            return <a key={app.id} href={hrefs[app.id] ?? "#"} onPointerEnter={(event) => updatePreview(app.id, event.clientX, event.clientY)} onPointerMove={(event) => updatePreview(app.id, event.clientX, event.clientY)} onPointerLeave={() => setPreview(null)} className="group flex items-center gap-4 border-b border-[#1B252B]/20 px-5 py-4 no-underline transition-colors hover:bg-[#1B252B] hover:text-[#F4F2EC] sm:gap-6 sm:px-6 sm:py-5">
             <span className="font-[family-name:var(--font-geist-mono)] text-[11px] text-[#58636A] group-hover:text-[#C9D0CE]">{String(index + 1).padStart(2, "0")}</span>
-            <span className="flex size-18 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-current/20 bg-white/35 sm:size-24">{APP_SCREENSHOTS[app.id] ? <Image src={APP_SCREENSHOTS[app.id]} alt={app.name + " skärmdump"} width={192} height={120} className="size-full object-cover object-top" /> : <Image src={APP_ICONS[app.id]} alt="" width={64} height={64} className="size-14 object-contain sm:size-16" />}</span>
+            <span className="flex size-18 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-current/20 bg-white/35 sm:size-24">{screenshot ? <Image src={screenshot} alt={app.name + " skärmdump"} width={192} height={120} className="size-full object-cover object-top" /> : <Image src={APP_ICONS[app.id]} alt="" width={64} height={64} className="size-14 object-contain sm:size-16" />}</span>
             <span className="min-w-0 flex-1"><span className="block text-xl font-semibold tracking-tight sm:text-2xl">{app.name}</span><span className="font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.1em] text-[#58636A] group-hover:text-[#C9D0CE]">{APP_NOTE[app.id]}</span></span>
             <span className="font-[family-name:var(--font-geist-mono)] text-lg">↗</span>
-          </a>)}
+          </a>})}
         </div>
         {previewApp && preview && <aside aria-hidden className="pointer-events-none fixed z-20 max-h-[calc(100dvh-2rem)] w-70 max-w-[calc(100vw-2rem)] overflow-y-auto border border-[#1B252B] bg-[#1B252B] p-4 text-[#F4F2EC] shadow-[7px_7px_0_rgba(27,37,43,0.25)]" style={{ left: preview.x, top: preview.y }}>
           <span aria-hidden className="absolute left-1/2 top-0 h-full w-px bg-[#F4F2EC]/10" /><span aria-hidden className="absolute left-0 top-1/2 h-px w-full bg-[#F4F2EC]/10" />

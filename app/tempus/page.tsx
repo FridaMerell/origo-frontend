@@ -49,7 +49,7 @@ export default async function TempusPage({
     Promise.all(
       followedSpecies.map(async (species) => ({
         species,
-        phenogram: await getTempusSpeciesPhenogram(species.id, selectedGeoArea?.id),
+        phenogram: await getTempusSpeciesPhenogram(String(species.dyntaxa_taxon_id), selectedGeoArea?.id),
       })),
     ) as Promise<HomeSpecies[]>,
     getTempusSeasonalOverviewPage({

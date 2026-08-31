@@ -167,7 +167,7 @@ export function Profile() {
               <p className="px-3 py-5 text-center text-sm text-text-muted">Inga notifikationer ännu.</p>
             )}
           </div>
-          <button
+          {user && <button
             type="button"
             onClick={async () => {
               await logout();
@@ -177,7 +177,7 @@ export function Profile() {
           >
             <Icon name="log-out" size={14} />
             Logga ut
-          </button>
+          </button>}
         </div>
       )}
     </div>

@@ -62,10 +62,7 @@ const Page = async () => {
                     ) : (
                       <div className="flex aspect-[4/3] items-end border-b border-border bg-linear-to-br from-surface-2 via-surface to-accent-wash/30 p-4">
                         <div className="max-w-[75%]">
-                          <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-text-faint">
-                            Primär kategori
-                          </div>
-                          <h3 className="mt-1 font-display text-2xl font-semibold italic tracking-wide">
+                          <h3 className="mt-1 font-display  text-xl 2xl:text-2xl font-semibold italic tracking-wide">
                             {category.label}
                           </h3>
                         </div>
@@ -73,12 +70,7 @@ const Page = async () => {
                     )}
                     <div className="flex flex-1 flex-col justify-between gap-2 p-4.5">
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="font-display text-lg font-semibold tracking-tight">
-                          {category.label}
-                        </h3>
-                        <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-text-faint">
-                          Primär
-                        </span>
+                       
                       </div>
                       <p className="text-sm font-mono uppercase text-text-muted">
                         {categoryLabel(category.species_count)}

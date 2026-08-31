@@ -45,7 +45,7 @@ function activeMonthsForWindow({ start_week: start, end_week: end }: { start_wee
 }
 
 function activeMonths(phenogram: TempusPhenogram | null) {
-  return phenogram ? activeMonthsForWindow(phenogram.activity_window) : new Set<number>()
+  return phenogram?.activity_window ? activeMonthsForWindow(phenogram.activity_window) : new Set<number>()
 }
 
 function habitatSummary(species: TempusSpecies) {
@@ -416,17 +416,17 @@ export default function NewHome({
   const isAll = view === "all"
 
   const sortedItems = [...items].sort((first, second) => {
-    const firstStatus = first.phenogram?.seasonal_status.status
-    const secondStatus = second.phenogram?.seasonal_status.status
+    const firstStatus = first.phenogram?.seasonal_status?.status
+    const secondStatus = second.phenogram?.seasonal_status?.status
     return (firstStatus ? STATUS_META[firstStatus].rank : 5) - (secondStatus ? STATUS_META[secondStatus].rank : 5) || speciesName(first.species).localeCompare(speciesName(second.species), "sv")
   })
   const activeCount = items.filter(
-    ({ phenogram }) => phenogram?.seasonal_status.is_in_season || phenogram?.seasonal_status.is_coming_into_season,
+    ({ phenogram }) => phenogram?.seasonal_status?.is_in_season || phenogram?.seasonal_status?.is_coming_into_season,
   ).length
-  const incomingCount = sortedItems.filter(({ phenogram }) => phenogram?.seasonal_status.is_coming_into_season).length
+  const incomingCount = sortedItems.filter(({ phenogram }) => phenogram?.seasonal_status?.is_coming_into_season).length
 
   const inSeasonSpecies = sortedItems
-    .filter(({ phenogram }) => phenogram?.seasonal_status.is_in_season)
+    .filter(({ phenogram }) => phenogram?.seasonal_status?.is_in_season)
     .map(({ species }) => species)
   const habitat = isAll
     ? null
@@ -453,12 +453,12 @@ export default function NewHome({
         days: item.seasonal_status.days_until_start ?? null,
       }))
     : sortedItems
-        .filter(({ phenogram }) => phenogram?.seasonal_status.is_coming_into_season)
+        .filter(({ phenogram }) => phenogram?.seasonal_status?.is_coming_into_season)
         .map(({ species, phenogram }) => ({
           key: species.id,
           name: speciesName(species),
           href: `/taxa/foljda/${species.dyntaxa_taxon_id}`,
-          days: phenogram?.seasonal_status.days_until_start ?? null,
+          days: phenogram?.seasonal_status?.days_until_start ?? null,
         }))
   const outgoingEntries: WindowEntry[] = isAll
     ? overviewOutgoing.map((item) => ({
@@ -468,12 +468,12 @@ export default function NewHome({
         days: item.seasonal_status.days_until_end ?? null,
       }))
     : sortedItems
-        .filter(({ phenogram }) => phenogram?.seasonal_status.is_going_out_of_season)
+        .filter(({ phenogram }) => phenogram?.seasonal_status?.is_going_out_of_season)
         .map(({ species, phenogram }) => ({
           key: species.id,
           name: speciesName(species),
           href: `/taxa/foljda/${species.dyntaxa_taxon_id}`,
-          days: phenogram?.seasonal_status.days_until_end ?? null,
+          days: phenogram?.seasonal_status?.days_until_end ?? null,
         }))
 
   const registerCount = isAll ? overviewCount : items.length

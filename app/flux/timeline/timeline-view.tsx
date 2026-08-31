@@ -2,6 +2,7 @@
 
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
+import { useState } from "react";
 import { Icon } from "@/app/components/ui/Icon";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
@@ -113,6 +114,8 @@ export default function FluxTimelineView() {
   const milestones = useFluxMilestones();
   const users = useFluxUsers();
   const { openTask } = useTaskPanel();
+  const [showCompleted, setShowCompleted] = useState<Set<number>>(new Set());
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="flex flex-col gap-6">
@@ -132,37 +135,42 @@ export default function FluxTimelineView() {
       <div className="flex flex-col gap-8">
         {projects.map((project) => {
           const projectTasks = tasks.filter((task) => task.project === project.id);
+          const completedTasks = projectTasks.filter((task) => task.status === "done");
+          const visibleTasks = showCompleted.has(project.id) ? projectTasks : projectTasks.filter((task) => task.status !== "done");
           const projectMilestones = milestones.filter((milestone) => milestone.project === project.id);
           const datedItems = [
             ...projectMilestones
               .filter((milestone) => milestone.target_date)
               .map((milestone) => ({ type: "milestone" as const, date: milestone.target_date!, item: milestone })),
-            ...projectTasks
+            ...visibleTasks
               .filter((task) => task.due_date)
               .map((task) => ({ type: "task" as const, date: task.due_date!, item: task })),
           ].sort((a, b) => a.date.localeCompare(b.date));
-          const undatedTasks = projectTasks.filter((task) => !task.due_date);
+          const undatedTasks = visibleTasks.filter((task) => !task.due_date);
           const undatedMilestones = projectMilestones.filter((milestone) => !milestone.target_date);
+          const todayMarkerIndex = datedItems.findIndex((entry) => entry.date >= today);
 
           return (
             <section key={project.id} aria-labelledby={`timeline-project-${project.id}`}>
               <div className="mb-4 flex items-center gap-2 border-b border-border pb-2">
                 <span className="size-2.5 rounded-full bg-accent" />
                 <h2 id={`timeline-project-${project.id}`} className="text-sm font-semibold text-text">{project.name}</h2>
-                <span className="text-xs text-text-faint">{projectTasks.length} {projectTasks.length === 1 ? "task" : "tasks"}</span>
+                <span className="text-xs text-text-faint">{projectTasks.length} {projectTasks.length === 1 ? "uppgift" : "uppgifter"}</span>
+                {completedTasks.length > 0 && <button type="button" onClick={() => setShowCompleted((current) => { const next = new Set(current); if (next.has(project.id)) next.delete(project.id); else next.add(project.id); return next; })} className="ml-auto text-xs font-medium text-link hover:underline">{showCompleted.has(project.id) ? "Dölj klara" : "Visa " + completedTasks.length + " klara"}</button>}
               </div>
 
               {datedItems.length === 0 && undatedTasks.length === 0 && undatedMilestones.length === 0 ? (
                 <p className="pl-20 text-sm text-text-muted">Inga uppgifter eller milstolpar.</p>
               ) : (
                 <div className="relative flex flex-col gap-3 before:absolute before:bottom-2 before:left-[5.25rem] before:top-2 before:w-px before:bg-border sm:before:left-[7.5rem]">
-                  {datedItems.map((entry) =>
-                    entry.type === "milestone" ? (
+                  {datedItems.map((entry, index) => <div key={entry.type + "-" + entry.item.id}>
+                    {index === todayMarkerIndex && <div className="relative z-10 my-1 grid grid-cols-[4.5rem_1.5rem_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[6.5rem_2rem_minmax(0,1fr)] sm:gap-3"><span /><span className="flex justify-center"><span className="size-2.5 rounded-full bg-accent ring-4 ring-bg" /></span><span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Nu</span></div>}
+                    {entry.type === "milestone" ? (
                       <TimelineMilestone key={`milestone-${entry.item.id}`} milestone={entry.item} />
                     ) : (
                       <TimelineTask key={`task-${entry.item.id}`} task={entry.item} users={users} onOpen={openTask} />
-                    ),
-                  )}
+                    )}
+                  </div>)}
                   {(undatedMilestones.length > 0 || undatedTasks.length > 0) && (
                     <div className="mt-3 border-t border-dashed border-border pt-4">
                       <p className="mb-3 pl-[5rem] text-[10px] font-semibold uppercase tracking-[0.16em] text-text-faint sm:pl-[7rem]">Utan datum</p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Card } from "@/app/components/ui/Card";
@@ -9,7 +10,9 @@ import { ProgressBar } from "@/app/components/ui/ProgressBar";
 import { AddMilestoneButton } from "@/app/flux/projects/add-milestone-button";
 import { AddMilestoneTaskButton } from "@/app/flux/projects/add-milestone-task-button";
 import { EditMilestoneButton } from "@/app/flux/projects/edit-milestone-button";
+import { DeleteMilestoneButton } from "@/app/flux/projects/delete-milestone-button";
 import { EditProjectButton } from "@/app/flux/projects/edit-project-button";
+import { DeleteTaskButton } from "@/app/flux/tasks/delete-task-button";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
@@ -38,17 +41,19 @@ function TaskRow({
   task,
   allTasks,
   users,
-  onClick,
+  onOpenTask,
 }: {
   task: FluxTask;
   allTasks: FluxTask[];
   users: Map<number, FluxUser>;
-  onClick: () => void;
+  onOpenTask: (id: number) => void;
 }) {
   const subtasks = allTasks.filter((t) => t.parent === task.id);
+  const [subtasksOpen, setSubtasksOpen] = useState(false);
   return (
+    <>
     <div
-      onClick={onClick}
+      onClick={() => onOpenTask(task.id)}
       className={`flex cursor-pointer items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 ${isTaskOverdue(task.due_date, task.status) ? "bg-danger-wash/20 hover:bg-danger-wash/30" : "hover:bg-surface-2"}`}
     >
       <div className="flex min-w-0 items-center gap-2">
@@ -63,11 +68,7 @@ function TaskRow({
           {PRIORITY_LABEL[task.priority]}
         </span>
         <TaskDueDate dueDate={task.due_date} status={task.status} compact />
-        {subtasks.length > 0 && (
-          <span className="font-mono text-xs text-text-faint">
-            {subtasks.filter((t) => t.status === "done").length}/{subtasks.length}
-          </span>
-        )}
+        {subtasks.length > 0 && <button type="button" onClick={(event) => { event.stopPropagation(); setSubtasksOpen((open) => !open); }} aria-expanded={subtasksOpen} className="flex items-center gap-1 rounded px-1.5 py-1 font-mono text-xs text-text-faint hover:bg-surface-2 hover:text-text"><Icon name={subtasksOpen ? "chevron-down" : "chevron-right"} size={14} />{subtasks.filter((t) => t.status === "done").length}/{subtasks.length}</button>}
         {task.update_count > 0 && (
           <span className="flex items-center gap-1 font-mono text-xs text-text-faint">
             <Icon name="message-square" size={12} />
@@ -79,8 +80,11 @@ function TaskRow({
             <Avatar key={assigneeId} name={fluxUserName(users.get(assigneeId), assigneeId)} size={18} />
           ))}
         </span>
+        <DeleteTaskButton id={task.id} />
       </span>
     </div>
+    {subtasksOpen && <div className="ml-8 border-l border-border bg-surface-2/40">{subtasks.map((subtask) => <TaskRow key={subtask.id} task={subtask} allTasks={allTasks} users={users} onOpenTask={onOpenTask} />)}</div>}
+    </>
   );
 }
 
@@ -106,15 +110,21 @@ export default function FluxProjectDetailView() {
   const overallProgress = progressOf(projectTasks);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <h1 className="m-0 font-display text-[28px] font-semibold text-text">{project.name}</h1>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-9 pb-12">
+      <section className="border-b border-border pb-7">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Projekt</p>
+          <div className="flex items-center gap-2">
+          <h1 className="m-0 font-display text-3xl font-semibold tracking-tight text-text">{project.name}</h1>
           <EditProjectButton project={project} />
         </div>
         {project.description && <p className="text-[15px] text-text-muted">{project.description}</p>}
+          </div>
+          <span className="rounded-full bg-accent-wash px-3 py-1.5 text-sm font-semibold text-accent">{overallProgress.done} av {overallProgress.total} klara</span>
+        </div>
         <Gallery files={project.files} />
-        <div className="flex items-center gap-4">
+        <div className="mt-6 flex flex-wrap items-center gap-4">
           {project.members.length > 0 && (
             <div className="flex gap-1.5">
               {project.members.map((memberId) => (
@@ -122,16 +132,13 @@ export default function FluxProjectDetailView() {
               ))}
             </div>
           )}
-          <ProgressBar pct={overallProgress.pct} width={220} />
-          <span className="font-mono text-xs text-text-faint">
-            {overallProgress.done}/{overallProgress.total}
-          </span>
+          <div className="min-w-48 flex-1 max-w-md"><span className="mb-2 block text-xs font-medium text-text-muted">Projektstatus</span><ProgressBar pct={overallProgress.pct} /></div>
         </div>
-      </div>
+      </section>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between">
-          <h2 className="m-0 text-base font-semibold text-text-muted">Delmål</h2>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Arbetsplan</p><h2 className="mt-1 text-xl font-semibold text-text">Delmål</h2></div>
           <AddMilestoneButton projectId={project.id} />
         </div>
 
@@ -141,14 +148,16 @@ export default function FluxProjectDetailView() {
 
         {projectMilestones.map((milestone) => {
           const milestoneTasks = tasks.filter((task) => task.milestone === milestone.id);
+          const milestoneParentTasks = milestoneTasks.filter((task) => task.parent === null);
           const milestoneProgress = progressOf(milestoneTasks);
           return (
-            <Card key={milestone.id} className="flex flex-col gap-0 p-0">
-              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <Card key={milestone.id} className="flex flex-col !gap-0 overflow-hidden border-l-4 border-l-secondary !p-0">
+              <div className="flex items-center justify-between gap-3 border-b border-border bg-secondary-wash/50 px-5 py-4">
                 <div className="flex min-w-0 items-center gap-2">
                   <Icon name="flag" size={15} className="shrink-0 text-text-muted" />
-                  <span className="truncate text-[15px] font-semibold text-text">{milestone.title}</span>
+                  <span className="truncate text-base font-semibold text-text">{milestone.title}</span>
                   <EditMilestoneButton milestone={milestone} />
+                  <DeleteMilestoneButton id={milestone.id} />
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   {milestone.update_count > 0 && (
@@ -160,7 +169,7 @@ export default function FluxProjectDetailView() {
                   <span className="font-mono text-xs text-text-faint">
                     {milestone.target_date ? formatDate(milestone.target_date) : "Ingen deadline"}
                   </span>
-                  <ProgressBar pct={milestoneProgress.pct} width={120} />
+                  <ProgressBar pct={milestoneProgress.pct} width={120} className="[&>div]:bg-secondary" />
                 </div>
               </div>
 
@@ -170,16 +179,16 @@ export default function FluxProjectDetailView() {
                 </div>
               )}
 
-              {milestoneTasks.length === 0 ? (
-                <div className="px-4 py-3 text-sm text-text-muted">Inga uppgifter än.</div>
+              {milestoneParentTasks.length === 0 ? (
+                <div className="px-5 py-5 text-sm text-text-muted">Inga uppgifter än.</div>
               ) : (
-                milestoneTasks.map((task) => (
+                milestoneParentTasks.map((task) => (
                   <TaskRow
                     key={task.id}
                     task={task}
                     allTasks={tasks}
                     users={users}
-                    onClick={() => openTask(task.id)}
+                    onOpenTask={openTask}
                   />
                 ))
               )}
@@ -202,7 +211,7 @@ export default function FluxProjectDetailView() {
                 task={task}
                 allTasks={tasks}
                 users={users}
-                onClick={() => openTask(task.id)}
+                onOpenTask={openTask}
               />
             ))}
           </Card>

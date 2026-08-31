@@ -9,9 +9,10 @@ export async function proxy(request: NextRequest) {
   const hostname = request.headers.get("host")?.split(":")[0] ?? "";
   const tenant = resolveTenant(hostname);
   const isLoginRoute = pathname === "/login";
+  const isRootLanding = tenant === null && pathname === "/";
   // Routes a tenant has opted into serving without a session. "/login" is always
   // reachable; everything else stays gated unless the tenant lists it.
-  const isPublicRoute = isLoginRoute || (tenant !== null && isPublicPath(tenant, pathname));
+  const isPublicRoute = isLoginRoute || isRootLanding || (tenant !== null && isPublicPath(tenant, pathname));
 
   if (request.method === "GET") {
     const sessionId = request.cookies.get(SESSION_COOKIE)?.value;

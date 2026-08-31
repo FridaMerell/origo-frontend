@@ -310,8 +310,13 @@ export async function toggleTaskStatus(
   status: FluxTaskFormValues["status"],
   path?: string
 ): Promise<FluxActionState> {
+  const nextStatus = status === "not_started"
+    ? "in_progress"
+    : status === "in_progress"
+      ? "done"
+      : "not_started"
   const { error } = await fluxRequest(`${FLUX_ENDPOINTS.tasks}${id}/`, "PATCH", {
-    status: status === "done" ? "in_progress" : "done",
+    status: nextStatus,
   })
   if (error) return { error }
 

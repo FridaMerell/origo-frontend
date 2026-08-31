@@ -9,8 +9,8 @@ const EMBED_PREFIX = "%% erdata:"
 
 export const CARDINALITY_LABELS: Record<RelCardinality, string> = {
   "one-one": "1 – 1",
-  "one-many": "1 – N",
-  "many-many": "N – N",
+  "one-many": "1 – 0..N",
+  "many-many": "0..N – 0..N",
 }
 
 const CARD_TO_MERMAID: Record<RelCardinality, string> = {
@@ -26,31 +26,56 @@ export const starterSchema = (): DbSchema => ({
   relations: [],
 })
 
-const ident = (value: string) => value.trim().replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "") || "namnlös"
+function ident(value: string, fallback: string): string {
+  return value.trim().replace(/[^A-Za-z0-9_]+/g, "_").replace(/^_+|_+$/g, "") || fallback
+}
+
+/** Mermaid ER entity names are identifiers, not display labels. Allocate a
+ *  distinct identifier for every table so names such as `Order-rad` and
+ *  `Order rad` cannot collapse into one entity in the rendered diagram. */
+function entityIds(tables: DbTable[]): string[] {
+  const used = new Map<string, number>()
+  return tables.map((table) => {
+    const base = ident(table.name, "tabell")
+    const count = (used.get(base) ?? 0) + 1
+    used.set(base, count)
+    return count === 1 ? base : `${base}_${count}`
+  })
+}
 
 /** Render a schema as a Mermaid `erDiagram`, with the model embedded for lossless editing. */
 export function schemaToMermaid(schema: DbSchema): string {
   const lines = [`${EMBED_PREFIX}${JSON.stringify(schema)}`, "erDiagram"]
+  const ids = entityIds(schema.tables)
+  const idByName = new Map<string, string>()
+  schema.tables.forEach((table, index) => {
+    // Relations use table names in the editor. Keeping the first match makes
+    // legacy schemas with duplicate labels deterministic; new tables get a
+    // distinct Mermaid entity regardless.
+    if (!idByName.has(table.name)) idByName.set(table.name, ids[index])
+  })
 
-  for (const table of schema.tables) {
-    const name = ident(table.name)
+  for (const [index, table] of schema.tables.entries()) {
+    const name = ids[index]
     if (table.fields.length === 0) {
       lines.push(`  ${name} {`, `  }`)
       continue
     }
     lines.push(`  ${name} {`)
     for (const field of table.fields) {
-      const type = ident(field.type || "text")
+      const type = ident(field.type, "text")
       const key = field.key ? ` ${field.key}` : ""
-      lines.push(`    ${type} ${ident(field.name)}${key}`)
+      lines.push(`    ${type} ${ident(field.name, "falt")}${key}`)
     }
     lines.push(`  }`)
   }
 
   for (const relation of schema.relations) {
-    if (!relation.from || !relation.to) continue
+    const from = idByName.get(relation.from)
+    const to = idByName.get(relation.to)
+    if (!from || !to) continue
     const label = relation.label.trim() || " "
-    lines.push(`  ${ident(relation.from)} ${CARD_TO_MERMAID[relation.cardinality]} ${ident(relation.to)} : "${label.replace(/"/g, "'")}"`)
+    lines.push(`  ${from} ${CARD_TO_MERMAID[relation.cardinality]} ${to} : "${label.replace(/"/g, "'")}"`)
   }
 
   return lines.join("\n")

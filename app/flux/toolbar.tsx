@@ -1,11 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
-import { Icon } from "@/app/components/ui/Icon"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Button } from "@/app/components/ui/Button"
+import { Icon } from "@/app/components/ui/Icon"
 import { NotificationMenu } from "@/app/components/ui/NotificationMenu"
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer"
 import { ProjectFormDrawer } from "@/app/flux/projects/project-form-drawer"
@@ -16,276 +16,98 @@ import { ORIGO_VERSION } from "@/app/lib/config"
 import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
 import Logo from "./ui/Logo"
 
-type NavLink = { label: string; href: string; icon: string }
-
-const NAV_LINKS: NavLink[] = [
-  { label: "Uppgifter", href: "/tasks", icon: "list" },
-  { label: "Tidslinje", href: "/timeline", icon: "route" },
-  { label: "Backlog", href: "/backlog", icon: "inbox" },
+const NAV_LINKS = [
+  { label: "Uppgifter", href: "/tasks" },
+  { label: "Tidslinje", href: "/timeline" },
+  { label: "Backlog", href: "/backlog" },
 ]
 
-type ToolbarProps = {
-  mode: "light" | "dark" | null
-  onToggleMode: () => void
-}
-
-type ProjectSelectorProps = {
-  labelClassName: string
-  chevronSize: number
-  dropUp?: boolean
-}
-
-const ProjectSelector = ({ labelClassName, chevronSize, dropUp }: ProjectSelectorProps) => {
+function ProjectSelector({ dropUp = false, compact = false }: { dropUp?: boolean; compact?: boolean }) {
   const projects = useFluxProjects()
   const { selectedProject, selectProject } = useSelectedFluxProject()
+  const pathname = usePathname()
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-
   useEffect(() => {
-    const onClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", onClickOutside)
-    return () => document.removeEventListener("mousedown", onClickOutside)
+    const close = (event: MouseEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false) }
+    document.addEventListener("mousedown", close)
+    return () => document.removeEventListener("mousedown", close)
   }, [])
-
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={labelClassName}
-      >
-        {selectedProject?.name ?? "Projekt"}
-        <Icon
-          name="chevron-down"
-          size={chevronSize}
-          className={`text-text-faint transition-transform ${open ? "rotate-180" : ""}`}
-        />
+      <button type="button" onClick={() => setOpen((value) => !value)} className={compact ? "flex max-w-28 items-center gap-1 rounded-2xl px-2 py-2 text-xs font-semibold text-text hover:bg-surface-2" : "flex items-center gap-2 rounded-3xl px-3.5 py-2.5 text-base font-semibold text-text hover:bg-surface-2"}>
+        <span className="truncate">{selectedProject?.name ?? "Projekt"}</span><Icon name="chevron-down" size={compact ? 13 : 16} className={["shrink-0 text-text-faint transition-transform", open ? "rotate-180" : ""].join(" ")} />
       </button>
-      {open && (
-        <div
-          className={`absolute left-0 z-20 min-w-[180px] overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md ${dropUp ? "bottom-full mb-2" : "top-full mt-2"
-            }`}
-        >
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              type="button"
-              onClick={() => {
-                setOpen(false)
-                if (project.id !== selectedProject?.id) selectProject(String(project.id))
-              }}
-              className="block w-full truncate px-3 py-1.5 text-left font-body text-sm text-text hover:bg-surface-2"
-            >
-              {project.name}
-            </button>
-          ))}
-          <Link
-            href="/projects"
-            onClick={() => setOpen(false)}
-            className="block w-full truncate border-t border-border px-3 py-1.5 text-left font-body text-sm text-text-muted no-underline hover:bg-surface-2"
-          >
-            Alla projekt
-          </Link>
-        </div>
-      )}
+      {open && <div className={dropUp ? "absolute bottom-full left-0 z-50 mb-2 min-w-52 overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md" : "absolute left-0 top-full z-50 mt-2 min-w-52 overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md"}>
+        {projects.map((project) => <button key={project.id} type="button" onClick={() => { setOpen(false); if (project.id === selectedProject?.id) return; selectProject(String(project.id)); if (/^\/projects\/[^/]+$/.test(pathname)) router.push("/projects/" + project.id) }} className="block w-full truncate px-3 py-2 text-left text-sm text-text hover:bg-surface-2">{project.name}</button>)}
+        <Link href="/projects" onClick={() => setOpen(false)} className="block border-t border-border px-3 py-2 text-sm text-text-muted no-underline hover:bg-surface-2">Alla projekt</Link>
+      </div>}
     </div>
   )
 }
 
-const Toolbar = ({ mode, onToggleMode }: ToolbarProps) => {
+export default function Toolbar({ mode, onToggleMode }: { mode: "light" | "dark" | null; onToggleMode: () => void }) {
   const pathname = usePathname()
   const user = useUser()
   const userName = user ? formatUserName(user) : "?"
-  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [drawer, setDrawer] = useState<"task" | "project" | null>(null)
-
-  const createLabel = pathname === "/projects" ? "Nytt projekt" : "Ny uppgift"
-  const openCreateDrawer = () => {
-    setDesktopMenuOpen(false)
-    setMobileMenuOpen(false)
-    setDrawer(pathname === "/projects" ? "project" : "task")
-  }
-
-  const overflowItems = (closeMenu: () => void) => (
-    <>
-      <Button variant="primary" size="md" onClick={openCreateDrawer} className="justify-center">
-        <Icon name="plus" size={16} className="text-accent-contrast" />
-        {createLabel}
-      </Button>
-      <NotificationMenu dropUp>
-        {({ unreadCount, notificationLabel, toggle }) => (
-          <button
-            type="button"
-            onClick={toggle}
-            className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
-          >
-            <span className="relative">
-              <Icon name="bell" size={16} className="text-text-muted" />
-              {unreadCount > 0 && (
-                <span className="absolute -right-2 -top-2 flex min-w-4 h-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold text-accent-contrast ring-2 ring-surface">
-                  {notificationLabel}
-                </span>
-              )}
-            </span>
-            Aviseringar
-          </button>
-        )}
-      </NotificationMenu>
-      <button
-        type="button"
-        onClick={() => {
-          onToggleMode()
-          closeMenu()
-        }}
-        className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
-      >
-        <Icon name={mode === "dark" ? "sun" : "moon"} size={16} className="text-text-muted" />
-        {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
-      </button>
-      <div className="my-1 border-t border-border" />
-      <div className="flex flex-wrap gap-x-3 gap-y-1 px-3 py-2 font-body text-xs text-text-muted">
-        {APP_LINKS.filter((app) => app.id !== "flux").map((app) => (
-          <a
-            key={app.id}
-            href={appHref(app.id)}
-            className="no-underline hover:text-text hover:underline"
-          >
-            {app.name}
-          </a>
-        ))}
+  const create = () => { setMenuOpen(false); setMobileMenuOpen(false); setDrawer(pathname === "/projects" ? "project" : "task") }
+  return <>
+    <div className="pointer-events-none fixed inset-x-0 top-5 z-40 hidden justify-center sm:flex">
+      <div className="pointer-events-auto relative">
+        <nav className="flex items-center gap-2.5 whitespace-nowrap rounded-[44px] border border-border bg-surface px-4 py-3 shadow-md">
+          <Link href="/" className="flex items-center no-underline"><Logo width={58} className="text-accent" /><span className="flex flex-col"><span className="font-display text-[25px] font-bold leading-5 tracking-tight text-text">flux</span><span className="text-[7px] font-medium text-text-muted">ORIGO {ORIGO_VERSION}</span></span></Link>
+          <div className="h-8 w-px bg-border" /><ProjectSelector />
+          {NAV_LINKS.map((item) => <Link key={item.href} href={item.href} className={pathname === item.href ? "rounded-3xl bg-surface-2 px-4 py-2.5 text-base font-medium text-text no-underline" : "rounded-3xl px-4 py-2.5 text-base font-medium text-text-muted no-underline hover:bg-surface-2"}>{item.label}</Link>)}
+          <Button variant="primary" size="sm" onClick={create} className="rounded-3xl"><Icon name="plus" size={16} className="text-accent-contrast" />Ny</Button>
+          <button type="button" aria-label="Mer" onClick={() => setMenuOpen((value) => !value)} className={menuOpen ? "flex size-10 items-center justify-center rounded-full bg-surface-2" : "flex size-10 items-center justify-center rounded-full hover:bg-surface-2"}><Icon name="ellipsis" size={18} className="text-text-muted" /></button>
+        </nav>
+        {menuOpen && <div className="absolute right-0 top-full z-50 mt-2 flex min-w-52 flex-col rounded-2xl border border-border bg-surface p-2 shadow-md">
+          <Link href="/projects" onClick={() => setMenuOpen(false)} className="rounded-md px-3 py-2 text-sm text-text no-underline hover:bg-surface-2">Projekt</Link>
+          <button type="button" onClick={() => { onToggleMode(); setMenuOpen(false) }} className="rounded-md px-3 py-2 text-left text-sm text-text hover:bg-surface-2">{mode === "dark" ? "Ljust läge" : "Mörkt läge"}</button>
+          <NotificationMenu align="right">
+            {({ unreadCount, notificationLabel, toggle, isOpen }) => (
+              <button type="button" onClick={toggle} className={isOpen ? "relative flex items-center gap-2 rounded-md bg-surface-2 px-3 py-2 text-sm text-text" : "relative flex items-center gap-2 rounded-md px-3 py-2 text-sm text-text hover:bg-surface-2"}>
+                <Icon name="bell" size={16} /> Aviseringar
+                {unreadCount > 0 && <span className="ml-auto min-w-4 rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-contrast">{notificationLabel}</span>}
+              </button>
+            )}
+          </NotificationMenu>
+          <div className="my-1 border-t border-border" /><div className="flex items-center gap-2 px-3 py-2"><Avatar name={userName} size={24} /><span className="text-sm text-text-muted">{userName}</span></div>
+          {user && <button type="button" onClick={() => void logout().then(() => { window.location.href = "/login" })} className="rounded-md px-3 py-2 text-left text-sm text-text hover:bg-surface-2">Logga ut</button>}
+          <div className="mt-1 border-t border-border px-3 py-2">
+            <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-text-faint">Byt produkt</span>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+              {APP_LINKS.filter((app) => app.id !== "flux").map((app) => <a key={app.id} href={appHref(app.id)} className="text-sm text-text-muted no-underline hover:text-text hover:underline">{app.name}</a>)}
+            </div>
+          </div>
+        </div>}
       </div>
-      <div className="my-1 border-t border-border" />
-      <div className="flex items-center gap-2.5 px-3 py-2.5">
-        <Avatar name={userName} size={24} />
-        <span className="font-body text-sm text-text-muted">{userName}</span>
+    </div>
+    <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 flex justify-center px-3 sm:hidden">
+      <div className="pointer-events-auto relative w-full max-w-md">
+        {mobileMenuOpen && <div className="absolute inset-x-0 bottom-[68px] z-20 rounded-2xl border border-border bg-surface p-2 shadow-md">
+          <Button variant="primary" size="sm" onClick={create} className="mb-1 w-full justify-center rounded-md"><Icon name="plus" size={16} className="text-accent-contrast" />Ny uppgift</Button>
+          <NotificationMenu align="left" dropUp>{({ unreadCount, notificationLabel, toggle }) => <button type="button" onClick={toggle} className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-text hover:bg-surface-2"><Icon name="bell" size={16} />Aviseringar{unreadCount > 0 && <span className="ml-auto min-w-4 rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-contrast">{notificationLabel}</span>}</button>}</NotificationMenu>
+          <button type="button" onClick={() => { onToggleMode(); setMobileMenuOpen(false) }} className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-text hover:bg-surface-2">{mode === "dark" ? "Ljust läge" : "Mörkt läge"}</button>
+          <div className="my-1 border-t border-border" />
+          <div className="px-3 py-2"><span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-text-faint">Byt produkt</span><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">{APP_LINKS.filter((app) => app.id !== "flux").map((app) => <a key={app.id} href={appHref(app.id)} className="text-sm text-text-muted no-underline hover:text-text hover:underline">{app.name}</a>)}</div></div>
+          <div className="my-1 border-t border-border" />
+          <div className="flex items-center gap-2 px-3 py-2"><Avatar name={userName} size={24} /><span className="text-sm text-text-muted">{userName}</span></div>
+          {user && <button type="button" onClick={() => void logout().then(() => { window.location.href = "/login" })} className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-text hover:bg-surface-2">Logga ut</button>}
+        </div>}
+        <nav className="flex items-center justify-between gap-1 rounded-3xl border border-border bg-surface px-2 py-2 shadow-md">
+          <Link href="/" className="flex shrink-0 items-center no-underline"><Logo width={42} className="text-accent" /></Link>
+          <ProjectSelector dropUp compact />
+          <Link href="/tasks" className={pathname === "/tasks" ? "rounded-2xl bg-surface-2 px-2 py-2 text-xs font-semibold text-text no-underline" : "rounded-2xl px-2 py-2 text-xs font-medium text-text no-underline"}>Uppgifter</Link>
+          <Link href="/timeline" className={pathname === "/timeline" ? "rounded-2xl bg-surface-2 px-2 py-2 text-xs font-semibold text-text no-underline" : "rounded-2xl px-2 py-2 text-xs font-medium text-text no-underline"}>Tidslinje</Link>
+          <button type="button" aria-label="Öppna fler meny" onClick={() => setMobileMenuOpen((open) => !open)} className={mobileMenuOpen ? "rounded-full bg-surface-2 p-2 text-text" : "rounded-full p-2 text-text-muted"}><Icon name="ellipsis" size={18} /></button>
+        </nav>
       </div>
-      <button
-        type="button"
-        onClick={async () => {
-          closeMenu()
-          await logout()
-          window.location.href = "/login"
-        }}
-        className="flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 text-left font-body text-sm text-text hover:bg-surface-2"
-      >
-        <Icon name="log-out" size={16} className="text-text-muted" />
-        Logga ut
-      </button>
-    </>
-  )
-
-  return (
-    <>
-      {/* Desktop floating bar */}
-      <div className="pointer-events-none fixed inset-x-0 top-5 z-40 hidden justify-center sm:flex">
-        <div className="pointer-events-auto relative">
-          <nav className="flex items-center gap-2.5 whitespace-nowrap rounded-[44px] border border-border bg-surface px-4 py-3 shadow-md">
-            <Link href="/" className="flex items-center  no-underline">
-              <Logo width={70} className="text-accent" />
-              <div className=" flex flex-col items-start">
-                <span className="font-display text-[25px] font-bold tracking-tight text-text leading-5.5">flux</span>
-                <span className="font-body text-[7px] font-medium text-text-muted">ORIGO {ORIGO_VERSION}</span>
-              </div>
-            </Link>
-
-            <div className="h-8 w-px bg-border" />
-
-            <ProjectSelector
-              labelClassName="flex items-center gap-2 rounded-3xl px-3.5 py-2.5 font-body text-base font-semibold text-text hover:bg-surface-2"
-              chevronSize={16}
-            />
-
-            {NAV_LINKS.map((item) => {
-              const active = pathname === item.href
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-3xl px-4 py-2.5 font-body text-base font-medium no-underline ${active ? "bg-surface-2 text-text" : "text-text-muted hover:bg-surface-2"
-                    }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            })}
-
-            <div className="h-8 w-px bg-border" />
-
-            <button
-              type="button"
-              aria-label="More"
-              onClick={() => setDesktopMenuOpen((v) => !v)}
-              className={`flex size-10 shrink-0 items-center justify-center rounded-full ${desktopMenuOpen ? "bg-surface-2" : "hover:bg-surface-2"}`}
-            >
-              <Icon name="ellipsis" size={18} className="text-text-muted" />
-            </button>
-          </nav>
-
-          {desktopMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setDesktopMenuOpen(false)} />
-              <div className="absolute right-0 top-full z-20 mt-2 flex min-w-[200px] flex-col gap-0.5 rounded-2xl border border-border bg-surface p-2 shadow-md">
-                {overflowItems(() => setDesktopMenuOpen(false))}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile dock */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 flex justify-center px-2.5 sm:hidden">
-        <div className="pointer-events-auto relative w-full">
-          {mobileMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setMobileMenuOpen(false)} />
-              <div className="absolute inset-x-0 bottom-[68px] z-20 flex flex-col gap-0.5 rounded-2xl border border-border bg-surface p-2 shadow-md">
-                {overflowItems(() => setMobileMenuOpen(false))}
-              </div>
-            </>
-          )}
-
-          <nav className="flex items-center justify-center gap-0.5 rounded-[28px] border border-border bg-surface px-2 py-2 shadow-md">
-            <Link href="/" className="mr-0.5 flex shrink-0 items-center no-underline">
-              <Logo height={36} width={54} className="text-accent" />
-            </Link>
-            <ProjectSelector
-              labelClassName="flex items-center gap-0.5 whitespace-nowrap rounded-2xl px-1.5 py-1.5 font-body text-xs font-semibold text-text"
-              chevronSize={12}
-              dropUp
-            />
-            <Link
-              href="/tasks"
-              className={`whitespace-nowrap rounded-2xl px-1.5 py-1.5 font-body text-xs font-medium no-underline ${pathname === "/tasks" ? "bg-surface-2 text-text" : "text-text"
-                }`}
-            >
-              Uppgifter
-            </Link>
-            <Link
-              href="/timeline"
-              className={`whitespace-nowrap rounded-2xl px-1.5 py-1.5 font-body text-xs font-medium no-underline ${pathname === "/timeline" ? "bg-surface-2 text-text" : "text-text"
-                }`}
-            >
-              Tidslinje
-            </Link>
-            <button
-              type="button"
-              aria-label="More"
-              onClick={() => setMobileMenuOpen((v) => !v)}
-              className={`ml-0.5 flex size-[26px] shrink-0 items-center justify-center rounded-full ${mobileMenuOpen ? "bg-surface-2" : ""}`}
-            >
-              <Icon name="ellipsis" size={16} className="text-text-muted" />
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      <TaskFormDrawer open={drawer === "task"} onClose={() => setDrawer(null)} />
-      <ProjectFormDrawer open={drawer === "project"} onClose={() => setDrawer(null)} />
-    </>
-  )
+    </div>
+    <TaskFormDrawer open={drawer === "task"} onClose={() => setDrawer(null)} /><ProjectFormDrawer open={drawer === "project"} onClose={() => setDrawer(null)} />
+  </>
 }
-
-export default Toolbar

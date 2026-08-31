@@ -65,7 +65,7 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
     patchTable(ti, { fields: schema.tables[ti].fields.map((field, idx) => idx === fi ? { ...field, ...patch } : field) })
 
   const addField = (ti: number) =>
-    patchTable(ti, { fields: [...schema.tables[ti].fields, { name: "fält", type: "text", key: "" }] })
+    patchTable(ti, { fields: [...schema.tables[ti].fields, { name: "field", type: "text", key: "" }] })
 
   const removeField = (ti: number, fi: number) =>
     patchTable(ti, { fields: schema.tables[ti].fields.filter((_, idx) => idx !== fi) })
@@ -93,7 +93,7 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
   const tableNames = schema.tables.map((table) => table.name)
 
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3">
         {schema.tables.map((table, ti) => (
           <div key={ti} className="rounded-lg border border-border bg-surface">
@@ -113,7 +113,7 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
               {table.fields.map((field, fi) => (
                 <div key={fi} className="flex items-center gap-1.5">
                   <input className={`${inputClass} flex-1`} value={field.name} placeholder="fält" onChange={(event) => patchField(ti, fi, { name: event.target.value })} aria-label="Fältnamn" />
-                  <input className={`${inputClass} w-24`} value={field.type} placeholder="typ" onChange={(event) => patchField(ti, fi, { type: event.target.value })} aria-label="Fälttyp" />
+                  <input className={`${inputClass} w-28`} value={field.type} placeholder="typ" onChange={(event) => patchField(ti, fi, { type: event.target.value })} aria-label="Fälttyp" />
                   <select className={`${inputClass} w-20`} value={field.key} onChange={(event) => patchField(ti, fi, { key: event.target.value as DbFieldKey })} aria-label="Nyckel">
                     {KEY_OPTIONS.map((key) => <option key={key} value={key}>{key || "—"}</option>)}
                   </select>
@@ -160,8 +160,11 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
         )}
       </div>
 
-      <div className="min-h-[200px] overflow-auto rounded-lg border border-border bg-surface-2 p-3">
-        <MermaidDiagram chart={preview} />
+      <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface-2 p-3">
+        <span className="text-xs font-semibold uppercase tracking-wide text-text-faint">Förhandsvisning</span>
+        <div className="min-h-[160px] overflow-auto">
+          <MermaidDiagram chart={preview} />
+        </div>
       </div>
     </div>
   )

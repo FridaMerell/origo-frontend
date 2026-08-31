@@ -270,16 +270,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                 >
                   <Icon name="log-out" size={18} />
                 </button>
-              ) : (
-                <Link
-                  href="/login"
-                  aria-label="Logga in"
-                  title="Logga in"
-                  className="flex size-10 items-center justify-center rounded-md text-text-muted no-underline transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-                >
-                  <Icon name="log-in" size={18} />
-                </Link>
-              )}
+              ) : null}
             </div>
             <button
               type="button"
@@ -401,16 +392,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                       <Icon name="log-out" size={18} />
                       Logga ut
                     </button>
-                  ) : (
-                    <Link
-                      href="/login"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted no-underline transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
-                    >
-                      <Icon name="log-in" size={18} />
-                      Logga in
-                    </Link>
-                  )}
+                  ) : null}
                   <GeoAreaSelector compact />
                 </div>
               </section>

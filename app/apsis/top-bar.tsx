@@ -25,13 +25,13 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
   const name = user ? formatUserName(user) : null;
 
   return (
-    <header className="flex flex-wrap items-center gap-7 border-b border-border bg-surface px-6 py-4 sm:px-12">
+    <header className="flex flex-wrap items-center gap-x-4 gap-y-3 border-b border-border bg-surface px-6 py-4 sm:gap-7 sm:px-12">
       <Link href="/" className="flex items-center gap-2 no-underline">
         <Logo height={48} className="text-text" />
         <span className="font-display text-2xl font-semibold tracking-tight text-text">Apsis</span>
       </Link>
 
-      <nav className="flex items-center gap-7">
+      <nav className="order-3 flex w-full items-center gap-5 sm:order-none sm:w-auto sm:gap-7">
         {TABS.map((tab) => {
           const active = pathname === tab.href;
           return (
@@ -50,7 +50,7 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
         })}
       </nav>
 
-      <div className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={onToggleMode}

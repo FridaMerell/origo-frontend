@@ -21,7 +21,7 @@ export default function Home() {
       ) : (
         <div className="px-6 pt-6 pb-12 [column-gap:20px] [columns:220px_3] sm:px-12">
           {posts.map((post) => {
-            const image = post.files[0];
+            const image = post.files?.[0];
             return (
               <figure key={post.id} className="mb-5 [break-inside:avoid]">
                 {image ? (

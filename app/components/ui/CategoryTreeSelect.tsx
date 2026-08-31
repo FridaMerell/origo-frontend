@@ -82,7 +82,7 @@ function filterTree<T extends CategoryTreeSelectItem>(
 
     while (current) {
       path.unshift(current.label)
-      const parentId = current.parent_category?.trim()
+      const parentId: string | undefined = current.parent_category?.trim()
       current = parentId ? byId.get(parentId) : undefined
     }
 

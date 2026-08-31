@@ -44,7 +44,7 @@ const Page = async () => {
         </div>
 
         {primaryCategories.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {primaryCategories.map((category) => {
               const body = (
                 <Card className="h-full overflow-hidden p-0 transition-colors group-hover:border-border-strong">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getCurrentUser, getUsers } from "@/app/lib/dal";
 import { UserProvider } from "@/app/lib/user-context";
+import { NavProgressProvider } from "@/app/lib/nav-progress";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,7 +42,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col">
-        <UserProvider user={user} users={users}>{children}</UserProvider>
+        <NavProgressProvider>
+          <UserProvider user={user} users={users}>{children}</UserProvider>
+        </NavProgressProvider>
       </body>
     </html>
   );

@@ -212,3 +212,48 @@ svg {
 	max-height: min(20rem, var(--radix-select-content-available-height, 20rem));
 	overflow-y: auto;
 }
+
+/* ── Splash screens (per-tenant loading) ─────────────────────────────── */
+@keyframes splash-spin {
+	to { transform: rotate(360deg); }
+}
+@keyframes splash-wordmark-pulse {
+	0%, 100% { opacity: .55; }
+	50% { opacity: 1; }
+}
+@keyframes splash-wordmark-bob {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(-3px); }
+}
+@keyframes splash-verso-breathe {
+	0%, 100% { stroke-dasharray: 18 82; }
+	50% { stroke-dasharray: 70 30; }
+}
+@keyframes splash-flux-dot {
+	0%, 100% { opacity: .16; transform: scale(.7); }
+	40% { opacity: 1; transform: scale(1); }
+}
+@keyframes splash-apsis-tick {
+	0%, 100% { opacity: .25; }
+	50% { opacity: 1; }
+}
+@keyframes splash-tempus-needle {
+	0% { transform: rotate(0deg); }
+	45% { transform: rotate(320deg); }
+	55% { transform: rotate(320deg); }
+	100% { transform: rotate(680deg); }
+}
+
+/* Thin top navigation-progress bar */
+@keyframes nav-progress-slide {
+	0% { transform: translateX(-100%); }
+	100% { transform: translateX(300%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-splash] *,
+	[data-nav-progress] * {
+		animation-duration: 1ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}

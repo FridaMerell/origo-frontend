@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Icon } from "./Icon";
 import { fileProxyUrl, normalizeFileUrls, type FileLike } from "@/app/lib/files";
 
@@ -101,10 +102,15 @@ export function Gallery({ files }: { files: FileLike[] }) {
               key={url}
               type="button"
               onClick={() => setLightboxIndex(i)}
-              className="block aspect-square overflow-hidden rounded border border-border bg-surface-2"
+              className="relative block aspect-square overflow-hidden rounded border border-border bg-surface-2"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={fileProxyUrl(url)} alt="" className="h-full w-full object-cover" />
+              <Image
+                src={fileProxyUrl(url)}
+                alt=""
+                fill
+                sizes="(min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
+                className="object-cover"
+              />
             </button>
           ))}
         </div>

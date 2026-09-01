@@ -1,6 +1,6 @@
 "use client"
 
-import Link from "next/link"
+import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { Avatar } from "@/app/components/ui/Avatar"
@@ -40,7 +40,7 @@ function ProjectSelector({ dropUp = false, compact = false }: { dropUp?: boolean
         <span className="truncate">{selectedProject?.name ?? "Projekt"}</span><Icon name="chevron-down" size={compact ? 13 : 16} className={["shrink-0 text-text-faint transition-transform", open ? "rotate-180" : ""].join(" ")} />
       </button>
       {open && <div className={dropUp ? "absolute bottom-full left-0 z-50 mb-2 min-w-52 overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md" : "absolute left-0 top-full z-50 mt-2 min-w-52 overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md"}>
-        {projects.map((project) => <button key={project.id} type="button" onClick={() => { setOpen(false); if (project.id === selectedProject?.id) return; selectProject(String(project.id)); if (/^\/projects\/[^/]+$/.test(pathname)) router.push("/projects/" + project.id) }} className="block w-full truncate px-3 py-2 text-left text-sm text-text hover:bg-surface-2">{project.name}</button>)}
+        {projects.map((project) => <button key={project.id} type="button" onClick={() => { setOpen(false); if (project.id === selectedProject?.id) return; selectProject(String(project.id)); if (/^\/projects\/[^/]+$/.test(pathname)) router.push("/projects/" + project.id); else router.refresh() }} className="block w-full truncate px-3 py-2 text-left text-sm text-text hover:bg-surface-2">{project.name}</button>)}
         <Link href="/projects" onClick={() => setOpen(false)} className="block border-t border-border px-3 py-2 text-sm text-text-muted no-underline hover:bg-surface-2">Alla projekt</Link>
       </div>}
     </div>

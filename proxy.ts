@@ -10,9 +10,13 @@ export async function proxy(request: NextRequest) {
   const tenant = resolveTenant(hostname);
   const isLoginRoute = pathname === "/login";
   const isRootLanding = tenant === null && pathname === "/";
+  // The house-invitation landing page. Reachable without a session (it can create
+  // an account) and host-agnostic, so it is never gated or rewritten to a tenant.
+  const isJoinRoute = pathname === "/join";
   // Routes a tenant has opted into serving without a session. "/login" is always
   // reachable; everything else stays gated unless the tenant lists it.
-  const isPublicRoute = isLoginRoute || isRootLanding || (tenant !== null && isPublicPath(tenant, pathname));
+  const isPublicRoute =
+    isLoginRoute || isRootLanding || isJoinRoute || (tenant !== null && isPublicPath(tenant, pathname));
 
   if (request.method === "GET") {
     const sessionId = request.cookies.get(SESSION_COOKIE)?.value;
@@ -51,7 +55,7 @@ export async function proxy(request: NextRequest) {
   // "/login" is rewritten too (not skipped), so it resolves to the
   // tenant-specific "/flux/login" or "/verso/login" page instead of always
   // falling through to the generic "/login" page.
-  if (tenant) {
+  if (tenant && !isJoinRoute) {
     const url = request.nextUrl.clone();
     url.pathname = `/${tenant}${pathname === "/" ? "" : pathname}`;
     return NextResponse.rewrite(url);

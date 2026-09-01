@@ -19,7 +19,10 @@ export function buildQuery(params?: QueryParams): string {
 
 async function authedFetch(path: string) {
   const { sessionId, csrfToken } = await getSessionCookies()
-  if (!sessionId) return null
+
+  if (!sessionId) {
+    return fetchOrigoApi(path)
+  }
 
   const response = await fetchOrigoApi(path, {
     headers: {

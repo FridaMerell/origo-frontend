@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useApsisPosts } from "@/app/lib/apsis-context";
 import { fileProxyUrl } from "@/app/lib/files";
 
@@ -25,11 +26,13 @@ export default function Home() {
             return (
               <figure key={post.id} className="mb-5 [break-inside:avoid]">
                 {image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={fileProxyUrl(image.url)}
                     alt={post.name || "Kyrkoabsid"}
-                    className="w-full rounded-card border border-border bg-surface-2"
+                    width={440}
+                    height={440}
+                    sizes="(min-width: 640px) 220px, 50vw"
+                    className="h-auto w-full rounded-card border border-border bg-surface-2"
                   />
                 ) : (
                   <div className="h-48 w-full rounded-card border border-border bg-surface-2" />

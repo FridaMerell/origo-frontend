@@ -1,5 +1,6 @@
 'use client'
 
+import Image from "next/image"
 import Link from "next/link"
 import { Avatar } from "../components/ui/Avatar"
 import { Icon } from "../components/ui/Icon"
@@ -86,14 +87,7 @@ const ProjectSummary = ({ project, tasks, users }: { project: FluxProject; tasks
 
   return (
     <section className="relative isolate overflow-hidden rounded-card bg-[#25263B] px-6 py-5 text-[#FFF9F0] shadow-lg sm:px-8 sm:py-6">
-      <svg aria-hidden viewBox="0 0 520 300" preserveAspectRatio="none" className="pointer-events-none absolute inset-y-0 right-0 z-0 h-full w-[24%] text-[#E28A3B]/55" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M18 266C108 184 231 82 483 17c-42 96-74 180-118 267C244 277 115 270 18 266Z" strokeWidth="1.5" />
-        <path d="M25 263C167 183 292 97 483 17" strokeWidth="1.25" />
-        <path d="M86 230C95 193 104 160 121 129M142 206c10-49 20-87 36-116M205 174c11-45 23-78 40-105M270 139c14-39 29-68 47-91M333 105c16-30 32-52 50-69M391 78c17-19 34-34 54-47" strokeWidth="1" />
-        <path d="M81 230c63 12 135 21 216 25M136 205c66 19 135 31 204 36M202 174c57 19 111 32 158 42M266 140c43 17 81 30 113 42M328 106c28 11 52 21 76 32M388 77c17 8 32 15 48 24" strokeWidth="1" />
-        <path d="M108 211c47-34 93-61 142-81M164 185c50-28 96-49 140-65M225 152c45-21 85-37 123-49M287 118c37-16 68-28 100-37M346 88c28-12 53-21 78-29" strokeWidth="0.8" />
-        <path d="M369 51l44-12 8 17-45 12Z" strokeWidth="1.25" />
-      </svg>
+      <Image src="/flux/dragonfly.svg" alt="" aria-hidden width={1774} height={887} className="pointer-events-none absolute -right-40 -top-16 z-0 h-72 w-auto rotate-[-22deg] scale-x-[-1] opacity-35" style={{ filter: "brightness(0) saturate(100%) invert(64%) sepia(45%) saturate(821%) hue-rotate(343deg) brightness(92%) contrast(89%)" }} />
       <div className="relative z-10 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
         <div className="min-w-0">
           <div className="mb-1 flex items-center gap-2 [&_button]:text-[#EFA052] [&_button:hover]:text-[#FFF9F0]">

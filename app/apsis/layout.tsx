@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
+import { Suspense } from "react";
 import { ApsisProviders } from "@/app/lib/apsis-providers";
+import { NavProgressBar } from "@/app/lib/nav-progress";
+import { Splash } from "@/app/components/ui/Splash";
 import ApsisShell from "./apsis-shell";
 
 export const metadata = {
@@ -9,8 +12,13 @@ export const metadata = {
 
 export default function ApsisLayout({ children }: { children: ReactNode }) {
   return (
-    <ApsisProviders>
-      <ApsisShell>{children}</ApsisShell>
-    </ApsisProviders>
+    <div data-theme="apsis" className="flex flex-1 flex-col bg-bg font-body text-text">
+      <NavProgressBar />
+      <Suspense fallback={<Splash tenant="apsis" />}>
+        <ApsisProviders>
+          <ApsisShell>{children}</ApsisShell>
+        </ApsisProviders>
+      </Suspense>
+    </div>
   );
 }

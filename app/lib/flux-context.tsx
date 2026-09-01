@@ -50,7 +50,6 @@ export function FluxDataProvider({
 
   const selectProject = (id: string) => {
     document.cookie = `${FLUX_PROJECT_COOKIE}=${id}; path=/; max-age=31536000`;
-    window.location.reload();
   };
 
   return (

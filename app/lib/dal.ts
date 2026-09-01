@@ -2,6 +2,7 @@
 // existing `@/app/lib/dal` import path working.
 export type { QueryParams } from "@/app/lib/dal/client"
 export * from "@/app/lib/dal/auth"
+export * from "@/app/lib/dal/account"
 export * from "@/app/lib/dal/verso"
 export * from "@/app/lib/dal/flux"
 export * from "@/app/lib/dal/apsis"

@@ -49,7 +49,7 @@ export default function RootHome() {
   return <main className="relative min-h-screen overflow-hidden bg-[#E7E5DE] px-5 py-6 text-[#1B252B] sm:px-10 sm:py-10">
     <span aria-hidden className="absolute left-1/2 top-0 h-full w-px bg-[#1B252B]/15" /><span aria-hidden className="absolute left-0 top-1/2 h-px w-full bg-[#1B252B]/15" />
     <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col">
-      <header className="flex items-center justify-between"><span className="font-[family-name:var(--font-geist-mono)] text-[11px] font-medium uppercase tracking-[0.18em]">ORIGO / 00°00′</span>{user && <button type="button" onClick={() => void logout().then(() => window.location.reload())} className="font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.12em] underline underline-offset-4">Logga ut</button>}</header>
+      <header className="flex items-center justify-between"><span className="font-[family-name:var(--font-geist-mono)] text-[11px] font-medium uppercase tracking-[0.18em]">ORIGO / 00°00′</span>{user && <div className="flex items-center gap-4"><a href="/konto" className="font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.12em] underline underline-offset-4">Konto</a><a href="/konto/anslutningar" className="font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.12em] underline underline-offset-4">Anslutningar</a><button type="button" onClick={() => void logout().then(() => window.location.reload())} className="font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.12em] underline underline-offset-4">Logga ut</button></div>}</header>
       <section className="flex flex-1 flex-col justify-center py-16">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
         <div className="relative max-w-3xl bg-[#E7E5DE]/90 py-5">
@@ -76,7 +76,7 @@ export default function RootHome() {
           <div className="relative"><p className="font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.16em] text-[#C9D0CE]">{previewApp.name}</p><p className="mt-2 text-sm leading-relaxed text-[#F4F2EC]/85">{APP_DESCRIPTION[previewApp.id]}</p></div>
         </aside>}
       </section>
-      <footer className="font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.16em] text-[#58636A]">Projektet är byggt i Django, med Next.js som frontend.</footer>
+      <footer className="font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.16em] text-[#58636A]">Projektet är byggt i Django, med Next.js som frontend.<br/>Kontakt: frida.merell@gmail.com</footer>
     </div>
   </main>
 }

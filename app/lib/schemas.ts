@@ -56,6 +56,70 @@ export const loginFormSchema = z.object({
 })
 export type LoginFormValues = z.infer<typeof loginFormSchema>
 
+export const accountProfileSchema = z.object({
+  first_name: z.string().trim().max(150, "Högst 150 tecken."),
+  last_name: z.string().trim().max(150, "Högst 150 tecken."),
+  email: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+      "Ange en giltig e-postadress.",
+    ),
+})
+export type AccountProfileValues = z.infer<typeof accountProfileSchema>
+
+export const passwordChangeSchema = z
+  .object({
+    current_password: z.string().min(1, "Ange ditt nuvarande lösenord."),
+    new_password: z.string().min(8, "Minst 8 tecken."),
+    confirm_password: z.string().min(1, "Bekräfta det nya lösenordet."),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Lösenorden matchar inte.",
+    path: ["confirm_password"],
+  })
+export type PasswordChangeValues = z.infer<typeof passwordChangeSchema>
+
+const coordinateField = (label: string) =>
+  z
+    .string()
+    .trim()
+    .refine((value) => value === "" || /^-?\d+(\.\d+)?$/.test(value), `Ogiltig ${label}.`)
+
+export const createHouseSchema = z.object({
+  name: z.string().trim().min(1, "Namn krävs."),
+  address: z.string().trim().min(1, "Adress krävs."),
+  lat: coordinateField("latitud"),
+  lng: coordinateField("longitud"),
+})
+export type CreateHouseValues = z.infer<typeof createHouseSchema>
+
+export const pasteInvitationSchema = z.object({
+  token: z.string().trim().min(1, "Klistra in inbjudnings-token."),
+})
+export type PasteInvitationValues = z.infer<typeof pasteInvitationSchema>
+
+export const houseInvitationSchema = z.object({
+  label: z.string().trim().max(200, "Högst 200 tecken."),
+  no_expiry: z.boolean(),
+})
+export type HouseInvitationValues = z.infer<typeof houseInvitationSchema>
+
+export const redeemSignupSchema = z.object({
+  token: z.string().trim().min(1, "Token saknas."),
+  username: z.string().trim().min(1, "Användarnamn krävs."),
+  password: z.string().min(1, "Lösenord krävs."),
+  email: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "" || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+      "Ange en giltig e-postadress.",
+    ),
+})
+export type RedeemSignupValues = z.infer<typeof redeemSignupSchema>
+
 const numericId = z.coerce.number().int()
 const optionalNumericId = z.preprocess(
   (value) => (value === "" || value === null || value === undefined ? null : value),

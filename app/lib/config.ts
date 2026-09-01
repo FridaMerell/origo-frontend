@@ -10,10 +10,15 @@ export const AUTH_ENDPOINTS = {
   login: "/api/accounts/login/",
   logout: "/api/accounts/logout/",
   user: "/api/accounts/self/",
+  setPassword: "/api/accounts/self/set-password/",
 } as const;
 
 export const ACCOUNTS_ENDPOINTS = {
   users: "/api/accounts/users/",
+  selfToken: "/api/accounts/self/token/",
+  houseInvitations: "/api/accounts/house-invitations/",
+  houseInvitation: (id: string) => `/api/accounts/house-invitations/${encodeURIComponent(id)}/`,
+  redeemHouseInvitation: "/api/accounts/house-invitations/redeem/",
   notifications: "/api/accounts/notifications/",
   notification: (id: string) => `/api/accounts/notifications/${encodeURIComponent(id)}/`,
   notificationsSummary: "/api/accounts/notifications/summary/",
@@ -23,6 +28,7 @@ export const ACCOUNTS_ENDPOINTS = {
 
 export const VERSO_ENDPOINTS = {
   facilities: "/api/verso/houses/",
+  facility: (id: string) => `/api/verso/houses/${encodeURIComponent(id)}/`,
   dashboard: "/api/verso/houses/dashboard/",
   bookings: "/api/verso/bookings/",
   bookingRequests: "/api/verso/booking-requests/",

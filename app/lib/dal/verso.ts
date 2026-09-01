@@ -1,6 +1,6 @@
 import { cache } from "react"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
-import { fetchItem, fetchList } from "@/app/lib/dal/client"
+import { buildQuery, fetchItem, fetchList } from "@/app/lib/dal/client"
 
 export type Facility = {
   name: string
@@ -95,38 +95,36 @@ export type VersoUpdate = {
   updated_at: string
 }
 
+export type VersoDashboard = {
+  house: Facility
+  houses: Facility[]
+  bookings: Booking[]
+  booking_requests: BookingRequest[]
+  check_outs: CheckOut[]
+  ventures: Venture[]
+  venture_tasks: VentureTask[]
+  expenses: Expense[]
+  updates: VersoUpdate[]
+  yearly_expense_total: number
+}
+
+export const getVersoDashboard = cache(
+  (house: string | undefined, year: number): Promise<VersoDashboard | null> =>
+    fetchItem<VersoDashboard>(
+      `${VERSO_ENDPOINTS.dashboard}${buildQuery({ house, year })}`
+    )
+)
+
 export const getFacilities = cache(
   (): Promise<Facility[]> => fetchList(VERSO_ENDPOINTS.facilities)
 )
 
-export const getBookings = cache(
-  (house: string): Promise<Booking[]> => fetchList(VERSO_ENDPOINTS.bookings, { house })
-)
-
-export const getBookingRequests = cache(
-  (house: string): Promise<BookingRequest[]> =>
-    fetchList(VERSO_ENDPOINTS.bookingRequests, { house })
-)
-
-export const getCheckOuts = cache(
-  (): Promise<CheckOut[]> => fetchList(VERSO_ENDPOINTS.checkOuts)
-)
-
-export const getVentures = cache(
-  (house: string): Promise<Venture[]> => fetchList(VERSO_ENDPOINTS.ventures, { house })
-)
+// List data for the Verso section is served in one payload by getVersoDashboard
+// above; the per-resource list fetchers were removed with that change. What
+// remains are the single-item detail fetchers used by the [id] routes.
 
 export const getVenture = cache(
   (id: string): Promise<Venture | null> => fetchItem(`${VERSO_ENDPOINTS.ventures}${id}/`)
-)
-
-export const getVentureTasks = cache(
-  (venture: string): Promise<VentureTask[]> =>
-    fetchList(VERSO_ENDPOINTS.ventureTasks, { venture })
-)
-
-export const getAllVentureTasks = cache(
-  (): Promise<VentureTask[]> => fetchList(VERSO_ENDPOINTS.ventureTasks)
 )
 
 export const getVentureTask = cache(
@@ -134,23 +132,8 @@ export const getVentureTask = cache(
     fetchItem(`${VERSO_ENDPOINTS.ventureTasks}${id}/`)
 )
 
-export const getExpenses = cache(
-  (house: string): Promise<Expense[]> => fetchList(VERSO_ENDPOINTS.expenses, { house })
-)
-
 export const getExpense = cache(
   (id: string): Promise<Expense | null> => fetchItem(`${VERSO_ENDPOINTS.expenses}${id}/`)
-)
-
-export const getYearlyExpenses = cache(
-  (house: string, year: number): Promise<number | null> =>
-    fetchItem<number>(
-      `${VERSO_ENDPOINTS.yearlyExpenses}?house=${house}&year=${String(year)}`
-    )
-)
-
-export const getVersoUpdates = cache(
-  (): Promise<VersoUpdate[]> => fetchList(VERSO_ENDPOINTS.versoUpdates)
 )
 
 export const getVersoUpdate = cache(

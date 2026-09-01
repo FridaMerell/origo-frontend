@@ -46,7 +46,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
       page: currentPage,
       search: searchQuery || undefined,
     }),
-    getTempusObservations({ ordering: "-observed_at" }),
+    getTempusObservations({ checklist: id, ordering: "-observed_at" }),
   ])
   const registerRows = registerPage.results.map((row) => ({
     id: row.id,

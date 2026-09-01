@@ -2,8 +2,6 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { Chip } from "@/app/components/ui/Chip"
 import {
-  getTempusChecklistItems,
-  getTempusChecklists,
   getTempusObservations,
   getTempusSpeciesItems,
 } from "@/app/lib/dal"
@@ -22,24 +20,10 @@ function formatDate(value: string | null) {
 }
 
 export default async function ObservationsPage() {
-  const [observations, checklists] = await Promise.all([
-    getTempusObservations({ ordering: "-observed_at" }),
-    getTempusChecklists(),
-  ])
+  const observations = await getTempusObservations({ ordering: "-observed_at" })
   const speciesIds = [...new Set(observations.map((observation) => observation.species))]
   const species = await getTempusSpeciesItems(speciesIds)
   const speciesById = new Map(species.map((item) => [item.id, item]))
-  const checklistItems = await Promise.all(
-    checklists.map(async (checklist) => ({
-      checklist,
-      items: checklist.items ?? (await getTempusChecklistItems(checklist.id)),
-    })),
-  )
-  const checklistNameByItemId = new Map(
-    checklistItems.flatMap(({ checklist, items }) =>
-      items.map((item) => [item.id, checklist.name] as const),
-    ),
-  )
 
   return (
     <div className="container mx-auto flex flex-col gap-4 py-5 max-sm:px-4 sm:py-7">
@@ -88,13 +72,7 @@ export default async function ObservationsPage() {
             {observations.map((observation) => {
               const match = speciesById.get(observation.species)
               const observedAt = formatDate(observation.observed_at)
-              const checklistNames = [
-                ...new Set(
-                  observation.checklist_items
-                    .map((itemId) => checklistNameByItemId.get(itemId))
-                    .filter((name): name is string => Boolean(name)),
-                ),
-              ]
+              const checklistNames = [...new Set(observation.checklist_names)]
               return (
                 <li key={observation.id}>
                   <Link

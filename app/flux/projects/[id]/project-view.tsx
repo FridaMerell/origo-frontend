@@ -17,6 +17,7 @@ import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
 import { DocumentsSection } from "@/app/flux/documents/documents-section";
+import { Markdown } from "@/app/flux/documents/markdown";
 import { useFluxDocuments, useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
 import { formatDate } from "@/app/lib/format-date";
@@ -36,6 +37,28 @@ const PRIORITY_LABEL: Record<FluxTaskPriority, string> = {
   medium: "Medel",
   low: "Låg",
 };
+
+function MilestoneDescription({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border-b border-border">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-1 px-5 py-2 font-mono text-xs text-text-faint hover:text-text"
+      >
+        <Icon name={open ? "chevron-down" : "chevron-right"} size={14} />
+        {open ? "Dölj beskrivning" : "Visa beskrivning"}
+      </button>
+      {open && (
+        <div className="px-5 pb-4">
+          <Markdown content={text} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 function TaskRow({
   task,
@@ -172,6 +195,8 @@ export default function FluxProjectDetailView() {
                   <ProgressBar pct={milestoneProgress.pct} width={120} className="[&>div]:bg-secondary" />
                 </div>
               </div>
+
+              {milestone.description && <MilestoneDescription text={milestone.description} />}
 
               {milestone.files.length > 0 && (
                 <div className="border-b border-border px-4 py-3">

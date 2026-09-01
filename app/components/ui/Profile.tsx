@@ -24,14 +24,13 @@ function formatNotificationTime(value: string) {
 }
 
 export function Profile() {
+  const user = useUser()
   const [open, setOpen] = useState(false)
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(user?.open_notifications ?? 0)
   const [notifications, setNotifications] = useState<NotificationPreview[]>([])
   const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null)
   const [markingAllAsRead, setMarkingAllAsRead] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  const user = useUser()
-
   const name = user ? formatUserName(user) : "Okänd"
 
   useEffect(() => {
@@ -50,10 +49,6 @@ export function Profile() {
       })
     })
   }, [])
-
-  useEffect(() => {
-    loadNotifications()
-  }, [loadNotifications])
 
   const notificationLabel = unreadNotificationCount > 99 ? "99+" : unreadNotificationCount
 

@@ -158,6 +158,8 @@ export type TempusSeasonalOverview = {
   seasonal_status: TempusSeasonalStatus
   activity_window: { start_week: number; end_week: number }
   peak_week: number
+  habitats: string[]
+  landscape_types: TempusHabitat[]
   confidence: number | null
 }
 
@@ -215,6 +217,7 @@ export type TempusObservation = {
   user: number
   species: string
   checklist_items: string[]
+  checklist_names: string[]
   observed_at: string
   location: TempusObservationLocation
   count: number | null
@@ -454,20 +457,21 @@ export const getTempusSpeciesItem = cache(
 
 export async function getTempusSpeciesItems(ids: Iterable<string>): Promise<TempusSpecies[]> {
   const uniqueIds = [...new Set(ids)]
-  const wanted = new Set(uniqueIds)
-  const results: TempusSpecies[] = []
-  let page = 1
-  while (wanted.size > 0) {
-    const speciesPage = await getTempusSpeciesPage({ page, page_size: 50 })
-    for (const species of speciesPage.results) {
-      if (!wanted.has(species.id)) continue
-      results.push(species)
-      wanted.delete(species.id)
-    }
-    if (!speciesPage.next) break
-    page += 1
-  }
-  return results
+  const items: Array<TempusSpecies | null> = Array(uniqueIds.length).fill(null)
+  const concurrency = Math.min(8, uniqueIds.length)
+  let nextIndex = 0
+
+  await Promise.all(
+    Array.from({ length: concurrency }, async () => {
+      while (nextIndex < uniqueIds.length) {
+        const index = nextIndex
+        nextIndex += 1
+        items[index] = await getTempusSpeciesItem(uniqueIds[index])
+      }
+    }),
+  )
+
+  return items.filter((item): item is TempusSpecies => item !== null)
 }
 
 export const getTempusSpeciesCategories = cache(

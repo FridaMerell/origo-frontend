@@ -10,6 +10,7 @@ export type User = {
   first_name?: string
   last_name?: string
   email?: string
+  open_notifications?: number
 }
 
 export const getCurrentUser = cache(async (): Promise<User | null> => {

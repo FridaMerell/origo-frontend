@@ -1,9 +1,7 @@
 import Link from "next/link"
 import type {
-  TempusPhenogram,
   TempusSeasonalOverview,
   TempusSeasonalStatus,
-  TempusSpecies,
   TempusRoute,
   TempusRouteStop,
   TempusSuggestedStop,
@@ -13,7 +11,7 @@ import { biotopePropsFromSpecies } from "./ui/biotope-map/BiotopeMap"
 import { RouteMap } from "./rutt/route-map"
 import { createRouteProjection } from "./rutt/projection"
 
-export type HomeSpecies = { species: TempusSpecies; phenogram: TempusPhenogram | null }
+export type HomeSpecies = TempusSeasonalOverview
 export type HomeRouteOverview = {
   route: TempusRoute
   stops: TempusRouteStop[]
@@ -33,7 +31,7 @@ const STATUS_META: Record<
   out_of_season: { label: "Utanför säsong", ink: "text-text-faint", rank: 4 },
 }
 
-const speciesName = (species: TempusSpecies) =>
+const speciesName = (species: HomeSpecies) =>
   species.swedish_name?.trim() || species.scientific_name?.trim() || "Okänd art"
 const weekToMonth = (week: number) => Math.min(11, Math.floor(((week - 1) * 12) / 52))
 
@@ -44,38 +42,27 @@ function activeMonthsForWindow({ start_week: start, end_week: end }: { start_wee
   return new Set(weeks.map(weekToMonth))
 }
 
-function activeMonths(phenogram: TempusPhenogram | null) {
-  return phenogram?.activity_window ? activeMonthsForWindow(phenogram.activity_window) : new Set<number>()
+function activeMonths(species: HomeSpecies) {
+  return activeMonthsForWindow(species.activity_window)
 }
 
-function habitatSummary(species: TempusSpecies) {
-  const habitats = [...(species.landscape_types ?? []), ...(species.biotopes ?? [])]
-    .sort((first, second) => {
-      const significance = { stor: 0, har: 1 }
-      return (significance[first.significance as keyof typeof significance] ?? 2) - (significance[second.significance as keyof typeof significance] ?? 2) || first.name.localeCompare(second.name, "sv")
-    })
-    .map((habitat) => habitat.name)
-  return [...new Set(habitats)].slice(0, 3).join(" · ") || "Livsmiljö saknas"
+function habitatSummary(species: HomeSpecies) {
+  return species.habitats.join(" · ") || "Livsmiljö saknas"
 }
-
-const SIGNIFICANCE_RANK: Record<string, number> = { stor: 5, har: 3, viss: 1 }
 
 // The biotope sketch is only worth showing if it stands for something: pick the
 // landscape type shared by the most species that are in season right now.
-function dominantHabitat(speciesList: TempusSpecies[]) {
-  const tally = new Map<string, { count: number; name: string; species: TempusSpecies }>()
+function dominantHabitat(speciesList: HomeSpecies[]) {
+  const tally = new Map<string, { count: number; name: string; species: HomeSpecies }>()
   for (const species of speciesList) {
-    const primary = [...(species.landscape_types ?? [])].sort(
-      (first, second) =>
-        (SIGNIFICANCE_RANK[second.significance] ?? 0) - (SIGNIFICANCE_RANK[first.significance] ?? 0),
-    )[0]
+    const primary = species.habitats[0]
     if (!primary) continue
-    const key = primary.code || primary.name
+    const key = primary
     const entry = tally.get(key)
     if (entry) entry.count += 1
-    else tally.set(key, { count: 1, name: primary.name, species })
+    else tally.set(key, { count: 1, name: primary, species })
   }
-  let best: { count: number; name: string; species: TempusSpecies } | null = null
+  let best: { count: number; name: string; species: HomeSpecies } | null = null
   for (const entry of tally.values()) {
     if (!best || entry.count > best.count) best = entry
   }
@@ -416,21 +403,18 @@ export default function NewHome({
   const isAll = view === "all"
 
   const sortedItems = [...items].sort((first, second) => {
-    const firstStatus = first.phenogram?.seasonal_status?.status
-    const secondStatus = second.phenogram?.seasonal_status?.status
-    return (firstStatus ? STATUS_META[firstStatus].rank : 5) - (secondStatus ? STATUS_META[secondStatus].rank : 5) || speciesName(first.species).localeCompare(speciesName(second.species), "sv")
+    return STATUS_META[first.seasonal_status.status].rank - STATUS_META[second.seasonal_status.status].rank || speciesName(first).localeCompare(speciesName(second), "sv")
   })
   const activeCount = items.filter(
-    ({ phenogram }) => phenogram?.seasonal_status?.is_in_season || phenogram?.seasonal_status?.is_coming_into_season,
+    (species) => species.seasonal_status.is_in_season || species.seasonal_status.is_coming_into_season,
   ).length
-  const incomingCount = sortedItems.filter(({ phenogram }) => phenogram?.seasonal_status?.is_coming_into_season).length
+  const incomingCount = sortedItems.filter((species) => species.seasonal_status.is_coming_into_season).length
 
   const inSeasonSpecies = sortedItems
-    .filter(({ phenogram }) => phenogram?.seasonal_status?.is_in_season)
-    .map(({ species }) => species)
+    .filter((species) => species.seasonal_status.is_in_season)
   const habitat = isAll
     ? null
-    : dominantHabitat(inSeasonSpecies) ?? dominantHabitat(items.map(({ species }) => species))
+    : dominantHabitat(inSeasonSpecies) ?? dominantHabitat(items)
   const habitatNote = inSeasonSpecies.length > 0 ? "vanligast bland arter i säsong nu" : "vanligast i din bevakning"
 
   const tally = isAll
@@ -453,12 +437,12 @@ export default function NewHome({
         days: item.seasonal_status.days_until_start ?? null,
       }))
     : sortedItems
-        .filter(({ phenogram }) => phenogram?.seasonal_status?.is_coming_into_season)
-        .map(({ species, phenogram }) => ({
+        .filter((species) => species.seasonal_status.is_coming_into_season)
+        .map((species) => ({
           key: species.id,
           name: speciesName(species),
           href: `/taxa/foljda/${species.dyntaxa_taxon_id}`,
-          days: phenogram?.seasonal_status?.days_until_start ?? null,
+          days: species.seasonal_status.days_until_start ?? null,
         }))
   const outgoingEntries: WindowEntry[] = isAll
     ? overviewOutgoing.map((item) => ({
@@ -468,12 +452,12 @@ export default function NewHome({
         days: item.seasonal_status.days_until_end ?? null,
       }))
     : sortedItems
-        .filter(({ phenogram }) => phenogram?.seasonal_status?.is_going_out_of_season)
-        .map(({ species, phenogram }) => ({
+        .filter((species) => species.seasonal_status.is_going_out_of_season)
+        .map((species) => ({
           key: species.id,
           name: speciesName(species),
           href: `/taxa/foljda/${species.dyntaxa_taxon_id}`,
-          days: phenogram?.seasonal_status?.days_until_end ?? null,
+          days: species.seasonal_status.days_until_end ?? null,
         }))
 
   const registerCount = isAll ? overviewCount : items.length
@@ -635,9 +619,9 @@ export default function NewHome({
               )
             ) : sortedItems.length > 0 ? (
               <ol>
-                {sortedItems.map(({ species, phenogram }, index) => {
-                  const status = phenogram?.seasonal_status
-                  const meta = status ? STATUS_META[status.status] : null
+                {sortedItems.map((species, index) => {
+                  const status = species.seasonal_status
+                  const meta = STATUS_META[status.status]
                   return (
                     <RegisterRow
                       key={species.id}
@@ -646,10 +630,10 @@ export default function NewHome({
                       scientificName={species.swedish_name ? species.scientific_name : null}
                       meta={habitatSummary(species)}
                       href={`/taxa/foljda/${species.dyntaxa_taxon_id}`}
-                      statusLabel={meta?.label ?? "Säsongsdata saknas"}
-                      statusInk={meta?.ink ?? "text-text-faint"}
+                      statusLabel={meta.label}
+                      statusInk={meta.ink}
                       hint={statusHint(status)}
-                      months={activeMonths(phenogram)}
+                      months={activeMonths(species)}
                       currentMonth={currentMonth}
                       tone="accent"
                     />

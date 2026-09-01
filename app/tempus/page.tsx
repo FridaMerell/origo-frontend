@@ -1,16 +1,14 @@
 import type { Metadata } from "next"
 import { cookies } from "next/headers"
-import { getFollowedSpecies } from "@/app/actions/tempus"
 import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
 import {
   getTempusGeoAreas,
   getTempusRoutes,
   getTempusRouteStops,
   getTempusSeasonalOverviewPage,
-  getTempusSpeciesPhenogram,
   getTempusSuggestedStopsRun,
 } from "@/app/lib/dal"
-import Home, { type HomeSpecies } from "./NewHome"
+import Home from "./NewHome"
 
 export const metadata: Metadata = {
   title: "Tempus | Origo",
@@ -26,8 +24,7 @@ export default async function TempusPage({
   const overviewPage = Number.isInteger(Number(rawPage)) && Number(rawPage) > 0
     ? Number(rawPage)
     : 1
-  const [followedSpecies, geoAreas, cookieStore, routes] = await Promise.all([
-    getFollowedSpecies(),
+  const [geoAreas, cookieStore, routes] = await Promise.all([
     getTempusGeoAreas(),
     cookies(),
     getTempusRoutes({ page_size: 100 }),
@@ -45,31 +42,9 @@ export default async function TempusPage({
     geo_area: selectedGeoArea?.id,
     min_records: 20,
   }
-  const [items, overview, overviewIncoming, overviewOutgoing] = await Promise.all([
-    Promise.all(
-      followedSpecies.map(async (species) => ({
-        species,
-        phenogram: await getTempusSpeciesPhenogram(String(species.dyntaxa_taxon_id), selectedGeoArea?.id),
-      })),
-    ) as Promise<HomeSpecies[]>,
-    getTempusSeasonalOverviewPage({
-      ...overviewParams,
-      page: overviewPage,
-      page_size: 24,
-    }),
-    getTempusSeasonalOverviewPage({
-      ...overviewParams,
-      status: "coming_into_season",
-      page_size: 3,
-    }),
-    getTempusSeasonalOverviewPage({
-      ...overviewParams,
-      status: "going_out_of_season",
-      page_size: 3,
-    }),
-  ])
+  const emptyOverview = { results: [], count: 0, next: null, previous: null, pageSize: 0 }
   const routeOverview = nextRoute
-    ? await Promise.all([
+    ? Promise.all([
         getTempusRouteStops(nextRoute.id),
         getTempusSuggestedStopsRun(nextRoute.id),
       ]).then(([stops, run]) => ({
@@ -77,12 +52,43 @@ export default async function TempusPage({
         stops,
         suggestions: run?.status === "succeeded" ? run.result : [],
       }))
-    : null
+    : Promise.resolve(null)
+  const [items, overview, overviewIncoming, overviewOutgoing, resolvedRouteOverview] = await Promise.all([
+    view === "followed"
+      ? getTempusSeasonalOverviewPage({
+          ...overviewParams,
+          is_followed: true,
+          page_size: 100,
+        })
+      : Promise.resolve(emptyOverview),
+    view === "all"
+      ? getTempusSeasonalOverviewPage({
+          ...overviewParams,
+          page: overviewPage,
+          page_size: 24,
+        })
+      : Promise.resolve(emptyOverview),
+    view === "all"
+      ? getTempusSeasonalOverviewPage({
+          ...overviewParams,
+          status: "coming_into_season",
+          page_size: 3,
+        })
+      : Promise.resolve(emptyOverview),
+    view === "all"
+      ? getTempusSeasonalOverviewPage({
+          ...overviewParams,
+          status: "going_out_of_season",
+          page_size: 3,
+        })
+      : Promise.resolve(emptyOverview),
+    routeOverview,
+  ])
   const today = new Date()
 
   return (
     <Home
-      items={items}
+      items={items.results}
       areaName={selectedGeoArea?.name ?? "Hela Sverige"}
       todayLabel={today.toLocaleDateString("sv-SE", {
         day: "numeric",
@@ -98,7 +104,7 @@ export default async function TempusPage({
       overviewHasPrevious={Boolean(overview.previous)}
       overviewIncoming={overviewIncoming.results}
       overviewOutgoing={overviewOutgoing.results}
-      routeOverview={routeOverview}
+      routeOverview={resolvedRouteOverview}
     />
   )
 }

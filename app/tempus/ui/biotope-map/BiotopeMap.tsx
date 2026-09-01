@@ -2,7 +2,7 @@ import type { ComponentPropsWithoutRef } from "react"
 import { generateMap } from "./generate"
 import type { Biotope, FeatureKey, MapOptions, MapTheme } from "./types"
 import { MapCanvas } from "./MapCanvas"
-import { TempusSpecies } from "@/app/lib/dal"
+import type { TempusSpecies } from "@/app/lib/dal"
 
 const DEFAULT_FEATURES: Record<FeatureKey, boolean> = {
   trees: false,
@@ -44,7 +44,9 @@ const LANDSCAPE_BIOTOPE: Record<string, Biotope> = {
 
 // Pick the map scene from the species' landscape types, most strongly
 // associated first; fall back to the default when nothing maps.
-const biotopeFromSpecies = (species: TempusSpecies): Biotope => {
+type BiotopeSpecies = Pick<TempusSpecies, "landscape_types" | "scientific_name">
+
+const biotopeFromSpecies = (species: BiotopeSpecies): Biotope => {
   const ranked = [...(species.landscape_types ?? [])].sort(
     (a, b) => (SignificanceRank[b.significance] ?? 0) - (SignificanceRank[a.significance] ?? 0)
   )
@@ -55,7 +57,7 @@ const biotopeFromSpecies = (species: TempusSpecies): Biotope => {
   return DEFAULT_BIOTOPE_MAP_OPTIONS.biotope
 }
 
-export const biotopePropsFromSpecies = (species: TempusSpecies) => {
+export const biotopePropsFromSpecies = (species: BiotopeSpecies) => {
   return {
     biotope: biotopeFromSpecies(species),
     seed: species.scientific_name || DEFAULT_BIOTOPE_MAP_OPTIONS.seed,

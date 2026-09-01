@@ -23,6 +23,7 @@ export const ACCOUNTS_ENDPOINTS = {
 
 export const VERSO_ENDPOINTS = {
   facilities: "/api/verso/houses/",
+  dashboard: "/api/verso/houses/dashboard/",
   bookings: "/api/verso/bookings/",
   bookingRequests: "/api/verso/booking-requests/",
   checkOuts: "/api/verso/check-outs/",
@@ -35,6 +36,7 @@ export const VERSO_ENDPOINTS = {
 
 export const FLUX_ENDPOINTS = {
   projects: "/api/flux/projects/",
+  projectBoard: (id: string) => `/api/flux/projects/${encodeURIComponent(id)}/board/`,
   milestones: "/api/flux/milestones/",
   tasks: "/api/flux/tasks/",
   updates: "/api/flux/updates/",

@@ -114,6 +114,21 @@ export type FluxUser = {
   email?: string
 }
 
+export type FluxBoard = {
+  project: FluxProject
+  projects: FluxProject[]
+  milestones: FluxMilestone[]
+  tasks: FluxTask[]
+  updates: FluxUpdate[]
+  documents: FluxDocument[]
+  users: FluxUser[]
+}
+
+export const getFluxBoard = cache(
+  (id: string): Promise<FluxBoard | null> =>
+    fetchItem<FluxBoard>(FLUX_ENDPOINTS.projectBoard(id))
+)
+
 export const getFluxUsers = cache((ids: number[]): Promise<FluxUser[]> => {
   if (ids.length === 0) return Promise.resolve([])
   const search = new URLSearchParams()

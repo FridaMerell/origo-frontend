@@ -2,8 +2,6 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import {
-  getTempusChecklistItems,
-  getTempusChecklists,
   getTempusObservationItem,
   getTempusSpeciesCategoriesAll,
   getTempusSpeciesItems,
@@ -27,9 +25,8 @@ export default async function ObservationDetailPage({ params }: PageProps) {
   const observation = await getTempusObservationItem(id)
   if (!observation) notFound()
 
-  const [species, checklists, categories] = await Promise.all([
+  const [species, categories] = await Promise.all([
     getTempusSpeciesItems([observation.species]).then((items) => items[0] ?? null),
-    getTempusChecklists(),
     getTempusSpeciesCategoriesAll(),
   ])
   const category = species
@@ -40,24 +37,7 @@ export default async function ObservationDetailPage({ params }: PageProps) {
   const speciesHref = species && category?.taxon_id
     ? `/taxa/${category.taxon_id}/${species.dyntaxa_taxon_id}`
     : null
-  const checklistItems = await Promise.all(
-    checklists.map(async (checklist) => ({
-      checklist,
-      items: checklist.items ?? (await getTempusChecklistItems(checklist.id)),
-    })),
-  )
-  const checklistNameByItemId = new Map(
-    checklistItems.flatMap(({ checklist, items }) =>
-      items.map((item) => [item.id, checklist.name] as const),
-    ),
-  )
-  const checklistNames = [
-    ...new Set(
-      observation.checklist_items
-        .map((itemId) => checklistNameByItemId.get(itemId))
-        .filter((name): name is string => Boolean(name)),
-    ),
-  ]
+  const checklistNames = [...new Set(observation.checklist_names)]
 
   return (
     <div className="container mx-auto max-w-4xl py-5 max-sm:px-3 sm:py-7">

@@ -8,6 +8,7 @@ import {
   markNotificationAsRead,
   type NotificationPreview,
 } from "@/app/actions/notifications"
+import { useUser } from "@/app/lib/user-context"
 
 type NotificationMenuProps = {
   align?: "left" | "right"
@@ -31,8 +32,9 @@ function formatNotificationTime(value: string) {
 }
 
 export function NotificationMenu({ align = "right", dropUp = false, children }: NotificationMenuProps) {
+  const user = useUser()
   const [open, setOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadCount, setUnreadCount] = useState(user?.open_notifications ?? 0)
   const [notifications, setNotifications] = useState<NotificationPreview[]>([])
   const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null)
   const [markingAllAsRead, setMarkingAllAsRead] = useState(false)
@@ -54,10 +56,6 @@ export function NotificationMenu({ align = "right", dropUp = false, children }: 
     document.addEventListener("mousedown", onClickOutside)
     return () => document.removeEventListener("mousedown", onClickOutside)
   }, [])
-
-  useEffect(() => {
-    loadNotifications()
-  }, [loadNotifications])
 
   const toggle = () => {
     const willOpen = !open

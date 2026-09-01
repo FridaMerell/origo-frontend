@@ -11,6 +11,7 @@ import { ProgressBar } from "@/app/components/ui/ProgressBar";
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
+import { Markdown } from "@/app/flux/documents/markdown";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
 import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
@@ -120,7 +121,7 @@ export function TaskPanel() {
         open={Boolean(task)}
         onOpenChange={(next) => !next && closeTask()}
         title={task?.title}
-        panelClassName="max-w-3xl"
+        panelClassName="max-w-4xl"
         headerActions={
           task && (
             <div className="flex items-center gap-2">
@@ -186,7 +187,7 @@ export function TaskPanel() {
               )}
             </div>
 
-            {task.description && <p className="text-sm text-text">{task.description}</p>}
+            {task.description && <Markdown content={task.description} />}
 
             <Gallery files={task.files} />
 

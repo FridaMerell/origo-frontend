@@ -67,6 +67,7 @@ export const TEMPUS_ENDPOINTS = {
   geoAreas: "/api/tempus/geo-areas/",
   speciesFollow: "/api/tempus/species-follows/",
   species: "/api/tempus/species/",
+  speciesResolve: "/api/tempus/species/resolve/",
   speciesSeasonalOverview: "/api/tempus/species/seasonal-overview/",
   speciesImportChecklist: "/api/tempus/species/import-checklist/",
   speciesRegister: "/api/tempus/species/register/",

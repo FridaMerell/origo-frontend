@@ -457,21 +457,53 @@ export const getTempusSpeciesItem = cache(
 
 export async function getTempusSpeciesItems(ids: Iterable<string>): Promise<TempusSpecies[]> {
   const uniqueIds = [...new Set(ids)]
-  const items: Array<TempusSpecies | null> = Array(uniqueIds.length).fill(null)
-  const concurrency = Math.min(8, uniqueIds.length)
-  let nextIndex = 0
+  if (uniqueIds.length === 0) return []
+
+  const { sessionId, csrfToken } = await getSessionCookies()
+  if (!sessionId) return []
+
+  const batches = Array.from(
+    { length: Math.ceil(uniqueIds.length / 100) },
+    (_, index) => uniqueIds.slice(index * 100, (index + 1) * 100),
+  )
+  const speciesById = new Map<string, TempusSpecies>()
+  let nextBatch = 0
+
+  const resolveBatch = async (batch: string[]) => {
+    try {
+      const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesResolve, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrfToken ?? "",
+          Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
+        },
+        body: JSON.stringify({ ids: batch }),
+      })
+      if (!response.ok) return []
+
+      const body: unknown = await response.json().catch(() => [])
+      return Array.isArray(body) ? (body as TempusSpecies[]) : []
+    } catch {
+      return []
+    }
+  }
 
   await Promise.all(
-    Array.from({ length: concurrency }, async () => {
-      while (nextIndex < uniqueIds.length) {
-        const index = nextIndex
-        nextIndex += 1
-        items[index] = await getTempusSpeciesItem(uniqueIds[index])
+    Array.from({ length: Math.min(4, batches.length) }, async () => {
+      while (nextBatch < batches.length) {
+        const batchIndex = nextBatch
+        nextBatch += 1
+        for (const species of await resolveBatch(batches[batchIndex])) {
+          speciesById.set(species.id, species)
+        }
       }
     }),
   )
 
-  return items.filter((item): item is TempusSpecies => item !== null)
+  return uniqueIds
+    .map((id) => speciesById.get(id))
+    .filter((species): species is TempusSpecies => species !== undefined)
 }
 
 export const getTempusSpeciesCategories = cache(

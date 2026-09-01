@@ -132,6 +132,27 @@ const ProjectPulse = ({ projectId, milestones, tasks, updates, users }: { projec
   </section>
 )
 
+const HomeEmpty = ({ icon, title, body }: { icon: string; title: string; body: string }) => (
+  <section className="relative isolate overflow-hidden rounded-card bg-[#25263B] px-6 py-16 text-center text-[#FFF9F0] shadow-lg sm:px-10 sm:py-20">
+    <Image
+      src="/flux/dragonfly.svg"
+      alt=""
+      aria-hidden
+      width={1774}
+      height={887}
+      className="pointer-events-none absolute -right-40 -top-16 z-0 h-72 w-auto rotate-[-22deg] scale-x-[-1] opacity-30"
+      style={{ filter: "brightness(0) saturate(100%) invert(64%) sepia(45%) saturate(821%) hue-rotate(343deg) brightness(92%) contrast(89%)" }}
+    />
+    <div className="relative z-10 mx-auto flex max-w-md flex-col items-center">
+      <span className="flex size-12 items-center justify-center rounded-full border border-[#FFF9F0]/25 text-[#EFA052]">
+        <Icon name={icon} size={20} />
+      </span>
+      <h1 className="mt-5 font-display text-2xl font-semibold uppercase tracking-[0.12em] text-[#FFF9F0] sm:text-3xl">{title}</h1>
+      <p className="mt-3 text-sm leading-6 text-[#FFF9F0]/70">{body}</p>
+    </div>
+  </section>
+)
+
 export default function Home() {
   const projects = useFluxProjects()
   const { selectedProject } = useSelectedFluxProject()
@@ -141,8 +162,26 @@ export default function Home() {
   const users = useFluxUsers()
   const { openTask } = useTaskPanel()
 
-  if (!projects?.length) return <div className="flex flex-col items-center justify-center py-20 text-center"><h1 className="font-display text-2xl font-semibold text-text">Inga projekt</h1><p className="mt-2 max-w-md text-sm text-text-muted">Du har inga projekt än. Kontakta din administratör för att bli tillagd i ett projekt.</p></div>
-  if (!selectedProject) return <div className="py-20 text-center text-sm text-text-muted">Välj ett projekt för att se översikten.</div>
+  if (!projects?.length)
+    return (
+      <div className="py-10 sm:py-16">
+        <HomeEmpty
+          icon="folder-open"
+          title="Inga projekt"
+          body="Du har inga projekt än. Kontakta din administratör för att bli tillagd i ett projekt."
+        />
+      </div>
+    )
+  if (!selectedProject)
+    return (
+      <div className="py-10 sm:py-16">
+        <HomeEmpty
+          icon="compass"
+          title="Välj ett projekt"
+          body="Välj ett projekt i menyn högst upp för att se översikten."
+        />
+      </div>
+    )
 
   return (
     <div className="flex w-full flex-col gap-9 pb-12">

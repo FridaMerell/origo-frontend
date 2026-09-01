@@ -145,6 +145,7 @@ function PasswordSection() {
 export function AccountView({ user }: { user: User }) {
   return (
     <KontoShell
+      crumb="Origo / Konto"
       backHref="/"
       backLabel="Origo"
       kicker="Ditt konto"

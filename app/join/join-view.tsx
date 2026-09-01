@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { redeemInvitation } from "@/app/actions/account";
 import { redeemSignupSchema, type RedeemSignupValues } from "@/app/lib/schemas";
 import { appHref, type AppLinkId } from "@/app/lib/tenant-links";
+import { PageCrumb } from "@/app/components/page-crumb";
 import { BUTTON, ERROR_TEXT, Field, MONO } from "@/app/konto/ui";
 
 const KICKER = `${MONO} text-[11px] uppercase tracking-[0.18em] text-[#58636A]`;
@@ -14,8 +15,9 @@ function Frame({ children }: { children: ReactNode }) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#E7E5DE] px-5 py-6 text-[#1B252B] sm:px-10 sm:py-10">
       <span aria-hidden className="absolute left-1/2 top-0 h-full w-px bg-[#1B252B]/15" />
-      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col justify-center gap-4">
-        {children}
+      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-md flex-col">
+        <PageCrumb crumb="Origo / Inbjudan" backHref="/" backLabel="Origo" />
+        <div className="flex flex-1 flex-col justify-center gap-4">{children}</div>
       </div>
     </main>
   );

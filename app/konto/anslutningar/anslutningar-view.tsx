@@ -19,6 +19,7 @@ export function AnslutningarView({
 }) {
   return (
     <KontoShell
+      crumb="Konto / Anslutningar"
       backHref="/konto"
       backLabel="Konto"
       kicker="Konto"

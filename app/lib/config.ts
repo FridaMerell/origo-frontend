@@ -9,7 +9,8 @@ export const AUTH_ENDPOINTS = {
   csrf: "/api/accounts/csrf/",
   login: "/api/accounts/login/",
   logout: "/api/accounts/logout/",
-  user: "/api/accounts/self/",
+  user: "/api/accounts/me/",
+  profile: (id: number | string) => `/api/accounts/self/${encodeURIComponent(id)}/`,
   setPassword: "/api/accounts/self/set-password/",
 } as const;
 

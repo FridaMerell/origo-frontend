@@ -68,9 +68,10 @@ export async function updateProfile(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Kontrollera fälten och försök igen." }
   }
-  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
+  const user = await getCurrentUser()
+  if (!user) return { error: "Du måste vara inloggad." }
 
-  const response = await fetchOrigoApi(AUTH_ENDPOINTS.user, {
+  const response = await fetchOrigoApi(AUTH_ENDPOINTS.profile(user.id), {
     method: "PATCH",
     headers: await authedJsonHeaders(),
     body: JSON.stringify({

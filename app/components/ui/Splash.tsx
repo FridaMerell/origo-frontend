@@ -14,6 +14,9 @@ type TenantConfig = {
 }
 
 const EASE = "var(--ease-standard, cubic-bezier(.4,0,.2,1))"
+// WebKit can hold back streamed loading UI until it has received 1 KB of HTML.
+// Keep the fallback large enough to be painted immediately on mobile Safari.
+const STREAM_BUFFER = "\u00a0".repeat(1024)
 
 const CONFIG: Record<SplashTenant, TenantConfig> = {
   verso: {
@@ -179,7 +182,7 @@ export function Splash({ tenant }: { tenant: SplashTenant }) {
       data-splash
       role="status"
       aria-live="polite"
-      className="relative flex min-h-dvh w-full flex-col items-center justify-center gap-6 bg-bg font-body"
+      className="relative flex min-h-screen min-h-dvh w-full flex-col items-center justify-center gap-6 bg-bg font-body"
     >
       <div
         className={`text-text ${config.sizeClass} ${config.weightClass} ${config.trackingClass} ${
@@ -190,6 +193,7 @@ export function Splash({ tenant }: { tenant: SplashTenant }) {
         {config.wordmark}
       </div>
       <Spinner />
+      <span hidden aria-hidden>{STREAM_BUFFER}</span>
       <p className={`absolute inset-x-0 bottom-14 text-center text-sm ${config.captionClass}`}>
         {config.caption}
       </p>

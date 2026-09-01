@@ -13,7 +13,7 @@ type TenantConfig = {
 export const TENANTS: Record<TenantId, TenantConfig> = {
   verso: { name: "Verso" },
   flux: { name: "Flux" },
-  tempus: { name: "Tempus", publicPaths: ["/", '/maps'] },
+  tempus: { name: "Tempus", publicPaths: ["/"] },
   apsis: { name: "Apsis", publicPaths: ["/"] },
 }
 

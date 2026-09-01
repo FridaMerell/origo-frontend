@@ -1,17 +1,30 @@
 import type { Metadata } from "next";
-import { getFacilities, getHouseInvitations, verifySession } from "@/app/lib/dal";
+import {
+  getFacilities,
+  getFluxProjects,
+  getInvitations,
+  verifySession,
+} from "@/app/lib/dal";
 import { AnslutningarView } from "./anslutningar-view";
 
 export const metadata: Metadata = {
   title: "Anslutningar | Origo",
-  description: "Hus, husinbjudningar och din personliga API-token.",
+  description: "Hus, inbjudningar och din personliga API-token.",
 };
 
 export default async function AnslutningarPage() {
   const { user } = await verifySession();
-  const [houses, invitations] = await Promise.all([
+  const [houses, invitations, projects] = await Promise.all([
     getFacilities(),
-    getHouseInvitations(),
+    getInvitations(),
+    getFluxProjects({ members: String(user.id) }),
   ]);
-  return <AnslutningarView user={user} houses={houses} invitations={invitations} />;
+  return (
+    <AnslutningarView
+      user={user}
+      houses={houses}
+      invitations={invitations}
+      projects={projects}
+    />
+  );
 }

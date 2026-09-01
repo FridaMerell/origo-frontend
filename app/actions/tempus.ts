@@ -822,14 +822,12 @@ export const unfollowSpecies = async (taxonId: string): Promise<{ ok: boolean; e
 
   const { sessionId, csrfToken } = await getSessionCookies()
 
-  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesFollow, {
+  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesUnfollow(taxonId), {
     method: "DELETE",
     headers: {
-      "Content-Type": "application/json",
       "X-CSRFToken": csrfToken ?? "",
       Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
     },
-    body: JSON.stringify({ species: Number(taxonId) }),
   })
 
   if (response.ok) {

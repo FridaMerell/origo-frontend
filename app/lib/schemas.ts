@@ -106,6 +106,16 @@ export const houseInvitationSchema = z.object({
 })
 export type HouseInvitationValues = z.infer<typeof houseInvitationSchema>
 
+// Invitation whose target is a Flux project the user picks from a dropdown.
+export const projectInvitationSchema = houseInvitationSchema.extend({
+  project: z.string().trim().min(1, "Välj ett projekt."),
+})
+export type ProjectInvitationValues = z.infer<typeof projectInvitationSchema>
+
+// Targetless invitation — grants only an Origo account, no house or project.
+export const accountInvitationSchema = houseInvitationSchema
+export type AccountInvitationValues = z.infer<typeof accountInvitationSchema>
+
 export const redeemSignupSchema = z.object({
   token: z.string().trim().min(1, "Token saknas."),
   username: z.string().trim().min(1, "Användarnamn krävs."),

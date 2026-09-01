@@ -16,6 +16,10 @@ import {
   type CreateHouseValues,
   houseInvitationSchema,
   type HouseInvitationValues,
+  projectInvitationSchema,
+  type ProjectInvitationValues,
+  accountInvitationSchema,
+  type AccountInvitationValues,
   passwordChangeSchema,
   type PasswordChangeValues,
 } from "@/app/lib/schemas"
@@ -192,30 +196,39 @@ export async function updateHouse(
   return { success: true }
 }
 
-export async function createHouseInvitation(
-  houseId: string,
-  data: HouseInvitationValues,
-): Promise<{ token?: string; error?: string; fieldErrors?: FieldErrors<HouseInvitationValues> }> {
-  if (!houseId) return { error: "Hus-id saknas." }
-  const parsed = houseInvitationSchema.safeParse(data)
-  if (!parsed.success) {
-    return { fieldErrors: { label: parsed.error.issues[0]?.message ?? "Kontrollera fältet." } }
-  }
+type InvitationResult = {
+  token?: string
+  error?: string
+  fieldErrors?: FieldErrors<ProjectInvitationValues>
+}
+
+// One target at most: a house, a Flux project, or nothing (a plain account).
+type InvitationTarget =
+  | { house: string }
+  | { project: string }
+  | Record<string, never>
+
+async function createInvitation(
+  target: InvitationTarget,
+  data: { label: string; no_expiry: boolean },
+): Promise<InvitationResult> {
   if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
 
-  const body: Record<string, unknown> = { house: Number(houseId), label: parsed.data.label }
-  if (parsed.data.no_expiry) body.expires_at = null
+  const body: Record<string, unknown> = { label: data.label }
+  if ("house" in target) body.house = Number(target.house)
+  if ("project" in target) body.project = Number(target.project)
+  if (data.no_expiry) body.expires_at = null
 
-  const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.houseInvitations, {
+  const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.invitations, {
     method: "POST",
     headers: await authedJsonHeaders(),
     body: JSON.stringify(body),
   })
 
   if (!response.ok) {
-    const { message, fieldErrors } = readErrorBody<HouseInvitationValues>(
+    const { message, fieldErrors } = readErrorBody<ProjectInvitationValues>(
       await response.text().catch(() => ""),
-      ["label"],
+      ["label", "project"],
     )
     if (fieldErrors) return { fieldErrors }
     return { error: message ?? `Kunde inte skapa inbjudan (${response.status}).` }
@@ -229,13 +242,50 @@ export async function createHouseInvitation(
   return { token: created.token }
 }
 
-export async function revokeHouseInvitation(
+export async function createHouseInvitation(
+  houseId: string,
+  data: HouseInvitationValues,
+): Promise<InvitationResult> {
+  if (!houseId) return { error: "Hus-id saknas." }
+  const parsed = houseInvitationSchema.safeParse(data)
+  if (!parsed.success) {
+    return { fieldErrors: { label: parsed.error.issues[0]?.message ?? "Kontrollera fältet." } }
+  }
+  return createInvitation({ house: houseId }, parsed.data)
+}
+
+export async function createProjectInvitation(
+  data: ProjectInvitationValues,
+): Promise<InvitationResult> {
+  const parsed = projectInvitationSchema.safeParse(data)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    const path = issue?.path[0]
+    if (path === "label" || path === "project") {
+      return { fieldErrors: { [path]: issue.message } as FieldErrors<ProjectInvitationValues> }
+    }
+    return { error: issue?.message ?? "Kontrollera fälten och försök igen." }
+  }
+  return createInvitation({ project: parsed.data.project }, parsed.data)
+}
+
+export async function createAccountInvitation(
+  data: AccountInvitationValues,
+): Promise<InvitationResult> {
+  const parsed = accountInvitationSchema.safeParse(data)
+  if (!parsed.success) {
+    return { fieldErrors: { label: parsed.error.issues[0]?.message ?? "Kontrollera fältet." } }
+  }
+  return createInvitation({}, parsed.data)
+}
+
+export async function revokeInvitation(
   id: string,
 ): Promise<{ error?: string; success?: boolean }> {
   if (!id) return { error: "Inbjudnings-id saknas." }
   if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
 
-  const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.houseInvitation(id), {
+  const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.invitation(id), {
     method: "DELETE",
     headers: await authedJsonHeaders(),
   })
@@ -248,6 +298,8 @@ export async function revokeHouseInvitation(
   return { success: true }
 }
 
+export const revokeHouseInvitation = revokeInvitation
+
 export type RedeemInput = {
   token: string
   username?: string
@@ -256,6 +308,10 @@ export type RedeemInput = {
 }
 
 export type RedeemResult = {
+  // "account" when the invitation carried no house or project.
+  targetKind?: "house" | "project" | "account"
+  target?: { id: number; name: string } | null
+  // Retained for existing callers — set only for house invitations.
   house?: { id: number; name: string }
   created?: boolean
   error?: string
@@ -315,7 +371,7 @@ export async function redeemInvitation(input: RedeemInput): Promise<RedeemResult
     if (input.email?.trim()) body.email = input.email.trim()
   }
 
-  const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.redeemHouseInvitation, {
+  const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.redeemInvitation, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -339,12 +395,21 @@ export async function redeemInvitation(input: RedeemInput): Promise<RedeemResult
   }
 
   const data = (await response.json().catch(() => null)) as {
-    house?: { id: number; name: string }
+    target_kind?: "house" | "project" | "account"
+    target?: { id: number; name: string } | null
     created?: boolean
   } | null
 
+  const targetKind = data?.target_kind ?? "house"
+  const target = data?.target ?? null
+
   revalidatePath("/konto/anslutningar")
-  return { house: data?.house, created: data?.created }
+  return {
+    targetKind,
+    target,
+    house: targetKind === "house" && target ? target : undefined,
+    created: data?.created,
+  }
 }
 
 export type SelfTokenResult = { token?: string; error?: string }

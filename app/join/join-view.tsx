@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { redeemInvitation } from "@/app/actions/account";
 import { redeemSignupSchema, type RedeemSignupValues } from "@/app/lib/schemas";
-import { appHref } from "@/app/lib/tenant-links";
+import { appHref, type AppLinkId } from "@/app/lib/tenant-links";
 import { BUTTON, ERROR_TEXT, Field, MONO } from "@/app/konto/ui";
 
 const KICKER = `${MONO} text-[11px] uppercase tracking-[0.18em] text-[#58636A]`;
@@ -21,18 +21,34 @@ function Frame({ children }: { children: ReactNode }) {
   );
 }
 
-function GoToVerso() {
+type JoinOutcome = { kind: "house" | "project" | "account"; name: string | null };
+
+const OUTCOME_APP: Record<JoinOutcome["kind"], { app: AppLinkId; label: string }> = {
+  house: { app: "verso", label: "Gå till Verso →" },
+  project: { app: "flux", label: "Gå till Flux →" },
+  account: { app: "origo", label: "Gå till Origo →" },
+};
+
+function GoToApp({ kind }: { kind: JoinOutcome["kind"] }) {
+  const { app, label } = OUTCOME_APP[kind];
   return (
     <button
       type="button"
       className={`${BUTTON} mt-4 w-fit`}
       onClick={() => {
-        window.location.href = appHref("verso");
+        window.location.href = appHref(app);
       }}
     >
-      Gå till Verso →
+      {label}
     </button>
   );
+}
+
+function outcomeOf(result: {
+  targetKind?: "house" | "project" | "account";
+  target?: { id: number; name: string } | null;
+}): JoinOutcome {
+  return { kind: result.targetKind ?? "house", name: result.target?.name ?? null };
 }
 
 function LoggedInJoin({
@@ -42,7 +58,7 @@ function LoggedInJoin({
 }: {
   token: string;
   username: string;
-  onDone: (houseName: string) => void;
+  onDone: (outcome: JoinOutcome) => void;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,13 +74,13 @@ function LoggedInJoin({
       );
       return;
     }
-    onDone(result.house?.name ?? "huset");
+    onDone(outcomeOf(result));
   };
 
   return (
     <>
       <p className={KICKER}>Inbjudan</p>
-      <h1 className="text-4xl font-medium tracking-[-0.05em]">Gå med i huset</h1>
+      <h1 className="text-4xl font-medium tracking-[-0.05em]">Lös in inbjudan</h1>
       <p className="text-sm text-[#58636A]">Inloggad som {username}.</p>
       {error && <p className={ERROR_TEXT}>{error}</p>}
       <button
@@ -84,7 +100,7 @@ function SignupJoin({
   onDone,
 }: {
   token: string;
-  onDone: (houseName: string) => void;
+  onDone: (outcome: JoinOutcome) => void;
 }) {
   const {
     register,
@@ -110,7 +126,7 @@ function SignupJoin({
       setError("root", { message: result.error });
       return;
     }
-    onDone(result.house?.name ?? "huset");
+    onDone(outcomeOf(result));
   });
 
   return (
@@ -142,8 +158,14 @@ function SignupJoin({
   );
 }
 
+function doneHeading({ kind, name }: JoinOutcome) {
+  if (kind === "account") return "Kontot är klart";
+  if (kind === "project") return `Du har nu tillgång till ${name ?? "projektet"}`;
+  return `Du har nu tillgång till ${name ?? "huset"}`;
+}
+
 export function JoinView({ token, username }: { token: string; username: string | null }) {
-  const [done, setDone] = useState<string | null>(null);
+  const [done, setDone] = useState<JoinOutcome | null>(null);
 
   if (!token) {
     return (
@@ -159,8 +181,8 @@ export function JoinView({ token, username }: { token: string; username: string 
     return (
       <Frame>
         <p className={KICKER}>Klart</p>
-        <h1 className="text-4xl font-medium tracking-[-0.05em]">Du är med i {done}</h1>
-        <GoToVerso />
+        <h1 className="text-4xl font-medium tracking-[-0.05em]">{doneHeading(done)}</h1>
+        <GoToApp kind={done.kind} />
       </Frame>
     );
   }

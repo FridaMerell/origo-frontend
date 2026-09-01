@@ -148,7 +148,13 @@ function JoinHouseForm({ onDone }: { onDone: () => void }) {
       setError("root", { message: result.error });
       return;
     }
-    setJoined(result.house?.name ?? "huset");
+    if (result.targetKind === "account") {
+      setJoined("Origo");
+    } else if (result.targetKind === "project") {
+      setJoined(`projektet ${result.target?.name ?? ""}`.trim());
+    } else {
+      setJoined(result.target?.name ?? "huset");
+    }
     reset();
     router.refresh();
   });
@@ -158,7 +164,7 @@ function JoinHouseForm({ onDone }: { onDone: () => void }) {
       <Field label="Inbjudnings-token" error={errors.token} {...register("token")} />
 
       {errors.root && <p className={ERROR_TEXT}>{errors.root.message}</p>}
-      {joined && <p className={OK_TEXT}>Du är nu med i {joined}.</p>}
+      {joined && <p className={OK_TEXT}>Du har nu tillgång till {joined}.</p>}
 
       <div className="flex gap-3">
         <button type="submit" className={BUTTON} disabled={isSubmitting}>

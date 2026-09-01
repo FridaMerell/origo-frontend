@@ -16,9 +16,9 @@ export const AUTH_ENDPOINTS = {
 export const ACCOUNTS_ENDPOINTS = {
   users: "/api/accounts/users/",
   selfToken: "/api/accounts/self/token/",
-  houseInvitations: "/api/accounts/house-invitations/",
-  houseInvitation: (id: string) => `/api/accounts/house-invitations/${encodeURIComponent(id)}/`,
-  redeemHouseInvitation: "/api/accounts/house-invitations/redeem/",
+  invitations: "/api/accounts/invitations/",
+  invitation: (id: string) => `/api/accounts/invitations/${encodeURIComponent(id)}/`,
+  redeemInvitation: "/api/accounts/invitations/redeem/",
   notifications: "/api/accounts/notifications/",
   notification: (id: string) => `/api/accounts/notifications/${encodeURIComponent(id)}/`,
   notificationsSummary: "/api/accounts/notifications/summary/",
@@ -72,6 +72,8 @@ export const TEMPUS_ENDPOINTS = {
   observations: "/api/tempus/observations/",
   geoAreas: "/api/tempus/geo-areas/",
   speciesFollow: "/api/tempus/species-follows/",
+  speciesUnfollow: (taxonId: string) =>
+    `/api/tempus/species-follows/unfollow/?species=${encodeURIComponent(taxonId)}`,
   species: "/api/tempus/species/",
   speciesResolve: "/api/tempus/species/resolve/",
   speciesSeasonalOverview: "/api/tempus/species/seasonal-overview/",

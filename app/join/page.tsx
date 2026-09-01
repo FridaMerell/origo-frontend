@@ -4,7 +4,7 @@ import { JoinView } from "./join-view";
 
 export const metadata: Metadata = {
   title: "Gå med | Origo",
-  description: "Lös in en husinbjudan.",
+  description: "Skapa ett konto eller gå med i Origo.",
 };
 
 export default async function JoinPage({

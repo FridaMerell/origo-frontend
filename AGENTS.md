@@ -7,6 +7,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Layout consistency
+
+Use the shared `container` utility for route-level page content. It supplies the responsive gutters and maximum page width; do not let page content run directly against the viewport or recreate ad-hoc page-width wrappers. Do not use `max-w-*`, arbitrary widths, or custom page-width rules on page layout sections — they must fill their container.
+
 ## File editing
 
 Use the direct Edit/Write tools or `apply_patch` for file changes.

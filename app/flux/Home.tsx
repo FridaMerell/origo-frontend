@@ -85,31 +85,35 @@ const ProjectSummary = ({ project, tasks, users }: { project: FluxProject; tasks
   const progress = progressOf(tasks)
 
   return (
-    <section className="relative overflow-hidden rounded-card px-6 py-7 text-accent-contrast shadow-lg sm:px-8 sm:py-8" style={{ background: "linear-gradient(125deg, var(--accent) 0%, var(--accent-hover) 46%, var(--secondary) 120%)" }}>
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <section className="relative isolate overflow-hidden rounded-card bg-[#25263B] px-6 py-5 text-[#FFF9F0] shadow-lg sm:px-8 sm:py-6">
+      <svg aria-hidden viewBox="0 0 520 300" preserveAspectRatio="none" className="pointer-events-none absolute inset-y-0 right-0 z-0 h-full w-[24%] text-[#E28A3B]/55" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 266C108 184 231 82 483 17c-42 96-74 180-118 267C244 277 115 270 18 266Z" strokeWidth="1.5" />
+        <path d="M25 263C167 183 292 97 483 17" strokeWidth="1.25" />
+        <path d="M86 230C95 193 104 160 121 129M142 206c10-49 20-87 36-116M205 174c11-45 23-78 40-105M270 139c14-39 29-68 47-91M333 105c16-30 32-52 50-69M391 78c17-19 34-34 54-47" strokeWidth="1" />
+        <path d="M81 230c63 12 135 21 216 25M136 205c66 19 135 31 204 36M202 174c57 19 111 32 158 42M266 140c43 17 81 30 113 42M328 106c28 11 52 21 76 32M388 77c17 8 32 15 48 24" strokeWidth="1" />
+        <path d="M108 211c47-34 93-61 142-81M164 185c50-28 96-49 140-65M225 152c45-21 85-37 123-49M287 118c37-16 68-28 100-37M346 88c28-12 53-21 78-29" strokeWidth="0.8" />
+        <path d="M369 51l44-12 8 17-45 12Z" strokeWidth="1.25" />
+      </svg>
+      <div className="relative z-10 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
         <div className="min-w-0">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-accent-contrast/75">Projektöversikt</span>
+          <div className="mb-1 flex items-center gap-2 [&_button]:text-[#EFA052] [&_button:hover]:text-[#FFF9F0]">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[#EFA052]">Projektöversikt</span>
             <EditProjectButton project={project} />
           </div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight text-accent-contrast sm:text-3xl">{project.name}</h1>
-          {project.description && <p className="mt-2 max-w-2xl text-sm leading-6 text-accent-contrast/80">{project.description}</p>}
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-[#FFF9F0] sm:text-3xl">{project.name}</h1>
+          {project.description && <p className="mt-1 max-w-2xl truncate text-sm leading-5 text-[#FFF9F0]/70">{project.description}</p>}
         </div>
-        <Link href={"/projects/" + project.id} className="inline-flex items-center gap-1.5 rounded-md border border-white/30 bg-white/10 px-3 py-2 text-sm font-medium text-accent-contrast no-underline transition-colors hover:bg-white/20">
+        <Link href={"/projects/" + project.id} className="inline-flex h-fit items-center justify-self-start gap-1.5 rounded-md border border-[#FFF9F0]/35 bg-white/5 px-3 py-2 text-sm font-medium text-[#FFF9F0] no-underline transition-colors hover:border-[#EFA052] hover:bg-[#EFA052] hover:text-[#25263B] sm:justify-self-end">
           Projektsida <Icon name="arrow-up-right" size={15} />
         </Link>
       </div>
-      <div className="mt-7 flex flex-col gap-5 border-t border-white/20 pt-5 sm:flex-row sm:items-center">
-        <div className="flex-1">
-          <div className="mb-2 flex items-baseline justify-between gap-3">
-            <span className="text-sm font-medium text-accent-contrast">Projektstatus</span>
-            <span className="font-mono text-xs text-accent-contrast/80">{progress.done} av {progress.total} uppgifter klara</span>
-          </div>
-          <ProgressBar pct={progress.pct} className="bg-white/30 [&>div]:bg-white" />
-        </div>
+      <div className="relative z-10 mt-4 grid gap-x-4 gap-y-3 border-t border-[#FFF9F0]/15 pt-4 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:items-center">
+        <span className="text-sm font-medium text-[#FFF9F0]">Projektstatus</span>
+        <ProgressBar pct={progress.pct} className="bg-white/15 [&>div]:bg-[#EFA052]" />
+        <span className="font-mono text-xs text-[#FFF9F0]/70">{progress.done} av {progress.total} uppgifter klara</span>
         {project.members.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-xs text-accent-contrast/75">Team</span>
+            <span className="text-xs text-[#FFF9F0]/70">Team</span>
             <div className="flex -space-x-1.5">
               {project.members.map((id) => <Avatar key={id} name={fluxUserName(users.get(id), id)} size={26} />)}
             </div>
@@ -121,7 +125,7 @@ const ProjectSummary = ({ project, tasks, users }: { project: FluxProject; tasks
 }
 
 const ProjectPulse = ({ projectId, milestones, tasks, updates, users }: { projectId: number; milestones: ReturnType<typeof useFluxMilestones>; tasks: FluxTask[]; updates: ReturnType<typeof useFluxUpdates>; users: Map<number, FluxUser> }) => (
-  <section className="max-w-5xl border-t border-border pt-8">
+  <section className="border-t border-border pt-8">
     <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Projektpuls</p><h2 className="mt-1 text-xl font-semibold text-text">Delmål och aktivitet</h2></div><AddMilestoneButton projectId={projectId} /></div>
     <div className="mt-7 border-l border-border pl-7">
       {milestones.slice(0, 3).map((milestone) => {
@@ -147,10 +151,10 @@ export default function Home() {
   if (!selectedProject) return <div className="py-20 text-center text-sm text-text-muted">Välj ett projekt för att se översikten.</div>
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-9 pb-12">
+    <div className="flex w-full flex-col gap-9 pb-12">
       <ProjectSummary project={selectedProject} tasks={tasks} users={users} />
       <div className="flex flex-col gap-10">
-        <section className="max-w-4xl">
+        <section>
           <div className="mb-4 flex items-end justify-between gap-4">
             <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Arbetsyta</p><h2 className="mt-1 text-lg font-semibold text-text">Öppna uppgifter</h2></div>
             <Link href="/tasks" className="text-sm font-medium text-link hover:underline">Alla uppgifter</Link>

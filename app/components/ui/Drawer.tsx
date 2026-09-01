@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
 
@@ -69,9 +70,9 @@ export function Drawer({
         </Button>
       )}
 
-      {open && (
+      {open && (typeof document !== "undefined" ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex bg-black/60 transition-opacity"
+          className="fixed inset-0 z-[100] flex bg-black/60 transition-opacity"
           style={{
             transitionDuration: "var(--duration-normal)",
             transitionTimingFunction: "var(--ease-standard)",
@@ -110,8 +111,9 @@ export function Drawer({
               </DrawerCloseContext.Provider>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+        document.body,
+      ) : null)}
     </>
   );
 }

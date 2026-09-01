@@ -62,7 +62,7 @@ const Page = async () => {
                     ) : (
                       <div className="flex aspect-[4/3] items-end border-b border-border bg-linear-to-br from-surface-2 via-surface to-accent-wash/30 p-4">
                         <div className="max-w-[75%]">
-                          <h3 className="mt-1 font-display  text-xl 2xl:text-2xl font-semibold italic tracking-wide">
+                          <h3 className="mt-1 font-display  text-xl 4xl:text-2xl font-semibold italic tracking-wide">
                             {category.label}
                           </h3>
                         </div>

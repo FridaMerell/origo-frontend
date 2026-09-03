@@ -3,16 +3,13 @@ import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { Card } from "@/app/components/ui/Card"
 import { Chip } from "@/app/components/ui/Chip"
-import { Icon } from "@/app/components/ui/Icon"
 import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
 import {
   getTempusGeoAreas,
   getTempusSpeciesItem,
-  getTempusSpeciesPhenogram,
   type TempusHabitat,
   getTempusSpeciesCategoryItem,
 } from "@/app/lib/dal"
-import Phenogram, { SeasonalStatusBadge } from "@/app/tempus/ui/Phenogram"
 import {
   BiotopeMap,
   SwedenMap,
@@ -20,6 +17,7 @@ import {
 } from "@/app/tempus/ui/biotope-map"
 import { biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import FollowButton from "./FollowButton"
+import PhenogramPanel from "./PhenogramPanel"
 
 const speciesName = (s: { swedish_name?: string; scientific_name: string }) =>
   s.swedish_name || s.scientific_name
@@ -44,70 +42,6 @@ const HabitatChips = ({ items }: { items: TempusHabitat[] }) => (
   </div>
 )
 
-const PHENOGRAM_MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
-
-const PhenogramPlaceholder = ({ areaName }: { areaName: string }) => (
-  <div className="relative min-h-80 w-full overflow-hidden rounded border border-dashed border-border bg-surface-2/50 md:min-h-96">
-    <svg
-      viewBox="0 0 520 148"
-      className="absolute inset-x-4 bottom-3 w-[calc(100%-2rem)]"
-      aria-hidden="true"
-    >
-      {[32, 66, 100].map((y) => (
-        <line
-          key={y}
-          x1="0"
-          y1={y}
-          x2="520"
-          y2={y}
-          stroke="var(--border)"
-          strokeWidth="1"
-          opacity="0.45"
-        />
-      ))}
-      <path
-        d="M0 107 C48 106 67 97 92 89 C126 78 145 91 171 74 C198 57 220 29 252 42 C284 55 292 91 327 79 C357 69 374 47 403 58 C432 69 441 98 474 102 C492 105 505 106 520 106"
-        fill="none"
-        stroke="var(--border-strong)"
-        strokeWidth="2"
-        strokeDasharray="5 6"
-        opacity="0.6"
-      />
-      <line x1="0" y1="120" x2="520" y2="120" stroke="var(--border-strong)" strokeWidth="1" />
-      {PHENOGRAM_MONTHS.map((month, index) => {
-        const x = (index / 12) * 520
-        return (
-          <g key={`${month}-${index}`}>
-            <line x1={x} y1="120" x2={x} y2="125" stroke="var(--border)" strokeWidth="1" />
-            <text
-              x={x + 2}
-              y="139"
-              fontSize="8"
-              fontFamily="monospace"
-              fill="var(--text-faint)"
-            >
-              {month}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
-    <div className="relative z-10 p-5">
-      <div className="flex max-w-md items-start gap-3 rounded border border-border bg-surface/90 p-4 text-left shadow-sm">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-text-muted">
-          <Icon name="activity" size={17} />
-        </span>
-        <div className="flex flex-col gap-1">
-          <p className="font-display text-base font-semibold text-text">Aktivitetsdata saknas</p>
-          <p className="text-sm leading-relaxed text-text-muted">
-            Ingen säsongskurva har ännu beräknats för den här arten i {areaName}.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-)
-
 const Page = async ({ params }: { params: Promise<{ label: string; id: string }> }) => {
   const { label: rawLabel, id } = await params
   const label = decodeURIComponent(rawLabel)
@@ -121,10 +55,9 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
     ? null
     : geoAreas.find((geoArea) => geoArea.id === selectedId) ?? geoAreas[0] ?? null
 
-  const [species, category, phenogram] = await Promise.all([
+  const [species, category] = await Promise.all([
     getTempusSpeciesItem(id),
     fromHomeOverview ? Promise.resolve(null) : getTempusSpeciesCategoryItem(label),
-    getTempusSpeciesPhenogram(id, selectedGeoArea?.id),
   ])
   if (!species) notFound()
 
@@ -207,15 +140,11 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
         <h2 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">Aktivitet</h2>
         <Card className="flex flex-col md:flex-row gap-3 items-end">
           <div className="md:w-2/3 flex-col flex justify-space gap-10">
-            {phenogram ? (
-              <>
-                <SeasonalStatusBadge status={phenogram.seasonal_status} />
-                <Phenogram phenogram={phenogram} />
-
-              </>
-            ) : (
-              <PhenogramPlaceholder areaName={selectedGeoArea?.name ?? "hela Sverige"} />
-            )}
+            <PhenogramPanel
+              id={id}
+              geoAreaId={selectedGeoArea?.id}
+              areaName={selectedGeoArea?.name ?? "hela Sverige"}
+            />
             <hr className="my-3 border-text-muted" />
             <section className="flex flex-col gap-3">
               <h2 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">Livsmiljö</h2>

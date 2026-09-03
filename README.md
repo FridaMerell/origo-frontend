@@ -43,7 +43,8 @@ list; in short:
 
 - `BLOB_READ_WRITE_TOKEN` — required, backs file upload/download via Vercel Blob
   (`app/api/upload`, `app/api/files`). Run `vercel env pull` to get it locally.
-- `ORIGO_API_URL`, `ORIGO_COOKIE_DOMAIN` — optional overrides for the backend API
+- `ORIGO_API_URL`, `ORIGO_COOKIE_DOMAIN` — optional server-side backend API and session-cookie settings.
+- `NEXT_PUBLIC_ORIGO_API_URL` — public backend API URL used for the direct BirdNET SSE connection; it is embedded at build time.
   URL and session-cookie domain. Defaults in `app/lib/config.ts` target local
   `.origo.test` development.
 - `NEXT_PUBLIC_ORIGO_VERSION` — optional version string shown in the Verso

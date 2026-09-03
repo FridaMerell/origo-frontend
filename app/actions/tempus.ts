@@ -11,6 +11,7 @@ import {
   getTempusRouteStops,
   getTempusSpeciesPage,
   getTempusSpeciesPageByCategory,
+  getTempusSpeciesPhenogram,
   getTempusSpeciesItems,
   type TempusPage,
   type TempusChecklistRegisterRow,
@@ -98,6 +99,10 @@ export async function matchSpeciesValues(values: string[]): Promise<{
 
 export async function loadSpeciesItems(ids: string[]): Promise<TempusSpecies[]> {
   return getTempusSpeciesItems([...new Set(ids)].slice(0, 25))
+}
+
+export async function loadSpeciesPhenogram(id: string, geoAreaId?: string) {
+  return getTempusSpeciesPhenogram(id, geoAreaId)
 }
 
 export type CreateChecklistResult = {

@@ -1,4 +1,7 @@
 export const API_BASE_URL = process.env.ORIGO_API_URL ?? "http://api.origo.test:8000";
+// Public API origin for browser-to-API requests. This is intentionally limited
+// to the base URL: authentication continues through the shared session cookie.
+export const PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_ORIGO_API_URL ?? "http://api.origo.test:8000";
 export const ORIGO_VERSION = process.env.NEXT_PUBLIC_ORIGO_VERSION ?? "0.0.1";
 
 // Google Maps JavaScript API key. Inlined into the client bundle at build time,
@@ -56,10 +59,13 @@ export const BIRDNET_ENDPOINTS = {
   detectionStream: "/api/birdnet/detections/stream",
 } as const;
 
-// Same-origin path the browser opens with EventSource. The route handler at
-// app/api/birdnet/stream/route.ts proxies it to BIRDNET_ENDPOINTS.detectionStream
-// with the session cookie attached server-side.
-export const BIRDNET_STREAM_PATH = "/api/birdnet/stream";
+// Browser-facing URL for the direct BirdNET SSE connection. The API and
+// frontend share a parent domain, so EventSource sends the session cookie to
+// the API without a Next.js proxy.
+export const BIRDNET_STREAM_URL = new URL(
+  BIRDNET_ENDPOINTS.detectionStream,
+  PUBLIC_API_BASE_URL
+).toString();
 
 export const APSIS_ENDPOINTS = {
   posts: "/api/apsis/posts/",

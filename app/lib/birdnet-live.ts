@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { BIRDNET_STREAM_PATH } from "@/app/lib/config"
+import { BIRDNET_STREAM_URL } from "@/app/lib/config"
 
 /**
  * One `event: detection` frame off the BirdNET stream. Key casing is mixed —
@@ -94,7 +94,7 @@ export function useBirdnetStream({
       return
     }
 
-    const url = new URL(BIRDNET_STREAM_PATH, window.location.origin)
+    const url = new URL(BIRDNET_STREAM_URL)
     if (replaySeconds > 0) {
       url.searchParams.set("replay_seconds", String(Math.min(replaySeconds, 86400)))
     }

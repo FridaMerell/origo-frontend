@@ -31,7 +31,7 @@ export default async function ObservationDetailPage({ params }: PageProps) {
   ])
   const category = species
     ? categories
-        .filter((item) => item.taxon_id && item.species.includes(species.id))
+        .filter((item) => item.taxon_id && item.species?.includes(species.id))
         .sort((a, b) => Number(b.is_primary) - Number(a.is_primary))[0]
     : null
   const speciesHref = species && category?.taxon_id

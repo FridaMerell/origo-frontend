@@ -57,7 +57,7 @@ export default function TempusShell({ children }: { children: ReactNode }) {
         <Nav mode={mode} onToggleMode={toggleMode} />
       </header>
       <main className="min-w-0 flex-1  sm:pb-0">{children}</main>
-      <footer className="mt-15 border-t border-border bg-surface text-text-muted">
+      <footer className="mt-15 border-t border-border bg-surface pb-[calc(4.5rem+env(safe-area-inset-bottom))] text-text-muted sm:pb-0">
         <div className="container mx-auto flex flex-col items-center justify-between gap-3 py-6 text-sm max-sm:px-4 sm:flex-row">
           <p className="font-mono">
             Tempus <span className="text-text-faint">·</span> ORIGO {process.env.NEXT_PUBLIC_ORIGO_VERSION}

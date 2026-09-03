@@ -10,6 +10,7 @@ import { useTempusGeoAreas } from "@/app/lib/tempus-context"
 import { useUser } from "@/app/lib/user-context"
 import QuickObservation from "./observationer/quick-observation"
 import Logo from "./ui/Logo"
+import SpeciesSearch from "./species-search"
 
 type NavProps = {
   mode: "light" | "dark" | null
@@ -24,6 +25,14 @@ const primaryLinks = [
   { href: "/birdnet", label: "Birdnet", icon: "bird" },
   { href: "/taxa", label: "Taxonomier", icon: "leaf" },
 ] as const
+
+const mainLinks = primaryLinks.filter((link) =>
+  link.href === "/checklistor" || link.href === "/observationer" || link.href === "/birdnet",
+)
+
+const moreLinks = primaryLinks.filter((link) =>
+  link.href === "/rutt" || link.href === "/taxa",
+)
 
 const isActiveLink = (pathname: string, href: string) =>
   href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
@@ -172,6 +181,11 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
   const router = useRouter()
   const user = useUser()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [speciesSearchOpen, setSpeciesSearchOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [actionsOpen, setActionsOpen] = useState(false)
+  const moreMenuRef = useRef<HTMLDivElement>(null)
+  const actionsMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!menuOpen) return
@@ -181,6 +195,38 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
     document.addEventListener("keydown", onKeyDown)
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [menuOpen])
+
+  useEffect(() => {
+    if (!moreOpen) return
+    const onClickOutside = (event: MouseEvent) => {
+      if (!moreMenuRef.current?.contains(event.target as Node)) setMoreOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMoreOpen(false)
+    }
+    document.addEventListener("mousedown", onClickOutside)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [moreOpen])
+
+  useEffect(() => {
+    if (!actionsOpen) return
+    const onClickOutside = (event: MouseEvent) => {
+      if (!actionsMenuRef.current?.contains(event.target as Node)) setActionsOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActionsOpen(false)
+    }
+    document.addEventListener("mousedown", onClickOutside)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [actionsOpen])
 
   return (
     <>
@@ -201,7 +247,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
           </Link>
 
           <div className="hidden min-w-0 flex-1 items-center gap-1 xl:flex">
-            {primaryLinks.map((link) => {
+            {mainLinks.map((link) => {
               const active = isActiveLink(pathname, link.href)
 
               return (
@@ -218,58 +264,122 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                 </Link>
               )
             })}
+            <div ref={moreMenuRef} className="relative">
+              <button
+                type="button"
+                aria-expanded={moreOpen}
+                aria-controls="tempus-more-menu"
+                onClick={() => setMoreOpen((current) => !current)}
+                className={`flex h-18 items-center gap-1 border-b-2 px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-focus-ring ${moreOpen
+                  ? "border-accent font-semibold text-text"
+                  : "border-transparent text-text-muted hover:border-border-strong hover:text-text"
+                  }`}
+              >
+                Mer
+                <Icon name="chevron-down" size={14} className={`transition-transform ${moreOpen ? "rotate-180" : ""}`} />
+              </button>
+              {moreOpen ? (
+                <div
+                  id="tempus-more-menu"
+                  className="absolute left-0 top-full z-50 min-w-44 rounded-md border border-border bg-surface p-1 shadow-lg"
+                >
+                  {moreLinks.map((link) => {
+                    const active = isActiveLink(pathname, link.href)
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        aria-current={active ? "page" : undefined}
+                        onClick={() => setMoreOpen(false)}
+                        className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-sm no-underline transition-colors focus-visible:outline-2 focus-visible:outline-focus-ring ${active
+                          ? "font-semibold text-accent"
+                          : "text-text-muted hover:bg-accent-wash hover:text-text"
+                          }`}
+                      >
+                        <FieldIcon name={link.icon} className="size-4" />
+                        {link.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="ml-auto flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setSpeciesSearchOpen(true)}
+              aria-label="Öppna artsök"
+              title="Artsök"
+              className="hidden h-10 items-center gap-2 rounded-md px-2.5 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex"
+            >
+              <Icon name="search" size={18} />
+              <span className="hidden 2xl:inline">Artsök</span>
+            </button>
             <div className="hidden sm:block">
               <GeoAreaSelector />
             </div>
             <div className="hidden sm:block">
               <QuickObservation />
             </div>
-            <div className="hidden items-center gap-1 border-l border-border pl-1 sm:flex">
-              {user ? (
-                <NotificationMenu>
-                  {({ unreadCount, notificationLabel, toggle }) => (
-                    <button
-                      type="button"
-                      onClick={toggle}
-                      aria-label="Visa notifikationer"
-                      title="Notifikationer"
-                      className="relative flex size-10 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-                    >
-                      <Icon name="bell" size={18} />
-                      {unreadCount > 0 && (
-                        <span className="absolute right-0.5 top-0.5 flex min-w-4 h-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold text-accent-contrast ring-2 ring-surface">
-                          {notificationLabel}
-                        </span>
-                      )}
-                    </button>
-                  )}
-                </NotificationMenu>
-              ) : null}
+            <div ref={actionsMenuRef} className="relative hidden border-l border-border pl-1 sm:block">
               <button
                 type="button"
-                onClick={onToggleMode}
-                aria-label={mode === "dark" ? "Använd ljust läge" : "Använd mörkt läge"}
-                title={mode === "dark" ? "Ljust läge" : "Mörkt läge"}
+                aria-expanded={actionsOpen}
+                aria-controls="tempus-actions-menu"
+                aria-label="Öppna konto och inställningar"
+                title="Konto och inställningar"
+                onClick={() => setActionsOpen((current) => !current)}
                 className="flex size-10 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
               >
-                <Icon name={mode === "dark" ? "sun" : "moon"} size={18} />
+                <Icon name="settings" size={18} />
               </button>
-              {user ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await logout()
-                    router.replace("/login")
-                  }}
-                  aria-label="Logga ut"
-                  title="Logga ut"
-                  className="flex size-10 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              {actionsOpen ? (
+                <div
+                  id="tempus-actions-menu"
+                  className="absolute right-0 top-full z-50 mt-1 min-w-56 rounded-md border border-border bg-surface p-1 shadow-lg"
                 >
-                  <Icon name="log-out" size={18} />
-                </button>
+                  {user ? (
+                    <NotificationMenu align="right">
+                      {({ unreadCount, notificationLabel, toggle }) => (
+                        <button
+                          type="button"
+                          onClick={toggle}
+                          className="flex h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
+                        >
+                          <span className="flex items-center gap-3"><Icon name="bell" size={18} />Notifikationer</span>
+                          {unreadCount > 0 ? <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-contrast">{notificationLabel}</span> : null}
+                        </button>
+                      )}
+                    </NotificationMenu>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onToggleMode()
+                      setActionsOpen(false)
+                    }}
+                    className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
+                  >
+                    <Icon name={mode === "dark" ? "sun" : "moon"} size={18} />
+                    {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
+                  </button>
+                  {user ? <div className="my-1 border-t border-border" /> : null}
+                  {user ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await logout()
+                        router.replace("/login")
+                      }}
+                      className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-danger focus-visible:outline-2 focus-visible:outline-focus-ring"
+                    >
+                      <Icon name="log-out" size={18} />
+                      Logga ut
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
             </div>
             <button
@@ -326,7 +436,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                   <p className="px-3 pb-1 pt-2 font-mono text-[10px] uppercase tracking-wide text-text-faint">
                     Sidor
                   </p>
-                  {primaryLinks.filter((link) => link.href === "/observationer" || link.href === "/birdnet" || link.href === "/taxa").map((link) => {
+                  {primaryLinks.map((link) => {
                     const active = isActiveLink(pathname, link.href)
                     return (
                       <Link
@@ -348,6 +458,17 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
                 </nav>
 
                 <div className="grid gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      setSpeciesSearchOpen(true)
+                    }}
+                    className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
+                  >
+                    <Icon name="search" size={18} />
+                    Artsök
+                  </button>
                   <p className="px-3 pb-1 pt-2 font-mono text-[10px] uppercase tracking-wide text-text-faint">
                     Inställningar
                   </p>
@@ -420,15 +541,15 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
           </Link>
 
           <Link
-            href="/rutt"
-            aria-current={isActiveLink(pathname, "/rutt") ? "page" : undefined}
-            className={`group flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-md no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-focus-ring ${isActiveLink(pathname, "/rutt") ? "text-accent" : "text-text-muted hover:bg-accent-wash hover:text-text"}`}
+            href="/birdnet"
+            aria-current={isActiveLink(pathname, "/birdnet") ? "page" : undefined}
+            className={`group flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-md no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-focus-ring ${isActiveLink(pathname, "/birdnet") ? "text-accent" : "text-text-muted hover:bg-accent-wash hover:text-text"}`}
           >
-            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${isActiveLink(pathname, "/rutt") ? "border-accent/60 bg-surface" : "border-transparent group-hover:border-border"}`}>
-              <FieldIcon name="route" />
+            <span className={`flex size-9 items-center justify-center rounded-sm border transition-all ${isActiveLink(pathname, "/birdnet") ? "border-accent/60 bg-surface" : "border-transparent group-hover:border-border"}`}>
+              <FieldIcon name="bird" />
             </span>
-            <span className={`font-mono text-[9px] uppercase tracking-[0.04em] ${isActiveLink(pathname, "/rutt") ? "font-semibold" : ""}`}>
-              Rutt
+            <span className={`font-mono text-[9px] uppercase tracking-[0.04em] ${isActiveLink(pathname, "/birdnet") ? "font-semibold" : ""}`}>
+              Birdnet
             </span>
           </Link>
 
@@ -466,6 +587,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
           </button>
         </div>
       </nav>
+      <SpeciesSearch open={speciesSearchOpen} onClose={() => setSpeciesSearchOpen(false)} />
     </>
   )
 }

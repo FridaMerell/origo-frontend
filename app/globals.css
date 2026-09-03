@@ -26,6 +26,12 @@
 @theme inline {
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
+	
+  --breakpoint-2xl: 100rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-sm: 36rem;
 
 	/*
    * Origo design-system tokens, registered into Tailwind's theme so they

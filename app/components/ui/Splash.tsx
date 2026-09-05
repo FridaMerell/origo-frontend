@@ -21,7 +21,7 @@ const STREAM_BUFFER = "\u00a0".repeat(1024)
 const CONFIG: Record<SplashTenant, TenantConfig> = {
   verso: {
     wordmark: "Verso",
-    caption: "Läser in planeringen …",
+    caption: "Läser in …",
     sizeClass: "text-[2.5rem]",
     weightClass: "font-semibold",
     trackingClass: "tracking-tight",
@@ -30,7 +30,7 @@ const CONFIG: Record<SplashTenant, TenantConfig> = {
   },
   flux: {
     wordmark: "Flux",
-    caption: "Loading workspace",
+    caption: "Laddar in data …",
     sizeClass: "text-[2.25rem]",
     weightClass: "font-bold",
     trackingClass: "tracking-wide",
@@ -40,7 +40,7 @@ const CONFIG: Record<SplashTenant, TenantConfig> = {
   },
   apsis: {
     wordmark: "Apsis",
-    caption: "Loading records …",
+    caption: "En absid är halvcirkelformad[…]",
     sizeClass: "text-[2.25rem]",
     weightClass: "font-semibold",
     trackingClass: "tracking-normal",
@@ -48,7 +48,7 @@ const CONFIG: Record<SplashTenant, TenantConfig> = {
   },
   tempus: {
     wordmark: "Tempus",
-    caption: "Charting the route …",
+    caption: "Jagar fjärilar …",
     sizeClass: "text-[2.5rem]",
     weightClass: "font-medium",
     trackingClass: "tracking-normal",

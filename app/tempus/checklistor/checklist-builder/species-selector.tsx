@@ -16,6 +16,8 @@ export function SpeciesSelector({
   onToggleSpecies,
   onToggleVisible,
   onSelectAllInCategory,
+  allowSelectAllInCategory = true,
+  heading = "Välj arter",
   onCsvMatched,
   messages,
 }: {
@@ -28,6 +30,8 @@ export function SpeciesSelector({
   onToggleSpecies: (id: string, item?: TempusSpecies) => void
   onToggleVisible: (visibleSpecies: TempusSpecies[], allVisibleSelected: boolean) => void
   onSelectAllInCategory: (category: TempusSpeciesCategory) => void
+  allowSelectAllInCategory?: boolean
+  heading?: string
   onCsvMatched: (matchedIds: string[]) => void
   messages: FormMessageCallbacks
 }) {
@@ -55,7 +59,7 @@ export function SpeciesSelector({
       <div className="flex items-baseline justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
         <div>
           <span className="font-mono text-[10px] uppercase tracking-[.14em] text-secondary">02</span>
-          <h2 className="mt-1 font-display text-2xl font-semibold">Välj arter</h2>
+          <h2 className="mt-1 font-display text-2xl font-semibold">{heading}</h2>
         </div>
       </div>
 
@@ -88,14 +92,16 @@ export function SpeciesSelector({
         {activeCategory ? (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
             <span className="text-xs text-text-muted">Kategori: {activeCategory.label}</span>
-            <button
-              type="button"
-              onClick={() => onSelectAllInCategory(activeCategory)}
-              disabled={speciesLoading}
-              className="font-medium text-accent hover:text-accent-hover disabled:text-text-faint"
-            >
-              Välj alla i kategorin
-            </button>
+            {allowSelectAllInCategory ? (
+              <button
+                type="button"
+                onClick={() => onSelectAllInCategory(activeCategory)}
+                disabled={speciesLoading}
+                className="font-medium text-accent hover:text-accent-hover disabled:text-text-faint"
+              >
+                Välj alla i kategorin
+              </button>
+            ) : null}
           </div>
         ) : null}
 

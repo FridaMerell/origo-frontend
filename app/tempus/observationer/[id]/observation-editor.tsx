@@ -53,10 +53,9 @@ export default function ObservationEditor({ observation }: { observation: Tempus
     startTransition(async () => {
       const result = await updateObservation(observation.id, {
         observed_at: new Date(observedAt).toISOString(),
-        location:
-          latNum !== null && lonNum !== null
-            ? { type: "Point", coordinates: [lonNum, latNum] }
-            : {},
+        ...(latNum !== null && lonNum !== null
+          ? { location: { type: "Point" as const, coordinates: [lonNum, latNum] as [number, number] } }
+          : {}),
         count: count.trim() ? Number(count.trim()) : null,
         notes: notes.trim(),
       })

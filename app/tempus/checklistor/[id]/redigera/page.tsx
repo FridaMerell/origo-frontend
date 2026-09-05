@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { getTempusChecklistItem, getTempusChecklistItems, getTempusSpeciesCategoriesPage } from "@/app/lib/dal"
-import ChecklistBuilder from "../../checklist-builder"
+import { getTempusChecklistItem, getTempusChecklistRegisterPage } from "@/app/lib/dal"
+import ChecklistEditor from "./checklist-editor"
 
 type PageProps = { params: Promise<{ id: string }> }
 
@@ -16,14 +16,17 @@ export default async function EditChecklistPage({ params }: PageProps) {
   const checklist = await getTempusChecklistItem(id)
   if (!checklist) notFound()
 
-  const [items, categoryPage] = await Promise.all([
-    checklist.items ?? getTempusChecklistItems(id),
-    getTempusSpeciesCategoriesPage({ page_size: 50 }),
-  ])
+  const firstRegisterPage = await getTempusChecklistRegisterPage(id, { page: 1, page_size: 250 })
+  const pageCount = Math.max(1, Math.ceil(firstRegisterPage.count / 250))
+  const remainingRegisterPages = await Promise.all(
+    Array.from({ length: pageCount - 1 }, (_, index) =>
+      getTempusChecklistRegisterPage(id, { page: index + 2, page_size: 250 }),
+    ),
+  )
+  const registerRows = [firstRegisterPage, ...remainingRegisterPages].flatMap((page) => page.results)
 
   return (
-    <ChecklistBuilder
-      categories={categoryPage.results}
+    <ChecklistEditor
       checklist={{
         id: checklist.id,
         name: checklist.name,
@@ -32,7 +35,13 @@ export default async function EditChecklistPage({ params }: PageProps) {
         start_date: checklist.start_date,
         end_date: checklist.end_date,
         geo_area: checklist.geo_area,
-        species: items.map((item) => item.species),
+        nextSequence: registerRows.reduce((highest, row) => Math.max(highest, row.sequence), 0) + 1,
+        species: registerRows.map((row) => ({
+          id: row.species_id,
+          itemId: row.id,
+          name: row.swedish_name || row.scientific_name || "Okänd art",
+          sequence: row.sequence,
+        })),
       }}
     />
   )

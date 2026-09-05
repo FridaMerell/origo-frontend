@@ -1,20 +1,18 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { z } from "zod"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
 import { getCurrentUser } from "@/app/lib/dal"
 import {
-  getTempusChecklistItems,
   getTempusChecklistRegisterPage,
   type TempusChecklistRegisterRow,
   type TempusPage,
 } from "@/app/tempus/_data/checklists"
 import {
   checklistFormSchema,
-  checklistUpdateSchema,
   type ChecklistFormValues,
-  type ChecklistUpdateValues,
 } from "@/app/lib/schemas"
 import { authedJsonHeaders, firstErrorMessage } from "./request"
 
@@ -24,6 +22,21 @@ export type CreateChecklistResult = {
   createdItems?: number
   error?: string
 }
+
+const checklistUpdatePayloadSchema = z.object({
+  metadata: z.object({
+    name: z.string().trim().min(1, "Namn krävs.").optional(),
+    description: z.string().trim().optional(),
+    auto_add: z.boolean().optional(),
+    start_date: z.string().nullable().optional(),
+    end_date: z.string().nullable().optional(),
+    geo_area: z.string().uuid("Välj ett giltigt område.").nullable().optional(),
+  }).strict(),
+  addSpeciesIds: z.array(z.string().uuid()),
+  removeItemIds: z.array(z.string().uuid()),
+  nextSequence: z.number().int().positive(),
+})
+export type ChecklistUpdatePayload = z.infer<typeof checklistUpdatePayloadSchema>
 
 export async function createChecklist(input: ChecklistFormValues): Promise<CreateChecklistResult> {
   const parsed = checklistFormSchema.safeParse(input)
@@ -88,49 +101,54 @@ export async function loadChecklistRegisterPage({
   }
 }
 
-export async function updateChecklist(id: string, input: ChecklistUpdateValues): Promise<CreateChecklistResult> {
-  const parsed = checklistUpdateSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Kontrollera fälten och försök igen." }
+export async function updateChecklist(
+  id: string,
+  input: ChecklistUpdatePayload,
+): Promise<CreateChecklistResult> {
+  const parsed = checklistUpdatePayloadSchema.safeParse(input)
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    const field = issue?.path.join(".")
+    return { error: `${field ? `${field}: ` : ""}${issue?.message ?? "Kontrollera ändringarna och försök igen."}` }
+  }
   if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
   const headers = await authedJsonHeaders()
-  const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.checklists}${id}/`, {
-    method: "PATCH",
-    headers,
-    body: JSON.stringify({
-      name: parsed.data.name,
-      description: parsed.data.description,
-      auto_add: parsed.data.auto_add,
-      start_date: parsed.data.start_date,
-      end_date: parsed.data.end_date,
-      geo_area: parsed.data.geo_area,
-    }),
-  })
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
-  }
-
-  const existingItems = await getTempusChecklistItems(id)
-  const existingBySpecies = new Map(existingItems.map((item) => [item.species, item]))
-  const desired = new Set(parsed.data.species)
-  const toRemove = existingItems.filter((item) => !desired.has(item.species))
-  const toAdd = parsed.data.species.filter((speciesId) => !existingBySpecies.has(speciesId))
-  const highestSequence = existingItems.reduce((max, item) => Math.max(max, item.sequence), 0)
-  const changeResponses = await Promise.all([
-    ...toRemove.map((item) => fetchOrigoApi(`${TEMPUS_ENDPOINTS.checklistItems}${item.id}/`, { method: "DELETE", headers })),
-    ...toAdd.map((speciesId, index) => fetchOrigoApi(TEMPUS_ENDPOINTS.checklistItems, {
-      method: "POST",
+  const metadataResponsePromise = Object.keys(parsed.data.metadata).length > 0
+    ? fetchOrigoApi(`${TEMPUS_ENDPOINTS.checklists}${id}/`, {
+      method: "PATCH",
       headers,
-      body: JSON.stringify({ checklist: id, species: speciesId, sequence: highestSequence + index + 1, notes: "" }),
-    })),
+      body: JSON.stringify(parsed.data.metadata),
+    })
+    : Promise.resolve<Response | null>(null)
+
+  const { addSpeciesIds, removeItemIds, nextSequence } = parsed.data
+  const [metadataResponse, removalResponses, additionResponses] = await Promise.all([
+    metadataResponsePromise,
+    Promise.all(removeItemIds.map((itemId) =>
+      fetchOrigoApi(`${TEMPUS_ENDPOINTS.checklistItems}${itemId}/`, { method: "DELETE", headers }),
+    )),
+    Promise.all(addSpeciesIds.map((speciesId, index) =>
+      fetchOrigoApi(TEMPUS_ENDPOINTS.checklistItems, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ checklist: id, species: speciesId, sequence: nextSequence + index, notes: "" }),
+      }),
+    )),
   ])
-  revalidatePath("/checklistor")
-  revalidatePath(`/checklistor/${id}`)
+  if (metadataResponse && !metadataResponse.ok) {
+    const detail = await metadataResponse.text().catch(() => "")
+    return { error: firstErrorMessage(detail, metadataResponse.status) }
+  }
+  const changeResponses = [
+    ...removalResponses,
+    ...additionResponses,
+  ]
   const failed = changeResponses.find((itemResponse) => !itemResponse.ok && itemResponse.status !== 404)
   if (failed) {
     const detail = await failed.text().catch(() => "")
     return { checklistId: id, error: `Checklistan sparades, men artlistan kunde inte uppdateras helt. ${firstErrorMessage(detail, failed.status)}` }
   }
+
   return { success: true, checklistId: id }
 }
 

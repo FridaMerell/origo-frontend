@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
-import { createChecklist, updateChecklist } from "@/app/tempus/_actions/checklists"
+import { createChecklist } from "@/app/tempus/_actions/checklists"
 import { loadSpeciesItems } from "@/app/tempus/_actions/species"
 import {
   speciesName,
@@ -13,38 +13,24 @@ import {
 import type { TempusSpecies, TempusSpeciesCategory } from "@/app/lib/dal"
 import { SpeciesSelector } from "./checklist-builder/species-selector"
 
-export type ChecklistBuilderData = {
-  id: string
-  name: string
-  description: string
-  auto_add: boolean
-  start_date: string | null
-  end_date: string | null
-  geo_area: string | null
-  species: string[]
-}
-
 export default function ChecklistBuilder({
-  checklist,
   categories,
 }: {
-  checklist?: ChecklistBuilderData
   categories: TempusSpeciesCategory[]
 }) {
-  const isEdit = Boolean(checklist)
   const { geoAreas } = useTempusGeoAreas()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
-  const [name, setName] = useState(checklist?.name ?? "")
-  const [description, setDescription] = useState(checklist?.description ?? "")
-  const [autoAdd, setAutoAdd] = useState(checklist?.auto_add ?? false)
-  const [geoAreaId, setGeoAreaId] = useState(checklist?.geo_area ?? "")
-  const [startDate, setStartDate] = useState(checklist?.start_date ?? "")
-  const [endDate, setEndDate] = useState(checklist?.end_date ?? "")
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [autoAdd, setAutoAdd] = useState(false)
+  const [geoAreaId, setGeoAreaId] = useState("")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const [query, setQuery] = useState("")
   const [categoryId, setCategoryId] = useState<string | null>(null)
-  const [selected, setSelected] = useState<Set<string>>(new Set(checklist?.species ?? []))
+  const [selected, setSelected] = useState<Set<string>>(new Set())
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
   const [selectedPage, setSelectedPage] = useState(1)
   const [knownSpecies, setKnownSpecies] = useState<Map<string, TempusSpecies>>(() => new Map())
@@ -138,9 +124,7 @@ export default function ChecklistBuilder({
         species: [...selected],
         species_category_ids: selectedCategoryIds,
       }
-      const result = checklist
-        ? await updateChecklist(checklist.id, payload)
-        : await createChecklist(payload)
+      const result = await createChecklist(payload)
       if (result.error) {
         setError(result.error)
         return
@@ -167,11 +151,11 @@ export default function ChecklistBuilder({
           <header className="px-4 pb-3 pt-3 sm:px-5 sm:pb-4">
             <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
               <span>Checklistförteckning</span>
-              <span>{isEdit ? "Redigera checklista" : "Ny checklista"}</span>
+              <span>Ny checklista</span>
             </div>
             <div className="border-b border-border px-3 py-4 text-center sm:py-5">
               <h1 className="font-display text-2xl font-medium italic tracking-wide sm:text-3xl">
-                {isEdit ? "Redigera checklista" : "Ny checklista"}
+                Ny checklista
               </h1>
             </div>
           </header>
@@ -313,9 +297,7 @@ export default function ChecklistBuilder({
               {savedMessage ? <p className="mt-4 border-y border-border py-2 text-sm text-text" role="status">{savedMessage}</p> : null}
 
               <Button type="submit" variant="paper-bordered" className="mt-5 w-full justify-center rounded-none" disabled={pending || !name.trim() || (selected.size === 0 && selectedCategoryIds.length === 0)}>
-                {pending
-                  ? isEdit ? "Sparar…" : "Skapar…"
-                  : isEdit ? "Spara ändringar" : "Skapa checklista"}
+                {pending ? "Skapar…" : "Skapa checklista"}
               </Button>
             </div>
           </section>

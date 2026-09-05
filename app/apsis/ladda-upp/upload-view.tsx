@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton";
-import { Icon } from "@/app/components/ui/Icon";
+import { LockIcon } from "lucide-react";
 import { FileUpload } from "@/app/components/ui/FileUpload";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import { useUser } from "@/app/lib/user-context";
@@ -23,7 +23,7 @@ export default function UploadView() {
   if (!user) {
     return (
       <div className="mx-auto flex max-w-[420px] flex-col items-center gap-4 px-6 pt-16 pb-12 text-center sm:px-12">
-        <Icon name="lock" size={26} className="text-text-muted" />
+        <LockIcon size={26} className="text-text-muted" />
         <p className="text-sm text-text-muted">
           Logga in för att lägga till egna absidfoton i samlingen.
         </p>

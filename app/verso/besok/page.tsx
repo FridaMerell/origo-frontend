@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { FACILITY_COOKIE } from "@/app/lib/config";
 import { getFacilities } from "@/app/lib/dal";
+import { formatMonthYear } from "@/app/lib/formatters";
 import BesokView from "./besok-view";
 
 export async function generateMetadata({
@@ -20,10 +21,7 @@ export async function generateMetadata({
   const params = await searchParams;
   const year = params.y ? Number(params.y) : today.getFullYear();
   const month = params.m ? Number(params.m) - 1 : today.getMonth();
-  const monthLabel = new Date(year, month, 1).toLocaleDateString("sv-SE", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = formatMonthYear(new Date(year, month, 1));
 
   return {
     title: selectedFacility ? `Besök – ${monthLabel} – ${selectedFacility.name} | Verso` : "Besök | Verso",

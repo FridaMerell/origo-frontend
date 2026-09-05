@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
-import { getSessionCookies } from "@/app/lib/session"
+import { fetchOrigoApi } from "@/app/lib/api-client"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { ventureTaskFormSchema, type VentureTaskFormValues } from "@/app/lib/schemas"
 
 export type CreateVentureTaskState = { error?: string; success?: boolean } | undefined
@@ -20,15 +20,9 @@ export async function createVentureTask(
     return { error: "Alla fält måste fyllas i." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(VERSO_ENDPOINTS.ventureTasks, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({
       venture,
       ...parsed.data,
@@ -58,15 +52,9 @@ export async function updateVentureTask(
     return { error: "Alla fält måste fyllas i." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.ventureTasks}${id}/`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({
       ...parsed.data,
       completed: parsed.data.status === "done",
@@ -88,15 +76,9 @@ export async function setVentureTaskStatus(
   status: VentureTaskFormValues["status"],
   path?: string
 ) {
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.ventureTasks}${id}/`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({ status, completed: status === "done" }),
   })
 

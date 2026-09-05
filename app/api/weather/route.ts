@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-// The fields WeatherWidget (app/verso/Home.tsx) actually reads off each
+// The fields WeatherWidget (app/verso/home-view.tsx) actually reads off each
 // timeSeries entry. Everything else in the SMHI payload is dropped.
 const WEATHER_FIELDS = [
   "symbol_code",

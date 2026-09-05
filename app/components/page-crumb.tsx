@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 // Breadcrumb row for Origo's theme-less root subpages (docs, konto, join …).
 // A mono kicker showing the path, then a "← back" link, set off by a left rule.
 // Mirrors root-home.tsx's palette since these pages can't use design tokens.
-const MONO = "font-[family-name:var(--font-geist-mono)]";
+const MONO = "font-mono";
 
 export function PageCrumb({
   crumb,

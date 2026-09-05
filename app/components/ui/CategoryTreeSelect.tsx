@@ -1,7 +1,8 @@
 "use client"
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
-import { Icon } from "./Icon"
+import { useDeferredValue, useMemo, useState } from "react"
+import { useDismissableOpen } from "./use-dismissable-open"
+import { Check, ChevronDown, Search } from "lucide-react"
 
 export type CategoryTreeSelectItem = {
   id: string
@@ -142,31 +143,9 @@ export function CategoryTreeSelect<T extends CategoryTreeSelectItem>({
   allLabel = "Alla kategorier",
   searchPlaceholder = "Sök kategori",
 }: CategoryTreeSelectProps<T>) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>()
   const [search, setSearch] = useState("")
   const deferredSearch = useDeferredValue(search)
-
-  useEffect(() => {
-    const onPointerDown = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false)
-      }
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", onPointerDown)
-    document.addEventListener("keydown", onKeyDown)
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown)
-      document.removeEventListener("keydown", onKeyDown)
-    }
-  }, [])
 
   const selectedItem = findItem(categories, value)
   const selectedPath = flattenSelectedPath(categories, value)
@@ -193,14 +172,14 @@ export function CategoryTreeSelect<T extends CategoryTreeSelectItem>({
         <span className="min-w-0 truncate">
           {selectedPath.length > 0 ? selectedPath.join(" · ") : selectedItem?.label ?? placeholder}
         </span>
-        <Icon name="chevron-down" size={14} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={14} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open ? (
         <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded border border-border bg-surface shadow-sm">
           <div className="border-b border-border p-2">
             <div className="flex items-center gap-2 rounded border border-field-border bg-surface-2 px-2.5 py-2">
-              <Icon name="search" size={14} className="shrink-0 text-text-faint" />
+              <Search size={14} className="shrink-0 text-text-faint" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -220,12 +199,11 @@ export function CategoryTreeSelect<T extends CategoryTreeSelectItem>({
                 setOpen(false)
                 setSearch("")
               }}
-              className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent-wash hover:text-accent ${
-                value === null ? "bg-accent-wash text-accent" : "text-text"
-              }`}
+              className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-accent-wash hover:text-accent ${value === null ? "bg-accent-wash text-accent" : "text-text"
+                }`}
             >
               <span className="truncate">{allLabel}</span>
-              {value === null ? <Icon name="check" size={14} /> : null}
+              {value === null ? <Check name="check" size={14} /> : null}
             </button>
 
             {visibleTree.length > 0 ? (
@@ -271,9 +249,8 @@ function CategoryTreeNode<T extends CategoryTreeSelectItem>({
         role="option"
         aria-selected={isSelected}
         onClick={() => onChange(node.item.id)}
-        className={`flex w-full items-center justify-between gap-2 py-2 pr-3 text-left text-sm transition-colors hover:bg-accent-wash hover:text-accent ${
-          isSelected ? "bg-accent-wash text-accent" : "text-text"
-        }`}
+        className={`flex w-full items-center justify-between gap-2 py-2 pr-3 text-left text-sm transition-colors hover:bg-accent-wash hover:text-accent ${isSelected ? "bg-accent-wash text-accent" : "text-text"
+          }`}
         style={{ paddingLeft: 12 + node.depth * 18 }}
       >
         <span className="min-w-0 truncate">
@@ -284,7 +261,7 @@ function CategoryTreeNode<T extends CategoryTreeSelectItem>({
             </span>
           ) : null}
         </span>
-        {isSelected ? <Icon name="check" size={14} className="shrink-0" /> : null}
+        {isSelected ? <Check size={14} className="shrink-0" /> : null}
       </button>
 
       {node.children.length > 0 ? (

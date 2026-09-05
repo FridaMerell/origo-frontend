@@ -15,6 +15,7 @@ export default function FluxShell({
   const [mode, setMode] = useState<"light" | "dark" | null>(null)
   const pathname = usePathname()
   const isLoginRoute = pathname === "/login"
+  const isTimelineRoute = pathname === "/timeline"
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -47,7 +48,7 @@ export default function FluxShell({
         <div className="container">{children}</div>
       </div>
       <Toolbar mode={mode} onToggleMode={toggleMode} />
-      <TaskPanel />
+      {!isTimelineRoute && <TaskPanel />}
     </div>
   )
 }

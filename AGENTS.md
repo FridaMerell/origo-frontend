@@ -8,6 +8,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+## Terminal / dev server / console / database
+
+Never run Git, database-migration, or Next.js dev/build/start commands. Do not start, stop, connect to, or debug a dev or live server through terminal or shell commands. The user runs and manages all dev servers, migrations, Git operations, and console/database commands themselves. It is permitted to inspect a user-opened page in Codex's integrated browser.
+
 ## Layout consistency
 
 Use the shared `container` utility for route-level page content. It supplies the responsive gutters and maximum page width; do not let page content run directly against the viewport or recreate ad-hoc page-width wrappers. Do not use `max-w-*`, arbitrary widths, or custom page-width rules on page layout sections — they must fill their container.

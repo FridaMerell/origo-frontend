@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/app/components/ui/Card";
-import { Icon } from "@/app/components/ui/Icon";
-import { useBookingData } from "@/app/lib/booking-context";
+
+import { useBookingData } from "@/app/verso/_state/booking-context";
 import { BookVisitButton } from "@/app/verso/besok/book-visit-button";
 import { BookingDrawerProvider } from "@/app/verso/besok/booking-drawer-context";
 import { StayBar } from "@/app/verso/besok/stay-bar";
+import { formatMonthYear } from "@/app/lib/formatters";
 import type { Booking } from "@/app/lib/dal";
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const WEEKDAYS = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
 
@@ -75,10 +77,7 @@ export default function BesokView() {
       end: parseLocalDate(b.end_date),
     }));
 
-  const monthLabel = new Date(year, month, 1).toLocaleDateString("sv-SE", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = formatMonthYear(new Date(year, month, 1));
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-7">
@@ -89,7 +88,7 @@ export default function BesokView() {
             aria-label="Föregående månad"
             className="flex size-6 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent"
           >
-            <Icon name="chevron-left" size={16} />
+            <ChevronLeft size={16} />
           </Link>
           <h1 className="m-0 font-display text-2xl font-semibold text-text">{monthLabel}</h1>
           <Link
@@ -97,7 +96,7 @@ export default function BesokView() {
             aria-label="Nästa månad"
             className="flex size-6 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent"
           >
-            <Icon name="chevron-right" size={16} />
+            <ChevronRight size={16} />
           </Link>
         </div>
         <BookVisitButton />

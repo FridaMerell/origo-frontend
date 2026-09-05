@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
+import { CrosshairIcon, LoaderIcon } from "lucide-react"
 
 export type GeolocationCoords = {
   latitude: number
@@ -84,7 +84,11 @@ export function CurrentLocationButton({
         onClick={locate}
         disabled={disabled || pending}
       >
-        <Icon name={pending ? "loader" : "crosshair"} size={15} className={pending ? "animate-spin" : ""} />
+        {pending ? (
+          <LoaderIcon size={15} className="animate-spin" />
+        ) : (
+          <CrosshairIcon size={15} />
+        )}
         {pending ? pendingLabel : label}
       </Button>
       {error ? <p className="text-xs text-danger">{error}</p> : null}

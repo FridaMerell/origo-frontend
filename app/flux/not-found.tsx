@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Icon } from "../components/ui/Icon";
+import { ArrowLeftIcon } from "lucide-react";
 
 export default function FluxNotFound() {
   return (
@@ -27,7 +27,7 @@ export default function FluxNotFound() {
           href="/"
           className="mt-8 inline-flex items-center gap-1.5 rounded-md border border-[#FFF9F0]/35 bg-white/5 px-4 py-2 text-sm font-medium text-[#FFF9F0] no-underline transition-colors hover:border-[#EFA052] hover:bg-[#EFA052] hover:text-[#25263B]"
         >
-          <Icon name="arrow-left" size={15} /> Till översikten
+          <ArrowLeftIcon size={15} /> Till översikten
         </Link>
       </div>
     </section>

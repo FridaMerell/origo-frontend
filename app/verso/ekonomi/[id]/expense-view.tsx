@@ -2,11 +2,11 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { useVentureData } from "@/app/lib/venture-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { Card } from "@/app/components/ui/Card"
-import { Icon } from "@/app/components/ui/Icon"
-import { formatDate } from "@/app/lib/format-date"
+import { formatDate } from "@/app/lib/formatters"
+import { ChevronLeft } from "lucide-react"
 
 export default function ExpenseView() {
   const { id } = useParams<{ id: string }>()
@@ -19,7 +19,7 @@ export default function ExpenseView() {
     return (
       <div className="flex flex-1 flex-col gap-5 p-7">
         <Link href="/ekonomi" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-          <Icon name="chevron-left" size={14} />
+          <ChevronLeft size={14} />
           Utgifter
         </Link>
         <div className="text-text-muted">Utgiften kunde inte hittas.</div>
@@ -32,7 +32,7 @@ export default function ExpenseView() {
   return (
     <div className="flex flex-1 flex-col gap-6 p-7">
       <Link href="/ekonomi" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-        <Icon name="chevron-left" size={14} />
+        <ChevronLeft size={14} />
         Utgifter
       </Link>
 

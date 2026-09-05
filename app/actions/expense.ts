@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
-import { getSessionCookies } from "@/app/lib/session"
+import { fetchOrigoApi } from "@/app/lib/api-client"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { getCurrentUser } from "@/app/lib/dal"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import { expenseFormSchema, type ExpenseFormValues } from "@/app/lib/schemas"
@@ -30,15 +30,9 @@ export async function createExpense(
     return { error: "Du måste vara inloggad." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(VERSO_ENDPOINTS.expenses, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({
       house,
       venture: venture || null,

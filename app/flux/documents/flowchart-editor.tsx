@@ -18,7 +18,7 @@ import {
   useReactFlow,
 } from "@xyflow/react"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
+import { CircleIcon, DiamondIcon, SquareIcon } from "lucide-react"
 import { flowEdgeTypes } from "./flow-edge"
 import { FlowEditableContext, flowNodeTypes } from "./flow-node"
 import { type FlowGraph, graphToMermaid, mermaidToGraph, type NodeShape } from "./flow-mermaid"
@@ -123,9 +123,9 @@ function EditorInner({
     <div className="overflow-hidden rounded border border-field-border bg-surface">
       <div className="flex flex-wrap items-center gap-2 border-b border-border p-2">
         <span className="mr-1 text-xs text-text-muted">Lägg till:</span>
-        <Button type="button" variant="secondary" size="sm" onClick={() => addNode("process")}><Icon name="square" size={13} /> Process</Button>
-        <Button type="button" variant="secondary" size="sm" onClick={() => addNode("decision")}><Icon name="diamond" size={13} /> Beslut</Button>
-        <Button type="button" variant="secondary" size="sm" onClick={() => addNode("terminal")}><Icon name="circle" size={13} /> Start/slut</Button>
+        <Button type="button" variant="secondary" size="sm" onClick={() => addNode("process")}><SquareIcon size={13} /> Process</Button>
+        <Button type="button" variant="secondary" size="sm" onClick={() => addNode("decision")}><DiamondIcon size={13} /> Beslut</Button>
+        <Button type="button" variant="secondary" size="sm" onClick={() => addNode("terminal")}><CircleIcon size={13} /> Start/slut</Button>
       </div>
 
       <div className="h-[460px] bg-surface-2">

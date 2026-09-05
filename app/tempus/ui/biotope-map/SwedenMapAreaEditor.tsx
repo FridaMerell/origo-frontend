@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useRef, useState, type PointerEvent } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
-import { SWEDEN_LAND } from "./sweden-data";
 import {
   SwedenMap,
   type GeoJsonPolygonGeometry,
@@ -11,133 +10,13 @@ import {
   type SwedenMapFeatureCollection,
   type SwedenMapProps,
 } from "./SwedenMap";
-
-const REFERENCE_LATITUDE = 62.2;
-const LONGITUDE_SCALE = Math.cos((REFERENCE_LATITUDE * Math.PI) / 180);
-
-type ProjectedBounds = {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-};
-
-type EditorTool = "polygon" | "square" | "move";
-
-type DragInteraction =
-  | {
-      kind: "square";
-      pointerId: number;
-      start: readonly [number, number];
-      hasArea: boolean;
-      originalPoints: GeoJsonPosition[];
-    }
-  | {
-      kind: "move";
-      pointerId: number;
-      start: readonly [number, number];
-      originalMapPoints: readonly (readonly [number, number])[];
-      originalPoints: GeoJsonPosition[];
-    };
-
-function projected(position: readonly number[]): readonly [number, number] {
-  return [position[0]! * LONGITUDE_SCALE, -position[1]!];
-}
-
-function landBounds(): ProjectedBounds {
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  for (const polygon of SWEDEN_LAND) {
-    for (const ring of polygon) {
-      for (const position of ring) {
-        const [x, y] = projected(position);
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-      }
-    }
-  }
-
-  return { minX, minY, maxX, maxY };
-}
-
-const BOUNDS = landBounds();
-
-function createProjection(width: number, height: number, padding: number) {
-  const availableWidth = Math.max(1, width - padding * 2);
-  const availableHeight = Math.max(1, height - padding * 2);
-  const dataWidth = BOUNDS.maxX - BOUNDS.minX;
-  const dataHeight = BOUNDS.maxY - BOUNDS.minY;
-  const scale = Math.min(availableWidth / dataWidth, availableHeight / dataHeight);
-  const offsetX = padding + (availableWidth - dataWidth * scale) / 2;
-  const offsetY = padding + (availableHeight - dataHeight * scale) / 2;
-
-  return {
-    toMap(position: readonly number[]): readonly [number, number] {
-      const [x, y] = projected(position);
-      return [offsetX + (x - BOUNDS.minX) * scale, offsetY + (y - BOUNDS.minY) * scale];
-    },
-    toGeoJson(x: number, y: number): GeoJsonPosition {
-      const projectedX = BOUNDS.minX + (x - offsetX) / scale;
-      const projectedY = BOUNDS.minY + (y - offsetY) / scale;
-      return [projectedX / LONGITUDE_SCALE, -projectedY];
-    },
-  };
-}
-
-function openRing(geometry?: GeoJsonPolygonGeometry | null): GeoJsonPosition[] {
-  const ring = geometry?.coordinates[0];
-  if (!ring?.length) return [];
-
-  const points = [...ring];
-  const first = points[0];
-  const last = points.at(-1);
-  if (first && last && first[0] === last[0] && first[1] === last[1]) points.pop();
-  return points.map((point) => [...point] as GeoJsonPosition);
-}
-
-function polygonFromPoints(points: readonly GeoJsonPosition[]): GeoJsonPolygonGeometry | null {
-  if (points.length < 3) return null;
-
-  const doubleArea = points.reduce((area, point, index) => {
-    const next = points[(index + 1) % points.length]!;
-    return area + point[0] * next[1] - next[0] * point[1];
-  }, 0);
-  if (Math.abs(doubleArea) < 1e-10) return null;
-
-  return {
-    type: "Polygon",
-    coordinates: [[...points, points[0]!]],
-  };
-}
-
-function pointInPolygon(
-  point: readonly [number, number],
-  polygon: readonly (readonly [number, number])[],
-): boolean {
-  let inside = false;
-  for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index++) {
-    const [x, y] = polygon[index]!;
-    const [previousX, previousY] = polygon[previous]!;
-    const crosses =
-      y > point[1] !== previousY > point[1] &&
-      point[0] < ((previousX - x) * (point[1] - y)) / (previousY - y) + x;
-    if (crosses) inside = !inside;
-  }
-  return inside;
-}
-
-function areaFeatures(
-  areas: SwedenMapFeatureCollection | readonly SwedenMapFeature[] | undefined,
-): readonly SwedenMapFeature[] {
-  if (!areas) return [];
-  if (Array.isArray(areas)) return areas;
-  return (areas as SwedenMapFeatureCollection).features;
-}
+import {
+  areaFeatures,
+  createProjection,
+  openRing,
+  polygonFromPoints,
+} from "./sweden-map-area-geometry";
+import { useAreaEditorInteraction, type EditorTool } from "./use-area-editor-interaction";
 
 export type SwedenMapAreaEditorProps = Omit<
   SwedenMapProps,
@@ -169,7 +48,6 @@ export function SwedenMapAreaEditor({
 }: SwedenMapAreaEditorProps) {
   const [points, setPoints] = useState<GeoJsonPosition[]>(() => openRing(defaultValue));
   const [tool, setTool] = useState<EditorTool>("polygon");
-  const interaction = useRef<DragInteraction | null>(null);
   const projection = useMemo(() => createProjection(width, height, padding), [width, height, padding]);
   const geometry = polygonFromPoints(points);
   const visibleAreas = useMemo<readonly SwedenMapFeature[]>(
@@ -188,91 +66,15 @@ export function SwedenMapAreaEditor({
     onChange?.(polygonFromPoints(nextPoints));
   };
 
-  const pointerPosition = (event: PointerEvent<SVGSVGElement>): readonly [number, number] | null => {
-    const svg = event.currentTarget;
-    const screenMatrix = svg.getScreenCTM();
-    if (!screenMatrix) return null;
-
-    const cursor = svg.createSVGPoint();
-    cursor.x = event.clientX;
-    cursor.y = event.clientY;
-    const local = cursor.matrixTransform(screenMatrix.inverse());
-    return [local.x, local.y];
-  };
-
-  const startInteraction = (event: PointerEvent<SVGSVGElement>) => {
-    if (disabled) return;
-    const position = pointerPosition(event);
-    if (!position) return;
-
-    if (tool === "polygon") {
-      updatePoints([...points, projection.toGeoJson(...position)]);
-      return;
-    }
-
-    if (tool === "move" && (!geometry || !pointInPolygon(position, mapPoints))) return;
-
-    event.currentTarget.setPointerCapture(event.pointerId);
-    interaction.current =
-      tool === "square"
-        ? {
-            kind: "square",
-            pointerId: event.pointerId,
-            start: position,
-            hasArea: false,
-            originalPoints: points,
-          }
-        : {
-            kind: "move",
-            pointerId: event.pointerId,
-            start: position,
-            originalMapPoints: mapPoints,
-            originalPoints: points,
-          };
-  };
-
-  const continueInteraction = (event: PointerEvent<SVGSVGElement>) => {
-    const active = interaction.current;
-    if (!active || active.pointerId !== event.pointerId) return;
-    const position = pointerPosition(event);
-    if (!position) return;
-
-    const deltaX = position[0] - active.start[0];
-    const deltaY = position[1] - active.start[1];
-
-    if (active.kind === "move") {
-      updatePoints(
-        active.originalMapPoints.map(([x, y]) =>
-          projection.toGeoJson(x + deltaX, y + deltaY),
-        ),
-      );
-      return;
-    }
-
-    const size = Math.max(Math.abs(deltaX), Math.abs(deltaY));
-    active.hasArea = size >= 2;
-    const endX = active.start[0] + (deltaX < 0 ? -size : size);
-    const endY = active.start[1] + (deltaY < 0 ? -size : size);
-    updatePoints([
-      projection.toGeoJson(active.start[0], active.start[1]),
-      projection.toGeoJson(endX, active.start[1]),
-      projection.toGeoJson(endX, endY),
-      projection.toGeoJson(active.start[0], endY),
-    ]);
-  };
-
-  const endInteraction = (event: PointerEvent<SVGSVGElement>, cancelled = false) => {
-    const active = interaction.current;
-    if (!active || active.pointerId !== event.pointerId) return;
-
-    if (cancelled || (active.kind === "square" && !active.hasArea)) {
-      updatePoints(active.originalPoints);
-    }
-    interaction.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  };
+  const { startInteraction, continueInteraction, endInteraction } = useAreaEditorInteraction({
+    tool,
+    disabled,
+    points,
+    geometry,
+    mapPoints,
+    projection,
+    updatePoints,
+  });
 
   return (
     <div className={["flex flex-col gap-3", className].filter(Boolean).join(" ")}>

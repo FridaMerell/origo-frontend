@@ -2,15 +2,15 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { useUpdateData } from "@/app/lib/update-context"
-import { useVentureData } from "@/app/lib/venture-context"
+import { useUpdateData } from "@/app/verso/_state/update-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { Card } from "@/app/components/ui/Card"
 import { Avatar } from "@/app/components/ui/Avatar"
-import { Icon } from "@/app/components/ui/Icon"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { Gallery } from "@/app/components/ui/Gallery"
 import UpdateForm from "@/app/verso/update-form"
+import { ChevronLeft, Link2 } from "lucide-react"
 
 export default function UpdateView() {
   const { id } = useParams<{ id: string }>()
@@ -24,7 +24,7 @@ export default function UpdateView() {
     return (
       <div className="flex flex-1 flex-col gap-5 p-7">
         <Link href="/updates" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-          <Icon name="chevron-left" size={14} />
+          <ChevronLeft size={14} />
           Uppdateringar
         </Link>
         <div className="text-text-muted">Uppdateringen kunde inte hittas.</div>
@@ -38,7 +38,7 @@ export default function UpdateView() {
   return (
     <div className="flex flex-1 flex-col gap-5 p-7">
       <Link href="/updates" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-        <Icon name="chevron-left" size={14} />
+        <ChevronLeft size={14} />
         Uppdateringar
       </Link>
 
@@ -64,7 +64,7 @@ export default function UpdateView() {
 
         {(linkedVenture || linkedTask) && (
           <div className="flex items-center gap-2 text-sm text-text-muted">
-            <Icon name="link" size={14} />
+            <Link2 size={14} />
             {linkedTask ? linkedTask.name : linkedVenture?.name}
           </div>
         )}

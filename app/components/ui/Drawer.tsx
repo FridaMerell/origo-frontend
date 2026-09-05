@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./Button";
-import { Icon } from "./Icon";
+import { X } from "lucide-react"
 
 const DrawerCloseContext = createContext<(() => void) | null>(null);
 
@@ -92,7 +92,12 @@ export function Drawer({
             transitionTimingFunction: "var(--ease-standard)",
             opacity: entered ? 1 : 0,
           }}
-          onClick={() => setOpen(false)}
+          // Close on a press that starts on the backdrop. Handling this on click
+          // can close the drawer when a drag that began inside the panel ends
+          // outside it (for example while adjusting a slider or selecting text).
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
         >
           <div
             role="dialog"
@@ -115,7 +120,7 @@ export function Drawer({
                   aria-label="Stäng"
                   className="text-text-muted hover:text-text"
                 >
-                  <Icon name="x" size={16} />
+                  <X size={16} />
                 </button>
               </div>
             </div>

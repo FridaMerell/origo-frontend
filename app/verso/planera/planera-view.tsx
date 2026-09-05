@@ -1,7 +1,7 @@
 "use client"
 
 import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
-import { useVentureData } from "@/app/lib/venture-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
 import { AddVentureButton } from "@/app/verso/planera/add-venture-button"
 import type { Venture } from "@/app/lib/dal"
 

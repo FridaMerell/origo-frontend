@@ -4,7 +4,9 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
-import { deleteObservation, updateObservation } from "@/app/actions/tempus"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
+import { deleteObservation, updateObservation } from "@/app/tempus/_actions/observations"
+import { parseLatLon } from "@/app/tempus/formatters"
 import type { TempusObservation } from "@/app/lib/dal"
 
 function toLocalInput(iso: string) {
@@ -19,6 +21,7 @@ export default function ObservationEditor({ observation }: { observation: Tempus
   const [editing, setEditing] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const { requestConfirm, dialog } = useConfirmDialog()
 
   const initialPoint =
     observation.location && "coordinates" in observation.location
@@ -41,24 +44,12 @@ export default function ObservationEditor({ observation }: { observation: Tempus
       setError("Ange en tidpunkt.")
       return
     }
-    const parseCoord = (value: string) => {
-      const trimmed = value.trim()
-      if (!trimmed) return null
-      return Number(trimmed.replace(",", "."))
-    }
-    const latNum = parseCoord(lat)
-    const lonNum = parseCoord(lon)
-    if ((latNum === null) !== (lonNum === null)) {
-      setError("Ange både latitud och longitud, eller ingen.")
+    const parsedCoords = parseLatLon(lat, lon)
+    if ("error" in parsedCoords) {
+      setError(parsedCoords.error)
       return
     }
-    if (
-      (latNum !== null && (!Number.isFinite(latNum) || Math.abs(latNum) > 90)) ||
-      (lonNum !== null && (!Number.isFinite(lonNum) || Math.abs(lonNum) > 180))
-    ) {
-      setError("Ogiltig koordinat.")
-      return
-    }
+    const { lat: latNum, lon: lonNum } = parsedCoords
     startTransition(async () => {
       const result = await updateObservation(observation.id, {
         observed_at: new Date(observedAt).toISOString(),
@@ -79,15 +70,22 @@ export default function ObservationEditor({ observation }: { observation: Tempus
   }
 
   const remove = () => {
-    if (!window.confirm("Ta bort den här observationen?")) return
-    setError(null)
-    startTransition(async () => {
-      const result = await deleteObservation(observation.id)
-      if (result.error) {
-        setError(result.error)
-        return
-      }
-      router.push("/observationer")
+    requestConfirm({
+      title: "Ta bort observation",
+      message: "Ta bort den här observationen? Det går inte att ångra.",
+      confirmLabel: "Ta bort",
+      destructive: true,
+      onConfirm: () => {
+        setError(null)
+        startTransition(async () => {
+          const result = await deleteObservation(observation.id)
+          if (result.error) {
+            setError(result.error)
+            return
+          }
+          router.push("/observationer")
+        })
+      },
     })
   }
 
@@ -108,6 +106,7 @@ export default function ObservationEditor({ observation }: { observation: Tempus
             Ta bort
           </button>
         </div>
+        {dialog}
       </div>
     )
   }

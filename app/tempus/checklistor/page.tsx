@@ -1,18 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { getTempusChecklists } from "@/app/lib/dal"
+import { formatDateLongOrNull } from "@/app/lib/formatters"
 
 export const metadata: Metadata = {
   title: "Checklistor | Tempus",
   description: "Dina artchecklistor för områden, inventeringar och utflykter.",
-}
-
-function formatDate(value: string | null) {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? null
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
 }
 
 export default async function ChecklistsPage() {
@@ -59,8 +52,8 @@ export default async function ChecklistsPage() {
               checklist.item_count ??
               checklist.items?.length ??
               0
-            const startDate = formatDate(checklist.start_date)
-            const endDate = formatDate(checklist.end_date)
+            const startDate = formatDateLongOrNull(checklist.start_date)
+            const endDate = formatDateLongOrNull(checklist.end_date)
             const dateRange = startDate
               ? endDate && endDate !== startDate
                 ? `${startDate} – ${endDate}`

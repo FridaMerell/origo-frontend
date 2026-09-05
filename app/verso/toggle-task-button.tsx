@@ -3,8 +3,8 @@
 import { useTransition } from "react"
 import { usePathname } from "next/navigation"
 import { setVentureTaskStatus } from "@/app/actions/venture-task"
-import { Icon } from "@/app/components/ui/Icon"
 import type { VentureTaskStatus } from "./venture-task-status"
+import { CheckCircle2, Circle } from "lucide-react"
 
 export function ToggleTaskButton({
   id,
@@ -33,7 +33,14 @@ export function ToggleTaskButton({
       aria-pressed={status === "done"}
       className={`flex items-center gap-1.5 text-sm ${status === "done" ? "text-success" : "text-text-muted hover:text-accent"} ${className}`}
     >
-      <Icon name={status === "done" ? "check-circle-2" : "circle"} size={14} />
+      {
+        status === "done" ? (
+          <CheckCircle2 size={14} className="text-success" />
+        ) : (
+          <Circle size={14} className="text-text-muted" />
+        )
+      }
+      
       {status === "done" ? "Stängd" : "Öppen"}
     </button>
   )

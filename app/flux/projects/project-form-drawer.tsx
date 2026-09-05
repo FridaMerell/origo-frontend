@@ -3,8 +3,8 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { createProject, updateProject } from "@/app/actions/flux"
+import { zodResolver } from "@/app/components/form/zodResolver"
+import { createProject, updateProject } from "@/app/actions/flux/projects"
 import { fluxProjectFormSchema, type FluxProjectFormValues } from "@/app/lib/schemas"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
@@ -13,7 +13,7 @@ import { useSubmitAction } from "@/app/components/form/useSubmitAction"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles"
 import { UserMultiSelect } from "@/app/flux/user-multiselect"
-import { useUsers } from "@/app/lib/user-context"
+import { useUser, useUsers } from "@/app/lib/user-context"
 import type { FluxProject } from "@/app/lib/dal"
 
 export function ProjectFormDrawer({
@@ -26,7 +26,9 @@ export function ProjectFormDrawer({
   project?: FluxProject
 }) {
   const pathname = usePathname()
+  const user = useUser()
   const users = useUsers()
+  const defaultMembers = project?.members ?? (user ? [user.id] : [])
   const uploadedFiles = useUploadedFiles(project?.files, project?.id ?? null)
   const {
     register,
@@ -38,7 +40,7 @@ export function ProjectFormDrawer({
     defaultValues: {
       name: project?.name ?? "",
       description: project?.description ?? "",
-      members: project?.members ?? [],
+      members: defaultMembers,
     },
   })
   const submit = useSubmitAction(setError)
@@ -49,7 +51,7 @@ export function ProjectFormDrawer({
     reset({
       name: project?.name ?? "",
       description: project?.description ?? "",
-      members: project?.members ?? [],
+      members: defaultMembers,
     })
   }, [open, project, reset])
 

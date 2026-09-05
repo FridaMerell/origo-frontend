@@ -1,27 +1,21 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { useTransition } from "react"
-import { deleteMilestone } from "@/app/actions/flux"
-import { Icon } from "@/app/components/ui/Icon"
+import { deleteMilestone } from "@/app/actions/flux/milestones"
+import { DeleteButton } from "@/app/components/ui/DeleteButton"
 
 export function DeleteMilestoneButton({ id }: { id: number }) {
-  const [pending, startTransition] = useTransition()
   const pathname = usePathname()
 
   return (
-    <button
-      type="button"
-      aria-label="Ta bort delmål"
-      title="Ta bort delmål"
-      disabled={pending}
-      onClick={(event) => {
-        event.stopPropagation()
-        startTransition(() => { deleteMilestone(id, pathname) })
-      }}
+    <DeleteButton
+      label="Ta bort delmål"
+      confirmTitle="Ta bort delmål"
+      confirmMessage="Ta bort det här delmålet? Uppgifter kopplade till det påverkas inte, men själva delmålet går inte att återställa."
+      showTitle
+      stopPropagation
       className="rounded-md p-1 text-text-faint transition-colors hover:bg-danger-wash hover:text-danger disabled:opacity-50"
-    >
-      <Icon name="trash-2" size={14} />
-    </button>
+      onDelete={() => { deleteMilestone(id, pathname) }}
+    />
   )
 }

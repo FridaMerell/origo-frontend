@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
-import { getSessionCookies } from "@/app/lib/session"
+import { fetchOrigoApi } from "@/app/lib/api-client"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import { ventureFormSchema, type VentureFormValues } from "@/app/lib/schemas"
 
@@ -23,15 +23,9 @@ export async function createVenture(
     return { error: "Ingen anläggning vald." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(VERSO_ENDPOINTS.ventures, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({ house, tasks: [], ...parsed.data }),
   })
 
@@ -55,15 +49,9 @@ export async function updateVentureFiles(
     return { error: "Projektet kunde inte hittas." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.ventures}${id}/`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({ files }),
   })
 
@@ -89,15 +77,9 @@ export async function updateVenture(
     return { error: "Alla fält måste fyllas i." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.ventures}${id}/`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({ ...parsed.data, files }),
   })
 

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/app/components/ui/Button";
-import { Icon } from "@/app/components/ui/Icon";
+
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer";
+import { Plus } from "lucide-react"
 
 export function AddTaskButton() {
   const [open, setOpen] = useState(false);
@@ -11,7 +12,7 @@ export function AddTaskButton() {
   return (
     <>
       <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
-        <Icon name="plus" size={14} className="text-accent-contrast" />
+        <Plus size={14} className="text-accent-contrast" />
         Ny uppgift
       </Button>
       <TaskFormDrawer open={open} onClose={() => setOpen(false)} />

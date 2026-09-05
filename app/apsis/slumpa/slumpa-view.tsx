@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
-import { Icon } from "@/app/components/ui/Icon";
+import { ShuffleIcon } from "lucide-react";
 import { useApsisPosts } from "@/app/lib/apsis-context";
 import { fileProxyUrl } from "@/app/lib/files";
 
@@ -48,7 +48,7 @@ export default function SlumpaView() {
       )}
       {post?.name && <p className="text-[15px] font-semibold text-text">{post.name}</p>}
       <Button className="whitespace-nowrap" onClick={pickRandom}>
-        <Icon name="shuffle" size={16} />
+        <ShuffleIcon size={16} />
         Slumpa fram en till
       </Button>
     </div>

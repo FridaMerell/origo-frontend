@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
-import { Icon } from "@/app/components/ui/Icon"
 import { useSpeciesPage } from "./ui/use-species-page"
+import { ArrowRight, Search, X } from "lucide-react"
 
 type SpeciesSearchProps = {
   open: boolean
@@ -72,14 +72,14 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
             aria-label="Stäng artsök"
             className="flex size-10 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
           >
-            <Icon name="x" size={19} />
+            <X size={19} />
           </button>
         </div>
 
         <div className="border-b border-border p-4 sm:p-5">
           <label htmlFor="species-search-input" className="sr-only">Sök på svenskt artnamn</label>
           <div className="relative">
-            <Icon name="search" size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
+            <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
             <input
               ref={inputRef}
               id="species-search-input"
@@ -114,7 +114,7 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
                       <span className="block truncate font-medium text-text">{species.swedish_name}</span>
                       <span className="block truncate font-mono text-xs italic text-text-muted">{species.scientific_name}</span>
                     </span>
-                    <Icon name="arrow-right" size={17} className="shrink-0 text-text-faint" />
+                    <ArrowRight size={17} className="shrink-0 text-text-faint" />
                   </Link>
                 </li>
               ))}

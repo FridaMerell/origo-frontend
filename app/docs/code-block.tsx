@@ -52,7 +52,7 @@ export function CodeBlock({
   return (
     <div className="my-5 overflow-hidden rounded-md border border-[#1B252B] bg-[#1B252B]">
       <div className="flex items-center justify-between border-b border-[#F4F2EC]/15 px-3 py-1.5">
-        <span className="font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.14em] text-[#C9D0CE]">
+        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#C9D0CE]">
           {label}
         </span>
         <button
@@ -63,14 +63,14 @@ export function CodeBlock({
               setTimeout(() => setCopied(false), 1500)
             })
           }}
-          className="font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.12em] text-[#C9D0CE] transition-colors hover:text-[#F4F2EC]"
+          className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#C9D0CE] transition-colors hover:text-[#F4F2EC]"
         >
           {copied ? "Kopierad" : "Kopiera"}
         </button>
       </div>
       <pre className="overflow-x-auto px-4 py-3 text-[13px] leading-6 text-[#F4F2EC]">
         <code
-          className="font-[family-name:var(--font-geist-mono)]"
+          className="font-mono"
           dangerouslySetInnerHTML={{ __html: highlight(code) }}
         />
       </pre>

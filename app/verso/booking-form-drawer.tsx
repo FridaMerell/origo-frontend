@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/app/components/form/zodResolver";
 import { createBooking, updateBooking } from "@/app/actions/booking";
 import { bookingFormSchema, type BookingFormValues } from "@/app/lib/schemas";
 import { Drawer } from "@/app/components/ui/Drawer";
@@ -10,7 +10,7 @@ import { Field, fieldInputClass } from "@/app/components/form/Field";
 import { useSubmitAction } from "@/app/components/form/useSubmitAction";
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
 import type { Booking } from "@/app/lib/dal";
-import { useFacilities } from "@/app/lib/facility-context";
+import { useFacilities } from "@/app/verso/_state/facility-context";
 
 export function BookingFormDrawer({
   open,

@@ -29,7 +29,7 @@ const PROSE = `
   [&_a]:underline [&_a]:underline-offset-2
   [&_hr]:my-10 [&_hr]:border-[#1B252B]/20
   [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#1B252B]/40 [&_blockquote]:pl-4 [&_blockquote]:text-[#58636A]
-  [&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:bg-[#1B252B]/8 [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-[family-name:var(--font-geist-mono)] [&_:not(pre)>code]:text-[0.85em]
+  [&_:not(pre)>code]:rounded-sm [&_:not(pre)>code]:bg-[#1B252B]/8 [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:font-mono [&_:not(pre)>code]:text-[0.85em]
   [&_table]:my-6 [&_table]:w-full [&_table]:border-collapse [&_table]:text-[14px]
   [&_th]:border [&_th]:border-[#1B252B]/25 [&_th]:bg-[#1B252B]/5 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold
   [&_td]:border [&_td]:border-[#1B252B]/20 [&_td]:px-3 [&_td]:py-2 [&_td]:align-top

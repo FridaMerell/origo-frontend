@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
-import { registerSpeciesBatch, searchTaxa } from "@/app/actions/tempus"
+import { registerSpeciesBatch, searchTaxa } from "@/app/tempus/_actions/species"
 import type { TempusTaxonHit } from "@/app/lib/dal"
+import { X } from "lucide-react"
 
 const taxonName = (hit: TempusTaxonHit) => hit.swedish_name || hit.scientific_name
 
@@ -153,7 +153,7 @@ export default function AddSpeciesPanel({
                 aria-label={`Ta bort ${taxonName(hit)}`}
                 className="shrink-0 text-text-muted hover:text-text"
               >
-                <Icon name="x" size={14} />
+                <X size={14} />
               </button>
             </li>
           ))}

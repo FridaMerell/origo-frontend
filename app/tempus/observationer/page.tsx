@@ -5,18 +5,11 @@ import {
   getTempusObservations,
   getTempusSpeciesItems,
 } from "@/app/lib/dal"
+import { formatDateLongOrNull } from "@/app/lib/formatters"
 
 export const metadata: Metadata = {
   title: "Observationer | Tempus",
   description: "Dina artobservationer.",
-}
-
-function formatDate(value: string | null) {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? null
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
 }
 
 export default async function ObservationsPage() {
@@ -71,7 +64,7 @@ export default async function ObservationsPage() {
           <ul className="divide-y divide-border border-b border-border">
             {observations.map((observation) => {
               const match = speciesById.get(observation.species)
-              const observedAt = formatDate(observation.observed_at)
+              const observedAt = formatDateLongOrNull(observation.observed_at)
               const checklistNames = [...new Set(observation.checklist_names)]
               return (
                 <li key={observation.id}>

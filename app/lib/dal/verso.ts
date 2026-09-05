@@ -63,7 +63,7 @@ export type VentureTask = {
   id: string
   venture: string
   name: string
-  description: string
+  description?: string
   status?: "not_started" | "in_progress" | "done"
   completed: boolean
   created_at: string
@@ -88,7 +88,7 @@ export type VersoUpdate = {
   venture: string | null
   task: string | null
   author: string | null
-  content: string
+  content?: string
   files: string[]
   title: string
   created_at: string

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/app/components/ui/Button";
-import { Icon } from "@/app/components/ui/Icon";
+
 import { BookingFormDrawer } from "@/app/verso/booking-form-drawer";
+import { Plus } from "lucide-react"
 
 export function BookVisitButton() {
   const [open, setOpen] = useState(false);
@@ -11,7 +12,7 @@ export function BookVisitButton() {
   return (
     <>
       <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
-        <Icon name="plus" size={14} className="text-accent-contrast" />
+        <Plus size={14} className="text-accent-contrast" />
         Boka stugan
       </Button>
       <BookingFormDrawer open={open} onClose={() => setOpen(false)} />

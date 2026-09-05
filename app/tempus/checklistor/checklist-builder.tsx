@@ -1,76 +1,17 @@
 "use client"
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
-import { CategoryTreeSelect } from "@/app/components/ui/CategoryTreeSelect"
-import { createChecklist, loadSpeciesItems, matchSpeciesValues, updateChecklist } from "@/app/actions/tempus"
+import { createChecklist, updateChecklist } from "@/app/tempus/_actions/checklists"
+import { loadSpeciesItems } from "@/app/tempus/_actions/species"
 import {
   speciesName,
   useTempusGeoAreas,
-} from "@/app/lib/tempus-context"
+} from "@/app/tempus/_state/tempus-context"
 import type { TempusSpecies, TempusSpeciesCategory } from "@/app/lib/dal"
-import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
-
-const MAX_CSV_BYTES = 2 * 1024 * 1024
-
-const NAME_HEADERS = new Set([
-  "art",
-  "artnamn",
-  "name",
-  "species",
-  "svenskt_namn",
-  "swedish_name",
-  "vetenskapligt_namn",
-  "scientific_name",
-])
-const ID_HEADERS = new Set(["taxon_id", "dyntaxa_id", "dyntaxa_taxon_id"])
-
-type ImportResult = {
-  fileName: string
-  matched: number
-  unmatched: string[]
-}
-
-function normalize(value: string) {
-  return value
-    .replace(/^\uFEFF/, "")
-    .trim()
-    .toLocaleLowerCase("sv")
-    .replace(/[\s-]+/g, "_")
-}
-
-function cellsIn(line: string, delimiter: string) {
-  const cells: string[] = []
-  let cell = ""
-  let quoted = false
-
-  for (let index = 0; index < line.length; index += 1) {
-    const character = line[index]
-    if (character === '"' && quoted && line[index + 1] === '"') {
-      cell += '"'
-      index += 1
-    } else if (character === '"') {
-      quoted = !quoted
-    } else if (character === delimiter && !quoted) {
-      cells.push(cell.trim())
-      cell = ""
-    } else {
-      cell += character
-    }
-  }
-
-  cells.push(cell.trim())
-  return cells
-}
-
-function detectDelimiter(line: string) {
-  const candidates = [";", ",", "\t"]
-  return candidates.reduce((best, candidate) =>
-    cellsIn(line, candidate).length > cellsIn(line, best).length ? candidate : best,
-  )
-}
+import { SpeciesSelector } from "./checklist-builder/species-selector"
 
 export type ChecklistBuilderData = {
   id: string
@@ -92,7 +33,6 @@ export default function ChecklistBuilder({
   const isEdit = Boolean(checklist)
   const { geoAreas } = useTempusGeoAreas()
   const router = useRouter()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [pending, startTransition] = useTransition()
 
   const [name, setName] = useState(checklist?.name ?? "")
@@ -106,30 +46,13 @@ export default function ChecklistBuilder({
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
   const [selectedPage, setSelectedPage] = useState(1)
   const [knownSpecies, setKnownSpecies] = useState<Map<string, TempusSpecies>>(() => new Map())
-  const [dragOver, setDragOver] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savedMessage, setSavedMessage] = useState<string | null>(null)
-  const deferredQuery = useDeferredValue(query)
 
-  const activeCategory = categories.find((item) => item.id === categoryId) ?? null
   const selectedCategory = categories.find((item) => selectedCategoryIds.includes(item.id)) ?? null
   const selectedSpeciesCount = selectedCategory
     ? Math.max(selected.size, selectedCategory.species_count)
     : selected.size
-  const {
-    results: visibleSpecies,
-    count: visibleSpeciesCount,
-    page: speciesPage,
-    setPage: setSpeciesPage,
-    totalPages: speciesTotalPages,
-    loading: speciesLoading,
-    error: speciesError,
-  } = useSpeciesPage({
-    search: deferredQuery,
-    categoryTaxonId: activeCategory?.taxon_id,
-  })
 
   const selectedIds = useMemo(() => [...selected], [selected])
   const selectedTotalPages = Math.max(1, Math.ceil(selectedIds.length / 25))
@@ -157,9 +80,6 @@ export default function ChecklistBuilder({
     return () => { active = false }
   }, [knownSpecies, selectedPageIds])
 
-  const allVisibleSelected =
-    visibleSpecies.length > 0 && visibleSpecies.every((item) => selected.has(item.id))
-
   const toggleSpecies = (id: string, item?: TempusSpecies) => {
     if (item) setKnownSpecies((current) => new Map(current).set(item.id, item))
     setSelected((current) => {
@@ -171,7 +91,7 @@ export default function ChecklistBuilder({
     setSavedMessage(null)
   }
 
-  const toggleVisible = () => {
+  const toggleVisible = (visibleSpecies: TempusSpecies[], allVisibleSelected: boolean) => {
     setSelected((current) => {
       const next = new Set(current)
       visibleSpecies.forEach((item) => {
@@ -182,59 +102,10 @@ export default function ChecklistBuilder({
     })
   }
 
-  const selectAllInCategory = () => {
-    if (!activeCategory) return
-    setSelectedCategoryIds([activeCategory.id])
-    setSavedMessage(`Alla arter i ${activeCategory.label} läggs till när checklistan skapas.`)
+  const selectAllInCategory = (category: TempusSpeciesCategory) => {
+    setSelectedCategoryIds([category.id])
+    setSavedMessage(`Alla arter i ${category.label} läggs till när checklistan skapas.`)
     setError(null)
-  }
-
-  const importCsv = async (file: File) => {
-    setError(null)
-    setSavedMessage(null)
-    setImportResult(null)
-
-    if (!file.name.toLocaleLowerCase().endsWith(".csv")) {
-      setError("Välj en CSV-fil.")
-      return
-    }
-    if (file.size > MAX_CSV_BYTES) {
-      setError("CSV-filen får vara högst 2 MB.")
-      return
-    }
-
-    setImporting(true)
-    try {
-      const text = await file.text()
-      const lines = text.split(/\r?\n/).filter((line) => line.trim())
-      if (lines.length === 0) throw new Error("CSV-filen är tom.")
-
-      const delimiter = detectDelimiter(lines[0])
-      const firstRow = cellsIn(lines[0], delimiter)
-      const normalizedHeaders = firstRow.map(normalize)
-      const hasHeaders = normalizedHeaders.some(
-        (header) => NAME_HEADERS.has(header) || ID_HEADERS.has(header),
-      )
-      const headers = hasHeaders ? normalizedHeaders : ["art"]
-      const rows = hasHeaders ? lines.slice(1) : lines
-      const candidateIndexes = headers.flatMap((header, index) =>
-        NAME_HEADERS.has(header) || ID_HEADERS.has(header) ? [index] : [],
-      )
-      const indexes = candidateIndexes.length > 0 ? candidateIndexes : [0]
-
-      const values = rows.flatMap((row) => {
-        const cells = cellsIn(row, delimiter)
-        return indexes.map((index) => cells[index]?.trim()).filter(Boolean)
-      })
-      const { matchedIds, unmatched } = await matchSpeciesValues(values)
-
-      setSelected((current) => new Set([...current, ...matchedIds]))
-      setImportResult({ fileName: file.name, matched: matchedIds.length, unmatched })
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "CSV-filen kunde inte läsas.")
-    } finally {
-      setImporting(false)
-    }
   }
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -368,143 +239,25 @@ export default function ChecklistBuilder({
             </div>
           </section>
 
-          <section className="border-t border-border lg:col-start-1 lg:row-start-2">
-            <div className="flex items-baseline justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
-              <div>
-                <span className="font-mono text-[10px] uppercase tracking-[.14em] text-secondary">02</span>
-                <h2 className="mt-1 font-display text-2xl font-semibold">Välj arter</h2>
-              </div>
-            </div>
-
-            <div className="border-b border-border px-4 py-4 sm:px-5">
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => fileInputRef.current?.click()}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") fileInputRef.current?.click()
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault()
-                  setDragOver(true)
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={(event) => {
-                  event.preventDefault()
-                  setDragOver(false)
-                  const file = event.dataTransfer.files[0]
-                  if (file) void importCsv(file)
-                }}
-                className={`flex cursor-pointer items-center justify-between gap-4 rounded-none border border-dashed px-4 py-4 text-left transition-colors ${
-                  dragOver
-                    ? "border-accent bg-accent-wash text-accent"
-                    : "border-border bg-surface-2 text-text-muted hover:border-accent hover:text-text"
-                }`}
-              >
-                <div>
-                  <p className="text-sm font-semibold text-text">
-                    {importing ? "Läser artlistan…" : "Släpp en CSV här eller välj fil"}
-                  </p>
-                  <p className="mt-1 text-xs">Svenskt namn, vetenskapligt namn eller Dyntaxa-ID · max 2 MB</p>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv,text/csv"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0]
-                    if (file) void importCsv(file)
-                    event.target.value = ""
-                  }}
-                />
-              </div>
-
-              {importResult ? (
-                <div className="mt-3 border-y border-border py-3 text-sm" aria-live="polite">
-                  <div className="min-w-0">
-                    <p className="font-medium"><span className="break-all">{importResult.fileName}</span> · {importResult.matched} matchade</p>
-                    {importResult.unmatched.length > 0 ? (
-                      <details className="mt-1 text-text-muted">
-                        <summary className="cursor-pointer">{importResult.unmatched.length} kunde inte matchas</summary>
-                        <p className="mt-1 break-words text-xs">{importResult.unmatched.slice(0, 12).join(", ")}{importResult.unmatched.length > 12 ? " …" : ""}</p>
-                      </details>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            <div className="px-4 py-4 sm:px-5">
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
-                <label>
-                  <span className="sr-only">Sök art</span>
-                  <input
-                    type="search"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Sök namn eller Dyntaxa-ID"
-                    className="w-full rounded-none border border-field-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
-                  />
-                </label>
-                <div className="min-w-0">
-                  <CategoryTreeSelect
-                    categories={categories}
-                    value={categoryId}
-                    onChange={setCategoryId}
-                    placeholder="Alla kategorier"
-                    allLabel="Alla kategorier"
-                    searchPlaceholder="Sök kategori eller grupp"
-                  />
-                </div>
-              </div>
-
-              {activeCategory ? (
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
-                  <span className="text-xs text-text-muted">Kategori: {activeCategory.label}</span>
-                  <button
-                    type="button"
-                    onClick={() => void selectAllInCategory()}
-                    disabled={speciesLoading}
-                    className="font-medium text-accent hover:text-accent-hover disabled:text-text-faint"
-                  >
-                    Välj alla i kategorin
-                  </button>
-                </div>
-              ) : null}
-
-              <div className="mt-3 flex items-center justify-between border-b border-border pb-2 text-xs text-text-muted">
-                <span>{visibleSpeciesCount} arter</span>
-                <button type="button" onClick={toggleVisible} disabled={visibleSpecies.length === 0} className="font-medium text-accent hover:text-accent-hover disabled:text-text-faint">
-                  {allVisibleSelected ? "Avmarkera visade" : "Välj alla visade"}
-                </button>
-              </div>
-
-              <div className="max-h-[26rem] overflow-y-auto" style={{ contentVisibility: "auto" }}>
-                {speciesLoading ? (
-                  <p className="py-8 text-center text-sm text-text-muted">Hämtar arter…</p>
-                ) : visibleSpecies.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-text-muted">Inga arter matchar filtret.</p>
-                ) : visibleSpecies.map((item) => (
-                  <label key={item.id} className="flex cursor-pointer items-center gap-3 border-b border-border px-1 py-3 last:border-b-0 hover:bg-accent-wash">
-                    <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSpecies(item.id, item)} className="size-4 accent-[var(--accent)]" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">{speciesName(item)}</span>
-                      <span className="block truncate font-mono text-[11px] text-text-muted">{item.scientific_name} · {item.dyntaxa_taxon_id}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-              {speciesError ? <p className="border-t border-border py-2 text-sm text-danger">{speciesError}</p> : null}
-              {speciesTotalPages > 1 ? (
-                <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-text-muted">
-                  <button type="button" disabled={speciesPage === 1 || speciesLoading} onClick={() => setSpeciesPage(speciesPage - 1)} className="font-medium text-accent disabled:text-text-faint">Föregående</button>
-                  <span>Sida {speciesPage} av {speciesTotalPages}</span>
-                  <button type="button" disabled={speciesPage === speciesTotalPages || speciesLoading} onClick={() => setSpeciesPage(speciesPage + 1)} className="font-medium text-accent disabled:text-text-faint">Nästa</button>
-                </div>
-              ) : null}
-            </div>
-          </section>
+          <SpeciesSelector
+            categories={categories}
+            query={query}
+            onQueryChange={setQuery}
+            categoryId={categoryId}
+            onCategoryChange={setCategoryId}
+            selected={selected}
+            onToggleSpecies={toggleSpecies}
+            onToggleVisible={toggleVisible}
+            onSelectAllInCategory={selectAllInCategory}
+            onCsvMatched={(matchedIds) => setSelected((current) => new Set([...current, ...matchedIds]))}
+            messages={{
+              onError: setError,
+              onClearMessages: () => {
+                setError(null)
+                setSavedMessage(null)
+              },
+            }}
+          />
 
         <aside className="lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1">
           <section className="border-t border-border">

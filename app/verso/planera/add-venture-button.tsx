@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Drawer } from "@/app/components/ui/Drawer"
-import { Icon } from "@/app/components/ui/Icon"
 import { VentureForm } from "@/app/verso/planera/venture-form"
 
 export function AddVentureButton() {

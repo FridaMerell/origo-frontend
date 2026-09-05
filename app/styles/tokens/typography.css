@@ -22,3 +22,6 @@
 --leading-tight:1.2;--leading-snug:1.4;--leading-normal:1.65;--leading-relaxed:1.8;
 --tracking-tight:0;--tracking-normal:.01em;--tracking-wide:.06em;
 }
+[data-theme="origo"]{
+--font-mono:'Geist Mono','Geist Mono Fallback',monospace;
+}

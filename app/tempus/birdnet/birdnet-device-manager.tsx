@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from "react"
 import { createBirdnetDevice, updateBirdnetDevice } from "@/app/actions/birdnet"
 import { Card } from "@/app/components/ui/Card"
-import { Icon } from "@/app/components/ui/Icon"
 import type { BirdnetDevice, BirdnetDeviceInput, Facility, FluxUser } from "@/app/lib/dal"
 import { formatUserName } from "@/app/lib/user-context"
+import { ChevronRight, Loader, Plus } from "lucide-react"
 
 type EditorState = BirdnetDeviceInput & { id: string | null }
 
@@ -155,7 +155,7 @@ export default function BirdnetDeviceManager({
             disabled={editor !== null || loadError !== null}
             className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2.5 text-sm font-semibold text-accent-contrast transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Icon name="plus" size={16} /> Ny enhet
+            <Plus size={16} /> Ny enhet
           </button>
         </div>
 
@@ -217,7 +217,7 @@ export default function BirdnetDeviceManager({
                 {error ? <p role="alert" className="mr-auto text-sm text-danger">{error}</p> : null}
                 <button type="button" onClick={() => setEditor(null)} disabled={pending} className="px-3 py-2 text-sm text-text-muted hover:text-text disabled:opacity-50">Avbryt</button>
                 <button type="submit" disabled={pending || !editor.name.trim() || !editor.identifier.trim() || editor.users.length === 0} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2.5 text-sm font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-50">
-                  {pending ? <Icon name="loader" size={16} className="animate-spin" /> : null}
+                  {pending ? <Loader size={16} className="animate-spin" /> : null}
                   {pending ? "Sparar…" : "Spara enhet"}
                 </button>
               </footer>
@@ -251,7 +251,7 @@ export default function BirdnetDeviceManager({
                         <span className="block font-mono text-[10px] uppercase tracking-wide text-text-faint">{device.users.length} användare</span>
                       </span>
                       <span className="hidden font-mono text-[10px] uppercase tracking-wide text-text-faint sm:block">{formatDate(device.updated_at)}</span>
-                      <Icon name="chevron-right" size={15} className="text-text-faint" />
+                      <ChevronRight size={15} className="text-text-faint" />
                     </button>
                   </li>
                 )

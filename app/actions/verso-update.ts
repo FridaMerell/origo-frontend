@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
-import { getSessionCookies } from "@/app/lib/session"
+import { fetchOrigoApi } from "@/app/lib/api-client"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { getCurrentUser } from "@/app/lib/dal"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import { versoUpdateFormSchema, type VersoUpdateFormValues } from "@/app/lib/schemas"
+import { firstErrorMessage } from "@/app/lib/api-errors"
 
 export type CreateVersoUpdateState = { error?: string; success?: boolean } | undefined
 
@@ -30,15 +31,9 @@ export async function createVersoUpdate(
     return { error: "Ingen anläggning vald." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(VERSO_ENDPOINTS.versoUpdates, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({
       title: parsed.data.title,
       content: parsed.data.content,
@@ -51,7 +46,8 @@ export async function createVersoUpdate(
   })
 
   if (!response.ok) {
-    return { error: "Uppdateringen kunde inte skapas. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
   }
 
   revalidatePath(path || "/")
@@ -75,15 +71,9 @@ export async function updateVersoUpdate(
     return { error: "Alla fält måste fyllas i." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.versoUpdates}${id}/`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({
       title: parsed.data.title,
       content: parsed.data.content,
@@ -94,7 +84,8 @@ export async function updateVersoUpdate(
   })
 
   if (!response.ok) {
-    return { error: "Uppdateringen kunde inte sparas. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
   }
 
   revalidatePath(path || "/")

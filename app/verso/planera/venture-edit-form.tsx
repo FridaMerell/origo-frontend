@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/app/components/form/zodResolver";
 import { updateVenture } from "@/app/actions/venture";
 import { ventureFormSchema, type VentureFormValues } from "@/app/lib/schemas";
 import { Field, fieldInputClass } from "@/app/components/form/Field";

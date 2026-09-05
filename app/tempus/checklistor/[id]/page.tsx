@@ -1,16 +1,17 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { Icon } from "@/app/components/ui/Icon"
-import { loadChecklistRegisterPage } from "@/app/actions/tempus"
+import { loadChecklistRegisterPage } from "@/app/tempus/_actions/checklists"
 import {
   getTempusChecklistItem,
   getTempusObservations,
 } from "@/app/lib/dal"
+import { formatDateLongOrNull } from "@/app/lib/formatters"
 import { BiotopeMap } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import ChecklistActions from "./checklist-actions"
 import ChecklistRegister from "./checklist-register"
 import ObservationMapDialog from "./observation-map-dialog"
+import { Columns2 } from "lucide-react"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -21,14 +22,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params
   const checklist = await getTempusChecklistItem(id)
   return { title: checklist ? `${checklist.name} | Checklistor` : "Checklista" }
-}
-
-function formatDate(value: string | null) {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? null
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
 }
 
 export default async function ChecklistDetailPage({ params, searchParams }: PageProps) {
@@ -67,8 +60,8 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
       row.swedish_name || row.scientific_name || "Okänd art",
     ]),
   )
-  const startDate = formatDate(checklist.start_date)
-  const endDate = formatDate(checklist.end_date)
+  const startDate = formatDateLongOrNull(checklist.start_date)
+  const endDate = formatDateLongOrNull(checklist.end_date)
   const dateRange = startDate
     ? endDate && endDate !== startDate
       ? `${startDate} – ${endDate}`
@@ -79,7 +72,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
     const [longitude, latitude] = observation.location.coordinates
     if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return []
     const speciesName = speciesNameById.get(observation.species) || "Okänd art"
-    const observedAt = formatDate(observation.observed_at)
+    const observedAt = formatDateLongOrNull(observation.observed_at)
     return [{
       id: observation.id,
       coordinates: [longitude, latitude] as const,
@@ -102,7 +95,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
             htmlFor="checklist-columns"
             className="hidden cursor-pointer items-center gap-1.5 border-l border-border pl-4 font-mono text-[9px] uppercase tracking-[.14em] text-text-muted hover:text-text sm:inline-flex"
           >
-            <Icon name="columns-2" size={13} />
+            <Columns2 size={13} />
             <span className="show-two">2 kolumner</span>
             <span className="show-one hidden">1 kolumn</span>
           </label>

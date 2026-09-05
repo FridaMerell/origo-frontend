@@ -1,9 +1,9 @@
 import { getTempusSpeciesCategoryByTaxonId, getTempusSpeciesPageByCategory } from "@/app/lib/dal"
 import Link from "next/link"
-import { Icon } from "@/app/components/ui/Icon"
 import FollowButton from "./[id]/FollowButton"
 import TaxonSearch from "./taxon-search"
 import ImportSpeciesChecklistForm from "../import-species-checklist-form"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const Page = async ({ params, searchParams }: {
   params: Promise<{
@@ -93,7 +93,7 @@ const Page = async ({ params, searchParams }: {
               href={hrefFor(page - 1)}
               className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
             >
-              <Icon name="chevron-left" size={16} />
+              <ChevronLeft size={16} />
               Föregående
             </Link>
           ) : (
@@ -108,7 +108,7 @@ const Page = async ({ params, searchParams }: {
               className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
             >
               Nästa
-              <Icon name="chevron-right" size={16} />
+              <ChevronRight size={16} />
             </Link>
           ) : (
             <span />

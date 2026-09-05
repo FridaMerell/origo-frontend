@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { usePathname } from "next/navigation"
-import { type Resolver, useForm } from "react-hook-form"
-import { createDocument, updateDocument } from "@/app/actions/flux"
+import { useForm } from "react-hook-form"
+import { createDocument, updateDocument } from "@/app/actions/flux/documents"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
+import { DownloadIcon, XIcon } from "lucide-react"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { FormRootError } from "@/app/components/form/FormFeedback"
 import { useSubmitAction } from "@/app/components/form/useSubmitAction"
+import { zodResolver } from "@/app/components/form/zodResolver"
 import { fluxDocumentFormSchema, type FluxDocumentFormValues } from "@/app/lib/schemas"
 import type { FluxDocument, FluxMilestone, FluxTask } from "@/app/lib/dal"
 import { BlockEditor } from "./block-editor"
@@ -17,20 +18,6 @@ import { DocumentContent } from "./document-content"
 import { downloadMarkdown } from "./download"
 
 type Scope = "project" | "milestone" | "task"
-
-// The bundled @hookform/resolvers zodResolver reads Zod 3's `error.errors` and
-// throws on Zod 4's `error.issues`, which blocks submit instead of showing field
-// errors. This resolver maps issues to react-hook-form errors directly.
-const documentResolver: Resolver<FluxDocumentFormValues> = async (values) => {
-  const result = await fluxDocumentFormSchema.safeParseAsync(values)
-  if (result.success) return { values: result.data, errors: {} }
-  const errors: Record<string, { type: string; message: string }> = {}
-  for (const issue of result.error.issues) {
-    const path = issue.path.join(".") || "root"
-    if (!errors[path]) errors[path] = { type: String(issue.code), message: issue.message }
-  }
-  return { values: {}, errors: errors as never }
-}
 
 export function DocumentEditorOverlay({
   onClose,
@@ -68,7 +55,7 @@ export function DocumentEditorOverlay({
     watch,
     formState: { errors, isSubmitting },
   } = useForm<FluxDocumentFormValues>({
-    resolver: documentResolver,
+    resolver: zodResolver(fluxDocumentFormSchema),
     defaultValues: {
       title: document?.title ?? "",
       kind: "markdown",
@@ -134,13 +121,13 @@ export function DocumentEditorOverlay({
                 aria-label="Ladda ner som Markdown"
                 className="rounded p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
               >
-                <Icon name="download" size={16} />
+                <DownloadIcon size={16} />
               </button>
               <Button type="submit" size="sm" disabled={isSubmitting}>
                 {isSubmitting ? "Sparar…" : document ? "Spara" : "Skapa dokument"}
               </Button>
               <button type="button" onClick={onClose} aria-label="Stäng" className="text-text-muted hover:text-text">
-                <Icon name="x" size={18} />
+                <XIcon size={18} />
               </button>
             </div>
           </header>

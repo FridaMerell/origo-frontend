@@ -2,7 +2,16 @@
 
 import { useCallback, useMemo, useRef } from "react"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DatabaseIcon,
+  FileTextIcon,
+  GitForkIcon,
+  PlusIcon,
+  Trash2Icon,
+  type LucideIcon,
+} from "lucide-react"
 import { BLOCK_LABELS, blockId, type BlockType, type DocumentBlock } from "./blocks"
 import { schemaToMermaid, starterSchema } from "./db-mermaid"
 import { DbSchemaEditor } from "./dbschema-editor"
@@ -17,10 +26,10 @@ function emptyBlock(type: BlockType): DocumentBlock {
   return { id: blockId(), type: "text", content: "" }
 }
 
-const BLOCK_ICON: Record<BlockType, string> = {
-  text: "file-text",
-  flowchart: "git-fork",
-  dbschema: "database",
+const BLOCK_ICON: Record<BlockType, LucideIcon> = {
+  text: FileTextIcon,
+  flowchart: GitForkIcon,
+  dbschema: DatabaseIcon,
 }
 
 function BlockRow({
@@ -41,23 +50,24 @@ function BlockRow({
   // Stable per-block change handler: the nested editors (MDXEditor, ReactFlow)
   // subscribe to it in effects, so a fresh closure each render would loop.
   const handleChange = useCallback((next: string) => onUpdate(block.id, next), [onUpdate, block.id])
+  const BlockTypeIcon = BLOCK_ICON[block.type]
 
   return (
     <div className="rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-faint">
-          <Icon name={BLOCK_ICON[block.type]} size={14} />
+          <BlockTypeIcon size={14} />
           {BLOCK_LABELS[block.type]}
         </span>
         <span className="flex items-center gap-1">
           <button type="button" onClick={() => onMove(index, -1)} disabled={index === 0} className="rounded p-1 text-text-muted hover:bg-surface-2 hover:text-text disabled:opacity-30" aria-label="Flytta upp">
-            <Icon name="chevron-up" size={14} />
+            <ChevronUpIcon size={14} />
           </button>
           <button type="button" onClick={() => onMove(index, 1)} disabled={index === count - 1} className="rounded p-1 text-text-muted hover:bg-surface-2 hover:text-text disabled:opacity-30" aria-label="Flytta ned">
-            <Icon name="chevron-down" size={14} />
+            <ChevronDownIcon size={14} />
           </button>
           <button type="button" onClick={() => onRemove(block.id)} disabled={count === 1} className="rounded p-1 text-text-muted hover:bg-surface-2 hover:text-danger disabled:opacity-30" aria-label="Ta bort block">
-            <Icon name="trash-2" size={14} />
+            <Trash2Icon size={14} />
           </button>
         </span>
       </div>
@@ -130,7 +140,7 @@ export function BlockEditor({
         <span className="text-xs text-text-muted">Lägg till block:</span>
         {types.map((type) => (
           <Button key={type} type="button" variant="secondary" size="sm" onClick={() => addBlock(type)}>
-            <Icon name="plus" size={14} /> {BLOCK_LABELS[type]}
+            <PlusIcon size={14} /> {BLOCK_LABELS[type]}
           </Button>
         ))}
       </div>

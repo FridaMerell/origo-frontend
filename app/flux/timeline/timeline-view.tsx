@@ -3,7 +3,7 @@
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Badge } from "@/app/components/ui/Badge";
 import { useState } from "react";
-import { Icon } from "@/app/components/ui/Icon";
+
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import {
@@ -12,11 +12,13 @@ import {
   useFluxProjects,
   useFluxTasks,
   useFluxUsers,
-} from "@/app/lib/flux-context";
+} from "@/app/flux/_state/flux-context";
 import { isTaskOverdue } from "@/app/lib/flux-task-dates";
-import { formatDate } from "@/app/lib/format-date";
+import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
+import { formatDate } from "@/app/lib/formatters";
 import type { FluxMilestone, FluxTask, FluxUser } from "@/app/lib/dal";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
+import { CheckCircleIcon, CircleIcon, Flag, PlayCircleIcon } from "lucide-react"
 
 const MILESTONE_STATUS: Record<FluxMilestone["status"], { label: string; variant: "neutral" | "warning" | "success" }> = {
   not_started: { label: "Ej påbörjad", variant: "neutral" },
@@ -41,6 +43,13 @@ function TimelineTask({
 }) {
   const overdue = isTaskOverdue(task.due_date, task.status);
 
+  const statusIcon = task.status === "done" ? (
+    <CheckCircleIcon className="text-success" size={15} />
+  ) :  task.status === "in_progress" ? (
+    <PlayCircleIcon className="text-warning" size={15} />
+  ) : (
+    <CircleIcon className="text-text-faint" size={15} />
+  );
   return (
     <div className="group grid grid-cols-[4.5rem_1.5rem_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[6.5rem_2rem_minmax(0,1fr)] sm:gap-3">
       <span className={`pt-2 text-right font-mono text-[11px] ${overdue ? "font-semibold text-danger" : "text-text-faint"}`}>
@@ -63,7 +72,8 @@ function TimelineTask({
       >
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Icon name={task.status === "done" ? "check-circle-2" : "circle"} size={15} className={task.status === "done" ? "text-success" : "text-text-faint"} />
+            
+            {statusIcon}
             <span className={`truncate text-sm font-medium ${task.status === "done" ? "text-text-muted line-through" : "text-text"}`}>
               {task.title}
             </span>
@@ -97,11 +107,11 @@ function TimelineMilestone({ milestone }: { milestone: FluxMilestone }) {
       <div className="flex min-w-0 items-start justify-between gap-3 border-b border-accent/30 pb-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Icon name="flag" size={15} className="shrink-0 text-accent" />
+            <Flag size={15} className="shrink-0 text-accent" />
             <span className="truncate text-sm font-semibold text-text">{milestone.title}</span>
             <Badge variant={status.variant}>{status.label}</Badge>
           </div>
-          <span className="mt-1 block pl-[23px] text-[11px] uppercase tracking-wide text-accent">Milstolpe</span>
+          <span className="mt-1 block pl-5.75 text-[11px] uppercase tracking-wide text-accent">Milstolpe</span>
         </div>
       </div>
     </div>
@@ -145,8 +155,8 @@ export default function FluxTimelineView() {
             ...visibleTasks
               .filter((task) => task.due_date)
               .map((task) => ({ type: "task" as const, date: task.due_date!, item: task })),
-          ].sort((a, b) => a.date.localeCompare(b.date));
-          const undatedTasks = visibleTasks.filter((task) => !task.due_date);
+          ].sort((a, b) => a.date.localeCompare(b.date) || a.item.created_at.localeCompare(b.item.created_at));
+          const undatedTasks = sortFluxTasks(visibleTasks.filter((task) => !task.due_date));
           const undatedMilestones = projectMilestones.filter((milestone) => !milestone.target_date);
           const todayMarkerIndex = datedItems.findIndex((entry) => entry.date >= today);
 
@@ -162,7 +172,7 @@ export default function FluxTimelineView() {
               {datedItems.length === 0 && undatedTasks.length === 0 && undatedMilestones.length === 0 ? (
                 <p className="pl-20 text-sm text-text-muted">Inga uppgifter eller milstolpar.</p>
               ) : (
-                <div className="relative flex flex-col gap-3 before:absolute before:bottom-2 before:left-[5.25rem] before:top-2 before:w-px before:bg-border sm:before:left-[7.5rem]">
+                <div className="relative flex flex-col gap-3 before:absolute before:bottom-2 before:left-21 before:top-2 before:w-px before:bg-border sm:before:left-30">
                   {datedItems.map((entry, index) => <div key={entry.type + "-" + entry.item.id}>
                     {index === todayMarkerIndex && <div className="relative z-10 my-1 grid grid-cols-[4.5rem_1.5rem_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[6.5rem_2rem_minmax(0,1fr)] sm:gap-3"><span /><span className="flex justify-center"><span className="size-2.5 rounded-full bg-accent ring-4 ring-bg" /></span><span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Nu</span></div>}
                     {entry.type === "milestone" ? (
@@ -173,7 +183,7 @@ export default function FluxTimelineView() {
                   </div>)}
                   {(undatedMilestones.length > 0 || undatedTasks.length > 0) && (
                     <div className="mt-3 border-t border-dashed border-border pt-4">
-                      <p className="mb-3 pl-[5rem] text-[10px] font-semibold uppercase tracking-[0.16em] text-text-faint sm:pl-[7rem]">Utan datum</p>
+                      <p className="mb-3 pl-[5rem] text-[10px] font-semibold uppercase tracking-[0.16em] text-text-faint sm:pl-28">Utan datum</p>
                       <div className="flex flex-col gap-3">
                         {undatedMilestones.map((milestone) => <TimelineMilestone key={`undated-milestone-${milestone.id}`} milestone={milestone} />)}
                         {undatedTasks.map((task) => <TimelineTask key={`undated-task-${task.id}`} task={task} users={users} onOpen={openTask} />)}

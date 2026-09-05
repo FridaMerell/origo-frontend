@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Icon } from "../components/ui/Icon"
 import { Drawer } from "../components/ui/Drawer"
 import { SidebarContent, type SidebarProps } from "./sidebar"
 import Logo from "./ui/Logo"
+import { Menu } from "lucide-react"
 
 export default function MobileNav({ mode, onToggleMode }: SidebarProps) {
   const [open, setOpen] = useState(false)
@@ -21,7 +21,7 @@ export default function MobileNav({ mode, onToggleMode }: SidebarProps) {
         onClick={() => setOpen(true)}
         className="flex items-center justify-center rounded p-2 text-text hover:bg-accent-wash hover:text-accent"
       >
-        <Icon name="menu" size={22} />
+        <Menu size={22} />
       </button>
 
       <Drawer side="left" title="Meny" open={open} onOpenChange={setOpen}>

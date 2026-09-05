@@ -8,7 +8,8 @@ import {
   getTempusSeasonalOverviewPage,
   getTempusSuggestedStopsRun,
 } from "@/app/lib/dal"
-import Home from "./NewHome"
+import { formatDateLong } from "@/app/lib/formatters"
+import HomeView from "./home-view"
 
 export const metadata: Metadata = {
   title: "Tempus | Origo",
@@ -87,14 +88,10 @@ export default async function TempusPage({
   const today = new Date()
 
   return (
-    <Home
+    <HomeView
       items={items.results}
       areaName={selectedGeoArea?.name ?? "Hela Sverige"}
-      todayLabel={today.toLocaleDateString("sv-SE", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })}
+      todayLabel={formatDateLong(today)}
       currentMonth={today.getMonth()}
       view={view}
       overview={overview.results}

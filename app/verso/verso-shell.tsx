@@ -8,7 +8,7 @@ import MobileNav from "./mobile-nav";
 const STORAGE_KEY = "verso-mode";
 
 export default function VersoShell({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<"light" | "dark" | null>(null);
+  const [mode, setMode] = useState<"light" | "dark">("light");
   const pathname = usePathname();
   const isLoginRoute = pathname === "/login";
 
@@ -27,7 +27,7 @@ export default function VersoShell({ children }: { children: ReactNode }) {
 
   if (isLoginRoute) {
     return (
-      <div data-theme="verso" data-mode={mode ?? undefined} className="flex h-full min-h-screen flex-1 flex-col bg-bg text-text font-body">
+      <div data-theme="verso" data-mode={mode} className="flex h-full min-h-screen flex-1 flex-col bg-bg text-text font-body">
         <main className="min-w-0 flex-1">{children}</main>
       </div>
     );
@@ -36,7 +36,7 @@ export default function VersoShell({ children }: { children: ReactNode }) {
   return (
     <div
       data-theme="verso"
-      data-mode={mode ?? undefined}
+      data-mode={mode}
       className="flex h-full min-h-screen flex-1 flex-col bg-bg text-text font-body md:flex-row"
     >
       <Sidebar mode={mode} onToggleMode={toggleMode} />

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
-import { getSessionCookies } from "@/app/lib/session"
+import { fetchOrigoApi } from "@/app/lib/api-client"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { bookingFormSchema, type BookingFormValues } from "@/app/lib/schemas"
 
 export type CreateBookingState = { error?: string; success?: boolean } | undefined
@@ -21,15 +21,9 @@ export async function createBooking(
     return { error: parsed.error.issues[0]?.message ?? "Alla fält måste fyllas i." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(VERSO_ENDPOINTS.bookings, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({ house, ...parsed.data }),
   })
 
@@ -53,15 +47,9 @@ export async function updateBooking(
     return { error: parsed.error.issues[0]?.message ?? "Alla fält måste fyllas i." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.bookings}${id}/`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify(parsed.data),
   })
 

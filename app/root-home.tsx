@@ -83,24 +83,24 @@ export default function RootHome() {
       />
       <div className='relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col'>
         <header className='flex items-center justify-between'>
-          <span className='font-(family-name:--font-geist-mono) text-[11px] font-medium uppercase tracking-[0.18em]'>
+          <span className='font-mono text-[11px] font-medium uppercase tracking-[0.18em]'>
             ORIGO / 00°00′
           </span>
           {user && (
             <div className='flex items-center gap-4'>
               <a
                 href='/konto'
-                className='font-(family-name:--font-geist-mono) text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
+                className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
                 Konto
               </a>
               <a
                 href='/docs'
-                className='font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
+                className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
                 Dokumentation
               </a>
               <a
                 href='/konto/anslutningar'
-                className='font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
+                className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
                 Anslutningar
               </a>
               <button
@@ -108,7 +108,7 @@ export default function RootHome() {
                 onClick={() =>
                   void logout().then(() => window.location.reload())
                 }
-                className='font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
+                className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
                 Logga ut
               </button>
             </div>
@@ -117,11 +117,11 @@ export default function RootHome() {
         <section className='flex flex-1 flex-col justify-center py-16'>
           <div className='flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between'>
             <div className='relative max-w-3xl bg-[#E7E5DE]/90 py-5'>
-              <span className='mb-5 flex size-12 items-center justify-center rounded-full border border-[#1B252B] font-(family-name:--font-geist-mono) text-xs'>
+              <span className='mb-5 flex size-12 items-center justify-center rounded-full border border-[#1B252B] font-mono text-xs'>
                 0,0
               </span>
-              <p className='font-(family-name:--font-geist-mono) text-[11px] uppercase tracking-[0.18em] text-[#58636A]'>
-                Gemensam utgångspunkt
+              <p className='font-mono text-[11px] uppercase tracking-[0.18em] text-[#58636A]'>
+                Projektens rotnod och nollpunkt
               </p>
               <h1 className='mt-3 text-5xl font-medium tracking-[-0.06em] sm:text-7xl'>
                 Ett inlogg.
@@ -131,13 +131,13 @@ export default function RootHome() {
             </div>
             {!user && (
               <aside className='w-full max-w-sm border-l border-[#1B252B] bg-[#E7E5DE]/90 pl-5 pb-2'>
-                <p className='font-(family-name:--font-geist-mono) text-[10px] uppercase tracking-[0.16em] text-[#58636A]'>
+                <p className='font-mono text-[10px] uppercase tracking-[0.16em] text-[#58636A]'>
                   Identifiera dig
                 </p>
                 <p className='mt-2 text-sm text-[#58636A]'>
                   Annars blir du inte insläppt
                 </p>
-                <div className='mt-5 [&_button]:rounded-sm [&_button]:bg-[#1B252B] [&_button]:font-(family-name:--font-geist-mono) [&_button]:text-xs [&_button]:uppercase [&_button]:tracking-[0.12em] [&_button]:text-[#F4F2EC] [&_input]:rounded-sm [&_input]:border-[#1B252B]/30 [&_input]:bg-transparent [&_input]:px-3 [&_input]:py-2 [&_input]:text-[#1B252B] [&_label]:font-[family-name:var(--font-geist-mono)] [&_label]:text-[10px] [&_label]:uppercase [&_label]:tracking-[0.12em] [&_label]:text-[#58636A]'>
+                <div className='mt-5 [&_button]:rounded-sm [&_button]:bg-[#1B252B] [&_button]:font-mono [&_button]:text-xs [&_button]:uppercase [&_button]:tracking-[0.12em] [&_button]:text-[#F4F2EC] [&_input]:rounded-sm [&_input]:border-[#1B252B]/30 [&_input]:bg-transparent [&_input]:px-3 [&_input]:py-2 [&_input]:text-[#1B252B] [&_label]:font-mono [&_label]:text-[10px] [&_label]:uppercase [&_label]:tracking-[0.12em] [&_label]:text-[#58636A]'>
                   <LoginForm buttonClass='hover:bg-[#58636A]' />
                 </div>
               </aside>
@@ -157,8 +157,8 @@ export default function RootHome() {
                     updatePreview(app.id, event.clientX, event.clientY)
                   }
                   onPointerLeave={() => setPreview(null)}
-                  className='group flex items-center gap-4 border-b border-[#1B252B]/20 px-5 py-4 no-underline transition-colors hover:bg-[#1B252B] hover:text-[#F4F2EC] sm:gap-6 sm:px-6 sm:py-5'>
-                  <span className='font-(family-name:--font-geist-mono) text-[11px] text-[#58636A] group-hover:text-[#C9D0CE]'>
+                  className='group flex items-center gap-4 border-b border-[#1B252B]/20 px-5 py-4 no-underline transition-colors duration-200 hover:bg-[#1B252B] hover:text-[#F4F2EC] sm:gap-6 sm:px-6 sm:py-5'>
+                  <span className='font-mono text-[11px] text-[#58636A] group-hover:text-[#C9D0CE]'>
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   <span className='flex size-18 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-current/20 bg-white/35 sm:size-24'>
@@ -184,11 +184,11 @@ export default function RootHome() {
                     <span className='block text-xl font-semibold tracking-tight sm:text-2xl'>
                       {app.name}
                     </span>
-                    <span className='font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.1em] text-[#58636A] group-hover:text-[#C9D0CE]'>
+                    <span className='font-mono text-[11px] uppercase tracking-widest text-[#58636A] group-hover:text-[#C9D0CE]'>
                       {APP_NOTE[app.id]}
                     </span>
                   </span>
-                  <span className='font-[family-name:var(--font-geist-mono)] text-lg'>
+                  <span className='font-mono text-lg'>
                     ↗
                   </span>
                 </a>
@@ -209,10 +209,10 @@ export default function RootHome() {
                 className='absolute left-0 top-1/2 h-px w-full bg-[#F4F2EC]/10'
               />
               <div className='relative mb-4 flex items-center justify-between border-b border-[#F4F2EC]/25 pb-3'>
-                <span className='font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.16em]'>
+                <span className='font-mono text-[10px] uppercase tracking-[0.16em]'>
                   Punkt 0{apps.indexOf(previewApp) + 1}
                 </span>
-                <span className='font-[family-name:var(--font-geist-mono)] text-[10px] text-[#C9D0CE]'>
+                <span className='font-mono text-[10px] text-[#C9D0CE]'>
                   ↗
                 </span>
               </div>
@@ -235,13 +235,13 @@ export default function RootHome() {
                     height={76}
                     className='relative size-16 object-contain'
                   />
-                  <span className='absolute bottom-2 left-3 font-[family-name:var(--font-geist-mono)] text-[9px] uppercase tracking-[0.12em] text-[#C9D0CE]'>
+                  <span className='absolute bottom-2 left-3 font-mono text-[9px] uppercase tracking-[0.12em] text-[#C9D0CE]'>
                     Förhandsvisning saknas
                   </span>
                 </div>
               )}
               <div className='relative'>
-                <p className='font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.16em] text-[#C9D0CE]'>
+                <p className='font-mono text-[10px] uppercase tracking-[0.16em] text-[#C9D0CE]'>
                   {previewApp.name}
                 </p>
                 <p className='mt-2 text-sm leading-relaxed text-[#F4F2EC]/85'>
@@ -251,7 +251,8 @@ export default function RootHome() {
             </aside>
           )}
         </section>
-        <footer className='font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-[0.16em] text-[#58636A]'>
+        <footer className='font-mono text-[10px] uppercase tracking-[0.16em] text-[#58636A]'>
+          Byggs och underhålls sporadiskt av Frida Merell<br/>
           Projektet är byggt i Django, med Next.js som frontend.
           <br />
           Kontakt: frida.merell@gmail.com

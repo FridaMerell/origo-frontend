@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Icon } from "@/app/components/ui/Icon"
+import { Search } from "lucide-react"
 
 export default function TaxonSearch() {
   const router = useRouter()
@@ -32,7 +32,7 @@ export default function TaxonSearch() {
   return (
     <div className="relative w-full md:max-w-xs">
       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-faint">
-        <Icon name="search" size={16} />
+        <Search size={16} />
       </span>
       <input
         type="search"

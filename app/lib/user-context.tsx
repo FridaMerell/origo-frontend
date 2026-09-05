@@ -27,7 +27,10 @@ export function useUser() {
 }
 
 export function useUsers() {
-  return useContext(UserContext).users;
+  const { user, users } = useContext(UserContext);
+  if (!user || users.some((candidate) => candidate.id === user.id)) return users;
+
+  return [user, ...users];
 }
 
 export function formatUserName(user: { first_name?: string; last_name?: string; username: string }): string {

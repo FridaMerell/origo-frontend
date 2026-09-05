@@ -3,7 +3,7 @@
 import { AppLink as Link } from "@/app/components/ui/AppLink";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions/auth";
-import { Icon } from "@/app/components/ui/Icon";
+import { MoonIcon, SunIcon } from "lucide-react";
 import { Button } from "@/app/components/ui/Button";
 import { useUser, formatUserName } from "@/app/lib/user-context";
 import Logo from "./ui/Logo";
@@ -31,7 +31,7 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
         <span className="font-display text-2xl font-semibold tracking-tight text-text">Apsis</span>
       </Link>
 
-      <nav className="order-3 flex w-full items-center gap-5 sm:order-none sm:w-auto sm:gap-7">
+      <nav className="order-3 flex w-full items-center gap-5 sm:order-0 sm:w-auto sm:gap-7">
         {TABS.map((tab) => {
           const active = pathname === tab.href;
           return (
@@ -57,7 +57,7 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
           aria-label={mode === "dark" ? "Använd ljust läge" : "Använd mörkt läge"}
           className="flex size-9 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent"
         >
-          <Icon name={mode === "dark" ? "sun" : "moon"} size={17} />
+          {mode === "dark" ? <SunIcon size={17} /> : <MoonIcon size={17} />}
         </button>
         <span className="hidden text-[13px] text-text-muted sm:inline">
           {name ? `Inloggad som ${name}` : "Ej inloggad"}

@@ -1,14 +1,14 @@
 "use client"
 
-import { useUpdateData } from "@/app/lib/update-context"
+import { useUpdateData } from "@/app/verso/_state/update-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
 import { Drawer } from "@/app/components/ui/Drawer"
 import UpdateForm from "@/app/verso/update-form"
+import { formatDateLong } from "@/app/lib/formatters"
 import type { VersoUpdate } from "@/app/lib/dal"
 
-const groupLabel = (date: string) =>
-  new Date(date).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
+const groupLabel = (date: string) => formatDateLong(date)
 
 export default function UpdatesView() {
   const { updates } = useUpdateData()

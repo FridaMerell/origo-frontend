@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
-import { createGeoArea, type GeoAreaKind } from "@/app/actions/tempus"
+import { createGeoArea, type GeoAreaKind } from "@/app/tempus/_actions/geo-areas"
 import { Button } from "@/app/components/ui/Button"
 import { Card } from "@/app/components/ui/Card"
 import type { GeoJsonPolygonGeometry } from "@/app/tempus/ui/biotope-map/SwedenMap"

@@ -3,8 +3,9 @@
 import { useDeferredValue, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
-import { speciesName } from "@/app/lib/tempus-context"
-import { createSpeciesCategory } from "@/app/actions/tempus"
+import { Pager } from "@/app/components/ui/Pager"
+import { speciesName } from "@/app/tempus/_state/tempus-context"
+import { createSpeciesCategory } from "@/app/tempus/_actions/species"
 import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
 
 export default function SpeciesCategoryForm() {
@@ -127,13 +128,14 @@ export default function SpeciesCategoryForm() {
           )}
         </div>
         {loadError && <p className="text-xs text-danger">{loadError}</p>}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between text-xs text-text-muted">
-            <button type="button" disabled={page === 1 || loading} onClick={() => setPage(page - 1)} className="text-accent disabled:text-text-faint">Föregående</button>
-            <span>Sida {page} av {totalPages}</span>
-            <button type="button" disabled={page === totalPages || loading} onClick={() => setPage(page + 1)} className="text-accent disabled:text-text-faint">Nästa</button>
-          </div>
-        )}
+        <Pager
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          disabled={loading}
+          className="flex items-center justify-between text-xs text-text-muted"
+          buttonClassName="text-accent disabled:text-text-faint"
+        />
         <span className="text-xs text-text-faint">{selected.size} valda</span>
       </div>
 

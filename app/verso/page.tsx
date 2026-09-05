@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { FACILITY_COOKIE } from "@/app/lib/config";
 import { getFacilities } from "@/app/lib/dal";
-import Home from "./Home"
+import HomeView from "./home-view"
 
 export async function generateMetadata(): Promise<Metadata> {
   const facilities = await getFacilities();
@@ -18,5 +18,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function VersoPage() {
-  return <Home  />;
+  return <HomeView />;
 }

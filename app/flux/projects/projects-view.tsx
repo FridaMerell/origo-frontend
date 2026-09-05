@@ -3,12 +3,12 @@
 import Link from "next/link"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Card } from "@/app/components/ui/Card"
-import { Icon } from "@/app/components/ui/Icon"
 import { ProgressBar } from "@/app/components/ui/ProgressBar"
 import { AddProjectButton } from "@/app/flux/projects/add-project-button"
 import { DeleteProjectButton } from "@/app/flux/projects/delete-project-button"
-import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app/lib/flux-context"
+import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app/flux/_state/flux-context"
 import { progressOf } from "@/app/lib/flux-progress"
+import { ArrowUpRight } from "lucide-react"
 
 export default function FluxProjectsView() {
   const projects = useFluxProjects()
@@ -26,7 +26,7 @@ export default function FluxProjectsView() {
           <Link href={"/projects/" + project.id} className="min-w-0 flex-1 no-underline">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2"><h2 className="text-lg font-semibold text-text">{project.name}</h2><span className="font-mono text-xs text-text-faint">{progress.total > 0 ? progress.done + " / " + progress.total + " klara" : "Inga uppgifter ännu"}</span></div>
             {project.description && <p className="mt-1.5 max-w-2xl text-sm leading-6 text-text-muted">{project.description}</p>}
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2"><div className="w-40"><ProgressBar pct={progress.pct} /></div><span className="text-xs text-text-faint">{projectTasks.length} {projectTasks.length === 1 ? "uppgift" : "uppgifter"}</span>{project.members.length > 0 && <div className="flex -space-x-1.5">{project.members.map((id) => <Avatar key={id} name={fluxUserName(users.get(id), id)} size={24} />)}</div>}<span className="inline-flex items-center gap-1 text-sm font-medium text-link">Öppna projekt <Icon name="arrow-up-right" size={15} /></span></div>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2"><div className="w-40"><ProgressBar pct={progress.pct} /></div><span className="text-xs text-text-faint">{projectTasks.length} {projectTasks.length === 1 ? "uppgift" : "uppgifter"}</span>{project.members.length > 0 && <div className="flex -space-x-1.5">{project.members.map((id) => <Avatar key={id} name={fluxUserName(users.get(id), id)} size={24} />)}</div>}<span className="inline-flex items-center gap-1 text-sm font-medium text-link">Öppna projekt <ArrowUpRight size={15} /></span></div>
           </Link>
           <div className="shrink-0 pt-1"><DeleteProjectButton id={project.id} /></div>
         </div>

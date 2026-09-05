@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
+import { PlusIcon, TableIcon, Trash2Icon, XIcon } from "lucide-react"
 import {
   CARDINALITY_LABELS,
   type DbFieldKey,
@@ -98,7 +98,7 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
         {schema.tables.map((table, ti) => (
           <div key={ti} className="rounded-lg border border-border bg-surface">
             <div className="flex items-center gap-2 border-b border-border px-2 py-1.5">
-              <Icon name="table" size={14} className="text-text-muted" />
+              <TableIcon size={14} className="text-text-muted" />
               <input
                 className={`${inputClass} flex-1 font-semibold`}
                 value={table.name}
@@ -106,7 +106,7 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
                 aria-label="Tabellnamn"
               />
               <button type="button" onClick={() => removeTable(ti)} className="rounded p-1 text-text-muted hover:text-danger" aria-label="Ta bort tabell">
-                <Icon name="trash-2" size={14} />
+                <Trash2Icon size={14} />
               </button>
             </div>
             <div className="flex flex-col gap-1.5 p-2">
@@ -118,7 +118,7 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
                     {KEY_OPTIONS.map((key) => <option key={key} value={key}>{key || "—"}</option>)}
                   </select>
                   <button type="button" onClick={() => removeField(ti, fi)} className="rounded p-1 text-text-muted hover:text-danger" aria-label="Ta bort fält">
-                    <Icon name="x" size={13} />
+                    <XIcon size={13} />
                   </button>
                 </div>
               ))}
@@ -130,7 +130,7 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
         ))}
 
         <Button type="button" variant="secondary" size="sm" onClick={addTable} className="self-start">
-          <Icon name="plus" size={14} /> Tabell
+          <PlusIcon size={14} /> Tabell
         </Button>
 
         {schema.tables.length >= 2 && (
@@ -149,7 +149,7 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
                 </select>
                 <input className={`${inputClass} w-28`} value={relation.label} placeholder="etikett" onChange={(event) => patchRelation(ri, { label: event.target.value })} aria-label="Relationsetikett" />
                 <button type="button" onClick={() => removeRelation(ri)} className="rounded p-1 text-text-muted hover:text-danger" aria-label="Ta bort relation">
-                  <Icon name="x" size={13} />
+                  <XIcon size={13} />
                 </button>
               </div>
             ))}

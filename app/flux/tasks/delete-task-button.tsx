@@ -1,26 +1,19 @@
 "use client";
 
-import { useTransition } from "react";
 import { usePathname } from "next/navigation";
-import { deleteTask } from "@/app/actions/flux";
-import { Icon } from "@/app/components/ui/Icon";
+import { deleteTask } from "@/app/actions/flux/tasks";
+import { DeleteButton } from "@/app/components/ui/DeleteButton";
 
 export function DeleteTaskButton({ id }: { id: number }) {
-  const [pending, startTransition] = useTransition();
   const pathname = usePathname();
 
   return (
-    <button
-      type="button"
-      aria-label="Ta bort uppgift"
-      disabled={pending}
-      onClick={(e) => {
-        e.stopPropagation();
-        startTransition(() => { deleteTask(id, pathname) });
-      }}
-      className="text-text-faint hover:text-danger disabled:opacity-50"
-    >
-      <Icon name="trash-2" size={14} />
-    </button>
+    <DeleteButton
+      label="Ta bort uppgift"
+      confirmTitle="Ta bort uppgift"
+      confirmMessage="Ta bort den här uppgiften? Det går inte att ångra."
+      stopPropagation
+      onDelete={() => { deleteTask(id, pathname) }}
+    />
   );
 }

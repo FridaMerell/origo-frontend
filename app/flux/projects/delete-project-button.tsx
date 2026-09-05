@@ -1,23 +1,18 @@
 "use client";
 
-import { useTransition } from "react";
 import { usePathname } from "next/navigation";
-import { deleteProject } from "@/app/actions/flux";
-import { Icon } from "@/app/components/ui/Icon";
+import { deleteProject } from "@/app/actions/flux/projects";
+import { DeleteButton } from "@/app/components/ui/DeleteButton";
 
 export function DeleteProjectButton({ id }: { id: number }) {
-  const [pending, startTransition] = useTransition();
   const pathname = usePathname();
 
   return (
-    <button
-      type="button"
-      aria-label="Ta bort projekt"
-      disabled={pending}
-      onClick={() => startTransition(() => { deleteProject(id, pathname) })}
-      className="text-text-faint hover:text-danger disabled:opacity-50"
-    >
-      <Icon name="trash-2" size={14} />
-    </button>
+    <DeleteButton
+      label="Ta bort projekt"
+      confirmTitle="Ta bort projekt"
+      confirmMessage="Ta bort det här projektet? Alla milstolpar, uppgifter och uppdateringar tas bort med det. Det går inte att ångra."
+      onDelete={() => { deleteProject(id, pathname) }}
+    />
   );
 }

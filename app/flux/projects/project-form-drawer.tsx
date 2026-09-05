@@ -11,9 +11,9 @@ import { FileUpload } from "@/app/components/ui/FileUpload"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles"
 import { UserMultiSelect } from "@/app/flux/user-multiselect"
-import { useUser, useUsers } from "@/app/lib/user-context"
+import { useUser } from "@/app/lib/user-context"
 import type { FluxProject } from "@/app/lib/dal"
-import { useFluxProjectActions } from "@/app/flux/_state/flux-context"
+import { useFluxProjectActions, useFluxUsers } from "@/app/flux/_state/flux-context"
 
 export function ProjectFormDrawer({
   open,
@@ -26,7 +26,7 @@ export function ProjectFormDrawer({
 }) {
   const { addProject, replaceProject } = useFluxProjectActions()
   const user = useUser()
-  const users = useUsers()
+  const users = Array.from(useFluxUsers().values())
   const defaultMembers = project?.members ?? (user ? [user.id] : [])
   const uploadedFiles = useUploadedFiles(project?.files, project?.id ?? null)
   const {

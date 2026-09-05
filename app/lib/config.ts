@@ -46,6 +46,7 @@ export const VERSO_ENDPOINTS = {
 
 export const FLUX_ENDPOINTS = {
   projects: "/api/flux/projects/",
+  timeline: "/api/flux/timeline/",
   projectBoard: (id: string) => `/api/flux/projects/${encodeURIComponent(id)}/board/`,
   milestones: "/api/flux/milestones/",
   tasks: "/api/flux/tasks/",

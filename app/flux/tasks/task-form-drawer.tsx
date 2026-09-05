@@ -11,8 +11,7 @@ import { FileUpload } from "@/app/components/ui/FileUpload";
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import { UserMultiSelect } from "@/app/flux/user-multiselect";
-import { useFluxMilestones, useFluxProjects, useFluxTaskActions, useSelectedFluxProject } from "@/app/flux/_state/flux-context";
-import { useUsers } from "@/app/lib/user-context";
+import { useFluxMilestones, useFluxProjects, useFluxTaskActions, useFluxUsers, useSelectedFluxProject } from "@/app/flux/_state/flux-context";
 import type { FluxTask, FluxTaskRecurrence, FluxTaskStatus } from "@/app/lib/dal";
 
 const STATUS_OPTIONS: { value: FluxTaskStatus; label: string }[] = [
@@ -54,7 +53,7 @@ export function TaskFormDrawer({
   const { addTask, replaceTask } = useFluxTaskActions();
   const { selectedProject } = useSelectedFluxProject();
   const milestones = useFluxMilestones();
-  const users = useUsers();
+  const users = Array.from(useFluxUsers().values());
 
   const uploadedFiles = useUploadedFiles(task?.files, task?.id ?? null);
 

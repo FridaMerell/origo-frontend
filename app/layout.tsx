@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { headers } from "next/headers";
 import { getCurrentUser, getUsers } from "@/app/lib/dal";
 import { UserProvider } from "@/app/lib/user-context";
 import { NavProgressProvider } from "@/app/lib/nav-progress";
+import { resolveTenant } from "@/app/lib/tenant";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,7 +24,12 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [user, users] = await Promise.all([getCurrentUser(), getUsers()]);
+  const requestHeaders = await headers();
+  const hostname = requestHeaders.get("host")?.split(":")[0] ?? "";
+  const [user, users] = await Promise.all([
+    getCurrentUser(),
+    resolveTenant(hostname) === "flux" ? Promise.resolve([]) : getUsers(),
+  ]);
   
   return (
     <html

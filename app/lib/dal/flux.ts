@@ -124,9 +124,22 @@ export type FluxBoard = {
   users: FluxUser[]
 }
 
+export type FluxTimeline = {
+  projects: FluxProject[]
+  milestones: FluxMilestone[]
+  tasks: FluxTask[]
+  updates: FluxUpdate[]
+  documents: FluxDocument[]
+  users: FluxUser[]
+}
+
 export const getFluxBoard = cache(
   (id: string): Promise<FluxBoard | null> =>
     fetchItem<FluxBoard>(FLUX_ENDPOINTS.projectBoard(id))
+)
+
+export const getFluxTimeline = cache(
+  (): Promise<FluxTimeline | null> => fetchItem<FluxTimeline>(FLUX_ENDPOINTS.timeline)
 )
 
 export const getFluxUsers = cache((ids: number[]): Promise<FluxUser[]> => {

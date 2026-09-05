@@ -17,6 +17,7 @@ export type ChecklistBuilderData = {
   id: string
   name: string
   description: string
+  auto_add: boolean
   start_date: string | null
   end_date: string | null
   geo_area: string | null
@@ -37,6 +38,7 @@ export default function ChecklistBuilder({
 
   const [name, setName] = useState(checklist?.name ?? "")
   const [description, setDescription] = useState(checklist?.description ?? "")
+  const [autoAdd, setAutoAdd] = useState(checklist?.auto_add ?? false)
   const [geoAreaId, setGeoAreaId] = useState(checklist?.geo_area ?? "")
   const [startDate, setStartDate] = useState(checklist?.start_date ?? "")
   const [endDate, setEndDate] = useState(checklist?.end_date ?? "")
@@ -129,6 +131,7 @@ export default function ChecklistBuilder({
       const payload = {
         name: name.trim(),
         description: description.trim(),
+        auto_add: autoAdd,
         start_date: startDate || null,
         end_date: endDate || null,
         geo_area: geoAreaId || null,
@@ -203,6 +206,15 @@ export default function ChecklistBuilder({
                   rows={3}
                   className="resize-y rounded-none border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                 />
+              </label>
+              <label className="flex items-center gap-2 font-display text-[11px] italic text-text-faint sm:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={autoAdd}
+                  onChange={(event) => setAutoAdd(event.target.checked)}
+                  className="size-4 accent-[var(--accent)]"
+                />
+                Lägg till arter automatiskt
               </label>
               <label className="flex flex-col gap-1.5 font-display text-[11px] italic text-text-faint sm:col-span-2">
                 Område <span className="font-normal text-text-faint">(valfritt)</span>

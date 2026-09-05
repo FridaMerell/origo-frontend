@@ -39,6 +39,13 @@ export type TempusSpecies = {
   created_at: string
   updated_at: string
   is_followed: boolean
+  checklists?: TempusSpeciesChecklist[]
+}
+
+export type TempusSpeciesChecklist = {
+  id: string
+  item_id: string
+  name: string
 }
 
 export type TempusSpeciesCategory = {

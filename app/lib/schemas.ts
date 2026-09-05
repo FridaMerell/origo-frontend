@@ -216,6 +216,7 @@ export type SpeciesCategoryFormValues = z.infer<typeof speciesCategoryFormSchema
 export const checklistFormSchema = z.object({
   name: z.string().trim().min(1, "Namn krävs."),
   description: z.string().trim(),
+  auto_add: z.boolean(),
   start_date: z
     .string()
     .nullable()
@@ -241,6 +242,7 @@ export type ChecklistFormValues = z.infer<typeof checklistFormSchema>
 export const checklistUpdateSchema = z.object({
   name: z.string().trim().min(1, "Namn krävs."),
   description: z.string().trim(),
+  auto_add: z.boolean(),
   start_date: z
     .string()
     .nullable()

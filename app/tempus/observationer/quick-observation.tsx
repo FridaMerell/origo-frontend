@@ -7,7 +7,7 @@ import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog"
 import { createObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import { PlacePicker } from "./quick-observation/place-picker"
-import { SpeciesPicker, type PresetSpecies } from "./quick-observation/species-picker"
+import { SpeciesPicker, type PresetChecklistItem, type PresetSpecies } from "./quick-observation/species-picker"
 
 function nowLocal() {
   const now = new Date()
@@ -18,11 +18,15 @@ function nowLocal() {
 export default function QuickObservation({
   hideTrigger = false,
   species = null,
+  checklistItem = null,
   onConsumed,
+  onSaved,
 }: {
   hideTrigger?: boolean
   species?: PresetSpecies | null
+  checklistItem?: PresetChecklistItem | null
   onConsumed?: () => void
+  onSaved?: (checklistItemIds: string[], observationId?: string) => void
 } = {}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -41,12 +45,15 @@ export default function QuickObservation({
   const [showComment, setShowComment] = useState(false)
   const [notes, setNotes] = useState("")
   const [keepCommentForNext, setKeepCommentForNext] = useState(false)
+  const [checklistItems, setChecklistItems] = useState<PresetChecklistItem[]>([])
+  const [selectedChecklistItemIds, setSelectedChecklistItemIds] = useState<string[]>([])
 
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   const searchRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
     if (!open) return
@@ -74,18 +81,23 @@ export default function QuickObservation({
 
   useEffect(() => {
     if (!species) return
+    const nextChecklistItems = checklistItem ? [checklistItem] : (species.checklistItems ?? [])
     setPicked(species)
+    setChecklistItems(nextChecklistItems)
+    setSelectedChecklistItemIds(nextChecklistItems.map((item) => item.id))
     setQuery("")
     setError(null)
     setSaved(null)
     setEntered(false)
     setOpen(true)
     onConsumedRef.current?.()
-  }, [species])
+  }, [species, checklistItem])
 
   const reset = ({ keepComment = false } = {}) => {
     setQuery("")
     setPicked(null)
+    setChecklistItems([])
+    setSelectedChecklistItemIds([])
     setCount("1")
     setError(null)
     if (!keepComment) {
@@ -110,7 +122,7 @@ export default function QuickObservation({
     setKeepCommentForNext(false)
   }
 
-  const hasDraft = Boolean(query || picked || count !== "1" || lat || lon || notes || showTime || showPlace || showComment)
+  const hasDraft = Boolean(query || picked || count !== "1" || lat || lon || notes || selectedChecklistItemIds.length > 0 || showTime || showPlace || showComment)
 
   const requestClose = () => {
     if (pending) return
@@ -156,7 +168,7 @@ export default function QuickObservation({
     startTransition(async () => {
       const result = await createObservation({
         species: picked.id,
-        checklist_items: [],
+        checklist_items: selectedChecklistItemIds,
         observed_at: new Date(observedAt).toISOString(),
         ...(location ? { location } : {}),
         count: trimmed ? Number(trimmed) : null,
@@ -169,9 +181,10 @@ export default function QuickObservation({
       }
 
       router.refresh()
+      onSaved?.(selectedChecklistItemIds, result.observationId)
       setSaved(`${label} sparad.`)
       reset({ keepComment: keepCommentForNext })
-      setTimeout(() => searchRef.current?.focus(), 0)
+      requestAnimationFrame(() => searchRef.current?.focus())
     })
   }
 
@@ -230,16 +243,50 @@ export default function QuickObservation({
               </button>
             </div>
 
-            <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
+            <form ref={formRef} className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
               <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
                 <SpeciesPicker
                   searchRef={searchRef}
                   query={query}
                   onQueryChange={setQuery}
                   picked={picked}
-                  onPick={setPicked}
+                  onPick={(nextPicked) => {
+                    setPicked(nextPicked)
+                    setChecklistItems(nextPicked?.checklistItems ?? [])
+                    setSelectedChecklistItemIds((nextPicked?.checklistItems ?? []).map((item) => item.id))
+                  }}
                   onClearError={() => setError(null)}
+                  onSubmit={() => formRef.current?.requestSubmit()}
                 />
+
+              {checklistItems.length > 0 ? (
+                <fieldset className="flex flex-col gap-2">
+                  <legend className="text-sm font-medium">Checklistor</legend>
+                  <div className="flex flex-col gap-1.5">
+                      {checklistItems.map((item) => {
+                        const checked = selectedChecklistItemIds.includes(item.id)
+                        return (
+                          <label
+                            key={item.id}
+                            className="flex min-h-10 items-center gap-3 rounded border border-field-border px-3 text-sm text-text hover:border-border-strong"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                setSelectedChecklistItemIds((current) =>
+                                  checked ? current.filter((id) => id !== item.id) : [...current, item.id],
+                                )
+                              }}
+                              className="size-4 accent-accent"
+                            />
+                            {item.name}
+                          </label>
+                        )
+                      })}
+                  </div>
+                </fieldset>
+              ) : null}
 
               <div className={showTime ? "grid gap-4 sm:grid-cols-2" : undefined}>
                 <label className="flex flex-col gap-1.5 text-sm font-medium">

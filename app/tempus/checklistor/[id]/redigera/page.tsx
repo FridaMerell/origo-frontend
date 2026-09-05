@@ -28,6 +28,7 @@ export default async function EditChecklistPage({ params }: PageProps) {
         id: checklist.id,
         name: checklist.name,
         description: checklist.description ?? "",
+        auto_add: checklist.auto_add,
         start_date: checklist.start_date,
         end_date: checklist.end_date,
         geo_area: checklist.geo_area,

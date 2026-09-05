@@ -36,6 +36,7 @@ export type TempusChecklist = {
   id: string
   name: string
   description: string
+  auto_add: boolean
   start_date: string | null
   end_date: string | null
   geo_area: string | null

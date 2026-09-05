@@ -36,6 +36,7 @@ export async function createChecklist(input: ChecklistFormValues): Promise<Creat
     body: JSON.stringify({
       name: parsed.data.name,
       description: parsed.data.description,
+      auto_add: parsed.data.auto_add,
       start_date: parsed.data.start_date,
       end_date: parsed.data.end_date,
       geo_area: parsed.data.geo_area,
@@ -98,6 +99,7 @@ export async function updateChecklist(id: string, input: ChecklistUpdateValues):
     body: JSON.stringify({
       name: parsed.data.name,
       description: parsed.data.description,
+      auto_add: parsed.data.auto_add,
       start_date: parsed.data.start_date,
       end_date: parsed.data.end_date,
       geo_area: parsed.data.geo_area,

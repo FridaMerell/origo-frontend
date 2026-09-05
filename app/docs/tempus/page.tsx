@@ -24,6 +24,31 @@ observationer.
 Arten anges med sitt **taxonomiska ID** (Dyntaxa-taxon-id, ett heltal) — inte med
 Tempus interna UUID.
 
+## Checklistor på art
+
+Ett artsvar kan innehålla de checklistor där arten finns. Använd den listan
+direkt i gränssnittet; inga extra anrop behövs för att slå upp checklistor eller
+checklistpunkter.
+
+\`\`\`json
+{
+  "id": "art-uuid",
+  "checklists": [
+    {
+      "id": "checklista-uuid",
+      "item_id": "checklistpunkt-uuid",
+      "name": "Stenmovägen"
+    }
+  ]
+}
+\`\`\`
+
+- \`id\` är checklistans id och \`name\` är dess visningsnamn.
+- \`item_id\` är checklistpunkten. När användaren väljer en checklista ska just
+  \`item_id\` läggas i observationens \`checklist_items\`.
+- I snabbregistreringen sparas checklistans id, namn och checklistpunkt i state,
+  så att en förvald checklista från checklistevyn följer med vid sparning.
+
 **Sökväg:** \`/api/tempus/observations/\`
 
 ### Fält

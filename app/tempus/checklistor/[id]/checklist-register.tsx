@@ -50,7 +50,7 @@ export default function ChecklistRegister({
   const [hasPrevious, setHasPrevious] = useState(initialHasPrevious)
   const [hasNext, setHasNext] = useState(initialHasNext)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [preset, setPreset] = useState<{ id: string; label: string; scientific: string } | null>(
+  const [preset, setPreset] = useState<{ id: string; label: string; scientific: string; checklistItemId: string } | null>(
     null,
   )
   const [selectedRow, setSelectedRow] = useState<RegisterRow | null>(null)
@@ -126,6 +126,7 @@ export default function ChecklistRegister({
       id: row.species,
       label: row.commonName,
       scientific: row.scientificName ?? "",
+      checklistItemId: row.id,
     })
   }
 
@@ -155,7 +156,19 @@ export default function ChecklistRegister({
         />
       ) : null}
 
-      <QuickObservation hideTrigger species={preset} onConsumed={() => setPreset(null)} />
+      <QuickObservation
+        hideTrigger
+        species={preset}
+        checklistItem={preset ? { id: preset.checklistItemId, checklistId, name: checklistName } : null}
+        onConsumed={() => setPreset(null)}
+        onSaved={(checklistItemIds, observationId) => {
+          setVisibleRows((current) => current.map((row) =>
+            checklistItemIds.includes(row.id)
+              ? { ...row, isObserved: true, observationId: observationId ?? row.observationId }
+              : row,
+          ))
+        }}
+      />
     </>
   )
 }

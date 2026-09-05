@@ -7,7 +7,7 @@ import { Icon } from "@/app/components/ui/Icon"
 import { ProgressBar } from "@/app/components/ui/ProgressBar"
 import { AddProjectButton } from "@/app/flux/projects/add-project-button"
 import { DeleteProjectButton } from "@/app/flux/projects/delete-project-button"
-import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app/lib/flux-context"
+import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app/flux/_state/flux-context"
 import { progressOf } from "@/app/lib/flux-progress"
 
 export default function FluxProjectsView() {

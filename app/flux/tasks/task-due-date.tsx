@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/app/components/ui/Badge";
-import { formatDate, formatDateShort } from "@/app/lib/format-date";
+import { formatDate, formatDateShort } from "@/app/lib/formatters";
 import { isTaskOverdue } from "@/app/lib/flux-task-dates";
 import type { FluxTaskStatus } from "@/app/lib/dal";
 

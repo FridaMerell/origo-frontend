@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
+import { useDismissableOpen } from "./use-dismissable-open";
 
 export type SelectOption<T extends string> = {
   value: T;
@@ -24,16 +24,7 @@ export function Select<T extends string>({
   placeholder = "Välj...",
   className = "",
 }: SelectProps<T>) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
+  const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>();
 
   const selected = options.find((o) => o.value === value);
 

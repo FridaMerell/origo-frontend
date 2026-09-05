@@ -17,11 +17,12 @@ import {
   useFluxUpdates,
   useFluxUsers,
   useSelectedFluxProject,
-} from "../lib/flux-context"
+} from "./_state/flux-context"
 import { useTaskPanel } from "../lib/task-panel-context"
 import { progressOf } from "../lib/flux-progress"
-import { formatDate } from "../lib/format-date"
+import { formatDate } from "../lib/formatters"
 import { isTaskOverdue } from "../lib/flux-task-dates"
+import { sortFluxTasks } from "./_state/flux-task-sort"
 import type { FluxProject, FluxTask, FluxUser } from "../lib/dal"
 
 const TaskList = ({
@@ -33,11 +34,7 @@ const TaskList = ({
   users: Map<number, FluxUser>
   onOpenTask: (id: number) => void
 }) => {
-  const upcoming = tasks
-    .filter((task) => task.status !== "done")
-    .slice()
-    .sort((a, b) => (a.due_date ?? "9999-99-99").localeCompare(b.due_date ?? "9999-99-99"))
-    .slice(0, 5)
+  const upcoming = sortFluxTasks(tasks.filter((task) => task.status !== "done")).slice(0, 5)
 
   if (upcoming.length === 0) {
     return (
@@ -153,7 +150,7 @@ const HomeEmpty = ({ icon, title, body }: { icon: string; title: string; body: s
   </section>
 )
 
-export default function Home() {
+export default function HomeView() {
   const projects = useFluxProjects()
   const { selectedProject } = useSelectedFluxProject()
   const tasks = useFluxTasks()

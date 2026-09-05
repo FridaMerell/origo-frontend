@@ -12,9 +12,10 @@ import {
   useFluxProjects,
   useFluxTasks,
   useFluxUsers,
-} from "@/app/lib/flux-context";
+} from "@/app/flux/_state/flux-context";
 import { isTaskOverdue } from "@/app/lib/flux-task-dates";
-import { formatDate } from "@/app/lib/format-date";
+import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
+import { formatDate } from "@/app/lib/formatters";
 import type { FluxMilestone, FluxTask, FluxUser } from "@/app/lib/dal";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
 
@@ -145,8 +146,8 @@ export default function FluxTimelineView() {
             ...visibleTasks
               .filter((task) => task.due_date)
               .map((task) => ({ type: "task" as const, date: task.due_date!, item: task })),
-          ].sort((a, b) => a.date.localeCompare(b.date));
-          const undatedTasks = visibleTasks.filter((task) => !task.due_date);
+          ].sort((a, b) => a.date.localeCompare(b.date) || a.item.created_at.localeCompare(b.item.created_at));
+          const undatedTasks = sortFluxTasks(visibleTasks.filter((task) => !task.due_date));
           const undatedMilestones = projectMilestones.filter((milestone) => !milestone.target_date);
           const todayMarkerIndex = datedItems.findIndex((entry) => entry.date >= today);
 

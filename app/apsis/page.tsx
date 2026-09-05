@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Home from "./Home";
+import HomeView from "./home-view";
 
 export const metadata: Metadata = {
   title: "Absider | Apsis",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function ApsisPage() {
-  return <Home />;
+  return <HomeView />;
 }

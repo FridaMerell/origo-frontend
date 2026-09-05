@@ -1,7 +1,8 @@
 "use client"
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react"
+import { useDeferredValue, useMemo, useState } from "react"
 import { Icon } from "./Icon"
+import { useDismissableOpen } from "./use-dismissable-open"
 
 export type CategoryTreeSelectItem = {
   id: string
@@ -142,31 +143,9 @@ export function CategoryTreeSelect<T extends CategoryTreeSelectItem>({
   allLabel = "Alla kategorier",
   searchPlaceholder = "Sök kategori",
 }: CategoryTreeSelectProps<T>) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>()
   const [search, setSearch] = useState("")
   const deferredSearch = useDeferredValue(search)
-
-  useEffect(() => {
-    const onPointerDown = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) {
-        setOpen(false)
-      }
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", onPointerDown)
-    document.addEventListener("keydown", onKeyDown)
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown)
-      document.removeEventListener("keydown", onKeyDown)
-    }
-  }, [])
 
   const selectedItem = findItem(categories, value)
   const selectedPath = flattenSelectedPath(categories, value)

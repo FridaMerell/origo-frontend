@@ -1,7 +1,7 @@
 "use client"
 
-import { useVentureData } from "@/app/lib/venture-context"
-import { useFacilities } from "@/app/lib/facility-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
+import { useFacilities } from "@/app/verso/_state/facility-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
 import { Drawer } from "@/app/components/ui/Drawer"

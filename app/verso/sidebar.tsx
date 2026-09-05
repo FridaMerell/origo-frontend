@@ -2,10 +2,10 @@
 
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { usePathname } from "next/navigation"
-import { useRef, useState, useEffect } from "react"
-import { Icon } from "../components/ui/Icon"
-import { ChevronDownIcon } from "lucide-react"
-import { useFacilities } from "../lib/facility-context"
+import { useState, useEffect } from "react"
+import { BellIcon, CalendarIcon, ChevronDownIcon, ListTodoIcon, ReceiptIcon } from "lucide-react"
+import { useDismissableOpen } from "../components/ui/use-dismissable-open"
+import { useFacilities } from "./_state/facility-context"
 import { useUser } from "../lib/user-context"
 import { ORIGO_VERSION } from "../lib/config"
 import { APP_LINKS, appHref } from "../lib/tenant-links"
@@ -13,32 +13,11 @@ import Logo from "./ui/Logo"
 import { Profile } from "../components/ui/Profile"
 
 const NAV_ITEMS = [
-  { label: "Kalender", href: "/besok", icon: "calendar" },
-  { label: "Planering", href: "/planera", icon: "list-todo" },
-  { label: "Ekonomi", href: "/ekonomi", icon: "receipt" },
-  { label: "Uppdateringar", href: "/updates", icon: "bell" },
+  { label: "Kalender", href: "/besok", icon: CalendarIcon },
+  { label: "Planering", href: "/planera", icon: ListTodoIcon },
+  { label: "Ekonomi", href: "/ekonomi", icon: ReceiptIcon },
+  { label: "Uppdateringar", href: "/updates", icon: BellIcon },
 ] as const
-
-const ICON_BASE = "https://unpkg.com/lucide-static@1.28.0/icons/"
-
-function NavIcon({ name }: { name: string }) {
-  return (
-    <span
-      aria-hidden
-      className="inline-block size-4 shrink-0 bg-current"
-      style={{
-        WebkitMaskImage: `url(${ICON_BASE}${name}.svg)`,
-        maskImage: `url(${ICON_BASE}${name}.svg)`,
-        WebkitMaskSize: "contain",
-        maskSize: "contain",
-        WebkitMaskRepeat: "no-repeat",
-        maskRepeat: "no-repeat",
-        WebkitMaskPosition: "center",
-        maskPosition: "center",
-      }}
-    />
-  )
-}
 
 function ModeToggle({
   mode,
@@ -78,16 +57,7 @@ export type SidebarProps = {
 
 const FacilitySelector = () => {
   const { facilities, selectedFacility, selectFacility } = useFacilities()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const onClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", onClickOutside)
-    return () => document.removeEventListener("mousedown", onClickOutside)
-  }, [])
+  const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>()
 
   return (
     <div ref={ref} className="relative mt-1">
@@ -168,7 +138,7 @@ export function SidebarContent({
             className={`flex items-center gap-2.5 rounded px-2.5 py-2 text-sm no-underline duration-200  ${active ? " bg-accent-wash text-accent hover:bg-accent-wash" : " hover:bg-accent-wash hover:text-accent"}`}
 
           >
-            <NavIcon name={item.icon} />
+            <item.icon size={16} className="shrink-0" />
             {item.label}
           </Link>
         )

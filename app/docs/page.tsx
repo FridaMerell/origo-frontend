@@ -5,26 +5,37 @@ import { DocShell } from "./doc-shell"
 export const metadata: Metadata = {
   title: "Dokumentation — Origo",
   description:
-    "Ingång till dokumentationen för Origos appar och till det externa API:t med token-autentisering.",
+    "Översikt över Origos appar och dess externa API med token-autentisering.",
 }
 
 const DOC = `# Dokumentation
 
-Origo är ett nav med en gemensam inloggning för flera fristående appar. Varje app
-har sin egen dokumentation — börja där:
+Origo är ett nav med en gemensam inloggning för flera fristående appar. Appar
+öppnas på egna subdomäner och delar session när Origo är konfigurerat med en
+gemensam cookie-domän.
 
-## Apparnas dokumentation
+## Appar
 
-- [**Tempus**](/docs/tempus) — observationer, arter, krysslistor och rutter.
-- [**Flux**](/docs/flux) — projekt, milstolpar, uppgifter och dokument.
+- **Verso** – fastighetsnav för besök, projekt, ekonomi och dokument.
+- **Flux** – projekt, milstolpar, uppgifter, uppdateringar och dokument.
+- **Tempus** – arter, observationer, krysslistor, rutter och BirdNET-detektioner.
+- **Apsis** – en bildsamling av kyrkoabsider.
+
+## API-referens
+
+API-referensen beskriver de resurser som just nu finns publicerade för extern
+användning:
+
+- [**Tempus API**](/docs/tempus) – observationer.
+- [**Flux API**](/docs/flux) – projekt.
 
 ---
 
 ## Externt API
 
-Alla appar delar ett REST-API som du kan nå utifrån. Appsidorna ovan innehåller
-kodexempel (\`http\` och C#) för respektive resurs. Det här avsnittet är det
-gemensamma: bas-URL, autentisering och svarskonventioner.
+Origo har ett REST-API som du kan nå utifrån. Resurssidorna ovan innehåller
+kodexempel i \`http\` och C#. Det här avsnittet beskriver det gemensamma:
+bas-URL, autentisering och svarskonventioner.
 
 ### Token
 

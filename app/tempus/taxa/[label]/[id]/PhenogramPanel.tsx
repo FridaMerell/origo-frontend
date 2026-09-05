@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { loadSpeciesPhenogram } from "@/app/actions/tempus"
+import { loadSpeciesPhenogram } from "@/app/tempus/_actions/species"
 import { Icon } from "@/app/components/ui/Icon"
 import type { TempusPhenogram } from "@/app/lib/dal"
 import Phenogram, { SeasonalStatusBadge } from "@/app/tempus/ui/Phenogram"

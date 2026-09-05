@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import TempusShell from "./tempus-shell";
-import { TempusProviders } from "../lib/tempus-providers";
+import { TempusProviders } from "./_state/tempus-providers";
 import { NavProgressBar } from "@/app/lib/nav-progress";
 import { Splash } from "@/app/components/ui/Splash";
 

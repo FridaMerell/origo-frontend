@@ -1,7 +1,7 @@
 "use client"
 
 import { useActionState, useRef, useState } from "react"
-import { importSpeciesChecklist, type ImportSpeciesChecklistState } from "@/app/actions/tempus"
+import { importSpeciesChecklist, type ImportSpeciesChecklistState } from "@/app/tempus/_actions/species"
 import { Button } from "@/app/components/ui/Button"
 import { Icon } from "@/app/components/ui/Icon"
 

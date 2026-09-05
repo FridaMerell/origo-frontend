@@ -9,6 +9,7 @@ import {
 } from "@/app/lib/api-client"
 import { getSessionCookies, setSessionCookies } from "@/app/lib/session"
 import { getCurrentUser } from "@/app/lib/dal"
+import { readErrorBody, type FieldErrors } from "@/app/lib/api-errors"
 import {
   accountProfileSchema,
   type AccountProfileValues,
@@ -24,8 +25,6 @@ import {
   type PasswordChangeValues,
 } from "@/app/lib/schemas"
 
-type FieldErrors<T> = Partial<Record<keyof T, string>>
-
 export type AccountActionResult<T> =
   | { success?: boolean; error?: string; fieldErrors?: FieldErrors<T> }
   | undefined
@@ -37,28 +36,6 @@ async function authedJsonHeaders() {
     "X-CSRFToken": csrfToken ?? "",
     Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
   }
-}
-
-// DRF returns `{ "email": ["…"], … }` for validation errors and `{ "detail": "…" }`
-// otherwise. Pull the first message per known field; fall back to `detail`.
-function readErrorBody<T>(
-  detail: string,
-  fields: readonly (keyof T)[],
-): { message?: string; fieldErrors?: FieldErrors<T> } {
-  try {
-    const parsed = JSON.parse(detail) as Record<string, unknown>
-    const fieldErrors: FieldErrors<T> = {}
-    for (const field of fields) {
-      const raw = parsed[field as string]
-      const text = Array.isArray(raw) ? raw[0] : typeof raw === "string" ? raw : undefined
-      if (typeof text === "string") fieldErrors[field] = text
-    }
-    if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
-    if (typeof parsed.detail === "string") return { message: parsed.detail }
-  } catch {
-    // Not JSON (e.g. an HTML error page) — never surface the raw body.
-  }
-  return {}
 }
 
 export async function updateProfile(

@@ -2,9 +2,8 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { useVentureData } from "@/app/lib/venture-context"
-import { useUpdateData } from "@/app/lib/update-context"
-import { useUsers, getUserLabel } from "@/app/lib/user-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
+import { useUpdateData } from "@/app/verso/_state/update-context"
 import { Card } from "@/app/components/ui/Card"
 import { Icon } from "@/app/components/ui/Icon"
 import { Badge } from "@/app/components/ui/Badge"
@@ -13,11 +12,12 @@ import { Gallery } from "@/app/components/ui/Gallery"
 import UpdateForm from "@/app/verso/update-form"
 import ExpenseForm from "@/app/verso/expense-form"
 import VentureTaskForm from "@/app/verso/venture-task-form"
+import { UpdateCard } from "@/app/verso/update-card"
 import { VentureEditForm } from "@/app/verso/planera/venture-edit-form"
 import { VentureFilesForm } from "@/app/verso/planera/venture-files-form"
 import { ToggleTaskButton } from "@/app/verso/toggle-task-button"
 import { ventureTaskStatus, VentureTaskStatusBadge } from "@/app/verso/venture-task-status"
-import { formatDate } from "@/app/lib/format-date"
+import { formatDate } from "@/app/lib/formatters"
 
 const PRIORITY_LABEL: Record<number, string> = {
   1: "Hög prio",
@@ -29,7 +29,6 @@ export default function VentureView() {
   const { id } = useParams<{ id: string }>()
   const { ventures, ventureTasks, expenses } = useVentureData()
   const { updates } = useUpdateData()
-  const users = useUsers()
 
   const venture = ventures.find((v) => String(v.id) === id)
 
@@ -154,37 +153,11 @@ export default function VentureView() {
         ) : (
           <div className="flex flex-col gap-2">
             {ventureUpdates.map((update) => (
-              <Card key={update.id} className="flex flex-col gap-2 hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <Link
-                      href={`/updates/${update.id}`}
-                      className="text-sm font-semibold text-text hover:text-accent"
-                    >
-                      {update.title}
-                    </Link>
-                    {update.task && (
-                      <span className="self-start">
-                        <Badge variant="neutral">
-                          {tasks.find((t) => String(t.id) === String(update.task))?.name ?? "Uppgift"}
-                        </Badge>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <span className="whitespace-nowrap text-xs text-text-faint">
-                      {getUserLabel(users, update.author)} ·{" "}
-                      {formatDate(update.created_at)}
-                    </span>
-                    <Drawer trigger="Redigera" triggerVariant="ghost" triggerSize="sm" title="Redigera uppdatering">
-                      <UpdateForm update={update} />
-                    </Drawer>
-                  </div>
-                </div>
-                <Link href={`/updates/${update.id}`}>
-                  <p className="line-clamp-2 text-sm text-text-muted">{update.content}</p>
-                </Link>
-              </Card>
+              <UpdateCard
+                key={update.id}
+                update={update}
+                taskLabel={update.task ? tasks.find((t) => String(t.id) === String(update.task))?.name ?? "Uppgift" : undefined}
+              />
             ))}
           </div>
         )}

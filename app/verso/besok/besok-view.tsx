@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/app/components/ui/Card";
 import { Icon } from "@/app/components/ui/Icon";
-import { useBookingData } from "@/app/lib/booking-context";
+import { useBookingData } from "@/app/verso/_state/booking-context";
 import { BookVisitButton } from "@/app/verso/besok/book-visit-button";
 import { BookingDrawerProvider } from "@/app/verso/besok/booking-drawer-context";
 import { StayBar } from "@/app/verso/besok/stay-bar";

@@ -5,20 +5,11 @@ import { Icon } from "@/app/components/ui/Icon";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import { isTaskOverdue } from "@/app/lib/flux-task-dates";
-import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app/lib/flux-context";
-import type { FluxTask, FluxTaskPriority, FluxUser } from "@/app/lib/dal";
+import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
+import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app/flux/_state/flux-context";
+import { FLUX_PRIORITY_SECTIONS } from "@/app/flux/flux-priority";
+import type { FluxTask, FluxUser } from "@/app/lib/dal";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
-
-const PRIORITIES: {
-  label: string;
-  priority: FluxTaskPriority;
-  color: string;
-  textColor: string;
-}[] = [
-  { label: "Hög prioritet", priority: "high", color: "bg-danger", textColor: "text-danger" },
-  { label: "Mellanprioritet", priority: "medium", color: "bg-warning", textColor: "text-warning" },
-  { label: "Låg prioritet", priority: "low", color: "bg-text-faint", textColor: "text-text-muted" },
-];
 
 function BacklogRow({
   task,
@@ -104,8 +95,8 @@ export default function FluxBacklogView() {
         </div>
       ) : (
         <div className="flex flex-col gap-7">
-          {PRIORITIES.map(({ label, priority, color, textColor }) => {
-            const priorityTasks = backlogTasks.filter((task) => task.priority === priority);
+          {FLUX_PRIORITY_SECTIONS.map(({ label, priority, color, textColor }) => {
+            const priorityTasks = sortFluxTasks(backlogTasks.filter((task) => task.priority === priority));
             return (
               <section key={priority} aria-labelledby={`backlog-${priority}`}>
                 <div className="mb-2 flex items-center gap-2 px-1">

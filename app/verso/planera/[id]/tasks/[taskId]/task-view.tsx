@@ -2,23 +2,20 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { useVentureData } from "@/app/lib/venture-context"
-import { useUpdateData } from "@/app/lib/update-context"
-import { useUsers, getUserLabel } from "@/app/lib/user-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
+import { useUpdateData } from "@/app/verso/_state/update-context"
 import { Card } from "@/app/components/ui/Card"
 import { Icon } from "@/app/components/ui/Icon"
-import { Badge } from "@/app/components/ui/Badge"
 import { Drawer } from "@/app/components/ui/Drawer"
 import UpdateForm from "@/app/verso/update-form"
 import VentureTaskForm from "@/app/verso/venture-task-form"
-import { formatDate } from "@/app/lib/format-date"
+import { UpdateCard } from "@/app/verso/update-card"
 import { VentureTaskStatusBadge } from "@/app/verso/venture-task-status"
 
 export default function VentureTaskView() {
   const { id, taskId } = useParams<{ id: string; taskId: string }>()
   const { ventures, ventureTasks } = useVentureData()
   const { updates } = useUpdateData()
-  const users = useUsers()
 
   const venture = ventures.find((v) => String(v.id) === id)
   const task = ventureTasks.find((t) => String(t.id) === taskId)
@@ -73,25 +70,7 @@ export default function VentureTaskView() {
         ) : (
           <div className="flex flex-col gap-2">
             {taskUpdates.map((update) => (
-              <Card key={update.id} className="flex flex-col gap-1 hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center justify-between gap-2">
-                  <Link href={`/updates/${update.id}`} className="text-sm font-semibold text-text hover:text-accent">
-                    {update.title}
-                  </Link>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-text-faint">
-                      {getUserLabel(users, update.author)} ·{" "}
-                      {formatDate(update.created_at)}
-                    </span>
-                    <Drawer trigger="Redigera" triggerVariant="ghost" triggerSize="sm" title="Redigera uppdatering">
-                      <UpdateForm update={update} />
-                    </Drawer>
-                  </div>
-                </div>
-                <Link href={`/updates/${update.id}`}>
-                  <p className="line-clamp-2 text-sm text-text-muted">{update.content}</p>
-                </Link>
-              </Card>
+              <UpdateCard key={update.id} update={update} />
             ))}
           </div>
         )}

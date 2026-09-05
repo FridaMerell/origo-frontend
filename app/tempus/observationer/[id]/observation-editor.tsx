@@ -4,7 +4,8 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
-import { deleteObservation, updateObservation } from "@/app/actions/tempus"
+import { deleteObservation, updateObservation } from "@/app/tempus/_actions/observations"
+import { parseLatLon } from "@/app/tempus/formatters"
 import type { TempusObservation } from "@/app/lib/dal"
 
 function toLocalInput(iso: string) {
@@ -41,24 +42,12 @@ export default function ObservationEditor({ observation }: { observation: Tempus
       setError("Ange en tidpunkt.")
       return
     }
-    const parseCoord = (value: string) => {
-      const trimmed = value.trim()
-      if (!trimmed) return null
-      return Number(trimmed.replace(",", "."))
-    }
-    const latNum = parseCoord(lat)
-    const lonNum = parseCoord(lon)
-    if ((latNum === null) !== (lonNum === null)) {
-      setError("Ange både latitud och longitud, eller ingen.")
+    const parsedCoords = parseLatLon(lat, lon)
+    if ("error" in parsedCoords) {
+      setError(parsedCoords.error)
       return
     }
-    if (
-      (latNum !== null && (!Number.isFinite(latNum) || Math.abs(latNum) > 90)) ||
-      (lonNum !== null && (!Number.isFinite(lonNum) || Math.abs(lonNum) > 180))
-    ) {
-      setError("Ogiltig koordinat.")
-      return
-    }
+    const { lat: latNum, lon: lonNum } = parsedCoords
     startTransition(async () => {
       const result = await updateObservation(observation.id, {
         observed_at: new Date(observedAt).toISOString(),

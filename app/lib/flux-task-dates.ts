@@ -15,3 +15,6 @@ export function isTaskOverdue(
 ): boolean {
   return Boolean(dueDate && status !== "done" && dueDate < getLocalIsoDate(referenceDate));
 }
+
+/** Shared background/hover treatment for a row representing an overdue task. */
+export const OVERDUE_ROW_TONE = "bg-danger-wash/20 hover:bg-danger-wash/30";

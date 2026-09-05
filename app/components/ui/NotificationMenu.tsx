@@ -1,6 +1,6 @@
 "use client"
 
-import { startTransition, useCallback, useEffect, useRef, useState, type ReactNode } from "react"
+import { startTransition, useCallback, useState, type ReactNode } from "react"
 import {
   getNotificationSummary,
   getNotification,
@@ -9,10 +9,12 @@ import {
   type NotificationPreview,
 } from "@/app/actions/notifications"
 import { useUser } from "@/app/lib/user-context"
+import { useDismissableOpen } from "./use-dismissable-open"
 
 type NotificationMenuProps = {
   align?: "left" | "right"
   dropUp?: boolean
+  footer?: ReactNode
   children: (props: {
     unreadCount: number
     notificationLabel: string | number
@@ -31,14 +33,13 @@ function formatNotificationTime(value: string) {
   }).format(date)
 }
 
-export function NotificationMenu({ align = "right", dropUp = false, children }: NotificationMenuProps) {
+export function NotificationMenu({ align = "right", dropUp = false, footer, children }: NotificationMenuProps) {
   const user = useUser()
-  const [open, setOpen] = useState(false)
+  const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>()
   const [unreadCount, setUnreadCount] = useState(user?.open_notifications ?? 0)
   const [notifications, setNotifications] = useState<NotificationPreview[]>([])
   const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null)
   const [markingAllAsRead, setMarkingAllAsRead] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
 
   const loadNotifications = useCallback(() => {
     startTransition(() => {
@@ -47,14 +48,6 @@ export function NotificationMenu({ align = "right", dropUp = false, children }: 
         setNotifications(summary.notifications)
       })
     })
-  }, [])
-
-  useEffect(() => {
-    const onClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", onClickOutside)
-    return () => document.removeEventListener("mousedown", onClickOutside)
   }, [])
 
   const toggle = () => {
@@ -156,6 +149,7 @@ export function NotificationMenu({ align = "right", dropUp = false, children }: 
               <p className="px-3 py-5 text-center text-sm text-text-muted">Inga notifikationer ännu.</p>
             )}
           </div>
+          {footer}
         </section>
       )}
     </div>

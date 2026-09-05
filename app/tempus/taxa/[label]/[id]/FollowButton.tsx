@@ -1,5 +1,5 @@
 'use client'
-import { followSpecies, unfollowSpecies } from "@/app/actions/tempus"
+import { followSpecies, unfollowSpecies } from "@/app/tempus/_actions/species"
 import { Button } from "@/app/components/ui/Button"
 import { Icon } from "@/app/components/ui/Icon"
 import { useRouter } from "next/navigation"

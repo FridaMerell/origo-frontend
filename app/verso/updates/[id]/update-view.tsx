@@ -2,8 +2,8 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { useUpdateData } from "@/app/lib/update-context"
-import { useVentureData } from "@/app/lib/venture-context"
+import { useUpdateData } from "@/app/verso/_state/update-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { Card } from "@/app/components/ui/Card"
 import { Avatar } from "@/app/components/ui/Avatar"

@@ -13,30 +13,32 @@ import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
 import { Markdown } from "@/app/flux/documents/markdown";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
-import { useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
+import { useFluxMilestones, useFluxProjects, useFluxTaskStatus, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/flux/_state/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
+import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
-import type { FluxTask, FluxTaskPriority } from "@/app/lib/dal";
-
-const PRIORITY_TONE: Record<FluxTaskPriority, string> = {
-  high: "text-danger bg-danger-wash",
-  medium: "text-warning bg-warning-wash",
-  low: "text-text-muted bg-surface-2",
-};
-
-const PRIORITY_LABEL: Record<FluxTaskPriority, string> = {
-  high: "Hög",
-  medium: "Medel",
-  low: "Låg",
-};
+import { FLUX_PRIORITY_BADGE_TONE, FLUX_PRIORITY_LABEL } from "@/app/flux/flux-priority";
+import type { FluxTask } from "@/app/lib/dal";
 
 function SubtaskRow({ subtask }: { subtask: FluxTask }) {
   const [pending, startTransition] = useTransition();
-  const pathname = usePathname();
+  const setTaskStatus = useFluxTaskStatus();
   const done = subtask.status === "done";
 
-  const toggle = () => startTransition(() => { toggleTaskStatus(subtask.id, subtask.status, pathname) });
+  const toggle = () => {
+    if (pending) return;
+    const nextStatus = subtask.status === "not_started" ? "in_progress" : subtask.status === "in_progress" ? "done" : "not_started";
+    setTaskStatus(subtask.id, nextStatus);
+    startTransition(async () => {
+      try {
+        const result = await toggleTaskStatus(subtask.id, subtask.status);
+        if (result?.error) setTaskStatus(subtask.id, subtask.status);
+      } catch {
+        setTaskStatus(subtask.id, subtask.status);
+      }
+    });
+  };
 
   return (
     <label className="flex cursor-pointer items-center gap-2.5 py-1.5">
@@ -112,7 +114,7 @@ export function TaskPanel() {
   const [editingTask, setEditingTask] = useState<FluxTask | null>(null);
 
   const task = tasks.find((t) => t.id === openTaskId);
-  const subtasks = task ? tasks.filter((t) => t.parent === task.id) : [];
+  const subtasks = task ? sortFluxTasks(tasks.filter((t) => t.parent === task.id)) : [];
   const subtaskProgress = progressOf(subtasks);
 
   return (
@@ -154,9 +156,9 @@ export function TaskPanel() {
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-text-faint">Prioritet</span>
                 <span
-                  className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}
+                  className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-xs font-medium ${FLUX_PRIORITY_BADGE_TONE[task.priority]}`}
                 >
-                  {PRIORITY_LABEL[task.priority]}
+                  {FLUX_PRIORITY_LABEL[task.priority]}
                 </span>
               </div>
               <div className="flex flex-col gap-1">

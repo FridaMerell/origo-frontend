@@ -2,7 +2,7 @@
 
 Härledda ur hur **observationer** och **checklistor** faktiskt är byggda idag
 (`observation-form.tsx`, `observationer/[id]/page.tsx`, `checklistor/[id]/page.tsx`,
-`checklist-builder.tsx`, `quick-observation.tsx`, `NewHome.tsx`, `nav.tsx`).
+`checklist-builder.tsx`, `quick-observation.tsx`, `home-view.tsx`, `nav.tsx`).
 Målet är att beskriva mönstren som redan finns, städa bort glappen mellan dem och
 ge en regel för vilket uttryck som gäller var.
 
@@ -50,7 +50,7 @@ Kännetecken (från observations- och checklistdetaljerna):
 Används för att **bygga, bläddra, navigera och överblicka**: checklistbyggaren,
 listsidor, startsidan, ruttplaneraren, snabbregistrering.
 
-Kännetecken (från `checklist-builder.tsx`, listsidorna, `NewHome.tsx`):
+Kännetecken (från `checklist-builder.tsx`, listsidorna, `home-view.tsx`):
 
 - `Card`: `rounded-card border border-border bg-surface p-4.5 shadow-card` – även här
   platt pga `--shadow-card: none`; kort = inramad panel. Explicit `shadow-sm` / `shadow-md`

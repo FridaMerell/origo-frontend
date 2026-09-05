@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { cookies } from "next/headers";
 import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
 import { getFluxBoard, getFluxProjects } from "@/app/lib/dal";
-import { FluxDataProvider } from "@/app/lib/flux-context";
+import { FluxDataProvider } from "./flux-context";
 
-export async function FluxProviders({ children }: { children: ReactNode }) {
+export async function SelectedProjectProvider({ children }: { children: ReactNode }) {
   const cookieStore = await cookies();
   const selectedId = cookieStore.get(FLUX_PROJECT_COOKIE)?.value;
   let board = selectedId ? await getFluxBoard(selectedId) : null;

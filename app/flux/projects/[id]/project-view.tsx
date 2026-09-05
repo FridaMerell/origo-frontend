@@ -18,25 +18,15 @@ import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
 import { DocumentsSection } from "@/app/flux/documents/documents-section";
 import { Markdown } from "@/app/flux/documents/markdown";
-import { useFluxDocuments, useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
+import { useFluxDocuments, useFluxMilestones, useFluxProjects, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/flux/_state/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
-import { formatDate } from "@/app/lib/format-date";
+import { formatDate } from "@/app/lib/formatters";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
-import { isTaskOverdue } from "@/app/lib/flux-task-dates";
+import { isTaskOverdue, OVERDUE_ROW_TONE } from "@/app/lib/flux-task-dates";
+import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
-import type { FluxTask, FluxTaskPriority, FluxUser } from "@/app/lib/dal";
-
-const PRIORITY_TONE: Record<FluxTaskPriority, string> = {
-  high: "text-danger bg-danger-wash",
-  medium: "text-warning bg-warning-wash",
-  low: "text-text-muted bg-surface-2",
-};
-
-const PRIORITY_LABEL: Record<FluxTaskPriority, string> = {
-  high: "Hög",
-  medium: "Medel",
-  low: "Låg",
-};
+import { FLUX_PRIORITY_BADGE_TONE, FLUX_PRIORITY_LABEL } from "@/app/flux/flux-priority";
+import type { FluxTask, FluxUser } from "@/app/lib/dal";
 
 function MilestoneDescription({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
@@ -71,13 +61,13 @@ function TaskRow({
   users: Map<number, FluxUser>;
   onOpenTask: (id: number) => void;
 }) {
-  const subtasks = allTasks.filter((t) => t.parent === task.id);
+  const subtasks = sortFluxTasks(allTasks.filter((t) => t.parent === task.id));
   const [subtasksOpen, setSubtasksOpen] = useState(false);
   return (
     <>
     <div
       onClick={() => onOpenTask(task.id)}
-      className={`flex cursor-pointer items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 ${isTaskOverdue(task.due_date, task.status) ? "bg-danger-wash/20 hover:bg-danger-wash/30" : "hover:bg-surface-2"}`}
+      className={`flex cursor-pointer items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 ${isTaskOverdue(task.due_date, task.status) ? OVERDUE_ROW_TONE : "hover:bg-surface-2"}`}
     >
       <div className="flex min-w-0 items-center gap-2">
         <TaskCompletionButton id={task.id} status={task.status} />
@@ -86,9 +76,9 @@ function TaskRow({
       <span className="flex shrink-0 items-center gap-3">
         <TaskStatusBadge status={task.status} />
         <span
-          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_TONE[task.priority]}`}
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${FLUX_PRIORITY_BADGE_TONE[task.priority]}`}
         >
-          {PRIORITY_LABEL[task.priority]}
+          {FLUX_PRIORITY_LABEL[task.priority]}
         </span>
         <TaskDueDate dueDate={task.due_date} status={task.status} compact />
         {subtasks.length > 0 && <button type="button" onClick={(event) => { event.stopPropagation(); setSubtasksOpen((open) => !open); }} aria-expanded={subtasksOpen} className="flex items-center gap-1 rounded px-1.5 py-1 font-mono text-xs text-text-faint hover:bg-surface-2 hover:text-text"><Icon name={subtasksOpen ? "chevron-down" : "chevron-right"} size={14} />{subtasks.filter((t) => t.status === "done").length}/{subtasks.length}</button>}
@@ -129,7 +119,7 @@ export default function FluxProjectDetailView() {
 
   const projectTasks = tasks.filter((task) => task.project === project.id);
   const projectMilestones = milestones.filter((m) => m.project === project.id);
-  const unassignedTasks = projectTasks.filter((task) => task.milestone === null && task.parent === null);
+  const unassignedTasks = sortFluxTasks(projectTasks.filter((task) => task.milestone === null && task.parent === null));
   const overallProgress = progressOf(projectTasks);
 
   return (
@@ -171,7 +161,7 @@ export default function FluxProjectDetailView() {
 
         {projectMilestones.map((milestone) => {
           const milestoneTasks = tasks.filter((task) => task.milestone === milestone.id);
-          const milestoneParentTasks = milestoneTasks.filter((task) => task.parent === null);
+          const milestoneParentTasks = sortFluxTasks(milestoneTasks.filter((task) => task.parent === null));
           const milestoneProgress = progressOf(milestoneTasks);
           return (
             <Card key={milestone.id} className="flex flex-col !gap-0 overflow-hidden border-l-4 border-l-secondary !p-0">

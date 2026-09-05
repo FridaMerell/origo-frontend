@@ -2,11 +2,11 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { useVentureData } from "@/app/lib/venture-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { Card } from "@/app/components/ui/Card"
 import { Icon } from "@/app/components/ui/Icon"
-import { formatDate } from "@/app/lib/format-date"
+import { formatDate } from "@/app/lib/formatters"
 
 export default function ExpenseView() {
   const { id } = useParams<{ id: string }>()

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { TaskPanel } from "@/app/flux/tasks/task-panel";
+import { AllProjectsTimelineData } from "./all-projects-timeline-data";
 import FluxTimelineView from "./timeline-view";
 
 export const metadata: Metadata = {
@@ -7,5 +9,10 @@ export const metadata: Metadata = {
 };
 
 export default function FluxTimelinePage() {
-  return <FluxTimelineView />;
+  return (
+    <AllProjectsTimelineData>
+      <FluxTimelineView />
+      <TaskPanel />
+    </AllProjectsTimelineData>
+  );
 }

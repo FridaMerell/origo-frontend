@@ -5,8 +5,8 @@ import { Avatar } from "@/app/components/ui/Avatar";
 import { Gallery } from "@/app/components/ui/Gallery";
 import { DeleteUpdateButton } from "@/app/flux/updates/delete-update-button";
 import { UpdateForm } from "@/app/flux/updates/update-form";
-import { useFluxMilestones, useFluxTasks, useFluxUsers, fluxUserName } from "@/app/lib/flux-context";
-import { formatDate } from "@/app/lib/format-date";
+import { useFluxMilestones, useFluxTasks, useFluxUsers, fluxUserName } from "@/app/flux/_state/flux-context";
+import { formatDate } from "@/app/lib/formatters";
 import type { FluxUpdate } from "@/app/lib/dal";
 
 function UpdateRow({ update, showScope }: { update: FluxUpdate; showScope: boolean }) {

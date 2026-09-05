@@ -13,7 +13,7 @@ import { useSubmitAction } from "@/app/components/form/useSubmitAction";
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import { UserMultiSelect } from "@/app/flux/user-multiselect";
-import { useFluxMilestones, useFluxProjects, useSelectedFluxProject } from "@/app/lib/flux-context";
+import { useFluxMilestones, useFluxProjects, useSelectedFluxProject } from "@/app/flux/_state/flux-context";
 import { useUsers } from "@/app/lib/user-context";
 import type { FluxTask, FluxTaskRecurrence, FluxTaskStatus } from "@/app/lib/dal";
 
@@ -105,8 +105,8 @@ export function TaskFormDrawer({
       });
       uploadedFiles.reset();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, task?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- projects/selectedProject/uploadedFiles are read from context/props with unstable identities; the primitives below already capture every value that should trigger a reset
+  }, [open, task?.id, defaultProjectId, defaultMilestoneId, selectedProject?.id, projects[0]?.id]);
 
   const availableMilestones = milestones.filter((milestone) => milestone.project === Number(projectId));
 

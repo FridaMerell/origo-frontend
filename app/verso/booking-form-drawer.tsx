@@ -10,7 +10,7 @@ import { Field, fieldInputClass } from "@/app/components/form/Field";
 import { useSubmitAction } from "@/app/components/form/useSubmitAction";
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
 import type { Booking } from "@/app/lib/dal";
-import { useFacilities } from "@/app/lib/facility-context";
+import { useFacilities } from "@/app/verso/_state/facility-context";
 
 export function BookingFormDrawer({
   open,

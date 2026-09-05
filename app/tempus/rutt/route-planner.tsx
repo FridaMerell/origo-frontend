@@ -11,6 +11,7 @@ import { SwedenMap } from "@/app/tempus/ui/biotope-map/SwedenMap"
 import { GOOGLE_MAPS_API_KEY } from "@/app/lib/config"
 import type { RouteLineString } from "@/app/lib/schemas"
 import { createRouteProjection } from "./projection"
+import { formatKm } from "@/app/tempus/formatters"
 
 type LonLat = [number, number]
 
@@ -36,10 +37,6 @@ function thin(path: google.maps.LatLngAltitude[]): LonLat[] {
     out.push([point.lng, point.lat])
   }
   return out
-}
-
-function formatKm(metres: number) {
-  return `${(metres / 1000).toLocaleString("sv-SE", { maximumFractionDigits: 1 })} km`
 }
 
 function formatDuration(seconds: number) {

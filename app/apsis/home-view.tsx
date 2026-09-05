@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useApsisPosts } from "@/app/lib/apsis-context";
 import { fileProxyUrl } from "@/app/lib/files";
 
-export default function Home() {
+export default function HomeView() {
   const posts = useApsisPosts();
 
   return (

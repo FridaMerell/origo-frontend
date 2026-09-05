@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { FluxProviders } from "@/app/lib/flux-providers";
+import { SelectedProjectProvider } from "@/app/flux/_state/selected-project-provider";
 import { TaskPanelProvider } from "@/app/lib/task-panel-context";
 import { NavProgressBar } from "@/app/lib/nav-progress";
 import { Splash } from "@/app/components/ui/Splash";
@@ -16,11 +16,11 @@ export default function FluxLayout({ children }: { children: ReactNode }) {
     <div data-theme="flux" className="flex flex-1 flex-col bg-bg font-body text-text">
       <NavProgressBar />
       <Suspense fallback={<Splash tenant="flux" />}>
-        <FluxProviders>
+        <SelectedProjectProvider>
           <TaskPanelProvider>
             <FluxShell>{children}</FluxShell>
           </TaskPanelProvider>
-        </FluxProviders>
+        </SelectedProjectProvider>
       </Suspense>
     </div>
   );

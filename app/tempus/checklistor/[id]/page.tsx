@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Icon } from "@/app/components/ui/Icon"
-import { loadChecklistRegisterPage } from "@/app/actions/tempus"
+import { loadChecklistRegisterPage } from "@/app/tempus/_actions/checklists"
 import {
   getTempusChecklistItem,
   getTempusObservations,

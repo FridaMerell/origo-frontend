@@ -2,7 +2,6 @@
 
 import { createContext, useContext } from "react";
 import type { ApsisPost, FluxUser } from "@/app/lib/dal";
-import { formatUserName } from "@/app/lib/user-context";
 
 type ApsisDataContextValue = {
   posts: ApsisPost[];
@@ -38,10 +37,4 @@ export function useApsisPosts() {
 
 export function useApsisUsers() {
   return useContext(ApsisDataContext).usersById;
-}
-
-export function apsisAuthorName(users: Map<number, FluxUser>, id: number | null): string | null {
-  if (id === null) return null;
-  const user = users.get(id);
-  return user ? formatUserName(user) : null;
 }

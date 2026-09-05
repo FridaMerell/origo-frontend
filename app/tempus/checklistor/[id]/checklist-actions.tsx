@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
-import { deleteChecklist } from "@/app/actions/tempus"
+import { deleteChecklist } from "@/app/tempus/_actions/checklists"
 
 export default function ChecklistActions({ id, name }: { id: string; name: string }) {
   const router = useRouter()

@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useVentureData } from "@/app/lib/venture-context"
+import { useVentureData } from "@/app/verso/_state/venture-context"
 import { PillSelect } from "@/app/components/ui/PillSelect"
 import { Select } from "@/app/components/ui/Select"
 import type { VentureTask } from "@/app/lib/dal"

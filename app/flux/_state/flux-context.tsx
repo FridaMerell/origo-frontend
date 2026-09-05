@@ -1,14 +1,15 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
-import type { FluxDocument, FluxMilestone, FluxProject, FluxTask, FluxUpdate, FluxUser } from "@/app/lib/dal";
+import type { FluxDocument, FluxMilestone, FluxProject, FluxTask, FluxTaskStatus, FluxUpdate, FluxUser } from "@/app/lib/dal";
 import { formatUserName } from "@/app/lib/user-context";
 
 type FluxDataContextValue = {
   projects: FluxProject[];
   selectedProject: FluxProject | null;
   selectProject: (id: string) => void;
+  setTaskStatus: (id: number, status: FluxTaskStatus) => void;
   tasks: FluxTask[];
   milestones: FluxMilestone[];
   updates: FluxUpdate[];
@@ -20,6 +21,7 @@ const FluxDataContext = createContext<FluxDataContextValue>({
   projects: [],
   selectedProject: null,
   selectProject: () => {},
+  setTaskStatus: () => {},
   tasks: [],
   milestones: [],
   updates: [],
@@ -46,16 +48,29 @@ export function FluxDataProvider({
   users: FluxUser[];
   children: React.ReactNode;
 }) {
-  const usersById = new Map(users.map((user) => [user.id, user]));
+  const [currentTasks, setCurrentTasks] = useState(tasks);
+  const usersById = useMemo(() => new Map(users.map((user) => [user.id, user])), [users]);
 
-  const selectProject = (id: string) => {
+  useEffect(() => {
+    setCurrentTasks(tasks);
+  }, [tasks]);
+
+  const selectProject = useCallback((id: string) => {
     document.cookie = `${FLUX_PROJECT_COOKIE}=${id}; path=/; max-age=31536000`;
-  };
+    window.location.reload();
+  }, []);
+
+  const setTaskStatus = useCallback((id: number, status: FluxTaskStatus) => {
+    setCurrentTasks((current) => current.map((task) => task.id === id ? { ...task, status } : task));
+  }, []);
+
+  const value = useMemo(
+    () => ({ projects, selectedProject, selectProject, setTaskStatus, tasks: currentTasks, milestones, updates, documents, usersById }),
+    [projects, selectedProject, selectProject, setTaskStatus, currentTasks, milestones, updates, documents, usersById],
+  );
 
   return (
-    <FluxDataContext.Provider
-      value={{ projects, selectedProject, selectProject, tasks, milestones, updates, documents, usersById }}
-    >
+    <FluxDataContext.Provider value={value}>
       {children}
     </FluxDataContext.Provider>
   );
@@ -72,6 +87,10 @@ export function useSelectedFluxProject() {
 
 export function useFluxTasks() {
   return useContext(FluxDataContext).tasks;
+}
+
+export function useFluxTaskStatus() {
+  return useContext(FluxDataContext).setTaskStatus;
 }
 
 export function useFluxMilestones() {

@@ -1,15 +1,16 @@
 "use client"
 
 import { AppLink as Link } from "@/app/components/ui/AppLink"
-import { usePathname, useRouter } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { usePathname } from "next/navigation"
+import { useState } from "react"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Button } from "@/app/components/ui/Button"
 import { Icon } from "@/app/components/ui/Icon"
 import { NotificationMenu } from "@/app/components/ui/NotificationMenu"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer"
 import { ProjectFormDrawer } from "@/app/flux/projects/project-form-drawer"
-import { useFluxProjects, useSelectedFluxProject } from "@/app/lib/flux-context"
+import { useFluxProjects, useSelectedFluxProject } from "@/app/flux/_state/flux-context"
 import { useUser, formatUserName } from "@/app/lib/user-context"
 import { logout } from "@/app/actions/auth"
 import { ORIGO_VERSION } from "@/app/lib/config"
@@ -22,25 +23,41 @@ const NAV_LINKS = [
   { label: "Backlog", href: "/backlog" },
 ]
 
+function SwitchProductMenu() {
+  return (
+    <>
+      <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-text-faint">Byt produkt</span>
+      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+        {APP_LINKS.filter((app) => app.id !== "flux").map((app) => <a key={app.id} href={appHref(app.id)} className="text-sm text-text-muted no-underline hover:text-text hover:underline">{app.name}</a>)}
+      </div>
+    </>
+  )
+}
+
+function UserSummaryRow({ userName }: { userName: string }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2"><Avatar name={userName} size={24} /><span className="text-sm text-text-muted">{userName}</span></div>
+  )
+}
+
+function LogoutButton({ className }: { className: string }) {
+  return (
+    <button type="button" onClick={() => void logout().then(() => { window.location.href = "/login" })} className={className}>Logga ut</button>
+  )
+}
+
 function ProjectSelector({ dropUp = false, compact = false }: { dropUp?: boolean; compact?: boolean }) {
   const projects = useFluxProjects()
   const { selectedProject, selectProject } = useSelectedFluxProject()
   const pathname = usePathname()
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    const close = (event: MouseEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false) }
-    document.addEventListener("mousedown", close)
-    return () => document.removeEventListener("mousedown", close)
-  }, [])
+  const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>()
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen((value) => !value)} className={compact ? "flex max-w-28 items-center gap-1 rounded-2xl px-2 py-2 text-xs font-semibold text-text hover:bg-surface-2" : "flex items-center gap-2 rounded-3xl px-3.5 py-2.5 text-base font-semibold text-text hover:bg-surface-2"}>
         <span className="truncate">{selectedProject?.name ?? "Projekt"}</span><Icon name="chevron-down" size={compact ? 13 : 16} className={["shrink-0 text-text-faint transition-transform", open ? "rotate-180" : ""].join(" ")} />
       </button>
       {open && <div className={dropUp ? "absolute bottom-full left-0 z-50 mb-2 min-w-52 overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md" : "absolute left-0 top-full z-50 mt-2 min-w-52 overflow-hidden rounded-2xl border border-border bg-surface py-1 shadow-md"}>
-        {projects.map((project) => <button key={project.id} type="button" onClick={() => { setOpen(false); if (project.id === selectedProject?.id) return; selectProject(String(project.id)); if (/^\/projects\/[^/]+$/.test(pathname)) router.push("/projects/" + project.id); else router.refresh() }} className="block w-full truncate px-3 py-2 text-left text-sm text-text hover:bg-surface-2">{project.name}</button>)}
+        {projects.map((project) => <button key={project.id} type="button" onClick={() => { setOpen(false); if (project.id !== selectedProject?.id) selectProject(String(project.id)); }} className="block w-full truncate px-3 py-2 text-left text-sm text-text hover:bg-surface-2">{project.name}</button>)}
         <Link href="/projects" onClick={() => setOpen(false)} className="block border-t border-border px-3 py-2 text-sm text-text-muted no-underline hover:bg-surface-2">Alla projekt</Link>
       </div>}
     </div>
@@ -76,13 +93,10 @@ export default function Toolbar({ mode, onToggleMode }: { mode: "light" | "dark"
               </button>
             )}
           </NotificationMenu>
-          <div className="my-1 border-t border-border" /><div className="flex items-center gap-2 px-3 py-2"><Avatar name={userName} size={24} /><span className="text-sm text-text-muted">{userName}</span></div>
-          {user && <button type="button" onClick={() => void logout().then(() => { window.location.href = "/login" })} className="rounded-md px-3 py-2 text-left text-sm text-text hover:bg-surface-2">Logga ut</button>}
+          <div className="my-1 border-t border-border" /><UserSummaryRow userName={userName} />
+          {user && <LogoutButton className="rounded-md px-3 py-2 text-left text-sm text-text hover:bg-surface-2" />}
           <div className="mt-1 border-t border-border px-3 py-2">
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-text-faint">Byt produkt</span>
-            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-              {APP_LINKS.filter((app) => app.id !== "flux").map((app) => <a key={app.id} href={appHref(app.id)} className="text-sm text-text-muted no-underline hover:text-text hover:underline">{app.name}</a>)}
-            </div>
+            <SwitchProductMenu />
           </div>
         </div>}
       </div>
@@ -94,10 +108,10 @@ export default function Toolbar({ mode, onToggleMode }: { mode: "light" | "dark"
           <NotificationMenu align="left" dropUp>{({ unreadCount, notificationLabel, toggle }) => <button type="button" onClick={toggle} className="flex w-full items-center gap-2 rounded-md px-3 py-2.5 text-sm text-text hover:bg-surface-2"><Icon name="bell" size={16} />Aviseringar{unreadCount > 0 && <span className="ml-auto min-w-4 rounded-full bg-accent px-1 text-[10px] font-bold leading-4 text-accent-contrast">{notificationLabel}</span>}</button>}</NotificationMenu>
           <button type="button" onClick={() => { onToggleMode(); setMobileMenuOpen(false) }} className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-text hover:bg-surface-2">{mode === "dark" ? "Ljust läge" : "Mörkt läge"}</button>
           <div className="my-1 border-t border-border" />
-          <div className="px-3 py-2"><span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-text-faint">Byt produkt</span><div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">{APP_LINKS.filter((app) => app.id !== "flux").map((app) => <a key={app.id} href={appHref(app.id)} className="text-sm text-text-muted no-underline hover:text-text hover:underline">{app.name}</a>)}</div></div>
+          <div className="px-3 py-2"><SwitchProductMenu /></div>
           <div className="my-1 border-t border-border" />
-          <div className="flex items-center gap-2 px-3 py-2"><Avatar name={userName} size={24} /><span className="text-sm text-text-muted">{userName}</span></div>
-          {user && <button type="button" onClick={() => void logout().then(() => { window.location.href = "/login" })} className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-text hover:bg-surface-2">Logga ut</button>}
+          <UserSummaryRow userName={userName} />
+          {user && <LogoutButton className="block w-full rounded-md px-3 py-2.5 text-left text-sm text-text hover:bg-surface-2" />}
         </div>}
         <nav className="flex items-center justify-between gap-1 rounded-3xl border border-border bg-surface px-2 py-2 shadow-md">
           <Link href="/" className="flex shrink-0 items-center no-underline"><Logo width={42} className="text-accent" /></Link>

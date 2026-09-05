@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { FLUX_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
+import { firstErrorMessage } from "@/app/lib/api-errors"
 import {
   fluxMilestoneFormSchema,
   fluxDocumentFormSchema,
@@ -18,19 +19,6 @@ import {
 } from "@/app/lib/schemas"
 
 export type FluxActionState = { error?: string; success?: boolean } | undefined
-
-function firstErrorMessage(detail: string, status: number): string {
-  try {
-    const parsed = JSON.parse(detail)
-    const firstKey = Object.keys(parsed)[0]
-    const firstValue = firstKey ? parsed[firstKey] : undefined
-    if (Array.isArray(firstValue)) return String(firstValue[0])
-    if (typeof firstValue === "string") return firstValue
-  } catch {
-    // not JSON, fall through to the raw detail below
-  }
-  return detail || `Ett fel uppstod (${status}).`
-}
 
 async function fluxRequest(
   path: string,
@@ -307,8 +295,7 @@ export async function deleteUpdate(id: number): Promise<FluxActionState> {
 
 export async function toggleTaskStatus(
   id: number,
-  status: FluxTaskFormValues["status"],
-  path?: string
+  status: FluxTaskFormValues["status"]
 ): Promise<FluxActionState> {
   const nextStatus = status === "not_started"
     ? "in_progress"
@@ -320,7 +307,6 @@ export async function toggleTaskStatus(
   })
   if (error) return { error }
 
-  revalidatePath(path || "/flux")
   return { success: true }
 }
 

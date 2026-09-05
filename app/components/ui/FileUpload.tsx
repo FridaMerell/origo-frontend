@@ -86,13 +86,11 @@ export function FileUpload({
         className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded border border-dashed px-4 py-6 text-center text-sm transition-colors ${dragOver ? "border-accent bg-accent-wash text-accent" : "border-border text-text-muted hover:border-accent-hover hover:text-text"
           } ${uploading ? "pointer-events-none opacity-60" : ""}`}
       >
-        {
-          uploading ?
-
-            <Upload size={20} className={uploading ? "animate-spin" : ""} />
-            :
-            <Loader size={20} className={uploading ? "animate-spin" : ""} />
-        }
+        {uploading ? (
+          <Loader size={20} className="animate-spin" />
+        ) : (
+          <Upload size={20} />
+        )}
         <span>
           {uploading
             ? "Laddar upp..."

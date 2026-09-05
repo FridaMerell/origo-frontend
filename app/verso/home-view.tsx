@@ -28,17 +28,23 @@ const HomeView = () => {
     )
   }
   return (
-    <div className="flex flex-col gap-4 px-4 sm:px-10 py-5">
-      <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-display">Dashboard för {selectedFacility.name}</h1>
+    <div className="container flex flex-col gap-8 py-8 sm:py-10">
+      <header className="flex flex-col gap-5 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Översikt · anläggning</p>
+          <h1 className="font-display text-3xl font-semibold leading-tight text-text sm:text-4xl">
+            {selectedFacility.name}
+          </h1>
+          <p className="text-sm text-text-muted">Läget just nu — besök, ekonomi och det senaste från teamet.</p>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Drawer trigger="Lägg till uppdatering" triggerVariant={"secondary"} triggerSize={'sm'} title={'Ny uppdatering'} >
             <UpdateForm />
           </Drawer>
           <BookVisitButton />
         </div>
-      </div>
-      <div className="grid grid-cols-6 gap-4">
+      </header>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
         <NextVisitWidget />
         <WeatherWidget facility={selectedFacility} />
         <UpdatesWidget />

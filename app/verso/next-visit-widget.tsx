@@ -10,25 +10,25 @@ import { StepperButtons } from "./stepper-buttons"
 export function NextVisitWidget() {
   const { bookings } = useBookingData()
   const [index, setIndex] = useState(0)
-  return <Card className="w-full col-span-6 md:col-span-4 lg:col-span-4 flex flex-col justify-between">
+  return <Card className="col-span-1 flex min-h-52 flex-col justify-between border-border-strong p-5 lg:col-span-7">
     {
       bookings && bookings.length > 0 ? (
 
-        <div className="flex flex-col gap-2">
-          <span className="text-text-faint text-xs ">
-            <CalendarIcon size={13} className="inline-block mr-1" />
+        <div className="flex flex-col gap-5">
+          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-accent">
+            <CalendarIcon size={14} />
             Nästa besök
           </span>
-          <div className="flex flex-col gap-1">
-            <span className="text-2xl font-display font-bold">{bookings[index].visitor}</span>
-            <span className="text-sm text-text-muted">{formatDateShort(bookings[index].start_date)} - {formatDateShort(bookings[index].end_date)}</span>
+          <div className="flex flex-col gap-1.5">
+            <span className="font-display text-3xl font-semibold leading-none">{bookings[index].visitor}</span>
+            <span className="text-sm text-text-muted">{formatDateShort(bookings[index].start_date)} — {formatDateShort(bookings[index].end_date)}</span>
           </div>
         </div>
       ) : (
-        <div className="text-center text-text-muted">Inga kommande besök.</div>
+        <div className="flex flex-1 items-center text-sm text-text-muted">Inga kommande besök.</div>
       )
     }
 
-    <StepperButtons index={index} length={bookings.length} onIndexChange={setIndex} className="flex gap-1 justify-between mt-2" />
+    <StepperButtons index={index} length={bookings.length} onIndexChange={setIndex} className="mt-6 flex justify-between gap-1" />
   </Card>
 }

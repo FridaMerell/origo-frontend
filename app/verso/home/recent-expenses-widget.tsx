@@ -1,26 +1,31 @@
 "use client"
 
-import { CreditCard } from "lucide-react"
+import { ArrowUpRight, Receipt } from "lucide-react"
 import { Card } from "../../components/ui/Card"
 import { useFacilities } from "../_state/facility-context"
+import Link from "next/link"
 
 export function RecentExpensesWidget() {
   const { yearlyExpenses } = useFacilities()
-  return yearlyExpenses ? (
-    <Card className="w-full col-span-6 md:col-span-3 lg:col-span-3 gap-5 flex flex-col justify-between">
-      <div className="flex flex-col gap-2">
-        <span className="text-text-faint text-xs ">
-          <CreditCard size={13} className="inline-block mr-1" />
+  return (
+    <Card className="col-span-1 flex min-h-52 flex-col justify-between bg-surface-2 p-5 lg:col-span-5">
+      <div className="flex flex-col gap-5">
+        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+          <Receipt size={14} />
           Utgifter i år
         </span>
         <div className="flex flex-col gap-1">
-          <span className="text-2xl font-display font-bold">{yearlyExpenses} kr</span>
+          <span className="font-display text-4xl font-semibold leading-none text-text">
+            {yearlyExpenses ? `${yearlyExpenses} kr` : "—"}
+          </span>
+          <span className="text-sm text-text-muted">
+            {yearlyExpenses ? "Registrerat för den valda anläggningen" : "Inga utgifter registrerade ännu"}
+          </span>
         </div>
       </div>
-    </Card>
-  ) : (
-    <Card className="w-full col-span-6 md:col-span-3 lg:col-span-3 gap-5 flex flex-col justify-between">
-      <div className="mb-5 text-text-muted">Inga utgifter.</div>
+      <Link href="/ekonomi" className="mt-6 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-link hover:text-link-hover">
+        Se ekonomin <ArrowUpRight size={15} />
+      </Link>
     </Card>
   )
 }

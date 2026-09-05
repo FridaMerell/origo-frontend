@@ -7,6 +7,7 @@ import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { getCurrentUser } from "@/app/lib/dal"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import { versoUpdateFormSchema, type VersoUpdateFormValues } from "@/app/lib/schemas"
+import { firstErrorMessage } from "@/app/lib/api-errors"
 
 export type CreateVersoUpdateState = { error?: string; success?: boolean } | undefined
 
@@ -45,7 +46,8 @@ export async function createVersoUpdate(
   })
 
   if (!response.ok) {
-    return { error: "Uppdateringen kunde inte skapas. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
   }
 
   revalidatePath(path || "/")
@@ -82,7 +84,8 @@ export async function updateVersoUpdate(
   })
 
   if (!response.ok) {
-    return { error: "Uppdateringen kunde inte sparas. Försök igen." }
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
   }
 
   revalidatePath(path || "/")

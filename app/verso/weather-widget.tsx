@@ -5,7 +5,7 @@ import { Facility } from "../lib/dal"
 import { Card } from "../components/ui/Card"
 import { getWeather, getWeatherIconName, type WeatherForecast } from "../lib/weather-client"
 import { StepperButtons } from "./stepper-buttons"
-import { Cloud, CloudFog, CloudLightning, CloudMoon, CloudRain, CloudSnow, CloudSun, Cloudy, Moon, Sun } from "lucide-react"
+import { Cloud, CloudFog, CloudLightning, CloudMoon, CloudRain, CloudSnow, CloudSun, Cloudy, Moon, Sun, Wind } from "lucide-react"
 
 const weatherIcons = {
   "sun": Sun,
@@ -35,42 +35,38 @@ export function WeatherWidget({ facility }: { facility: Facility }) {
   const weatherIcon = current ? getWeatherIconName(current.data.symbol_code, daytime) : null
   const WeatherIcon = weatherIcons[weatherIcon as keyof typeof weatherIcons] ?? Cloud
 
-  return <Card className="p-4 w-full col-span-6 md:col-span-2 lg:col-span-2">
+  return <Card className="col-span-1 min-h-52 p-5 lg:col-span-5">
     {weather ? (
       weather.timeSeries && weather.timeSeries.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-3 font-display text-accent">
-              <span className={'pt'}>
-
-                <WeatherIcon size={34} />
+        <div className="flex h-full flex-col justify-between gap-5">
+          <div className="flex flex-col gap-4">
+            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
+              <Wind size={14} />
+              Väder nu
+            </span>
+            <div className="flex items-end justify-between gap-4">
+              <div className="flex items-center gap-3 font-display text-accent">
+                <WeatherIcon size={38} strokeWidth={1.5} />
+                <span className="text-4xl font-semibold leading-none">{weather.timeSeries[index].data.air_temperature}°</span>
+              </div>
+              <span className="pb-1 text-xs text-text-faint">
+                {new Date(weather.timeSeries[index].time).toLocaleString("sv-SE", { hour: "2-digit", minute: "2-digit" })}
               </span>
-              <span className="text-xl font-semibold ">{weather.timeSeries[index].data.air_temperature}°C</span>
-              <span className="text-sm text-text-muted">({new Date(weather.timeSeries[index].time).toLocaleString("sv-SE", { hour: "2-digit", minute: "2-digit" })})</span>
-            </div>
-            <div>
             </div>
           </div>
-          <div className="flex gap-1 justify-between">
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-text-muted">Vind: {weather.timeSeries[index].data.wind_speed} m/s, {weather.timeSeries[index].data.wind_from_direction}°</span>
-              <span className="text-sm text-text-muted">Luftfuktighet: {weather.timeSeries[index].data.relative_humidity}%</span>
-              <span className="text-sm text-text-muted">Lufttryck: {weather.timeSeries[index].data.air_pressure_at_mean_sea_level} hPa</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="text-sm text-text-muted">Nederbörd: {weather.timeSeries[index].data.precipitation_amount_mean} mm</span>
-              <span className="text-sm text-text-muted">Sikt: {weather.timeSeries[index].data.visibility_in_air} km</span>
-              <span className="text-sm text-text-muted">Molnighet: {weather.timeSeries[index].data.cloud_area_fraction}%</span>
-            </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t border-border pt-3 text-xs text-text-muted">
+            <span>Vind {weather.timeSeries[index].data.wind_speed} m/s</span>
+            <span>Fukt {weather.timeSeries[index].data.relative_humidity}%</span>
+            <span>Nederbörd {weather.timeSeries[index].data.precipitation_amount_mean} mm</span>
+            <span>Sikt {weather.timeSeries[index].data.visibility_in_air} km</span>
           </div>
-
-          <StepperButtons index={index} length={weather.timeSeries.length} onIndexChange={setIndex} />
+          <StepperButtons index={index} length={weather.timeSeries.length} onIndexChange={setIndex} className="flex justify-between gap-1" />
         </div>
       ) : (
-        <div className="text-center text-text-muted">Ingen väderdata tillgänglig.</div>
+        <div className="flex h-full items-center text-sm text-text-muted">Ingen väderdata tillgänglig.</div>
       )
     ) : (
-      <div className="text-center text-text-muted">Hämtar väderdata...</div>
+      <div className="flex h-full items-center text-sm text-text-muted">Hämtar väderdata...</div>
     )}
   </Card>
 }

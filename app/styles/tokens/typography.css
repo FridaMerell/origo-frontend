@@ -23,5 +23,5 @@
 --tracking-tight:0;--tracking-normal:.01em;--tracking-wide:.06em;
 }
 [data-theme="origo"]{
-   --font-mono:'Geist Mono',monospace;
+--font-mono:'Geist Mono','Geist Mono Fallback',monospace;
 }

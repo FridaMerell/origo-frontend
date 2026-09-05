@@ -52,8 +52,10 @@ tappa \`Authorization\`-headern i omdirigeringen.
 Skicka token i \`Authorization\`-headern med prefixet \`Token\`:
 
 \`\`\`http
-Authorization: Token 9c8b7a6d5e4f3c2b1a09f8e7d6c5b4a3f2e1d0c9
+Authorization: Token 9c8b7a6d5...
 \`\`\`
+
+(Det här är inte en riktig token)
 
 Vid token-auth behövs varken cookies eller \`X-CSRFToken\`.
 

@@ -157,7 +157,7 @@ export default function RootHome() {
                     updatePreview(app.id, event.clientX, event.clientY)
                   }
                   onPointerLeave={() => setPreview(null)}
-                  className='group flex items-center gap-4 border-b border-[#1B252B]/20 px-5 py-4 no-underline transition-colors hover:bg-[#1B252B] hover:text-[#F4F2EC] sm:gap-6 sm:px-6 sm:py-5'>
+                  className='group flex items-center gap-4 border-b border-[#1B252B]/20 px-5 py-4 no-underline transition-colors duration-200 hover:bg-[#1B252B] hover:text-[#F4F2EC] sm:gap-6 sm:px-6 sm:py-5'>
                   <span className='font-mono text-[11px] text-[#58636A] group-hover:text-[#C9D0CE]'>
                     {String(index + 1).padStart(2, "0")}
                   </span>

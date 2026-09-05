@@ -8,7 +8,7 @@ import {
   createAccountInvitation,
   createProjectInvitation,
   revokeInvitation,
-} from "@/app/actions/account";
+} from "@/app/actions/account/invitations";
 import {
   accountInvitationSchema,
   type AccountInvitationValues,
@@ -20,54 +20,15 @@ import {
   BUTTON,
   ERROR_TEXT,
   Field,
+  formatExpiryDate,
   GHOST_BUTTON,
   INPUT,
+  InvitationLinkNotice,
   LABEL,
   MONO,
   Section,
   ToggleForm,
 } from "./ui";
-
-function formatDate(value: string | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString("sv-SE");
-}
-
-function InvitationLinkNotice({ token, onDismiss }: { token: string; onDismiss: () => void }) {
-  const [copied, setCopied] = useState(false);
-  const link =
-    typeof window === "undefined"
-      ? `/join?token=${token}`
-      : `${window.location.origin}/join?token=${token}`;
-
-  return (
-    <div className="flex flex-col gap-2 border border-[#1B252B] bg-[#1B252B] p-4 text-[#F4F2EC]">
-      <span className={`${MONO} text-[10px] uppercase tracking-[0.14em] text-[#C9D0CE]`}>
-        Kopiera nu — länken visas bara denna gång
-      </span>
-      <code className="break-all text-sm">{link}</code>
-      <div className="mt-1 flex gap-3">
-        <button
-          type="button"
-          className={`${MONO} rounded-sm border border-[#F4F2EC]/40 px-3 py-1.5 text-[11px] uppercase tracking-[0.12em] hover:border-[#F4F2EC]`}
-          onClick={() => {
-            void navigator.clipboard?.writeText(link).then(() => setCopied(true));
-          }}
-        >
-          {copied ? "Kopierad" : "Kopiera länk"}
-        </button>
-        <button
-          type="button"
-          className={`${MONO} px-2 py-1.5 text-[11px] uppercase tracking-[0.12em] underline underline-offset-4`}
-          onClick={onDismiss}
-        >
-          Klar
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function InvitationRow({
   invitation,
@@ -79,7 +40,7 @@ function InvitationRow({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const expires = formatDate(invitation.expires_at);
+  const expires = formatExpiryDate(invitation.expires_at);
 
   const target =
     invitation.target_kind === "project"

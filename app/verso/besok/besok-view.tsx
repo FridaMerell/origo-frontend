@@ -8,6 +8,7 @@ import { useBookingData } from "@/app/verso/_state/booking-context";
 import { BookVisitButton } from "@/app/verso/besok/book-visit-button";
 import { BookingDrawerProvider } from "@/app/verso/besok/booking-drawer-context";
 import { StayBar } from "@/app/verso/besok/stay-bar";
+import { formatMonthYear } from "@/app/lib/formatters";
 import type { Booking } from "@/app/lib/dal";
 
 const WEEKDAYS = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
@@ -75,10 +76,7 @@ export default function BesokView() {
       end: parseLocalDate(b.end_date),
     }));
 
-  const monthLabel = new Date(year, month, 1).toLocaleDateString("sv-SE", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = formatMonthYear(new Date(year, month, 1));
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-7">

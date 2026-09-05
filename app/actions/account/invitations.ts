@@ -1,178 +1,20 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { ACCOUNTS_ENDPOINTS, AUTH_ENDPOINTS, VERSO_ENDPOINTS } from "@/app/lib/config"
-import {
-  buildCookieHeader,
-  extractSetCookie,
-  fetchOrigoApi,
-} from "@/app/lib/api-client"
+import { ACCOUNTS_ENDPOINTS, AUTH_ENDPOINTS } from "@/app/lib/config"
+import { buildCookieHeader, extractSetCookie, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies, setSessionCookies } from "@/app/lib/session"
 import { getCurrentUser } from "@/app/lib/dal"
 import { readErrorBody, type FieldErrors } from "@/app/lib/api-errors"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import {
-  accountProfileSchema,
-  type AccountProfileValues,
-  createHouseSchema,
-  type CreateHouseValues,
   houseInvitationSchema,
   type HouseInvitationValues,
   projectInvitationSchema,
   type ProjectInvitationValues,
   accountInvitationSchema,
   type AccountInvitationValues,
-  passwordChangeSchema,
-  type PasswordChangeValues,
 } from "@/app/lib/schemas"
-
-export type AccountActionResult<T> =
-  | { success?: boolean; error?: string; fieldErrors?: FieldErrors<T> }
-  | undefined
-
-async function authedJsonHeaders() {
-  const { sessionId, csrfToken } = await getSessionCookies()
-  return {
-    "Content-Type": "application/json",
-    "X-CSRFToken": csrfToken ?? "",
-    Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-  }
-}
-
-export async function updateProfile(
-  data: AccountProfileValues,
-): Promise<AccountActionResult<AccountProfileValues>> {
-  const parsed = accountProfileSchema.safeParse(data)
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Kontrollera fälten och försök igen." }
-  }
-  const user = await getCurrentUser()
-  if (!user) return { error: "Du måste vara inloggad." }
-
-  const response = await fetchOrigoApi(AUTH_ENDPOINTS.profile(user.id), {
-    method: "PATCH",
-    headers: await authedJsonHeaders(),
-    body: JSON.stringify({
-      first_name: parsed.data.first_name,
-      last_name: parsed.data.last_name,
-      email: parsed.data.email,
-    }),
-  })
-
-  if (!response.ok) {
-    const { message, fieldErrors } = readErrorBody<AccountProfileValues>(
-      await response.text().catch(() => ""),
-      ["first_name", "last_name", "email"],
-    )
-    if (fieldErrors) return { fieldErrors }
-    return { error: message ?? `Kunde inte spara ändringarna (${response.status}).` }
-  }
-
-  revalidatePath("/konto")
-  return { success: true }
-}
-
-export async function changePassword(
-  data: PasswordChangeValues,
-): Promise<AccountActionResult<PasswordChangeValues>> {
-  const parsed = passwordChangeSchema.safeParse(data)
-  if (!parsed.success) {
-    const issue = parsed.error.issues[0]
-    const path = issue?.path[0]
-    if (path === "current_password" || path === "new_password" || path === "confirm_password") {
-      return { fieldErrors: { [path]: issue.message } as FieldErrors<PasswordChangeValues> }
-    }
-    return { error: issue?.message ?? "Kontrollera fälten och försök igen." }
-  }
-  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
-
-  const response = await fetchOrigoApi(AUTH_ENDPOINTS.setPassword, {
-    method: "POST",
-    headers: await authedJsonHeaders(),
-    body: JSON.stringify({
-      current_password: parsed.data.current_password,
-      new_password: parsed.data.new_password,
-    }),
-  })
-
-  if (!response.ok) {
-    const { message, fieldErrors } = readErrorBody<PasswordChangeValues>(
-      await response.text().catch(() => ""),
-      ["current_password", "new_password"],
-    )
-    if (fieldErrors) return { fieldErrors }
-    return { error: message ?? `Kunde inte byta lösenord (${response.status}).` }
-  }
-
-  return { success: true }
-}
-
-export async function createHouse(
-  data: CreateHouseValues,
-): Promise<AccountActionResult<CreateHouseValues>> {
-  const parsed = createHouseSchema.safeParse(data)
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Kontrollera fälten och försök igen." }
-  }
-  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
-
-  const response = await fetchOrigoApi(VERSO_ENDPOINTS.facilities, {
-    method: "POST",
-    headers: await authedJsonHeaders(),
-    body: JSON.stringify({
-      name: parsed.data.name,
-      address: parsed.data.address,
-      lat: parsed.data.lat === "" ? null : Number(parsed.data.lat),
-      lng: parsed.data.lng === "" ? null : Number(parsed.data.lng),
-    }),
-  })
-
-  if (!response.ok) {
-    const { message, fieldErrors } = readErrorBody<CreateHouseValues>(
-      await response.text().catch(() => ""),
-      ["name", "address", "lat", "lng"],
-    )
-    if (fieldErrors) return { fieldErrors }
-    return { error: message ?? `Kunde inte skapa huset (${response.status}).` }
-  }
-
-  revalidatePath("/konto/anslutningar")
-  return { success: true }
-}
-
-export async function updateHouse(
-  id: string,
-  data: CreateHouseValues,
-): Promise<AccountActionResult<CreateHouseValues>> {
-  if (!id) return { error: "Hus-id saknas." }
-  const parsed = createHouseSchema.safeParse(data)
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Kontrollera fälten och försök igen." }
-  }
-  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
-
-  const response = await fetchOrigoApi(VERSO_ENDPOINTS.facility(id), {
-    method: "PATCH",
-    headers: await authedJsonHeaders(),
-    body: JSON.stringify({
-      name: parsed.data.name,
-      address: parsed.data.address,
-      lat: parsed.data.lat === "" ? null : Number(parsed.data.lat),
-      lng: parsed.data.lng === "" ? null : Number(parsed.data.lng),
-    }),
-  })
-
-  if (!response.ok) {
-    const { message, fieldErrors } = readErrorBody<CreateHouseValues>(
-      await response.text().catch(() => ""),
-      ["name", "address", "lat", "lng"],
-    )
-    if (fieldErrors) return { fieldErrors }
-    return { error: message ?? `Kunde inte spara huset (${response.status}).` }
-  }
-
-  revalidatePath("/konto/anslutningar")
-  return { success: true }
-}
 
 type InvitationResult = {
   token?: string
@@ -388,47 +230,4 @@ export async function redeemInvitation(input: RedeemInput): Promise<RedeemResult
     house: targetKind === "house" && target ? target : undefined,
     created: data?.created,
   }
-}
-
-export type SelfTokenResult = { token?: string; error?: string }
-
-async function readSelfToken(response: Response): Promise<SelfTokenResult> {
-  if (!response.ok) return { error: `Något gick fel (${response.status}).` }
-  const body = (await response.json().catch(() => null)) as { token?: unknown } | null
-  return typeof body?.token === "string"
-    ? { token: body.token }
-    : { error: "Svaret saknade en token." }
-}
-
-// The account has a single personal API token (DRF TokenAuthentication). GET
-// returns it, creating one if none exists.
-export async function getSelfToken(): Promise<SelfTokenResult> {
-  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
-  const { sessionId, csrfToken } = await getSessionCookies()
-  const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.selfToken, {
-    headers: { Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }) },
-  })
-  return readSelfToken(response)
-}
-
-// Replaces the token — any client still using the old value stops working.
-export async function rotateSelfToken(): Promise<SelfTokenResult> {
-  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
-  const response = await fetchOrigoApi(`${ACCOUNTS_ENDPOINTS.selfToken}?rotate=1`, {
-    method: "POST",
-    headers: await authedJsonHeaders(),
-  })
-  return readSelfToken(response)
-}
-
-export async function revokeSelfToken(): Promise<{ success?: boolean; error?: string }> {
-  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
-  const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.selfToken, {
-    method: "DELETE",
-    headers: await authedJsonHeaders(),
-  })
-  if (!response.ok && response.status !== 404) {
-    return { error: `Kunde inte återkalla token (${response.status}).` }
-  }
-  return { success: true }
 }

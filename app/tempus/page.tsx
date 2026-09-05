@@ -8,6 +8,7 @@ import {
   getTempusSeasonalOverviewPage,
   getTempusSuggestedStopsRun,
 } from "@/app/lib/dal"
+import { formatDateLong } from "@/app/lib/formatters"
 import HomeView from "./home-view"
 
 export const metadata: Metadata = {
@@ -90,11 +91,7 @@ export default async function TempusPage({
     <HomeView
       items={items.results}
       areaName={selectedGeoArea?.name ?? "Hela Sverige"}
-      todayLabel={today.toLocaleDateString("sv-SE", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })}
+      todayLabel={formatDateLong(today)}
       currentMonth={today.getMonth()}
       view={view}
       overview={overview.results}

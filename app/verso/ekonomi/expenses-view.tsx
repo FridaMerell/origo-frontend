@@ -6,10 +6,10 @@ import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
 import { Drawer } from "@/app/components/ui/Drawer"
 import ExpenseForm from "@/app/verso/expense-form"
+import { formatDateLong } from "@/app/lib/formatters"
 import type { Expense } from "@/app/lib/dal"
 
-const groupLabel = (date: string) =>
-  new Date(date).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
+const groupLabel = (date: string) => formatDateLong(date)
 
 export default function ExpensesView() {
   const { expenses, ventures } = useVentureData()

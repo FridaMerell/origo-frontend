@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createTask, updateTask } from "@/app/actions/flux";
+import { createTask, updateTask } from "@/app/actions/flux/tasks";
 import { fluxTaskFormSchema, type FluxTaskFormValues } from "@/app/lib/schemas";
 import { Drawer } from "@/app/components/ui/Drawer";
 import { Field, fieldInputClass } from "@/app/components/form/Field";

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
-import { getSessionCookies } from "@/app/lib/session"
+import { fetchOrigoApi } from "@/app/lib/api-client"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { getCurrentUser } from "@/app/lib/dal"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import { versoUpdateFormSchema, type VersoUpdateFormValues } from "@/app/lib/schemas"
@@ -30,15 +30,9 @@ export async function createVersoUpdate(
     return { error: "Ingen anläggning vald." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(VERSO_ENDPOINTS.versoUpdates, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({
       title: parsed.data.title,
       content: parsed.data.content,
@@ -75,15 +69,9 @@ export async function updateVersoUpdate(
     return { error: "Alla fält måste fyllas i." }
   }
 
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.versoUpdates}${id}/`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: JSON.stringify({
       title: parsed.data.title,
       content: parsed.data.content,

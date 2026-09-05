@@ -9,6 +9,7 @@ import {
   startSuggestedStops,
   type SuggestedStopsParams,
 } from "@/app/tempus/_actions/routes"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import type { TempusSuggestedStopsRun } from "@/app/lib/dal"
 import type {
   TempusRoute,
@@ -35,6 +36,7 @@ export default function RouteDetail({
   const [activeId, setActiveId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [mutating, startMutation] = useTransition()
+  const { requestConfirm, dialog } = useConfirmDialog()
 
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancelled = useRef(false)
@@ -141,14 +143,21 @@ export default function RouteDetail({
   }
 
   const removeRoute = () => {
-    if (!window.confirm(`Ta bort rutten "${route.name}"?`)) return
-    startMutation(async () => {
-      const result = await deleteRoute(route.id)
-      if (result.error) {
-        setError(result.error)
-        return
-      }
-      router.push("/rutt")
+    requestConfirm({
+      title: "Ta bort rutt",
+      message: `Ta bort rutten "${route.name}"? Det går inte att ångra.`,
+      confirmLabel: "Ta bort",
+      destructive: true,
+      onConfirm: () => {
+        startMutation(async () => {
+          const result = await deleteRoute(route.id)
+          if (result.error) {
+            setError(result.error)
+            return
+          }
+          router.push("/rutt")
+        })
+      },
     })
   }
 
@@ -183,6 +192,7 @@ export default function RouteDetail({
           />
         </section>
       </article>
+      {dialog}
     </div>
   )
 }

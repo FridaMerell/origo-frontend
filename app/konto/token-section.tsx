@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { getSelfToken, revokeSelfToken, rotateSelfToken } from "@/app/actions/account";
+import { getSelfToken, revokeSelfToken, rotateSelfToken } from "@/app/actions/account/tokens";
 import { BUTTON, ERROR_TEXT, GHOST_BUTTON, MONO, OK_TEXT, Section } from "./ui";
 
 function TokenReveal({ token }: { token: string }) {

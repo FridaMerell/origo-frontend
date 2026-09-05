@@ -1,5 +1,6 @@
 import type { TempusRoute, TempusRouteStop } from "@/app/lib/dal"
 export { formatKm as km } from "@/app/tempus/formatters"
+export { formatDateLongOrNull as formatDate } from "@/app/lib/formatters"
 
 export const RED_LIST_LABELS: Record<string, string> = {
   NT: "Nära hotad",
@@ -8,14 +9,6 @@ export const RED_LIST_LABELS: Record<string, string> = {
   CR: "Akut hotad",
   RE: "Nationellt utdöd",
   DD: "Kunskapsbrist",
-}
-
-export function formatDate(value: string | null) {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? null
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
 }
 
 // Build a Google Maps directions URL for the route. Prefers the user's ordered

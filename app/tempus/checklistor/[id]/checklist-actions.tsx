@@ -3,23 +3,32 @@
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { deleteChecklist } from "@/app/tempus/_actions/checklists"
 
 export default function ChecklistActions({ id, name }: { id: string; name: string }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const { requestConfirm, dialog } = useConfirmDialog()
 
   const remove = () => {
-    if (!window.confirm(`Ta bort checklistan "${name}"?`)) return
-    setError(null)
-    startTransition(async () => {
-      const result = await deleteChecklist(id)
-      if (result.error) {
-        setError(result.error)
-        return
-      }
-      router.push("/checklistor")
+    requestConfirm({
+      title: "Ta bort checklista",
+      message: `Ta bort checklistan "${name}"? Det går inte att ångra.`,
+      confirmLabel: "Ta bort",
+      destructive: true,
+      onConfirm: () => {
+        setError(null)
+        startTransition(async () => {
+          const result = await deleteChecklist(id)
+          if (result.error) {
+            setError(result.error)
+            return
+          }
+          router.push("/checklistor")
+        })
+      },
     })
   }
 
@@ -43,6 +52,7 @@ export default function ChecklistActions({ id, name }: { id: string; name: strin
         </button>
       </div>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {dialog}
     </div>
   )
 }

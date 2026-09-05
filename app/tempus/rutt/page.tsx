@@ -1,18 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { getTempusRoutes } from "@/app/lib/dal"
+import { formatDateLongOrNull } from "@/app/lib/formatters"
 
 export const metadata: Metadata = {
   title: "Rutter | Tempus",
   description: "Planerade körsträckor med stoppställen rankade efter artdata.",
-}
-
-function formatDate(value: string | null) {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? null
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
 }
 
 export default async function RoutesPage() {
@@ -76,7 +69,7 @@ export default async function RoutesPage() {
           ) : (
             <ol className="border-l border-border">
               {sorted.map((route, index) => {
-                const plannedDate = formatDate(route.planned_date)
+                const plannedDate = formatDateLongOrNull(route.planned_date)
                 const pointCount = route.geometry?.coordinates.length ?? 0
                 return (
                   <li key={route.id}>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { usePathname } from "next/navigation"
 import { type Resolver, useForm } from "react-hook-form"
-import { createDocument, updateDocument } from "@/app/actions/flux"
+import { createDocument, updateDocument } from "@/app/actions/flux/documents"
 import { Button } from "@/app/components/ui/Button"
 import { Icon } from "@/app/components/ui/Icon"
 import { Field, fieldInputClass } from "@/app/components/form/Field"

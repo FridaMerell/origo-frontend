@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { TempusRoute, TempusRouteStop, TempusSuggestedStop } from "@/app/lib/dal"
+import { formatDateLong } from "@/app/lib/formatters"
 import { RouteMap } from "../rutt/route-map"
 import { createRouteProjection } from "../rutt/projection"
 import { CornerTicks } from "./corner-ticks"
@@ -10,11 +11,10 @@ export type HomeRouteOverview = {
   suggestions: TempusSuggestedStop[]
 }
 
+// `value` is a plain date (no time); parse at noon so no timezone can roll it to the previous/next day.
 function formatRouteDate(value: string) {
   const date = new Date(`${value}T12:00:00`)
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })
+  return Number.isNaN(date.getTime()) ? value : formatDateLong(date)
 }
 
 export function RouteOverview({ routeOverview }: { routeOverview: HomeRouteOverview | null }) {

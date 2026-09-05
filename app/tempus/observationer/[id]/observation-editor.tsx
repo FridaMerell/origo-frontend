@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { deleteObservation, updateObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import type { TempusObservation } from "@/app/lib/dal"
@@ -20,6 +21,7 @@ export default function ObservationEditor({ observation }: { observation: Tempus
   const [editing, setEditing] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const { requestConfirm, dialog } = useConfirmDialog()
 
   const initialPoint =
     observation.location && "coordinates" in observation.location
@@ -68,15 +70,22 @@ export default function ObservationEditor({ observation }: { observation: Tempus
   }
 
   const remove = () => {
-    if (!window.confirm("Ta bort den här observationen?")) return
-    setError(null)
-    startTransition(async () => {
-      const result = await deleteObservation(observation.id)
-      if (result.error) {
-        setError(result.error)
-        return
-      }
-      router.push("/observationer")
+    requestConfirm({
+      title: "Ta bort observation",
+      message: "Ta bort den här observationen? Det går inte att ångra.",
+      confirmLabel: "Ta bort",
+      destructive: true,
+      onConfirm: () => {
+        setError(null)
+        startTransition(async () => {
+          const result = await deleteObservation(observation.id)
+          if (result.error) {
+            setError(result.error)
+            return
+          }
+          router.push("/observationer")
+        })
+      },
     })
   }
 
@@ -97,6 +106,7 @@ export default function ObservationEditor({ observation }: { observation: Tempus
             Ta bort
           </button>
         </div>
+        {dialog}
       </div>
     )
   }

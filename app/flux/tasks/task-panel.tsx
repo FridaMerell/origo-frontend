@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
-import { addSubtask, toggleTaskStatus } from "@/app/actions/flux";
+import { addSubtask, toggleTaskStatus } from "@/app/actions/flux/tasks";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Drawer } from "@/app/components/ui/Drawer";
 import { Gallery } from "@/app/components/ui/Gallery";

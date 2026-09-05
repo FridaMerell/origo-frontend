@@ -20,7 +20,7 @@ app/tempus/_actions/<funktionsområde>.ts
 app/tempus/_data/<funktionsområde>.ts
         │
         ▼
-app/lib/dal/tempus.ts
+app/lib/dal/tempus/<funktionsområde>.ts
         │
         ▼
 Origo API
@@ -78,13 +78,23 @@ DAL-indexet.
 | `species.ts` | Artlistor, artdetaljer, fenogram och artrelaterade typer. |
 | `routes.ts` | Ruttstopp och typer för föreslagna stopp. |
 
-Den befintliga implementationen och de gemensamma Tempus-typerna finns ännu i
-`app/lib/dal/tempus.ts`. `_data`-filerna är de avsedda områdesgränserna. När en
-DAL-funktion senare bryts ut ska dess publika importväg i `_data` behållas, så
-att anropande actions och vyer inte behöver känna till den interna flytten.
+Den faktiska implementationen ligger numera under `app/lib/dal/tempus/`,
+uppdelad per funktionsområde (`species.ts`, `checklists.ts`,
+`observations.ts`, `routes.ts`, `geo.ts`, samt `shared.ts` för de generiska
+pagineringshjälparna). `_data`-filerna importerar direkt från respektive
+områdesfil där, till exempel `@/app/lib/dal/tempus/species`. Om en
+DAL-fil flyttas eller delas upp ytterligare ska den publika importvägen i
+`_data` behållas, så att anropande actions och vyer inte behöver känna till
+den interna flytten.
 
 Gemensamma funktioner som inte tillhör Tempus, exempelvis `getCurrentUser`,
-importeras fortsatt från det gemensamma DAL-lagret.
+importeras fortsatt från det gemensamma DAL-lagret (`@/app/lib/dal`).
+
+De generiska pagineringshjälparna i `app/lib/dal/tempus/shared.ts`
+(`TempusPage`, `fetchTempusPage`, `paginationQuery`) är i sin tur bara alias
+för `app/lib/dal/pagination.ts` — den produktoberoende varianten som även
+andra produkter kan använda för paginerade listor. Se
+`app/lib/README.md`.
 
 ## Lägga till serverfunktionalitet
 

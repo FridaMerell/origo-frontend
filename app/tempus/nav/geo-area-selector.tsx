@@ -1,20 +1,11 @@
-import { useEffect, useRef, useState } from "react"
 import { Icon } from "@/app/components/ui/Icon"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { useTempusGeoAreas } from "@/app/tempus/_state/tempus-context"
 
 export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
   const { geoAreas, selectedGeoArea, selectGeoArea } = useTempusGeoAreas()
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>()
   const allSweden = selectedGeoArea === null
-
-  useEffect(() => {
-    const onClickOutside = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", onClickOutside)
-    return () => document.removeEventListener("mousedown", onClickOutside)
-  }, [])
 
   return (
     <div ref={ref} className={`relative ${compact ? "w-full" : ""}`}>

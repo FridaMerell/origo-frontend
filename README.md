@@ -21,8 +21,11 @@ konfigurerad för den gemensamma huvuddomänen.
 - `app/konto/`, `app/login/`, `app/join/` – konto, inloggning och inbjudningar.
 - `app/docs/` – användar- och API-dokumentation för Origo.
 - `app/actions/` – server actions för autentisering och produktdata.
-- `app/lib/` – API-klient, session/DAL, tenant- och delad klientlogik.
-- `app/components/` – produktoberoende komponenter och formmönster.
+- `app/lib/` – API-klient, session/DAL, tenant- och delad klientlogik. Se
+  `app/lib/README.md` för en fullständig katalog över delade hooks och
+  DAL-strukturen.
+- `app/components/` – produktoberoende komponenter och formmönster. Se
+  `app/components/README.md` för en katalog över delade UI-komponenter.
 - `app/styles/tokens/` – gemensamma design-tokens.
 - `app/api/` – frontendens route handlers för filuppladdning, filer och väder.
 - `proxy.ts` – väljer produkt från värdnamnet, skyddar privata sidor och skriver
@@ -76,6 +79,8 @@ npm run test:forms
 - [Tempus API](/docs/tempus) – observationer.
 - [Flux API](/docs/flux) – projekt.
 - `app/tempus/ARCHITECTURE.md` – Tempus serverstruktur och riktlinjer för nya actions.
+- `app/components/README.md` – katalog över delade UI-komponenter (`app/components/ui/`).
 - `app/components/form/README.md` – mönster för formulär och server actions.
+- `app/lib/README.md` – katalog över delade hooks/utils och hur DAL-lagret är uppdelat.
 - `app/tempus/DESIGN.md` – Tempus designriktlinjer.
 - `app/tempus/ui/biotope-map/README.md` – den fristående biotopskartan.

@@ -12,7 +12,7 @@ export async function generateMetadata({
 
   return {
     title: update ? `${update.title} | Verso` : "Uppdatering | Verso",
-    description: update ? update.content.slice(0, 160) : "Uppdatering",
+    description: update ? update.content?.slice(0, 160) : "Uppdatering",
   }
 }
 

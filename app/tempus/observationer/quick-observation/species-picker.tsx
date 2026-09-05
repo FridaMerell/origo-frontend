@@ -1,4 +1,4 @@
-import { useDeferredValue, type RefObject } from "react"
+import { useEffect, useState, type RefObject } from "react"
 import { Pager } from "@/app/components/ui/Pager"
 import { speciesName } from "@/app/tempus/_state/tempus-context"
 import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
@@ -21,7 +21,13 @@ export function SpeciesPicker({
   onPick: (species: PresetSpecies | null) => void
   onClearError: () => void
 }) {
-  const deferredQuery = useDeferredValue(query)
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
+  const isDebouncing = query !== debouncedQuery
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedQuery(query), 300)
+    return () => clearTimeout(timeout)
+  }, [query])
 
   const {
     results: matches,
@@ -30,9 +36,9 @@ export function SpeciesPicker({
     totalPages: speciesTotalPages,
     loading: speciesLoading,
   } = useSpeciesPage({
-    search: deferredQuery,
+    search: debouncedQuery,
     pageSize: 8,
-    enabled: deferredQuery.trim().length >= 2 && !picked,
+    enabled: debouncedQuery.trim().length >= 2 && !picked,
   })
 
   return (
@@ -72,41 +78,45 @@ export function SpeciesPicker({
           />
         </span>
       )}
-      {deferredQuery.trim().length >= 2 && !picked ? (
+      {query.trim().length >= 2 && !picked ? (
         <div className="mt-1 overflow-hidden rounded border border-border bg-surface shadow-md">
-        <ul className="max-h-64 overflow-y-auto">
-          {matches.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                onClick={() => {
-                  onPick({
-                    id: item.id,
-                    label: speciesName(item),
-                    scientific: item.scientific_name,
-                  })
-                  onQueryChange("")
-                  onClearError()
-                }}
-                className="block w-full border-b border-border px-3 py-2 text-left text-sm font-normal last:border-b-0 hover:bg-accent-wash hover:text-accent"
-              >
-                <span className="font-medium">{speciesName(item)}</span>
-                <span className="ml-2 font-mono text-[11px] text-text-muted">
-                  {item.scientific_name}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        {speciesLoading ? <p className="px-3 py-2 text-xs text-text-muted">Hämtar arter…</p> : null}
-        {!speciesLoading && matches.length === 0 ? <p className="px-3 py-2 text-xs text-text-muted">Inga arter matchar.</p> : null}
-        <Pager
-          page={speciesPage}
-          totalPages={speciesTotalPages}
-          onPageChange={setSpeciesPage}
-          label={`${speciesPage} / ${speciesTotalPages}`}
-          className="flex items-center justify-between border-t border-border px-2 py-1.5 text-xs text-text-muted"
-        />
+        {!isDebouncing ? (
+          <ul className="max-h-64 overflow-y-auto">
+            {matches.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onPick({
+                      id: item.id,
+                      label: speciesName(item),
+                      scientific: item.scientific_name,
+                    })
+                    onQueryChange("")
+                    onClearError()
+                  }}
+                  className="block w-full border-b border-border px-3 py-2 text-left text-sm font-normal last:border-b-0 hover:bg-accent-wash hover:text-accent"
+                >
+                  <span className="font-medium">{speciesName(item)}</span>
+                  <span className="ml-2 font-mono text-[11px] text-text-muted">
+                    {item.scientific_name}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {isDebouncing || speciesLoading ? <p className="px-3 py-2 text-xs text-text-muted">Söker arter…</p> : null}
+        {!isDebouncing && !speciesLoading && matches.length === 0 ? <p className="px-3 py-2 text-xs text-text-muted">Inga arter matchar.</p> : null}
+        {!isDebouncing ? (
+          <Pager
+            page={speciesPage}
+            totalPages={speciesTotalPages}
+            onPageChange={setSpeciesPage}
+            label={`${speciesPage} / ${speciesTotalPages}`}
+            className="flex items-center justify-between border-t border-border px-2 py-1.5 text-xs text-text-muted"
+          />
+        ) : null}
         </div>
       ) : null}
     </div>

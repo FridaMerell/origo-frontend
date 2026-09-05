@@ -19,13 +19,15 @@ const normalizeName = (value: string) =>
 
 export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
   const [query, setQuery] = useState("")
+  const [debouncedQuery, setDebouncedQuery] = useState(query)
   const inputRef = useRef<HTMLInputElement>(null)
+  const isDebouncing = query !== debouncedQuery
   const { results, loading, error } = useSpeciesPage({
-    search: query,
+    search: debouncedQuery,
     pageSize: 25,
-    enabled: open && query.trim().length >= 2,
+    enabled: open && debouncedQuery.trim().length >= 2,
   })
-  const normalizedQuery = normalizeName(query)
+  const normalizedQuery = normalizeName(debouncedQuery)
   const matches = results.filter((species) =>
     normalizeName(species.swedish_name).includes(normalizedQuery),
   )
@@ -42,6 +44,11 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
       document.removeEventListener("keydown", onKeyDown)
     }
   }, [onClose, open])
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedQuery(query), 300)
+    return () => clearTimeout(timeout)
+  }, [query])
 
   if (!open) return null
 
@@ -94,7 +101,7 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
         <div className="min-h-36 overflow-y-auto p-2 sm:p-3">
           {query.trim().length < 2 ? (
             <p className="px-3 py-5 text-sm text-text-muted">Skriv minst två bokstäver för att söka.</p>
-          ) : loading ? (
+          ) : isDebouncing || loading ? (
             <p className="px-3 py-5 text-sm text-text-muted">Söker arter…</p>
           ) : error ? (
             <p className="px-3 py-5 text-sm text-danger">{error}</p>

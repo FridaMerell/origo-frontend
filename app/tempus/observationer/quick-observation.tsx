@@ -38,6 +38,9 @@ export default function QuickObservation({
   const [lon, setLon] = useState("")
   const [showTime, setShowTime] = useState(false)
   const [showPlace, setShowPlace] = useState(false)
+  const [showComment, setShowComment] = useState(false)
+  const [notes, setNotes] = useState("")
+  const [keepCommentForNext, setKeepCommentForNext] = useState(false)
 
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
@@ -80,11 +83,16 @@ export default function QuickObservation({
     onConsumedRef.current?.()
   }, [species])
 
-  const reset = () => {
+  const reset = ({ keepComment = false } = {}) => {
     setQuery("")
     setPicked(null)
     setCount("1")
     setError(null)
+    if (!keepComment) {
+      setNotes("")
+      setShowComment(false)
+      setKeepCommentForNext(false)
+    }
   }
 
   const close = () => {
@@ -97,9 +105,12 @@ export default function QuickObservation({
     setLon("")
     setShowTime(false)
     setShowPlace(false)
+    setShowComment(false)
+    setNotes("")
+    setKeepCommentForNext(false)
   }
 
-  const hasDraft = Boolean(query || picked || count !== "1" || lat || lon || showTime || showPlace)
+  const hasDraft = Boolean(query || picked || count !== "1" || lat || lon || notes || showTime || showPlace || showComment)
 
   const requestClose = () => {
     if (pending) return
@@ -149,7 +160,7 @@ export default function QuickObservation({
         observed_at: new Date(observedAt).toISOString(),
         ...(location ? { location } : {}),
         count: trimmed ? Number(trimmed) : null,
-        notes: "",
+        notes: notes.trim(),
       })
 
       if (result.error) {
@@ -159,7 +170,7 @@ export default function QuickObservation({
 
       router.refresh()
       setSaved(`${label} sparad.`)
-      reset()
+      reset({ keepComment: keepCommentForNext })
       setTimeout(() => searchRef.current?.focus(), 0)
     })
   }
@@ -197,7 +208,7 @@ export default function QuickObservation({
             role="dialog"
             aria-modal="true"
             aria-label="Snabbregistrera observation"
-            className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-lg transition-transform sm:max-w-lg sm:rounded-2xl"
+            className="flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-lg transition-transform sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl"
             style={{
               transitionDuration: "var(--duration-normal)",
               transitionTimingFunction: "var(--ease-standard)",
@@ -219,54 +230,44 @@ export default function QuickObservation({
               </button>
             </div>
 
-            <form className="flex flex-col gap-4 overflow-y-auto p-4" onSubmit={submit}>
-              <SpeciesPicker
-                searchRef={searchRef}
-                query={query}
-                onQueryChange={setQuery}
-                picked={picked}
-                onPick={setPicked}
-                onClearError={() => setError(null)}
-              />
-
-              <label className="flex flex-col gap-1.5 text-sm font-medium">
-                Antal
-                <input
-                  inputMode="numeric"
-                  value={count}
-                  onChange={(event) => setCount(event.target.value)}
-                  placeholder="Antal"
-                  className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+            <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
+              <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
+                <SpeciesPicker
+                  searchRef={searchRef}
+                  query={query}
+                  onQueryChange={setQuery}
+                  picked={picked}
+                  onPick={setPicked}
+                  onClearError={() => setError(null)}
                 />
-              </label>
 
-              {showTime ? (
+              <div className={showTime ? "grid gap-4 sm:grid-cols-2" : undefined}>
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
-                  Tidpunkt
+                  Antal
                   <input
-                    type="datetime-local"
-                    value={observedAt}
-                    max={nowLocal()}
-                    onChange={(event) => setObservedAt(event.target.value)}
-                    className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
+                    inputMode="numeric"
+                    value={count}
+                    onChange={(event) => setCount(event.target.value)}
+                    placeholder="Antal"
+                    className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                   />
                 </label>
-              ) : null}
 
-              {showPlace ? (
-                <PlacePicker
-                  lat={lat}
-                  lon={lon}
-                  onChange={({ lat: nextLat, lon: nextLon }) => {
-                    setLat(nextLat)
-                    setLon(nextLon)
-                  }}
-                  onClearError={() => setError(null)}
-                  onError={setError}
-                />
-              ) : null}
+                {showTime ? (
+                  <label className="flex flex-col gap-1.5 text-sm font-medium">
+                    Tidpunkt
+                    <input
+                      type="datetime-local"
+                      value={observedAt}
+                      max={nowLocal()}
+                      onChange={(event) => setObservedAt(event.target.value)}
+                      className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
+                    />
+                  </label>
+                ) : null}
+              </div>
 
-              {!showTime || !showPlace ? (
+              {!showTime || !showPlace || !showComment ? (
                 <div className="flex flex-wrap gap-3 text-sm">
                   {!showTime ? (
                     <button
@@ -286,6 +287,51 @@ export default function QuickObservation({
                       + Position
                     </button>
                   ) : null}
+                  {!showComment ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowComment(true)}
+                      className="text-text-muted hover:text-text"
+                    >
+                      + Kommentar
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {showPlace ? (
+                <PlacePicker
+                  lat={lat}
+                  lon={lon}
+                  onChange={({ lat: nextLat, lon: nextLon }) => {
+                    setLat(nextLat)
+                    setLon(nextLon)
+                  }}
+                  onClearError={() => setError(null)}
+                  onError={setError}
+                />
+              ) : null}
+
+              {showComment ? (
+                <div className="flex flex-col gap-2">
+                  <label className="flex flex-col gap-1.5 text-sm font-medium">
+                    Kommentar
+                    <textarea
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                      rows={2}
+                      className="resize-none rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 self-start text-xs text-text-muted">
+                    <input
+                      type="checkbox"
+                      checked={keepCommentForNext}
+                      onChange={(event) => setKeepCommentForNext(event.target.checked)}
+                      className="size-3.5 accent-accent"
+                    />
+                    Behåll kommentar till nästa obs
+                  </label>
                 </div>
               ) : null}
 
@@ -294,15 +340,24 @@ export default function QuickObservation({
                   {error}
                 </p>
               ) : null}
-              {saved ? (
-                <p className="flex items-center gap-2 rounded bg-accent-wash px-3 py-2 text-sm text-accent" role="status">
-                  <Check size={15} />
-                  {saved} Lägg till nästa.
-                </p>
-              ) : null}
+              </div>
 
-              <div className="flex items-center gap-3 pt-1">
-                <Button type="submit" variant="paper" disabled={pending || !picked} className="flex-1 justify-center">
+              <div className="border-t border-border bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+                {saved ? (
+                  <p className="mb-3 flex items-center gap-2 rounded bg-accent-wash px-3 py-2 text-sm text-accent" role="status">
+                    <Check size={15} />
+                    {saved} Lägg till nästa.
+                  </p>
+                ) : null}
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={requestClose}
+                    className="text-sm text-text-muted hover:text-text"
+                  >
+                    Avbryt
+                  </button>
+                  <Button type="submit" variant="paper-bordered" disabled={pending || !picked} className="min-w-28 justify-center">
                   {
                     pending ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -311,14 +366,8 @@ export default function QuickObservation({
                     )
                   }
                   {pending ? "Sparar…" : "Spara"}
-                </Button>
-                <button
-                  type="button"
-                  onClick={requestClose}
-                  className="text-sm text-text-muted hover:text-text"
-                >
-                  Avbryt
-                </button>
+                  </Button>
+                </div>
               </div>
             </form>
           </div>

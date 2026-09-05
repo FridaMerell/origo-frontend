@@ -77,6 +77,9 @@ export function PlacePicker({
   const [places, setPlaces] = useState<SavedPlace[]>([])
   const [placeName, setPlaceName] = useState("")
   const [manualCoords, setManualCoords] = useState(false)
+  const [savingPlace, setSavingPlace] = useState(false)
+  const hasCoords = Boolean(lat.trim() && lon.trim())
+  const [editingPlace, setEditingPlace] = useState(() => !hasCoords)
 
   useEffect(() => {
     setPlaces(loadPlaces())
@@ -107,10 +110,25 @@ export function PlacePicker({
       ].slice(0, 12),
     )
     setPlaceName("")
+    setSavingPlace(false)
   }
 
   const removePlace = (name: string) => {
     persistPlaces(places.filter((p) => p.name !== name))
+  }
+
+  const selectPlace = (coords: { lat: string; lon: string }) => {
+    onChange(coords)
+    onClearError()
+    setManualCoords(false)
+    setEditingPlace(false)
+  }
+
+  const clearPlace = () => {
+    onChange({ lat: "", lon: "" })
+    setManualCoords(false)
+    setSavingPlace(false)
+    setEditingPlace(true)
   }
 
   return (
@@ -119,103 +137,94 @@ export function PlacePicker({
           Position <span className="font-normal text-text-faint">(valfritt)</span>
         </legend>
 
-        {lat.trim() && lon.trim() ? (
+        {hasCoords && !editingPlace ? (
           <div className="flex items-center justify-between gap-2 rounded border border-field-border bg-surface-2 px-3 py-2">
             <span className="truncate font-mono text-xs text-text-muted">
               {lat}, {lon}
             </span>
-            <button
-              type="button"
-              onClick={() => onChange({ lat: "", lon: "" })}
-              className="shrink-0 text-xs text-text-faint hover:text-text"
-            >
-              Rensa
-            </button>
+            <span className="flex shrink-0 items-center gap-3 text-xs">
+              <button type="button" onClick={() => setEditingPlace(true)} className="text-text-muted hover:text-text">
+                Ändra
+              </button>
+              <button type="button" onClick={clearPlace} className="text-text-faint hover:text-text">
+                Rensa
+              </button>
+            </span>
           </div>
-        ) : null}
+        ) : (
+          <>
+            {GOOGLE_MAPS_API_KEY ? (
+              <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
+                <PlaceSearch onPick={selectPlace} />
+              </APIProvider>
+            ) : null}
 
-        {GOOGLE_MAPS_API_KEY ? (
-          <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
-            <PlaceSearch
-              onPick={({ lat: nextLat, lon: nextLon }) => {
-                onChange({ lat: nextLat, lon: nextLon })
-                onClearError()
-              }}
-            />
-          </APIProvider>
-        ) : null}
-
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <CurrentLocationButton
-            size="sm"
-            className="h-9"
-            onLocate={({ latitude, longitude }) => {
-              onChange({ lat: latitude.toFixed(6), lon: longitude.toFixed(6) })
-              onClearError()
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setManualCoords((value) => !value)}
-            className="text-text-muted hover:text-text"
-          >
-            {manualCoords ? "Dölj koordinater" : "Ange koordinater"}
-          </button>
-        </div>
-
-        {manualCoords ? (
-          <div className="flex flex-wrap items-start gap-2">
-            <input
-              inputMode="decimal"
-              value={lat}
-              onChange={(event) => onChange({ lat: event.target.value, lon })}
-              placeholder="Latitud"
-              className="h-10 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
-            />
-            <input
-              inputMode="decimal"
-              value={lon}
-              onChange={(event) => onChange({ lat, lon: event.target.value })}
-              placeholder="Longitud"
-              className="h-10 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
-            />
-          </div>
-        ) : null}
-
-        {places.length > 0 ? (
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-normal text-text-faint">Sparade platser</span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <CurrentLocationButton
+                size="sm"
+                className="h-10"
+                onLocate={({ latitude, longitude }) => selectPlace({ lat: latitude.toFixed(6), lon: longitude.toFixed(6) })}
+              />
+              <button
+                type="button"
+                onClick={() => setManualCoords((value) => !value)}
+                className="h-10 rounded border border-field-border px-3 text-text-muted hover:text-text"
+              >
+                {manualCoords ? "Dölj koordinater" : "Ange koordinater"}
+              </button>
               {places.map((place) => (
                 <span
                   key={place.name}
-                  className="inline-flex items-center gap-1 rounded border border-field-border bg-surface-2 py-1 pl-2 pr-1 text-xs"
+                  className="inline-flex h-10 items-center gap-1 rounded border border-field-border bg-surface-2 py-1 pl-2 pr-1 text-xs"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onChange({ lat: place.lat, lon: place.lon })
-                      onClearError()
-                    }}
-                    className="font-medium text-text hover:text-accent"
-                  >
+                  <button type="button" onClick={() => selectPlace(place)} className="font-medium text-text hover:text-accent">
                     {place.name}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => removePlace(place.name)}
-                    aria-label={`Ta bort ${place.name}`}
-                    className="text-text-faint hover:text-text"
-                  >
+                  <button type="button" onClick={() => removePlace(place.name)} aria-label={`Ta bort ${place.name}`} className="text-text-faint hover:text-text">
                     <X size={12} />
                   </button>
                 </span>
               ))}
             </div>
-          </div>
+
+            {manualCoords ? (
+              <div className="flex flex-wrap items-start gap-2">
+                <input
+                  inputMode="decimal"
+                  value={lat}
+                  onChange={(event) => onChange({ lat: event.target.value, lon })}
+                  placeholder="Latitud"
+                  className="h-10 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                />
+                <input
+                  inputMode="decimal"
+                  value={lon}
+                  onChange={(event) => onChange({ lat, lon: event.target.value })}
+                  placeholder="Longitud"
+                  className="h-10 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                />
+              </div>
+            ) : null}
+
+            {hasCoords ? (
+              <button type="button" onClick={() => setEditingPlace(false)} className="self-start text-sm text-text-muted hover:text-text">
+                Klar med plats
+              </button>
+            ) : null}
+          </>
+        )}
+
+        {hasCoords && !savingPlace ? (
+          <button
+            type="button"
+            onClick={() => setSavingPlace(true)}
+            className="self-start rounded border border-field-border px-3 py-1.5 text-sm text-text-muted hover:text-text"
+          >
+            Spara som plats
+          </button>
         ) : null}
 
-        {lat.trim() && lon.trim() ? (
+        {savingPlace ? (
           <div className="flex flex-wrap items-center gap-2">
             <input
               value={placeName}
@@ -230,6 +239,16 @@ export function PlacePicker({
               className="h-9 shrink-0 rounded border border-field-border px-3 text-sm text-text-muted hover:text-text disabled:text-text-faint"
             >
               Spara plats
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPlaceName("")
+                setSavingPlace(false)
+              }}
+              className="text-sm text-text-muted hover:text-text"
+            >
+              Avbryt
             </button>
           </div>
         ) : null}

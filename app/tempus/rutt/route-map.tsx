@@ -58,6 +58,7 @@ export function RouteMap({
         height={height}
         padding={padding}
         className="block h-auto w-full"
+        autoZoom
       />
       <svg
         viewBox={`0 0 ${width} ${height}`}

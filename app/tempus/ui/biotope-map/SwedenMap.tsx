@@ -47,6 +47,7 @@ export type SwedenMapProps = Omit<
   areaFillOpacity?: number;
   areaStrokeWidth?: number;
   pointRadius?: number;
+  autoZoom?: boolean;
   showLakeLabels?: boolean;
   title?: string | undefined;
   theme?: Partial<MapTheme> | undefined;
@@ -130,6 +131,43 @@ function lakeLabelPosition(coordinates: PolygonCoordinates, project: Project) {
   return [sum[0] / outer.length, sum[1] / outer.length] as const;
 }
 
+function geometryPositions(geometry: SwedenMapGeometry): readonly GeoJsonPosition[] {
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.flat();
+  }
+  return geometry.coordinates.flat(2);
+}
+
+type Bounds = { minX: number; minY: number; maxX: number; maxY: number };
+
+function contentBounds(
+  features: readonly SwedenMapFeature[],
+  points: readonly SwedenMapPoint[],
+  project: Project,
+): Bounds | null {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  const consume = (position: readonly number[]) => {
+    const [x, y] = project(position);
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  };
+
+  for (const feature of features) {
+    if (!feature.geometry) continue;
+    for (const position of geometryPositions(feature.geometry)) consume(position);
+  }
+  for (const point of points) consume(point.coordinates);
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) return null;
+  return { minX, minY, maxX, maxY };
+}
+
 function areaFeatures(areas: SwedenMapProps["areas"]): readonly SwedenMapFeature[] {
   if (!areas) return [];
   if (Array.isArray(areas)) return areas;
@@ -155,6 +193,7 @@ export function SwedenMap({
   theme,
   className,
   style,
+  autoZoom,
   ...svgProps
 }: SwedenMapProps) {
   const landClipId = `sweden-land-${useId().replace(/:/g, "")}`;
@@ -163,10 +202,42 @@ export function SwedenMap({
   const landPath = SWEDEN_LAND.map((polygon) => polygonPath(polygon, project)).join("");
   const lakesPath = SWEDEN_LAKES.map((lake) => polygonPath(lake.coordinates, project)).join("");
 
+  let viewBox = `0 0 ${width} ${height}`;
+  if (autoZoom) {
+    const bounds = contentBounds(features, points, project);
+    if (bounds) {
+      const zoomPadding = Math.max(padding * 5, pointRadius * 16);
+      const minX = Math.max(0, bounds.minX - zoomPadding);
+      const minY = Math.max(0, bounds.minY - zoomPadding);
+      const maxX = Math.min(width, bounds.maxX + zoomPadding);
+      const maxY = Math.min(height, bounds.maxY + zoomPadding);
+      let zoomWidth = maxX - minX;
+      let zoomHeight = maxY - minY;
+      if (zoomWidth > 0 && zoomHeight > 0) {
+        // Match the svg aspect ratio so the map fills the frame without letterboxing.
+        const targetRatio = width / height;
+        let centerX = minX + zoomWidth / 2;
+        let centerY = minY + zoomHeight / 2;
+        if (zoomWidth / zoomHeight > targetRatio) {
+          zoomHeight = zoomWidth / targetRatio;
+        } else {
+          zoomWidth = zoomHeight * targetRatio;
+        }
+        zoomWidth = Math.min(zoomWidth, width);
+        zoomHeight = Math.min(zoomHeight, height);
+        centerX = Math.min(Math.max(centerX, zoomWidth / 2), width - zoomWidth / 2);
+        centerY = Math.min(Math.max(centerY, zoomHeight / 2), height - zoomHeight / 2);
+        const originX = centerX - zoomWidth / 2;
+        const originY = centerY - zoomHeight / 2;
+        viewBox = `${Math.round(originX * 10) / 10} ${Math.round(originY * 10) / 10} ${Math.round(zoomWidth * 10) / 10} ${Math.round(zoomHeight * 10) / 10}`;
+      }
+    }
+  }
+
   return (
     <svg
       {...svgProps}
-      viewBox={`0 0 ${width} ${height}`}
+      viewBox={viewBox}
       className={["block h-auto w-full", className].filter(Boolean).join(" ")}
       style={{ ...mapThemeStyle(theme), ...style }}
       role={title ? "img" : svgProps.role}

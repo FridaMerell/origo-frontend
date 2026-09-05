@@ -74,6 +74,7 @@ export default function ObservationMapDialog({
                 points={points}
                 pointRadius={10}
                 showLakeLabels
+                autoZoom
                 title="Sverigekarta med dina observationer markerade"
                 className="mx-auto max-w-full"
                 style={{ height: "min(68vh, 42rem)", width: "auto" }}

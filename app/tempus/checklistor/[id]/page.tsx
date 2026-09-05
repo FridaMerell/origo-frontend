@@ -102,7 +102,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
         </div>
       </div>
 
-      <article className="relative overflow-hidden rounded-card border border-border bg-surface text-text shadow-card sm:peer-checked:[&_.double-header]:grid sm:peer-checked:[&_.register-check]:col-start-2 sm:peer-checked:[&_.register-check]:row-start-1 sm:peer-checked:[&_.register-list]:grid sm:peer-checked:[&_.register-list]:grid-cols-2 sm:peer-checked:[&_.register-name]:col-start-3 sm:peer-checked:[&_.register-name]:row-start-1 sm:peer-checked:[&_.register-notes]:hidden sm:peer-checked:[&_.register-row]:grid-cols-[2rem_2.5rem_minmax(0,1fr)] sm:peer-checked:[&_.register-taxon]:hidden sm:peer-checked:[&_.single-header]:hidden">
+      <article className="relative overflow-hidden rounded-card border border-border bg-surface text-text shadow-card sm:peer-checked:[&_.double-header]:grid sm:peer-checked:[&_.register-check]:col-start-2 sm:peer-checked:[&_.register-check]:row-start-1 sm:peer-checked:[&_.register-empty-row]:grid sm:peer-checked:[&_.register-list]:grid sm:peer-checked:[&_.register-list]:grid-cols-2 sm:peer-checked:[&_.register-name]:col-start-3 sm:peer-checked:[&_.register-name]:row-start-1 sm:peer-checked:[&_.register-notes]:hidden sm:peer-checked:[&_.register-row]:grid-cols-[2rem_2.5rem_minmax(0,1fr)] sm:peer-checked:[&_.register-taxon]:hidden sm:peer-checked:[&_.single-header]:hidden">
         <header className="relative px-4 pb-3 pt-3 sm:px-5 sm:pb-4">
           <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
             <span>Fältförteckning</span>
@@ -167,14 +167,6 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
             initialHasPrevious={Boolean(registerPage.previous)}
             initialHasNext={Boolean(registerPage.next)}
           />
-
-          <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_3.25rem] border-b border-l border-border sm:grid-cols-[2.75rem_minmax(12rem,1.75fr)_7rem_3.5rem_minmax(8rem,1fr)]" aria-hidden="true">
-            <span className="h-6 border-r border-border" />
-            <span className="border-r border-border" />
-            <span className="hidden border-r border-border sm:block" />
-            <span className="border-r border-border" />
-            <span className="hidden border-r border-border sm:block" />
-          </div>
 
           <p className="mt-2 text-right font-display text-[9px] italic text-text-faint">
             Bocka i en art för att registrera en observation. Markeringarna sparas inte.

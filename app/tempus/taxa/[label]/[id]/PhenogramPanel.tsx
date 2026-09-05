@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { loadSpeciesPhenogram } from "@/app/tempus/_actions/species"
-import { Icon } from "@/app/components/ui/Icon"
 import type { TempusPhenogram } from "@/app/lib/dal"
 import Phenogram, { SeasonalStatusBadge } from "@/app/tempus/ui/Phenogram"
+import { Activity, Loader } from "lucide-react"
 
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
@@ -22,7 +22,7 @@ function EmptyPhenogram({ areaName }: { areaName: string }) {
       </svg>
       <div className="relative z-10 p-5">
         <div className="flex max-w-md items-start gap-3 rounded border border-border bg-surface/90 p-4 text-left shadow-sm">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-text-muted"><Icon name="activity" size={17} /></span>
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-text-muted"><Activity size={17} /></span>
           <div className="flex flex-col gap-1"><p className="font-display text-base font-semibold text-text">Aktivitetsdata saknas</p><p className="text-sm leading-relaxed text-text-muted">Ingen säsongskurva har ännu beräknats för den här arten i {areaName}.</p></div>
         </div>
       </div>
@@ -45,7 +45,7 @@ export default function PhenogramPanel({ id, geoAreaId, areaName }: { id: string
     return () => { cancelled = true }
   }, [geoAreaId, id])
 
-  if (phenogram === undefined) return <div role="status" aria-live="polite" className="flex min-h-80 w-full flex-col items-center justify-center gap-3 rounded border border-dashed border-border bg-surface-2/50 text-text-muted md:min-h-96"><Icon name="loader" size={22} className="animate-spin text-accent" /><p className="text-sm">Hämtar aktivitetsdata…</p></div>
+  if (phenogram === undefined) return <div role="status" aria-live="polite" className="flex min-h-80 w-full flex-col items-center justify-center gap-3 rounded border border-dashed border-border bg-surface-2/50 text-text-muted md:min-h-96"><Loader size={22} className="animate-spin text-accent" /><p className="text-sm">Hämtar aktivitetsdata…</p></div>
   if (!phenogram) return <EmptyPhenogram areaName={areaName} />
 
   return <><SeasonalStatusBadge status={phenogram.seasonal_status} /><Phenogram phenogram={phenogram} /></>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Avatar } from "@/app/components/ui/Avatar";
-import { Icon } from "@/app/components/ui/Icon";
+import { CheckCircle2Icon, CircleIcon } from "lucide-react";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import { isTaskOverdue } from "@/app/lib/flux-task-dates";
@@ -37,7 +37,7 @@ function BacklogRow({
       }}
       className={`group grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3.5 text-left transition hover:bg-surface-2/60 sm:grid-cols-[auto_minmax(0,1fr)_10rem_auto] ${overdue ? "border-l-2 border-danger" : "border-l-2 border-transparent"}`}
     >
-      <Icon name="circle" size={16} className="text-text-faint" />
+      <CircleIcon size={16} className="text-text-faint" />
       <div className="min-w-0">
         <p className="truncate text-sm font-medium text-text">{task.title}</p>
         <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-text-muted">
@@ -89,7 +89,7 @@ export default function FluxBacklogView() {
 
       {backlogTasks.length === 0 ? (
         <div className="flex min-h-48 flex-col items-center justify-center gap-2 border border-dashed border-border text-center">
-          <Icon name="check-circle-2" size={24} className="text-success" />
+          <CheckCircle2Icon size={24} className="text-success" />
           <p className="text-sm font-medium text-text">Backloggen är tom</p>
           <p className="text-sm text-text-muted">Inga förfallna eller aktuella tasks just nu.</p>
         </div>

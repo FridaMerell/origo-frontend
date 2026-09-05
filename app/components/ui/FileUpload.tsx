@@ -1,22 +1,22 @@
-"use client";
+"use client"
 
-import { useRef, useState } from "react";
-import { Icon } from "./Icon";
-import { fileProxyUrl } from "@/app/lib/files";
+import { useRef, useState } from "react"
+import { fileProxyUrl } from "@/app/lib/files"
+import { Loader, Upload, X } from "lucide-react"
 
-export type UploadFolder = "verso" | "flux" | "apsis";
+export type UploadFolder = "verso" | "flux" | "apsis"
 
-export type UploadedFile = { url: string; name: string };
+export type UploadedFile = { url: string; name: string }
 
 type FileUploadProps = {
-  folder: UploadFolder;
-  files: UploadedFile[];
-  onChange: (files: UploadedFile[]) => void;
-  multiple?: boolean;
-  accept?: string;
-  uploadUrl?: string;
-  className?: string;
-};
+  folder: UploadFolder
+  files: UploadedFile[]
+  onChange: (files: UploadedFile[]) => void
+  multiple?: boolean
+  accept?: string
+  uploadUrl?: string
+  className?: string
+}
 
 export function FileUpload({
   folder,
@@ -27,41 +27,41 @@ export function FileUpload({
   uploadUrl = "/api/upload",
   className = "",
 }: FileUploadProps) {
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   async function uploadFiles(fileList: FileList) {
-    const selected = multiple ? Array.from(fileList) : Array.from(fileList).slice(0, 1);
-    if (selected.length === 0) return;
+    const selected = multiple ? Array.from(fileList) : Array.from(fileList).slice(0, 1)
+    if (selected.length === 0) return
 
-    setUploading(true);
-    setError(null);
+    setUploading(true)
+    setError(null)
     try {
       const uploaded = await Promise.all(
         selected.map(async (file) => {
-          const body = new FormData();
-          body.set("file", file);
-          body.set("folder", folder);
+          const body = new FormData()
+          body.set("file", file)
+          body.set("folder", folder)
 
-          const response = await fetch(uploadUrl, { method: "POST", body });
-          if (!response.ok) throw new Error("Upload failed");
+          const response = await fetch(uploadUrl, { method: "POST", body })
+          if (!response.ok) throw new Error("Upload failed")
 
-          const blob = (await response.json()) as { url: string; pathname: string };
-          return { url: blob.url, name: blob.pathname.split("/").pop() ?? blob.pathname };
+          const blob = (await response.json()) as { url: string; pathname: string }
+          return { url: blob.url, name: blob.pathname.split("/").pop() ?? blob.pathname }
         })
-      );
-      onChange(multiple ? [...files, ...uploaded] : uploaded);
+      )
+      onChange(multiple ? [...files, ...uploaded] : uploaded)
     } catch {
-      setError("Uppladdningen misslyckades. Försök igen.");
+      setError("Uppladdningen misslyckades. Försök igen.")
     } finally {
-      setUploading(false);
+      setUploading(false)
     }
   }
 
   function handleRemove(url: string) {
-    onChange(files.filter((f) => f.url !== url));
+    onChange(files.filter((f) => f.url !== url))
   }
 
   return (
@@ -71,23 +71,28 @@ export function FileUpload({
         tabIndex={0}
         onClick={() => inputRef.current?.click()}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") inputRef.current?.click();
+          if (e.key === "Enter" || e.key === " ") inputRef.current?.click()
         }}
         onDragOver={(e) => {
-          e.preventDefault();
-          setDragOver(true);
+          e.preventDefault()
+          setDragOver(true)
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
+          e.preventDefault()
+          setDragOver(false)
+          if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files)
         }}
-        className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded border border-dashed px-4 py-6 text-center text-sm transition-colors ${
-          dragOver ? "border-accent bg-accent-wash text-accent" : "border-border text-text-muted hover:border-accent-hover hover:text-text"
-        } ${uploading ? "pointer-events-none opacity-60" : ""}`}
+        className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded border border-dashed px-4 py-6 text-center text-sm transition-colors ${dragOver ? "border-accent bg-accent-wash text-accent" : "border-border text-text-muted hover:border-accent-hover hover:text-text"
+          } ${uploading ? "pointer-events-none opacity-60" : ""}`}
       >
-        <Icon name={uploading ? "loader" : "upload"} size={20} className={uploading ? "animate-spin" : ""} />
+        {
+          uploading ?
+
+            <Upload size={20} className={uploading ? "animate-spin" : ""} />
+            :
+            <Loader size={20} className={uploading ? "animate-spin" : ""} />
+        }
         <span>
           {uploading
             ? "Laddar upp..."
@@ -101,8 +106,8 @@ export function FileUpload({
           multiple={multiple}
           accept={accept}
           onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0) uploadFiles(e.target.files);
-            e.target.value = "";
+            if (e.target.files && e.target.files.length > 0) uploadFiles(e.target.files)
+            e.target.value = ""
           }}
           className="hidden"
         />
@@ -131,12 +136,12 @@ export function FileUpload({
                 aria-label={`Ta bort ${file.name}`}
                 className="shrink-0 text-text-muted hover:text-danger"
               >
-                <Icon name="x" size={14} />
+                <X size={14} />
               </button>
             </li>
           ))}
         </ul>
       )}
     </div>
-  );
+  )
 }

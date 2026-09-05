@@ -6,8 +6,8 @@ import UpdateForm from "./update-form"
 import Logo from "./ui/Logo"
 import { WeatherWidget } from "./weather-widget"
 import { NextVisitWidget } from "./next-visit-widget"
-import { UpdatesWidget } from "./updates-widget"
-import { RecentExpensesWidget } from "./recent-expenses-widget"
+import { UpdatesWidget } from "./home/updates-widget"
+import { RecentExpensesWidget } from "./home/recent-expenses-widget"
 
 const HomeView = () => {
   const { selectedFacility } = useFacilities()

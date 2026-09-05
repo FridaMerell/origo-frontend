@@ -1,10 +1,8 @@
-"use client"
-
+import { Binoculars, Check, Loader2, Plus, X } from "lucide-react"
 import { useEffect, useRef, useState, useTransition } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
 import { createObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import { PlacePicker } from "./quick-observation/place-picker"
@@ -167,7 +165,7 @@ export default function QuickObservation({
           title="Ny observation"
           className="flex size-10 items-center justify-center rounded bg-accent text-accent-contrast hover:bg-accent-hover"
         >
-          <Icon name="plus" size={18} />
+          <Plus size={18} />
         </button>
       )}
 
@@ -195,7 +193,7 @@ export default function QuickObservation({
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h2 className="m-0 flex items-center gap-2 font-display text-lg font-semibold text-text">
-                <Icon name="binoculars" size={16} className="text-accent" />
+                <Binoculars size={16} className="text-accent" />
                 Ny observation
               </h2>
               <button
@@ -204,7 +202,7 @@ export default function QuickObservation({
                 aria-label="Stäng"
                 className="text-text-muted hover:text-text"
               >
-                <Icon name="x" size={16} />
+                <X size={16} />
               </button>
             </div>
 
@@ -285,18 +283,20 @@ export default function QuickObservation({
               ) : null}
               {saved ? (
                 <p className="flex items-center gap-2 rounded bg-accent-wash px-3 py-2 text-sm text-accent" role="status">
-                  <Icon name="check" size={15} />
+                  <Check size={15} />
                   {saved} Lägg till nästa.
                 </p>
               ) : null}
 
               <div className="flex items-center gap-3 pt-1">
                 <Button type="submit" variant="paper" disabled={pending || !picked} className="flex-1 justify-center">
-                  <Icon
-                    name={pending ? "loader" : "check"}
-                    size={16}
-                    className={pending ? "animate-spin" : ""}
-                  />
+                  {
+                    pending ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Check size={16} />
+                    )
+                  }
                   {pending ? "Sparar…" : "Spara"}
                 </Button>
                 <button

@@ -3,7 +3,16 @@
 import { useState } from "react"
 import { Card } from "@/app/components/ui/Card"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
+import {
+  DatabaseIcon,
+  DownloadIcon,
+  FileTextIcon,
+  GitForkIcon,
+  LayoutPanelLeftIcon,
+  PencilIcon,
+  PlusIcon,
+  type LucideIcon,
+} from "lucide-react"
 import type { FluxDocument, FluxMilestone, FluxTask } from "@/app/lib/dal"
 import { DocumentContent } from "./document-content"
 import { DocumentEditorOverlay } from "./document-editor-overlay"
@@ -15,12 +24,12 @@ const LEGACY_KIND_LABELS = {
   database_schema: "Databasschema",
 } as const
 
-function documentMeta(document: FluxDocument) {
+function documentMeta(document: FluxDocument): { icon: LucideIcon; label: string } {
   if (document.kind !== "markdown") {
-    return { icon: document.kind === "flowchart" ? "git-fork" : "database", label: LEGACY_KIND_LABELS[document.kind] }
+    return { icon: document.kind === "flowchart" ? GitForkIcon : DatabaseIcon, label: LEGACY_KIND_LABELS[document.kind] }
   }
   const hasDiagram = /```(mermaid|dbschema)/.test(document.content)
-  return { icon: hasDiagram ? "layout-panel-left" : "file-text", label: hasDiagram ? "Dokument + diagram" : "Dokument" }
+  return { icon: hasDiagram ? LayoutPanelLeftIcon : FileTextIcon, label: hasDiagram ? "Dokument + diagram" : "Dokument" }
 }
 
 function DocumentCard({ document, location, onEdit }: { document: FluxDocument; location: string; onEdit: () => void }) {
@@ -30,15 +39,15 @@ function DocumentCard({ document, location, onEdit }: { document: FluxDocument; 
       <details>
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
           <span className="flex min-w-0 items-center gap-2">
-            <Icon name={meta.icon} size={16} className="text-text-muted" />
+            <meta.icon size={16} className="text-text-muted" />
             <span className="truncate font-semibold text-text">{document.title}</span>
           </span>
           <span className="flex shrink-0 items-center gap-2">
             <button type="button" onClick={(event) => { event.preventDefault(); downloadMarkdown(document.title, document.content) }} className="rounded p-1 text-text-muted hover:bg-surface-2 hover:text-text" aria-label="Ladda ner som Markdown">
-              <Icon name="download" size={14} />
+              <DownloadIcon size={14} />
             </button>
             <button type="button" onClick={(event) => { event.preventDefault(); onEdit() }} className="rounded p-1 text-text-muted hover:bg-surface-2 hover:text-text" aria-label="Redigera dokument">
-              <Icon name="pencil" size={14} />
+              <PencilIcon size={14} />
             </button>
             <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-muted">{meta.label}</span>
           </span>
@@ -72,7 +81,7 @@ export function DocumentsSection({
       <div className="flex items-center justify-between">
         <h2 className="m-0 text-base font-semibold text-text-muted">Dokument</h2>
         <Button variant="secondary" size="sm" onClick={() => setEditingDocument("new")}>
-          <Icon name="plus" size={14} /> Nytt dokument
+          <PlusIcon size={14} /> Nytt dokument
         </Button>
       </div>
 

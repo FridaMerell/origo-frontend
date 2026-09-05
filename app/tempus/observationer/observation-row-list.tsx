@@ -1,8 +1,8 @@
 "use client"
 
-import { Icon } from "@/app/components/ui/Icon"
 import { speciesName } from "@/app/tempus/_state/tempus-context"
 import type { TempusSpecies } from "@/app/lib/dal"
+import { X } from "lucide-react"
 
 export type ObservationRow = {
   key: string
@@ -68,7 +68,7 @@ export function ObservationRowList({
                   aria-label="Ta bort art"
                   className="col-start-3 row-span-3 row-start-1 flex items-center justify-center border-r border-border text-text-faint hover:bg-danger-wash hover:text-danger sm:col-start-5 sm:row-span-1"
                 >
-                  <Icon name="x" size={14} />
+                  <X size={14} />
                 </button>
                 {rowErrors[row.key] ? (
                   <p className="col-start-2 col-end-4 border-r border-t border-border px-3 py-1 text-[10px] text-danger sm:col-start-2 sm:col-end-6">

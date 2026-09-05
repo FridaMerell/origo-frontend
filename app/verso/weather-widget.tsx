@@ -3,9 +3,22 @@
 import { useEffect, useState } from "react"
 import { Facility } from "../lib/dal"
 import { Card } from "../components/ui/Card"
-import { Icon } from "../components/ui/Icon"
 import { getWeather, getWeatherIconName, type WeatherForecast } from "../lib/weather-client"
 import { StepperButtons } from "./stepper-buttons"
+import { Cloud, CloudFog, CloudLightning, CloudMoon, CloudRain, CloudSnow, CloudSun, Cloudy, Moon, Sun } from "lucide-react"
+
+const weatherIcons = {
+  "sun": Sun,
+  "moon": Moon,
+  "cloud-sun": CloudSun,
+  "cloud-moon": CloudMoon,
+  "cloud": Cloud,
+  "clouds": Cloudy,
+  "cloud-fog": CloudFog,
+  "cloud-rain": CloudRain,
+  "cloud-lightning": CloudLightning,
+  "cloud-snow": CloudSnow,
+} as const
 
 export function WeatherWidget({ facility }: { facility: Facility }) {
   const [weather, setWeather] = useState<WeatherForecast | null>(null)
@@ -20,6 +33,7 @@ export function WeatherWidget({ facility }: { facility: Facility }) {
   const current = weather?.timeSeries?.[index]
   const daytime = current ? (new Date(current.time)).getHours() >= 6 && (new Date(current.time)).getHours() < 18 : true
   const weatherIcon = current ? getWeatherIconName(current.data.symbol_code, daytime) : null
+  const WeatherIcon = weatherIcons[weatherIcon as keyof typeof weatherIcons] ?? Cloud
 
   return <Card className="p-4 w-full col-span-6 md:col-span-2 lg:col-span-2">
     {weather ? (
@@ -29,7 +43,7 @@ export function WeatherWidget({ facility }: { facility: Facility }) {
             <div className="flex items-center gap-3 font-display text-accent">
               <span className={'pt'}>
 
-                <Icon name={weatherIcon || "cloud"} size={34} />
+                <WeatherIcon size={34} />
               </span>
               <span className="text-xl font-semibold ">{weather.timeSeries[index].data.air_temperature}°C</span>
               <span className="text-sm text-text-muted">({new Date(weather.timeSeries[index].time).toLocaleString("sv-SE", { hour: "2-digit", minute: "2-digit" })})</span>

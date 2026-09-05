@@ -4,7 +4,6 @@ import { useDeferredValue, useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
-import { Icon } from "@/app/components/ui/Icon"
 import { createObservationsBatch } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import type { TempusSpecies } from "@/app/lib/dal"
@@ -12,6 +11,7 @@ import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
 import { ObservationFormHeader } from "./observation-form-header"
 import { ObservationSpeciesSearch } from "./observation-species-search"
 import { ObservationRowList, type ObservationRow } from "./observation-row-list"
+import { Check, Loader2 } from "lucide-react"
 
 let rowSeq = 0
 function rowKey() {
@@ -222,7 +222,7 @@ export default function ObservationForm() {
 
         <div className="flex items-center gap-3">
           <Button type="submit" variant="paper" disabled={pending || rows.length === 0}>
-            <Icon name={pending ? "loader" : "check"} size={16} className={pending ? "animate-spin" : ""} />
+            {pending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
             {pending
               ? "Sparar…"
               : `Spara ${rows.length || ""} ${rows.length === 1 ? "observation" : "observationer"}`.trim()}

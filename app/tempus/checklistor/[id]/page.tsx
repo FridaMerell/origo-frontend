@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { Icon } from "@/app/components/ui/Icon"
 import { loadChecklistRegisterPage } from "@/app/tempus/_actions/checklists"
 import {
   getTempusChecklistItem,
@@ -12,6 +11,7 @@ import { BiotopeMap } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import ChecklistActions from "./checklist-actions"
 import ChecklistRegister from "./checklist-register"
 import ObservationMapDialog from "./observation-map-dialog"
+import { Columns2 } from "lucide-react"
 
 type PageProps = {
   params: Promise<{ id: string }>
@@ -95,7 +95,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
             htmlFor="checklist-columns"
             className="hidden cursor-pointer items-center gap-1.5 border-l border-border pl-4 font-mono text-[9px] uppercase tracking-[.14em] text-text-muted hover:text-text sm:inline-flex"
           >
-            <Icon name="columns-2" size={13} />
+            <Columns2 size={13} />
             <span className="show-two">2 kolumner</span>
             <span className="show-one hidden">1 kolumn</span>
           </label>

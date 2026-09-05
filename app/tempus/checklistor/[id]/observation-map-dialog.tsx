@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState, type ReactNode } from "react"
-import { Icon } from "@/app/components/ui/Icon"
 import { SwedenMap, type SwedenMapPoint } from "@/app/tempus/ui/biotope-map/SwedenMap"
+import { Expand, X } from "lucide-react"
 
 export default function ObservationMapDialog({
   children,
@@ -36,7 +36,7 @@ export default function ObservationMapDialog({
         <div className="absolute inset-0 bg-linear-to-t from-surface/75 via-transparent to-transparent" />
         <span className="absolute bottom-1.5 left-2 flex items-center gap-1.5 font-display text-[9px] italic text-text-muted group-hover:text-text">
           {caption}
-          <Icon name="expand" size={10} />
+          <Expand size={10} />
         </span>
       </button>
 
@@ -63,7 +63,7 @@ export default function ObservationMapDialog({
                 className="flex size-8 items-center justify-center rounded-full text-text-muted hover:bg-surface-2 hover:text-text"
                 aria-label="Stäng"
               >
-                <Icon name="x" size={17} />
+                <X size={17} />
               </button>
             </header>
 

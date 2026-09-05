@@ -3,7 +3,16 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Avatar } from "../components/ui/Avatar"
-import { Icon } from "../components/ui/Icon"
+import {
+  ArrowUpRightIcon,
+  CheckCircle2Icon,
+  ChevronRightIcon,
+  CircleIcon,
+  CompassIcon,
+  FolderOpenIcon,
+  PlayIcon,
+  type LucideIcon,
+} from "lucide-react"
 import { ProgressBar } from "../components/ui/ProgressBar"
 import { EditProjectButton } from "./projects/edit-project-button"
 import { AddMilestoneButton } from "./projects/add-milestone-button"
@@ -39,7 +48,7 @@ const TaskList = ({
   if (upcoming.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border bg-surface-2/40 px-5 py-12 text-center">
-        <Icon name="check-circle-2" size={28} className="text-success" />
+        <CheckCircle2Icon size={28} className="text-success" />
         <p className="text-sm font-medium text-text">Allt är klart för tillfället.</p>
         <Link href="/tasks" className="text-sm font-medium text-link hover:underline">Se alla uppgifter</Link>
       </div>
@@ -56,7 +65,7 @@ const TaskList = ({
           className={["group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-surface-2", isTaskOverdue(task.due_date, task.status) ? "border-l-2 border-l-danger bg-danger-wash/25 pl-[14px]" : ""].join(" ")}
         >
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-muted group-hover:bg-surface">
-            <Icon name={task.status === "in_progress" ? "play" : "circle"} size={15} />
+            {task.status === "in_progress" ? <PlayIcon size={15} /> : <CircleIcon size={15} />}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-medium text-text">{task.title}</span>
@@ -72,7 +81,7 @@ const TaskList = ({
               ))}
             </span>
           )}
-          <Icon name="chevron-right" size={18} className="shrink-0 text-text-faint group-hover:text-text" />
+          <ChevronRightIcon size={18} className="shrink-0 text-text-faint group-hover:text-text" />
         </button>
       ))}
     </div>
@@ -95,7 +104,7 @@ const ProjectSummary = ({ project, tasks, users }: { project: FluxProject; tasks
           {project.description && <p className="mt-1 max-w-2xl truncate text-sm leading-5 text-[#FFF9F0]/70">{project.description}</p>}
         </div>
         <Link href={"/projects/" + project.id} className="inline-flex h-fit items-center justify-self-start gap-1.5 rounded-md border border-[#FFF9F0]/35 bg-white/5 px-3 py-2 text-sm font-medium text-[#FFF9F0] no-underline transition-colors hover:border-[#EFA052] hover:bg-[#EFA052] hover:text-[#25263B] sm:justify-self-end">
-          Projektsida <Icon name="arrow-up-right" size={15} />
+          Projektsida <ArrowUpRightIcon size={15} />
         </Link>
       </div>
       <div className="relative z-10 mt-4 grid gap-x-4 gap-y-3 border-t border-[#FFF9F0]/15 pt-4 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto] sm:items-center">
@@ -129,7 +138,7 @@ const ProjectPulse = ({ projectId, milestones, tasks, updates, users }: { projec
   </section>
 )
 
-const HomeEmpty = ({ icon, title, body }: { icon: string; title: string; body: string }) => (
+const HomeEmpty = ({ icon: IconComponent, title, body }: { icon: LucideIcon; title: string; body: string }) => (
   <section className="relative isolate overflow-hidden rounded-card bg-[#25263B] px-6 py-16 text-center text-[#FFF9F0] shadow-lg sm:px-10 sm:py-20">
     <Image
       src="/flux/dragonfly.svg"
@@ -142,7 +151,7 @@ const HomeEmpty = ({ icon, title, body }: { icon: string; title: string; body: s
     />
     <div className="relative z-10 mx-auto flex max-w-md flex-col items-center">
       <span className="flex size-12 items-center justify-center rounded-full border border-[#FFF9F0]/25 text-[#EFA052]">
-        <Icon name={icon} size={20} />
+        <IconComponent size={20} />
       </span>
       <h1 className="mt-5 font-display text-2xl font-semibold uppercase tracking-[0.12em] text-[#FFF9F0] sm:text-3xl">{title}</h1>
       <p className="mt-3 text-sm leading-6 text-[#FFF9F0]/70">{body}</p>
@@ -163,7 +172,7 @@ export default function HomeView() {
     return (
       <div className="py-10 sm:py-16">
         <HomeEmpty
-          icon="folder-open"
+          icon={FolderOpenIcon}
           title="Inga projekt"
           body="Du har inga projekt än. Kontakta din administratör för att bli tillagd i ett projekt."
         />
@@ -173,7 +182,7 @@ export default function HomeView() {
     return (
       <div className="py-10 sm:py-16">
         <HomeEmpty
-          icon="compass"
+          icon={CompassIcon}
           title="Välj ett projekt"
           body="Välj ett projekt i menyn högst upp för att se översikten."
         />

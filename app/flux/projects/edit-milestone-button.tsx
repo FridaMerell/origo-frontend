@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/app/components/ui/Icon";
+
 import { MilestoneFormDrawer } from "@/app/flux/projects/milestone-form-drawer";
 import type { FluxMilestone } from "@/app/lib/dal";
+import { Pencil } from "lucide-react"
 
 export function EditMilestoneButton({ milestone }: { milestone: FluxMilestone }) {
   const [open, setOpen] = useState(false);
@@ -16,7 +17,7 @@ export function EditMilestoneButton({ milestone }: { milestone: FluxMilestone })
         onClick={() => setOpen(true)}
         className="text-text-faint hover:text-text"
       >
-        <Icon name="pencil" size={14} />
+        <Pencil  size={14} />
       </button>
       <MilestoneFormDrawer
         open={open}

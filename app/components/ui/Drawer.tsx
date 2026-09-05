@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./Button";
-import { Icon } from "./Icon";
+import { X } from "lucide-react"
 
 const DrawerCloseContext = createContext<(() => void) | null>(null);
 
@@ -115,7 +115,7 @@ export function Drawer({
                   aria-label="Stäng"
                   className="text-text-muted hover:text-text"
                 >
-                  <Icon name="x" size={16} />
+                  <X size={16} />
                 </button>
               </div>
             </div>

@@ -6,7 +6,7 @@ import { addSubtask, toggleTaskStatus } from "@/app/actions/flux/tasks";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Drawer } from "@/app/components/ui/Drawer";
 import { Gallery } from "@/app/components/ui/Gallery";
-import { Icon } from "@/app/components/ui/Icon";
+
 import { ProgressBar } from "@/app/components/ui/ProgressBar";
 import { TaskFormDrawer } from "@/app/flux/tasks/task-form-drawer";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
@@ -20,6 +20,7 @@ import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import { useTaskPanel } from "@/app/lib/task-panel-context";
 import { FLUX_PRIORITY_BADGE_TONE, FLUX_PRIORITY_LABEL } from "@/app/flux/flux-priority";
 import type { FluxTask } from "@/app/lib/dal";
+import { Check, MessageSquare, Pencil, Plus } from "lucide-react"
 
 function SubtaskRow({ subtask }: { subtask: FluxTask }) {
   const [pending, startTransition] = useTransition();
@@ -52,7 +53,7 @@ function SubtaskRow({ subtask }: { subtask: FluxTask }) {
           done ? "border-accent bg-accent" : "border-border bg-transparent"
         } disabled:opacity-50`}
       >
-        {done && <Icon name="check" size={12} className="text-accent-contrast" />}
+        {done && <Check size={12} className="text-accent-contrast" />}
       </button>
       <span
         onClick={toggle}
@@ -98,7 +99,7 @@ function AddSubtaskForm({ task }: { task: FluxTask }) {
         onClick={submit}
         className="flex size-8 shrink-0 items-center justify-center rounded border border-border text-text-muted hover:text-text disabled:opacity-50"
       >
-        <Icon name="plus" size={14} />
+        <Plus size={14} />
       </button>
     </div>
   );
@@ -137,7 +138,7 @@ export function TaskPanel() {
                 }}
                 className="text-text-faint hover:text-text"
               >
-                <Icon name="pencil" size={16} />
+                <Pencil size={16} />
               </button>
             </div>
           )
@@ -182,7 +183,7 @@ export function TaskPanel() {
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-semibold text-text-faint">Uppdateringar</span>
                   <span className="flex items-center gap-1 font-mono text-sm text-text">
-                    <Icon name="message-square" size={14} />
+                    <MessageSquare size={14} />
                     {task.update_count}
                   </span>
                 </div>

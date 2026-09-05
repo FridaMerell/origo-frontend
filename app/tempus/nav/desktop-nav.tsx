@@ -1,7 +1,6 @@
 import { useRouter } from "next/navigation"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { logout } from "@/app/actions/auth"
-import { Icon } from "@/app/components/ui/Icon"
 import { NotificationMenu } from "@/app/components/ui/NotificationMenu"
 import type { User } from "@/app/lib/dal"
 import QuickObservation from "../observationer/quick-observation"
@@ -9,6 +8,7 @@ import Logo from "../ui/Logo"
 import { FieldIcon, isActiveLink, mainLinks, moreLinks, primaryLinks } from "./nav-links"
 import { GeoAreaSelector } from "./geo-area-selector"
 import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
+import { Bell, ChevronDown, LogOut, Menu, Moon, Search, Settings, Sun, X } from "lucide-react"
 
 export function DesktopNav({
   pathname,
@@ -78,7 +78,7 @@ export function DesktopNav({
                 }`}
             >
               Mer
-              <Icon name="chevron-down" size={14} className={`transition-transform ${more.open ? "rotate-180" : ""}`} />
+              <ChevronDown size={14} className={`transition-transform ${more.open ? "rotate-180" : ""}`} />
             </button>
             {more.open ? (
               <div
@@ -116,7 +116,7 @@ export function DesktopNav({
             title="Artsök"
             className="hidden h-10 items-center gap-2 rounded-md px-2.5 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex"
           >
-            <Icon name="search" size={18} />
+            <Search size={18} />
             <span className="hidden 2xl:inline">Artsök</span>
           </button>
           <div className="hidden sm:block">
@@ -135,7 +135,7 @@ export function DesktopNav({
               onClick={() => actions.setOpen((current) => !current)}
               className="flex size-10 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             >
-              <Icon name="settings" size={18} />
+              <Settings size={18} />
             </button>
             {actions.open ? (
               <div
@@ -150,7 +150,7 @@ export function DesktopNav({
                         onClick={toggle}
                         className="flex h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
                       >
-                        <span className="flex items-center gap-3"><Icon name="bell" size={18} />Notifikationer</span>
+                        <span className="flex items-center gap-3"><Bell size={18} />Notifikationer</span>
                         {unreadCount > 0 ? <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-contrast">{notificationLabel}</span> : null}
                       </button>
                     )}
@@ -164,7 +164,7 @@ export function DesktopNav({
                   }}
                   className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
                 >
-                  <Icon name={mode === "dark" ? "sun" : "moon"} size={18} />
+                   {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
                   {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
                 </button>
                 {user ? <div className="my-1 border-t border-border" /> : null}
@@ -177,7 +177,7 @@ export function DesktopNav({
                     }}
                     className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-danger focus-visible:outline-2 focus-visible:outline-focus-ring"
                   >
-                    <Icon name="log-out" size={18} />
+                    <LogOut size={18} />
                     Logga ut
                   </button>
                 ) : null}
@@ -192,7 +192,9 @@ export function DesktopNav({
             onClick={() => setMenuOpen((current) => !current)}
             className="hidden size-10 items-center justify-center rounded-md border border-border text-text-muted transition-colors hover:border-border-strong hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex xl:hidden"
           >
-            <Icon name={menuOpen ? "x" : "menu"} size={19} />
+            {
+              menuOpen ? <X size={19} /> : <Menu size={19} />
+            }
           </button>
         </div>
 
@@ -268,7 +270,7 @@ export function DesktopNav({
                   }}
                   className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
                 >
-                  <Icon name="search" size={18} />
+                  <Search size={18} />
                   Artsök
                 </button>
                 <p className="px-3 pb-1 pt-2 font-mono text-[10px] uppercase tracking-wide text-text-faint">
@@ -279,7 +281,7 @@ export function DesktopNav({
                   onClick={onToggleMode}
                   className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
                 >
-                  <Icon name={mode === "dark" ? "sun" : "moon"} size={18} />
+                  {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
                   {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
                 </button>
                 {user ? (
@@ -291,7 +293,7 @@ export function DesktopNav({
                         className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
                       >
                         <span className="relative">
-                          <Icon name="bell" size={18} />
+                          <Bell size={18} />
                           {unreadCount > 0 && (
                             <span className="absolute -right-2 -top-2 flex min-w-4 h-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold text-accent-contrast ring-2 ring-surface">
                               {notificationLabel}
@@ -312,7 +314,7 @@ export function DesktopNav({
                     }}
                     className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
                   >
-                    <Icon name="log-out" size={18} />
+                    <LogOut size={18} />
                     Logga ut
                   </button>
                 ) : null}

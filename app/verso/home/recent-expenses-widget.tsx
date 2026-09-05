@@ -1,8 +1,8 @@
 "use client"
 
-import { Card } from "../components/ui/Card"
-import { Icon } from "../components/ui/Icon"
-import { useFacilities } from "./_state/facility-context"
+import { CreditCard } from "lucide-react"
+import { Card } from "../../components/ui/Card"
+import { useFacilities } from "../_state/facility-context"
 
 export function RecentExpensesWidget() {
   const { yearlyExpenses } = useFacilities()
@@ -10,7 +10,7 @@ export function RecentExpensesWidget() {
     <Card className="w-full col-span-6 md:col-span-3 lg:col-span-3 gap-5 flex flex-col justify-between">
       <div className="flex flex-col gap-2">
         <span className="text-text-faint text-xs ">
-          <Icon name="credit-card" size={13} className="inline-block mr-1" />
+          <CreditCard size={13} className="inline-block mr-1" />
           Utgifter i år
         </span>
         <div className="flex flex-col gap-1">

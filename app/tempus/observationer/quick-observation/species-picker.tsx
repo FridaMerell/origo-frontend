@@ -1,8 +1,8 @@
 import { useDeferredValue, type RefObject } from "react"
-import { Icon } from "@/app/components/ui/Icon"
 import { Pager } from "@/app/components/ui/Pager"
 import { speciesName } from "@/app/tempus/_state/tempus-context"
 import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
+import { Search, X } from "lucide-react"
 
 export type PresetSpecies = { id: string; label: string; scientific: string }
 
@@ -52,13 +52,12 @@ export function SpeciesPicker({
             aria-label="Byt art"
             className="shrink-0 text-text-faint hover:text-text"
           >
-            <Icon name="x" size={15} />
+            <X size={15} />
           </button>
         </div>
       ) : (
         <span className="relative">
-          <Icon
-            name="search"
+          <Search
             size={16}
             className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint"
           />

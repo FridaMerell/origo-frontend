@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition, type ReactNode } from "react";
-import { Icon } from "@/app/components/ui/Icon";
+import { Trash2Icon } from "lucide-react";
 import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog";
 
 export function DeleteButton({
@@ -43,7 +43,7 @@ export function DeleteButton({
         }}
         className={className}
       >
-        <Icon name="trash-2" size={14} />
+        <Trash2Icon size={14} />
       </button>
       {dialog}
     </>

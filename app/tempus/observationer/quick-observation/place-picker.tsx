@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
-import { Icon } from "@/app/components/ui/Icon"
 import { GOOGLE_MAPS_API_KEY } from "@/app/lib/config"
 import { parseLatLon } from "@/app/tempus/formatters"
+import { X } from "lucide-react"
 
 type SavedPlace = { name: string; lat: string; lon: string }
 const PLACES_KEY = "tempus:observation-places"
@@ -207,7 +207,7 @@ export function PlacePicker({
                     aria-label={`Ta bort ${place.name}`}
                     className="text-text-faint hover:text-text"
                   >
-                    <Icon name="x" size={12} />
+                    <X size={12} />
                   </button>
                 </span>
               ))}

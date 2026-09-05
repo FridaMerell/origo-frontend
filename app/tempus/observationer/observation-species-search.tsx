@@ -1,9 +1,9 @@
 "use client"
 
-import { Icon } from "@/app/components/ui/Icon"
 import { Pager } from "@/app/components/ui/Pager"
 import { speciesName } from "@/app/tempus/_state/tempus-context"
 import type { TempusSpecies } from "@/app/lib/dal"
+import { Search } from "lucide-react"
 
 export function ObservationSpeciesSearch({
   query,
@@ -30,7 +30,7 @@ export function ObservationSpeciesSearch({
     <div className="relative border-x border-b border-border px-3 py-2 font-display text-[9px] italic text-text-faint">
       Art att föra in
       <span className="relative mt-1 block">
-        <Icon name="search" size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-faint" />
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-faint" />
         <input
           type="search"
           value={query}

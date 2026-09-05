@@ -2,7 +2,6 @@
 
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Card } from "@/app/components/ui/Card"
-import { Icon } from "@/app/components/ui/Icon"
 import { AddTaskButton } from "@/app/flux/tasks/add-task-button"
 import { DeleteTaskButton } from "@/app/flux/tasks/delete-task-button"
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button"
@@ -12,6 +11,7 @@ import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app
 import { isTaskOverdue, OVERDUE_ROW_TONE } from "@/app/lib/flux-task-dates"
 import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort"
 import type { FluxTask } from "@/app/lib/dal"
+import { ChevronRight } from "lucide-react"
 
 function TaskRow({ task, projectName }: { task: FluxTask; projectName: string }) {
   const users = useFluxUsers()
@@ -26,7 +26,7 @@ function TaskRow({ task, projectName }: { task: FluxTask; projectName: string })
       <div className="flex shrink-0 items-center gap-2">
         <div className="flex -space-x-1.5">{task.assignees.map((id) => <Avatar key={id} name={fluxUserName(users.get(id), id)} size={24} />)}</div>
         <span className="opacity-0 group-hover:opacity-100"><DeleteTaskButton id={task.id} /></span>
-        <Icon name="chevron-right" size={17} className="text-text-faint" />
+        <ChevronRight size={17} className="text-text-faint" />
       </div>
     </div>
   )

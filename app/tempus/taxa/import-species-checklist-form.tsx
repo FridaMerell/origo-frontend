@@ -3,7 +3,7 @@
 import { useActionState, useRef, useState } from "react"
 import { importSpeciesChecklist, type ImportSpeciesChecklistState } from "@/app/tempus/_actions/species"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
+import { ChevronDown, FileCheck, FileUp, Upload } from "lucide-react"
 
 const initialState: ImportSpeciesChecklistState = {}
 
@@ -47,7 +47,7 @@ export default function ImportSpeciesChecklistForm({ categoryId, categoryLabel }
         className="flex w-full items-center gap-3 p-4 text-left transition-colors hover:bg-accent-wash/40 disabled:cursor-not-allowed sm:p-5"
       >
         <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent">
-          <Icon name="file-up" size={18} />
+          <FileUp size={18} />
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-lg font-semibold">Importera artlista</h2>
@@ -55,8 +55,7 @@ export default function ImportSpeciesChecklistForm({ categoryId, categoryLabel }
             Lägg till arter i {categoryLabel} från en CSV med kolumnen <span className="font-mono">Taxon id</span>.
           </p>
         </div>
-        <Icon
-          name="chevron-down"
+        <ChevronDown
           size={18}
           className={`text-text-muted transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
@@ -92,7 +91,13 @@ export default function ImportSpeciesChecklistForm({ categoryId, categoryLabel }
               : "border-border bg-surface text-text-muted hover:border-accent hover:text-text"
           }`}
         >
-          <Icon name={fileName ? "file-check" : "upload"} size={20} className={fileName ? "text-success" : ""} />
+          {
+            fileName ? (
+              <FileCheck size={20} className="text-success" />
+            ) : (
+              <Upload size={20} />
+            )
+          }
           <div>
             <p className="break-all text-sm font-semibold text-text">
               {fileName ?? "Släpp en CSV här eller välj fil"}

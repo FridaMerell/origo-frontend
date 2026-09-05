@@ -5,12 +5,12 @@ import Link from "next/link"
 import { useVentureData } from "@/app/verso/_state/venture-context"
 import { useUpdateData } from "@/app/verso/_state/update-context"
 import { Card } from "@/app/components/ui/Card"
-import { Icon } from "@/app/components/ui/Icon"
 import { Drawer } from "@/app/components/ui/Drawer"
 import UpdateForm from "@/app/verso/update-form"
 import VentureTaskForm from "@/app/verso/venture-task-form"
 import { UpdateCard } from "@/app/verso/update-card"
 import { VentureTaskStatusBadge } from "@/app/verso/venture-task-status"
+import { ChevronLeft } from "lucide-react"
 
 export default function VentureTaskView() {
   const { id, taskId } = useParams<{ id: string; taskId: string }>()
@@ -24,7 +24,7 @@ export default function VentureTaskView() {
     return (
       <div className="flex flex-1 flex-col gap-5 p-7">
         <Link href="/planera" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-          <Icon name="chevron-left" size={14} />
+          <ChevronLeft size={14} />
           Planering
         </Link>
         <div className="text-text-muted">Uppgiften kunde inte hittas.</div>
@@ -40,7 +40,7 @@ export default function VentureTaskView() {
         href={`/planera/${venture.id}`}
         className="flex items-center gap-1 text-sm text-text-muted hover:text-accent"
       >
-        <Icon name="chevron-left" size={14} />
+        <ChevronLeft size={14} />
         {venture.name}
       </Link>
 

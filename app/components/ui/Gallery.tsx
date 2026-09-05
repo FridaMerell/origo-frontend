@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Icon } from "./Icon";
 import { fileProxyUrl, normalizeFileUrls, type FileLike } from "@/app/lib/files";
+import { ChevronLeft, ChevronRight, Paperclip, X } from "lucide-react"
 
 const IMAGE_EXTENSION = /\.(png|jpe?g|gif|webp|avif|svg)$/i;
 
@@ -41,7 +41,7 @@ function Lightbox({
         aria-label="Stäng"
         className="absolute right-4 top-4 text-white/80 hover:text-white"
       >
-        <Icon name="x" size={24} />
+        <X size={24} />
       </button>
 
       {images.length > 1 && (
@@ -54,7 +54,7 @@ function Lightbox({
           aria-label="Föregående"
           className="absolute left-4 text-white/80 hover:text-white"
         >
-          <Icon name="chevron-left" size={28} />
+          <ChevronLeft size={28} />
         </button>
       )}
 
@@ -76,7 +76,7 @@ function Lightbox({
           aria-label="Nästa"
           className="absolute right-4 text-white/80 hover:text-white"
         >
-          <Icon name="chevron-right" size={28} />
+          <ChevronRight size={28} />
         </button>
       )}
     </div>
@@ -126,7 +126,7 @@ export function Gallery({ files }: { files: FileLike[] }) {
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-sm text-accent hover:underline"
             >
-              <Icon name="paperclip" size={14} />
+              <Paperclip size={14} />
               {url.split("/").pop()}
             </a>
           ))}

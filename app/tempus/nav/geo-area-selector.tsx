@@ -1,6 +1,6 @@
-import { Icon } from "@/app/components/ui/Icon"
 import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { useTempusGeoAreas } from "@/app/tempus/_state/tempus-context"
+import { Check, ChevronDown, MapPin } from "lucide-react"
 
 export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
   const { geoAreas, selectedGeoArea, selectGeoArea } = useTempusGeoAreas()
@@ -19,7 +19,7 @@ export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
         {compact ? (
           <span className="flex min-w-0 items-center gap-2.5">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-wash text-accent">
-              <Icon name="map-pin" size={15} />
+              <MapPin size={15} />
             </span>
             <span className="flex min-w-0 flex-col items-start">
               <span className="font-mono text-[10px] uppercase tracking-wide text-text-faint">Område</span>
@@ -31,8 +31,7 @@ export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
         ) : (
           <span className="truncate">{selectedGeoArea?.name ?? "Hela Sverige"}</span>
         )}
-        <Icon
-          name="chevron-down"
+        <ChevronDown
           size={14}
           className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         />
@@ -50,7 +49,7 @@ export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
             className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-accent-wash ${allSweden ? "font-semibold text-accent" : "text-text"}`}
           >
             Hela Sverige
-            {allSweden ? <Icon name="check" size={16} /> : null}
+            {allSweden ? <Check size={16} /> : null}
           </button>
           {geoAreas.length > 0 ? <div className="my-1 border-t border-border" /> : null}
           {geoAreas.map((geoArea) => (
@@ -65,7 +64,7 @@ export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
                 }`}
             >
               {geoArea.name}
-              {geoArea.id === selectedGeoArea?.id ? <Icon name="check" size={16} /> : null}
+              {geoArea.id === selectedGeoArea?.id ? <Check size={16} /> : null}
             </button>
           ))}
         </div>

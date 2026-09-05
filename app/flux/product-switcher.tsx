@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "@/app/components/ui/Icon";
+import { ChevronDown } from "lucide-react"
 
 const PRODUCTS = [
   { id: "flux", name: "Flux" },
@@ -28,7 +28,7 @@ export function ProductSwitcher() {
       >
         <span className="size-2 rounded-sm bg-accent" />
         Flux
-        <Icon name="chevron-down" size={14} className="text-text-faint" />
+        <ChevronDown size={14} className="text-text-faint" />
       </button>
 
       {open && (

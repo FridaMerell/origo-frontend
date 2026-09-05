@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { type Resolver, useForm } from "react-hook-form"
 import { createDocument, updateDocument } from "@/app/actions/flux/documents"
 import { Button } from "@/app/components/ui/Button"
-import { Icon } from "@/app/components/ui/Icon"
+import { DownloadIcon, XIcon } from "lucide-react"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { FormRootError } from "@/app/components/form/FormFeedback"
 import { useSubmitAction } from "@/app/components/form/useSubmitAction"
@@ -134,13 +134,13 @@ export function DocumentEditorOverlay({
                 aria-label="Ladda ner som Markdown"
                 className="rounded p-1.5 text-text-muted hover:bg-surface-2 hover:text-text"
               >
-                <Icon name="download" size={16} />
+                <DownloadIcon size={16} />
               </button>
               <Button type="submit" size="sm" disabled={isSubmitting}>
                 {isSubmitting ? "Sparar…" : document ? "Spara" : "Skapa dokument"}
               </Button>
               <button type="button" onClick={onClose} aria-label="Stäng" className="text-text-muted hover:text-text">
-                <Icon name="x" size={18} />
+                <XIcon size={18} />
               </button>
             </div>
           </header>

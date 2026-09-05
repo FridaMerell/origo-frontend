@@ -1,8 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Icon } from "./Icon";
 import { useDismissableOpen } from "./use-dismissable-open";
+import { ChevronDown } from "lucide-react"
 
 export type SelectOption<T extends string> = {
   value: T;
@@ -36,7 +36,7 @@ export function Select<T extends string>({
         className="flex w-full items-center justify-between gap-1.5 border-b border-accent-hover px-1 py-1 text-left text-sm text-text-muted hover:text-text"
       >
         <span className="truncate">{selected ? selected.label : placeholder}</span>
-        <Icon name="chevron-down" size={13} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={13} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
         <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-md border border-border bg-surface py-1 shadow-sm">

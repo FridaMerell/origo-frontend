@@ -1,34 +1,34 @@
-"use client";
+"use client"
 
-import type { ReactNode } from "react";
-import { useState } from "react";
-import { Icon } from "./Icon";
+import type { ReactNode } from "react"
+import { useState } from "react"
+import { ChevronDown, ChevronRight } from "lucide-react"
 
 export type ListTableColumn<T> = {
-  key: string;
-  header?: ReactNode;
-  render: (item: T) => ReactNode;
-  width?: string;
-  align?: "left" | "right" | "center";
-};
+  key: string
+  header?: ReactNode
+  render: (item: T) => ReactNode
+  width?: string
+  align?: "left" | "right" | "center"
+}
 
 export type ListTableRow<T> = {
-  id: string | number;
-  item: T;
-  children?: ListTableRow<T>[];
-};
+  id: string | number
+  item: T
+  children?: ListTableRow<T>[]
+}
 
 type ListTableProps<T> = {
-  columns: ListTableColumn<T>[];
-  rows: ListTableRow<T>[];
-  showHeader?: boolean;
-  caption?: ReactNode;
-  onRowClick?: (item: T) => void;
-  rowClassName?: (item: T) => string;
-};
+  columns: ListTableColumn<T>[]
+  rows: ListTableRow<T>[]
+  showHeader?: boolean
+  caption?: ReactNode
+  onRowClick?: (item: T) => void
+  rowClassName?: (item: T) => string
+}
 
 const alignClass = (align: ListTableColumn<unknown>["align"]) =>
-  align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left";
+  align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"
 
 export function ListTable<T>({
   columns,
@@ -38,23 +38,23 @@ export function ListTable<T>({
   onRowClick,
   rowClassName,
 }: ListTableProps<T>) {
-  const [collapsedIds, setCollapsedIds] = useState<Set<string | number>>(new Set());
+  const [collapsedIds, setCollapsedIds] = useState<Set<string | number>>(new Set())
 
-  const gridTemplateColumns = columns.map((c) => c.width ?? "minmax(160px,1fr)").join(" ");
+  const gridTemplateColumns = columns.map((c) => c.width ?? "minmax(160px,1fr)").join(" ")
 
   function toggle(id: string | number) {
     setCollapsedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   function renderRows(list: ListTableRow<T>[], depth: number): ReactNode {
     return list.map((row) => {
-      const hasChildren = Boolean(row.children?.length);
-      const collapsed = collapsedIds.has(row.id);
+      const hasChildren = Boolean(row.children?.length)
+      const collapsed = collapsedIds.has(row.id)
       return (
         <div key={row.id}>
           <div
@@ -75,7 +75,12 @@ export function ListTable<T>({
                     aria-label={collapsed ? "Expandera" : "Fäll ihop"}
                     className="mr-1 flex size-4 shrink-0 items-center justify-center text-text-faint hover:text-text"
                   >
-                    <Icon name={collapsed ? "chevron-right" : "chevron-down"} size={12} />
+                    {
+                      collapsed ?
+                        <ChevronRight size='12' />
+                        :
+                        <ChevronDown size={12} />
+                    }
                   </button>
                 )}
                 {i === 0 && !hasChildren && depth > 0 && <span className="mr-1 inline-block size-4 shrink-0" />}
@@ -85,8 +90,8 @@ export function ListTable<T>({
           </div>
           {hasChildren && !collapsed && renderRows(row.children!, depth + 1)}
         </div>
-      );
-    });
+      )
+    })
   }
 
   return (
@@ -110,5 +115,5 @@ export function ListTable<T>({
       )}
       <div>{renderRows(rows, 0)}</div>
     </div>
-  );
+  )
 }

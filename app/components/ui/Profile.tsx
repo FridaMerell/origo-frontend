@@ -1,7 +1,7 @@
 "use client"
 
+import { LogOut } from "lucide-react"
 import { Avatar } from "./Avatar"
-import { Icon } from "./Icon"
 import { NotificationMenu } from "./NotificationMenu"
 import { logout } from "@/app/actions/auth"
 import { useUser, formatUserName } from "@/app/lib/user-context"
@@ -23,7 +23,7 @@ export function Profile() {
           }}
           className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm text-text hover:bg-accent-wash hover:text-accent"
         >
-          <Icon name="log-out" size={14} />
+          <LogOut size={14} />
           Logga ut
         </button>
       )}

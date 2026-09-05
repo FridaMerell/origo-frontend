@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
-const buttonClassName = "rounded bg-accent-wash px-2 py-1 text-sm text-accent hover:bg-accent-active hover:text-accent-contrast disabled:opacity-50 disabled:hover:bg-accent-wash disabled:hover:text-accent"
+const buttonClassName = "-ml-px inline-flex size-8 items-center justify-center border border-border bg-surface text-text-muted transition-colors first:ml-0 first:rounded-l-md last:rounded-r-md hover:z-10 hover:border-accent hover:bg-accent-wash hover:text-accent disabled:bg-surface-2 disabled:text-text-faint/40"
 
 export function StepperButtons({
   index,

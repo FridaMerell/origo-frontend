@@ -8,24 +8,30 @@ import Link from "next/link"
 export function RecentExpensesWidget() {
   const { yearlyExpenses } = useFacilities()
   return (
-    <Card className="col-span-1 flex min-h-52 flex-col justify-between bg-surface-2 p-5 lg:col-span-5">
-      <div className="flex flex-col gap-5">
-        <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-text-muted">
-          <Receipt size={14} />
-          Utgifter i år
-        </span>
-        <div className="flex flex-col gap-1">
-          <span className="font-display text-4xl font-semibold leading-none text-text">
-            {yearlyExpenses ? `${yearlyExpenses} kr` : "—"}
-          </span>
-          <span className="text-sm text-text-muted">
-            {yearlyExpenses ? "Registrerat för den valda anläggningen" : "Inga utgifter registrerade ännu"}
-          </span>
+    <Card className="col-span-1 flex h-full flex-col lg:col-span-5">
+      <div className="flex items-center gap-2 text-sm font-semibold text-text">
+        <Receipt size={16} />
+        Utgifter i år
+      </div>
+
+      <div className="mt-7">
+        <div className="font-display text-4xl font-semibold leading-none text-text">
+          {yearlyExpenses ? `${yearlyExpenses} kr` : "—"}
+        </div>
+        <div className="mt-2 text-sm text-text-muted">
+          {yearlyExpenses ? "Registrerat för den valda anläggningen" : "Inga utgifter registrerade ännu"}
         </div>
       </div>
-      <Link href="/ekonomi" className="mt-6 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-link hover:text-link-hover">
+
+      <Link href="/ekonomi" className="mt-1 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-link hover:text-link-hover">
         Se ekonomin <ArrowUpRight size={15} />
       </Link>
+
+      <div className="mt-auto flex gap-2" aria-hidden="true">
+        <span className="h-1 flex-1 rounded-full bg-secondary" />
+        <span className="h-1 flex-1 rounded-full bg-accent" />
+        <span className="h-1 flex-1 rounded-full bg-success" />
+      </div>
     </Card>
   )
 }

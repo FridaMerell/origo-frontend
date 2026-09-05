@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 
 export default function VersoLoginPage() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-16 py-32">
-      <Card className="flex w-full max-w-sm flex-col items-center gap-6 p-8">
+    <div className="flex flex-1 flex-col items-center justify-center px-16 py-32 dark:text-white">
+      <Card className="flex w-full max-w-sm flex-col items-center gap-6 p-8 text-white">
         <LogoMark />
-        <LoginForm redirectTo="/" buttonClass={'bg-accent text-surface'} />
+        <LoginForm redirectTo="/" variant="tenant" buttonClass="font-display" />
       </Card>
     </div>
   );

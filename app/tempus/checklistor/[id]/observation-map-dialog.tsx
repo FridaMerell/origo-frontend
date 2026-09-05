@@ -41,13 +41,15 @@ export default function ObservationMapDialog({
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="observation-map-title">
-          <button
-            type="button"
-            className="absolute inset-0 cursor-default bg-black/70"
-            onClick={() => setOpen(false)}
-            aria-label="Stäng kartan"
-          />
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="observation-map-title"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) setOpen(false)
+          }}
+        >
           <section className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-card border border-border bg-surface shadow-2xl">
             <header className="flex items-start justify-between gap-4 border-b border-border px-4 py-3 sm:px-5">
               <div>

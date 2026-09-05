@@ -46,13 +46,12 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 px-3 py-[max(1rem,env(safe-area-inset-top))] sm:items-center">
-      <button
-        type="button"
-        aria-label="Stäng artsök"
-        onClick={onClose}
-        className="absolute inset-0 cursor-default"
-      />
+    <div
+      className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 px-3 py-[max(1rem,env(safe-area-inset-top))] sm:items-center"
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
       <section
         role="dialog"
         aria-modal="true"

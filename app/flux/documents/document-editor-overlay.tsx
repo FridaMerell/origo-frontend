@@ -92,14 +92,15 @@ export function DocumentEditorOverlay({
     <div
       className="fixed inset-0 z-50 flex bg-black/60 transition-opacity"
       style={{ transitionDuration: "var(--duration-normal)", transitionTimingFunction: "var(--ease-standard)", opacity: entered ? 1 : 0 }}
-      onClick={onClose}
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
     >
       <div
         role="dialog"
         aria-modal="true"
         className="flex h-full w-full flex-col bg-surface shadow-lg transition-transform"
         style={{ transitionDuration: "var(--duration-normal)", transitionTimingFunction: "var(--ease-standard)", transform: entered ? "translateY(0)" : "translateY(1.5rem)" }}
-        onClick={(event) => event.stopPropagation()}
       >
         <form
           onSubmit={handleSubmit(async (data) => {

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
+import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog"
 import { createObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import { PlacePicker } from "./quick-observation/place-picker"
@@ -40,6 +41,7 @@ export default function QuickObservation({
 
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
+  const [confirmingCancel, setConfirmingCancel] = useState(false)
 
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -57,8 +59,7 @@ export default function QuickObservation({
     if (!open) return
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setEntered(false)
-        setOpen(false)
+        requestClose()
       }
     }
     document.addEventListener("keydown", onKey)
@@ -96,6 +97,17 @@ export default function QuickObservation({
     setLon("")
     setShowTime(false)
     setShowPlace(false)
+  }
+
+  const hasDraft = Boolean(query || picked || count !== "1" || lat || lon || showTime || showPlace)
+
+  const requestClose = () => {
+    if (pending) return
+    if (hasDraft) {
+      setConfirmingCancel(true)
+      return
+    }
+    close()
   }
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -177,13 +189,14 @@ export default function QuickObservation({
             transitionTimingFunction: "var(--ease-standard)",
             opacity: entered ? 1 : 0,
           }}
-          onClick={close}
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) requestClose()
+          }}
         >
           <div
             role="dialog"
             aria-modal="true"
             aria-label="Snabbregistrera observation"
-            onClick={(event) => event.stopPropagation()}
             className="flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-lg transition-transform sm:max-w-lg sm:rounded-2xl"
             style={{
               transitionDuration: "var(--duration-normal)",
@@ -198,7 +211,7 @@ export default function QuickObservation({
               </h2>
               <button
                 type="button"
-                onClick={close}
+                onClick={requestClose}
                 aria-label="Stäng"
                 className="text-text-muted hover:text-text"
               >
@@ -301,10 +314,10 @@ export default function QuickObservation({
                 </Button>
                 <button
                   type="button"
-                  onClick={close}
+                  onClick={requestClose}
                   className="text-sm text-text-muted hover:text-text"
                 >
-                  Klar
+                  Avbryt
                 </button>
               </div>
             </form>
@@ -312,6 +325,20 @@ export default function QuickObservation({
         </div>,
         document.querySelector<HTMLElement>('[data-theme="tempus"]') ?? document.body,
       ) : null}
+
+      <ConfirmDialog
+        open={confirmingCancel}
+        title="Avbryt registreringen?"
+        message="Dina osparade uppgifter försvinner."
+        confirmLabel="Avbryt registrering"
+        cancelLabel="Fortsätt registrera"
+        destructive
+        onConfirm={() => {
+          setConfirmingCancel(false)
+          close()
+        }}
+        onCancel={() => setConfirmingCancel(false)}
+      />
     </>
   )
 }

@@ -73,7 +73,9 @@ export function ConfirmDialog({
             transitionTimingFunction: "var(--ease-standard)",
             opacity: entered ? 1 : 0,
           }}
-          onClick={onCancel}
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) onCancel();
+          }}
         >
           <div
             role="alertdialog"

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import { usePathname } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@/app/components/form/zodResolver"
 import { createProject, updateProject } from "@/app/actions/flux/projects"
@@ -9,12 +8,12 @@ import { fluxProjectFormSchema, type FluxProjectFormValues } from "@/app/lib/sch
 import { Drawer } from "@/app/components/ui/Drawer"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { FileUpload } from "@/app/components/ui/FileUpload"
-import { useSubmitAction } from "@/app/components/form/useSubmitAction"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles"
 import { UserMultiSelect } from "@/app/flux/user-multiselect"
 import { useUser, useUsers } from "@/app/lib/user-context"
 import type { FluxProject } from "@/app/lib/dal"
+import { useFluxProjectActions } from "@/app/flux/_state/flux-context"
 
 export function ProjectFormDrawer({
   open,
@@ -25,7 +24,7 @@ export function ProjectFormDrawer({
   onClose: () => void
   project?: FluxProject
 }) {
-  const pathname = usePathname()
+  const { addProject, replaceProject } = useFluxProjectActions()
   const user = useUser()
   const users = useUsers()
   const defaultMembers = project?.members ?? (user ? [user.id] : [])
@@ -43,7 +42,6 @@ export function ProjectFormDrawer({
       members: defaultMembers,
     },
   })
-  const submit = useSubmitAction(setError)
   const members = useWatch({ control, name: "members" })
 
   useEffect(() => {
@@ -55,15 +53,18 @@ export function ProjectFormDrawer({
     })
   }, [open, project, reset])
 
-  const onSubmit = handleSubmit((data) =>
-    submit(
-      () =>
-        project
-          ? updateProject(project.id, data, uploadedFiles.urls, pathname)
-          : createProject(data, uploadedFiles.urls, pathname),
-      onClose
-    )
-  )
+  const onSubmit = handleSubmit(async (data) => {
+    const result = project
+      ? await updateProject(project.id, data, uploadedFiles.urls)
+      : await createProject(data, uploadedFiles.urls)
+    if (result?.error || !result?.data) {
+      setError("root", { message: result?.error ?? "Projektet kunde inte sparas." })
+      return
+    }
+    if (project) replaceProject(result.data)
+    else addProject(result.data)
+    onClose()
+  })
 
   return (
     <Drawer

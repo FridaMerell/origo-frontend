@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import FluxBacklogView from "./backlog-view";
+import FluxBacklogView from "@/app/flux/backlog/backlog-view";
 
 export const metadata: Metadata = {
   title: "Backlog | Flux",

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import FluxProjectsView from "./projects-view";
+import FluxProjectsView from "@/app/flux/projects/projects-view";
 
 export const metadata: Metadata = {
   title: "Projekt | Flux",

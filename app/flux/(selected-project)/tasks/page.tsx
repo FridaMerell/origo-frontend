@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import FluxTasksView from "./tasks-view";
+import FluxTasksView from "@/app/flux/tasks/tasks-view";
 
 export const metadata: Metadata = {
   title: "Uppgifter | Flux",

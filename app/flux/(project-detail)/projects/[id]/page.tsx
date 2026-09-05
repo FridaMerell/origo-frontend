@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getFluxProject } from "@/app/lib/dal";
-import FluxProjectDetailView from "./project-view";
+import FluxProjectDetailView from "@/app/flux/projects/[id]/project-view";
 
 export async function generateMetadata({
   params,

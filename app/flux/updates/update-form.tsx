@@ -5,10 +5,10 @@ import { zodResolver } from "@/app/components/form/zodResolver";
 import { createUpdate, updateUpdate } from "@/app/actions/flux/updates";
 import { fluxUpdateFormSchema, type FluxUpdateFormValues } from "@/app/lib/schemas";
 import { FileUpload } from "@/app/components/ui/FileUpload";
-import { useSubmitAction } from "@/app/components/form/useSubmitAction";
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import type { FluxUpdate } from "@/app/lib/dal";
+import { useFluxUpdateActions } from "@/app/flux/_state/flux-context";
 
 export function UpdateForm({
   update,
@@ -24,6 +24,7 @@ export function UpdateForm({
   onDone?: () => void;
 }) {
   const uploadedFiles = useUploadedFiles(update?.files, update?.id ?? null);
+  const { addUpdate, replaceUpdate } = useFluxUpdateActions();
   const {
     register,
     handleSubmit,
@@ -35,24 +36,23 @@ export function UpdateForm({
     defaultValues: { content: update?.content ?? "" },
   });
 
-  const submit = useSubmitAction(setError);
-
-  const onSubmit = handleSubmit((data) =>
-    submit(
-      () =>
-        update
-          ? updateUpdate(update.id, data, uploadedFiles.urls)
-          : createUpdate(defaultProject, defaultMilestone, defaultTask, data, uploadedFiles.urls),
-      () => {
-        if (update) {
-          onDone?.();
-        } else {
-          reset({ content: "" });
-          uploadedFiles.clear();
-        }
-      }
-    )
-  );
+  const onSubmit = handleSubmit(async (data) => {
+    const result = update
+      ? await updateUpdate(update.id, data, uploadedFiles.urls)
+      : await createUpdate(defaultProject, defaultMilestone, defaultTask, data, uploadedFiles.urls);
+    if (result?.error || !result?.data) {
+      setError("root", { message: result?.error ?? "Uppdateringen kunde inte sparas." });
+      return;
+    }
+    if (update) {
+      replaceUpdate(result.data);
+      onDone?.();
+    } else {
+      addUpdate(result.data);
+      reset({ content: "" });
+      uploadedFiles.clear();
+    }
+  });
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-2.5">

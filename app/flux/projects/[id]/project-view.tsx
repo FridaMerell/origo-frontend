@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useParams } from "next/navigation"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Card } from "@/app/components/ui/Card"
 import { Gallery } from "@/app/components/ui/Gallery"
@@ -25,6 +24,7 @@ import {
 	useFluxTasks,
 	useFluxUpdates,
 	useFluxUsers,
+	useSelectedFluxProject,
 	fluxUserName,
 } from "@/app/flux/_state/flux-context"
 import { progressOf } from "@/app/lib/flux-progress"
@@ -153,8 +153,8 @@ function TaskRow({
 }
 
 export default function FluxProjectDetailView() {
-	const { id } = useParams<{ id: string }>()
 	const projects = useFluxProjects()
+	const { selectedProject } = useSelectedFluxProject()
 	const milestones = useFluxMilestones()
 	const tasks = useFluxTasks()
 	const updates = useFluxUpdates()
@@ -162,7 +162,7 @@ export default function FluxProjectDetailView() {
 	const users = useFluxUsers()
 	const { openTask } = useTaskPanel()
 
-	const project = projects.find(p => String(p.id) === id)
+	const project = selectedProject ?? projects[0]
 
 	if (!project) {
 		return (

@@ -1,17 +1,16 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { usePathname } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { createDocument, updateDocument } from "@/app/actions/flux/documents"
 import { Button } from "@/app/components/ui/Button"
 import { DownloadIcon, XIcon } from "lucide-react"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { FormRootError } from "@/app/components/form/FormFeedback"
-import { useSubmitAction } from "@/app/components/form/useSubmitAction"
 import { zodResolver } from "@/app/components/form/zodResolver"
 import { fluxDocumentFormSchema, type FluxDocumentFormValues } from "@/app/lib/schemas"
 import type { FluxDocument, FluxMilestone, FluxTask } from "@/app/lib/dal"
+import { useFluxDocumentActions } from "@/app/flux/_state/flux-context"
 import { BlockEditor } from "./block-editor"
 import { blockId, type DocumentBlock, parseBlocks, serializeBlocks } from "./blocks"
 import { DocumentContent } from "./document-content"
@@ -32,7 +31,7 @@ export function DocumentEditorOverlay({
   tasks: FluxTask[]
   document?: FluxDocument
 }) {
-  const pathname = usePathname()
+  const { addDocument, replaceDocument } = useFluxDocumentActions()
   const [entered, setEntered] = useState(false)
   useEffect(() => {
     const id = requestAnimationFrame(() => setEntered(true))
@@ -64,7 +63,6 @@ export function DocumentEditorOverlay({
       task: document?.task ?? null,
     },
   })
-  const submit = useSubmitAction(setError)
   const title = watch("title")
 
   const content = serializeBlocks(blocks)
@@ -104,10 +102,18 @@ export function DocumentEditorOverlay({
         onClick={(event) => event.stopPropagation()}
       >
         <form
-          onSubmit={handleSubmit((data) => submit(
-            () => document ? updateDocument(document.id, projectId, data, pathname) : createDocument(projectId, data, pathname),
-            onClose
-          ))}
+          onSubmit={handleSubmit(async (data) => {
+            const result = document
+              ? await updateDocument(document.id, projectId, data)
+              : await createDocument(projectId, data)
+            if (result?.error || !result?.data) {
+              setError("root", { message: result?.error ?? "Dokumentet kunde inte sparas." })
+              return
+            }
+            if (document) replaceDocument(result.data)
+            else addDocument(result.data)
+            onClose()
+          })}
           className="flex h-full flex-col"
         >
           <header className="flex items-center justify-between gap-4 border-b border-border px-5 py-3">

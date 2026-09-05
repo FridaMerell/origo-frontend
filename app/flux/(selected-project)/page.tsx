@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
 import { getFluxProjects } from "@/app/lib/dal";
-import HomeView from "./home-view"
+import HomeView from "@/app/flux/home-view"
 
 export async function generateMetadata(): Promise<Metadata> {
   const projects = await getFluxProjects();

@@ -13,6 +13,7 @@ export async function AllProjectsTimelineData({ children }: { children: ReactNod
 
   return (
     <FluxDataProvider
+      scope="all-projects"
       projects={projects}
       selectedProject={selectedProject}
       tasks={tasks}

@@ -1,15 +1,14 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { FLUX_ENDPOINTS } from "@/app/lib/config"
 import { fluxDocumentFormSchema, type FluxDocumentFormValues } from "@/app/lib/schemas"
 import { fluxRequest, type FluxActionState } from "./shared"
+import type { FluxDocument } from "@/app/lib/dal"
 
 export async function createDocument(
   projectId: number,
   data: FluxDocumentFormValues,
-  path?: string
-): Promise<FluxActionState> {
+): Promise<FluxActionState<FluxDocument>> {
   const parsed = fluxDocumentFormSchema.safeParse(data)
   if (!parsed.success) return { error: "Kontrollera dokumentets uppgifter." }
 
@@ -17,22 +16,20 @@ export async function createDocument(
     return { error: "Välj antingen en milstolpe eller en uppgift." }
   }
 
-  const { error } = await fluxRequest(FLUX_ENDPOINTS.documents, "POST", {
+  const { data: document, error } = await fluxRequest<FluxDocument>(FLUX_ENDPOINTS.documents, "POST", {
     project: projectId,
     ...parsed.data,
   })
   if (error) return { error }
 
-  revalidatePath(path || "/flux")
-  return { success: true }
+  return document ? { success: true, data: document } : { error: "Dokumentet kunde inte läsas tillbaka." }
 }
 
 export async function updateDocument(
   id: number,
   projectId: number,
   data: FluxDocumentFormValues,
-  path?: string
-): Promise<FluxActionState> {
+): Promise<FluxActionState<FluxDocument>> {
   const parsed = fluxDocumentFormSchema.safeParse(data)
   if (!parsed.success) return { error: "Kontrollera dokumentets uppgifter." }
 
@@ -40,12 +37,11 @@ export async function updateDocument(
     return { error: "Välj antingen en milstolpe eller en uppgift." }
   }
 
-  const { error } = await fluxRequest(`${FLUX_ENDPOINTS.documents}${id}/`, "PATCH", {
+  const { data: document, error } = await fluxRequest<FluxDocument>(`${FLUX_ENDPOINTS.documents}${id}/`, "PATCH", {
     project: projectId,
     ...parsed.data,
   })
   if (error) return { error }
 
-  revalidatePath(path || "/flux")
-  return { success: true }
+  return document ? { success: true, data: document } : { error: "Dokumentet kunde inte läsas tillbaka." }
 }

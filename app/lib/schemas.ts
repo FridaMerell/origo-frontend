@@ -2,15 +2,15 @@ import { z } from "zod"
 
 export const ventureFormSchema = z.object({
   name: z.string().min(1, "Namn krävs."),
-  description: z.string().min(1, "Beskrivning krävs."),
   priority: z.coerce.number().int().min(1).max(5),
+  description: z.string().optional(),
   budget: z.coerce.number().nonnegative("Budget måste vara ett positivt tal."),
 })
 export type VentureFormValues = z.infer<typeof ventureFormSchema>
 
 export const ventureTaskFormSchema = z.object({
   name: z.string().min(1, "Namn krävs."),
-  description: z.string().min(1, "Beskrivning krävs."),
+  description: z.string().optional(),
   status: z.enum(["not_started", "in_progress", "done"]),
 })
 export type VentureTaskFormValues = z.infer<typeof ventureTaskFormSchema>
@@ -32,7 +32,7 @@ const idRef = z
 
 export const versoUpdateFormSchema = z.object({
   title: z.string().min(1, "Rubrik krävs."),
-  content: z.string().min(1, "Innehåll krävs."),
+  content: z.string().optional(),
   venture: idRef,
   task: idRef,
 })

@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { zodResolver } from "@/app/components/form/zodResolver"
 import { createExpense } from "../actions/expense"
 import { expenseFormSchema, type ExpenseFormValues } from "../lib/schemas"
 import { Field, fieldInputClass } from "../components/form/Field"

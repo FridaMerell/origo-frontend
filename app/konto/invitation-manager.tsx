@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/app/components/form/zodResolver";
 import { createHouseInvitation, revokeHouseInvitation } from "@/app/actions/account/invitations";
 import { houseInvitationSchema, type HouseInvitationValues } from "@/app/lib/schemas";
 import type { HouseInvitation } from "@/app/lib/dal";

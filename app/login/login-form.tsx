@@ -1,7 +1,7 @@
 "use client"
 
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { zodResolver } from "@/app/components/form/zodResolver"
 import { login } from "@/app/actions/auth"
 import { loginFormSchema, type LoginFormValues } from "@/app/lib/schemas"
 import { ERROR_TEXT, INPUT, LABEL } from "../konto/ui"

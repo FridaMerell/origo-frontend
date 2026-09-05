@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { zodResolver } from "@/app/components/form/zodResolver"
 import { createMilestone, updateMilestone } from "@/app/actions/flux/milestones"
 import { fluxMilestoneFormSchema, type FluxMilestoneFormValues } from "@/app/lib/schemas"
 import { Drawer } from "@/app/components/ui/Drawer"

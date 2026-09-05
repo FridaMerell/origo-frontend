@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/app/components/form/zodResolver";
 import { createUpdate, updateUpdate } from "@/app/actions/flux/updates";
 import { fluxUpdateFormSchema, type FluxUpdateFormValues } from "@/app/lib/schemas";
 import { FileUpload } from "@/app/components/ui/FileUpload";

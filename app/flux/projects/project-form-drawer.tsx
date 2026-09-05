@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { useForm, useWatch } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { zodResolver } from "@/app/components/form/zodResolver"
 import { createProject, updateProject } from "@/app/actions/flux/projects"
 import { fluxProjectFormSchema, type FluxProjectFormValues } from "@/app/lib/schemas"
 import { Drawer } from "@/app/components/ui/Drawer"

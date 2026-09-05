@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { zodResolver } from "@/app/components/form/zodResolver"
 import { VersoUpdate } from "../lib/dal"
 import { useVentureData } from "./_state/venture-context"
 import { createVersoUpdate, updateVersoUpdate } from "../actions/verso-update"

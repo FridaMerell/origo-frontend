@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/app/components/form/zodResolver";
 import { redeemInvitation } from "@/app/actions/account/invitations";
 import { redeemSignupSchema, type RedeemSignupValues } from "@/app/lib/schemas";
 import { appHref, type AppLinkId } from "@/app/lib/tenant-links";

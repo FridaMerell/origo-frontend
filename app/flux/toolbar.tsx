@@ -197,7 +197,7 @@ export default function Toolbar({
 									? "flex size-10 items-center justify-center rounded-full bg-surface-2"
 									: "flex size-10 items-center justify-center rounded-full hover:bg-surface-2"
 							}>
-							<Ellipse size={18} className='text-text-muted' />
+							<Ellipsis size={18} className='text-text-muted' />
 						</button>
 					</nav>
 					{menuOpen && (

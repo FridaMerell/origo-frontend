@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { usePathname } from "next/navigation";
 import { addSubtask, toggleTaskStatus } from "@/app/actions/flux/tasks";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Drawer } from "@/app/components/ui/Drawer";
@@ -13,7 +12,7 @@ import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge";
 import { Markdown } from "@/app/flux/documents/markdown";
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed";
-import { useFluxMilestones, useFluxProjects, useFluxTaskStatus, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/flux/_state/flux-context";
+import { useFluxMilestones, useFluxProjects, useFluxTaskActions, useFluxTaskStatus, useFluxTasks, useFluxUpdates, useFluxUsers, fluxUserName } from "@/app/flux/_state/flux-context";
 import { progressOf } from "@/app/lib/flux-progress";
 import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
@@ -68,12 +67,15 @@ function SubtaskRow({ subtask }: { subtask: FluxTask }) {
 function AddSubtaskForm({ task }: { task: FluxTask }) {
   const [title, setTitle] = useState("");
   const [pending, startTransition] = useTransition();
-  const pathname = usePathname();
+  const { addTask } = useFluxTaskActions();
 
   function submit() {
     const value = title.trim();
     if (!value) return;
-    startTransition(() => { addSubtask(task.id, task.project, task.milestone, value, pathname) });
+    startTransition(async () => {
+      const result = await addSubtask(task.id, task.project, task.milestone, value);
+      if (result?.data) addTask(result.data);
+    });
     setTitle("");
   }
 

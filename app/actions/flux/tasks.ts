@@ -1,22 +1,21 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { FLUX_ENDPOINTS } from "@/app/lib/config"
 import { fluxTaskFormSchema, type FluxTaskFormValues } from "@/app/lib/schemas"
 import { fluxRequest, type FluxActionState } from "./shared"
+import type { FluxTask } from "@/app/lib/dal"
 
 export async function createTask(
   data: FluxTaskFormValues,
   parentId: number | null,
   files: string[],
-  path?: string
-): Promise<FluxActionState> {
+): Promise<FluxActionState<FluxTask>> {
   const parsed = fluxTaskFormSchema.safeParse(data)
   if (!parsed.success) {
     return { error: "Alla fält måste fyllas i." }
   }
 
-  const { error } = await fluxRequest(FLUX_ENDPOINTS.tasks, "POST", {
+  const { data: task, error } = await fluxRequest<FluxTask>(FLUX_ENDPOINTS.tasks, "POST", {
     requirements: [],
     ...parsed.data,
     parent: parentId,
@@ -24,36 +23,34 @@ export async function createTask(
   })
   if (error) return { error }
 
-  revalidatePath(path || "/flux")
-  return { success: true }
+  if (!task) return { error: "Uppgiften skapades, men kunde inte läsas tillbaka." }
+  return { success: true, data: task }
 }
 
 export async function updateTask(
   id: number,
   data: FluxTaskFormValues,
   files: string[],
-  path?: string
-): Promise<FluxActionState> {
+): Promise<FluxActionState<FluxTask>> {
   const parsed = fluxTaskFormSchema.safeParse(data)
   if (!parsed.success) {
     return { error: "Alla fält måste fyllas i." }
   }
 
-  const { error } = await fluxRequest(`${FLUX_ENDPOINTS.tasks}${id}/`, "PATCH", {
+  const { data: task, error } = await fluxRequest<FluxTask>(`${FLUX_ENDPOINTS.tasks}${id}/`, "PATCH", {
     ...parsed.data,
     files,
   })
   if (error) return { error }
 
-  revalidatePath(path || "/flux")
-  return { success: true }
+  if (!task) return { error: "Uppgiften sparades, men kunde inte läsas tillbaka." }
+  return { success: true, data: task }
 }
 
-export async function deleteTask(id: number, path?: string): Promise<FluxActionState> {
+export async function deleteTask(id: number): Promise<FluxActionState> {
   const { error } = await fluxRequest(`${FLUX_ENDPOINTS.tasks}${id}/`, "DELETE")
   if (error) return { error }
 
-  revalidatePath(path || "/flux")
   return { success: true }
 }
 
@@ -79,11 +76,10 @@ export async function addSubtask(
   projectId: number,
   milestoneId: number | null,
   title: string,
-  path?: string
-): Promise<FluxActionState> {
+): Promise<FluxActionState<FluxTask>> {
   if (!title.trim()) return { error: "Alla fält måste fyllas i." }
 
-  const { error } = await fluxRequest(FLUX_ENDPOINTS.tasks, "POST", {
+  const { data: task, error } = await fluxRequest<FluxTask>(FLUX_ENDPOINTS.tasks, "POST", {
     project: projectId,
     parent: parentId,
     milestone: milestoneId,
@@ -101,6 +97,6 @@ export async function addSubtask(
   })
   if (error) return { error }
 
-  revalidatePath(path || "/flux")
-  return { success: true }
+  if (!task) return { error: "Deluppgiften skapades, men kunde inte läsas tillbaka." }
+  return { success: true, data: task }
 }

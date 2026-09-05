@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@/app/components/form/zodResolver";
 import { createTask, updateTask } from "@/app/actions/flux/tasks";
@@ -9,11 +8,10 @@ import { fluxTaskFormSchema, type FluxTaskFormValues } from "@/app/lib/schemas";
 import { Drawer } from "@/app/components/ui/Drawer";
 import { Field, fieldInputClass } from "@/app/components/form/Field";
 import { FileUpload } from "@/app/components/ui/FileUpload";
-import { useSubmitAction } from "@/app/components/form/useSubmitAction";
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import { UserMultiSelect } from "@/app/flux/user-multiselect";
-import { useFluxMilestones, useFluxProjects, useSelectedFluxProject } from "@/app/flux/_state/flux-context";
+import { useFluxMilestones, useFluxProjects, useFluxTaskActions, useSelectedFluxProject } from "@/app/flux/_state/flux-context";
 import { useUsers } from "@/app/lib/user-context";
 import type { FluxTask, FluxTaskRecurrence, FluxTaskStatus } from "@/app/lib/dal";
 
@@ -52,8 +50,8 @@ export function TaskFormDrawer({
   defaultMilestoneId?: number | null;
   defaultParentId?: number | null;
 }) {
-  const pathname = usePathname();
   const projects = useFluxProjects();
+  const { addTask, replaceTask } = useFluxTaskActions();
   const { selectedProject } = useSelectedFluxProject();
   const milestones = useFluxMilestones();
   const users = useUsers();
@@ -110,16 +108,17 @@ export function TaskFormDrawer({
 
   const availableMilestones = milestones.filter((milestone) => milestone.project === Number(projectId));
 
-  const submit = useSubmitAction(setError);
-
-  const onSubmit = handleSubmit((data) => {
-    return submit(
-      () =>
-        task
-          ? updateTask(task.id, data, uploadedFiles.urls, pathname)
-          : createTask(data, defaultParentId ?? null, uploadedFiles.urls, pathname),
-      onClose
-    );
+  const onSubmit = handleSubmit(async (data) => {
+    const result = task
+      ? await updateTask(task.id, data, uploadedFiles.urls)
+      : await createTask(data, defaultParentId ?? null, uploadedFiles.urls);
+    if (result?.error || !result?.data) {
+      setError("root", { message: result?.error ?? "Uppgiften kunde inte sparas." });
+      return;
+    }
+    if (task) replaceTask(result.data);
+    else addTask(result.data);
+    onClose();
   });
 
   return (

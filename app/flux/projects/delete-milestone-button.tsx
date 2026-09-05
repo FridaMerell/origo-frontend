@@ -1,11 +1,13 @@
 "use client"
 
-import { usePathname } from "next/navigation"
 import { deleteMilestone } from "@/app/actions/flux/milestones"
 import { DeleteButton } from "@/app/components/ui/DeleteButton"
+import { useFluxMilestoneActions, useFluxMilestones } from "@/app/flux/_state/flux-context"
 
 export function DeleteMilestoneButton({ id }: { id: number }) {
-  const pathname = usePathname()
+  const milestones = useFluxMilestones()
+  const { addMilestone, removeMilestone } = useFluxMilestoneActions()
+  const milestone = milestones.find((item) => item.id === id)
 
   return (
     <DeleteButton
@@ -15,7 +17,11 @@ export function DeleteMilestoneButton({ id }: { id: number }) {
       showTitle
       stopPropagation
       className="rounded-md p-1 text-text-faint transition-colors hover:bg-danger-wash hover:text-danger disabled:opacity-50"
-      onDelete={() => { deleteMilestone(id, pathname) }}
+      onDelete={async () => {
+        removeMilestone(id)
+        const result = await deleteMilestone(id)
+        if (result?.error && milestone) addMilestone(milestone)
+      }}
     />
   )
 }

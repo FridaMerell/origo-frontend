@@ -26,7 +26,7 @@ gemensam cookie-domän.
 API-referensen beskriver de resurser som just nu finns publicerade för extern
 användning:
 
-- [**Tempus API**](/docs/tempus) – observationer.
+- [**Tempus API**](/docs/tempus) – arter, checklistor och observationer.
 - [**Flux API**](/docs/flux) – projekt.
 
 ---

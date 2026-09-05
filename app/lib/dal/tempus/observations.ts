@@ -11,10 +11,17 @@ export type TempusObservationLocation =
   | { type: "Point"; coordinates: [number, number] }
   | Record<string, never>
 
+// Read-only summary of the observed species, included alongside its Tempus ID.
+export type TempusObservationSpeciesDetail = {
+  dyntaxa_taxon_id: number
+  swedish_name: string
+}
+
 export type TempusObservation = {
   id: string
   user: number
   species: string
+  species_detail: TempusObservationSpeciesDetail
   checklist_items: string[]
   checklist_names: string[]
   observed_at: string

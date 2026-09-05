@@ -1,14 +1,15 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
+import { usePathname, useRouter } from "next/navigation";
+import { selectFluxProject } from "@/app/actions/flux/selected-project";
 import type { FluxDocument, FluxMilestone, FluxProject, FluxTask, FluxTaskStatus, FluxUpdate, FluxUser } from "@/app/lib/dal";
 import { formatUserName } from "@/app/lib/user-context";
 
 type FluxDataContextValue = {
   projects: FluxProject[];
   selectedProject: FluxProject | null;
-  selectProject: (id: string) => void;
+  selectProject: (id: string) => Promise<void>;
   setTaskStatus: (id: number, status: FluxTaskStatus) => void;
   addTask: (task: FluxTask) => void;
   replaceTask: (task: FluxTask) => void;
@@ -26,7 +27,7 @@ type FluxDataContextValue = {
 const FluxDataContext = createContext<FluxDataContextValue>({
   projects: [],
   selectedProject: null,
-  selectProject: () => {},
+  selectProject: async () => {},
   setTaskStatus: () => {},
   addTask: () => {},
   replaceTask: () => {},
@@ -60,14 +61,31 @@ export function FluxDataProvider({
   users: FluxUser[];
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [currentProjects, setCurrentProjects] = useState(projects);
+  const [currentProject, setCurrentProject] = useState(selectedProject);
   const [currentTasks, setCurrentTasks] = useState(tasks);
   const [currentMilestones, setCurrentMilestones] = useState(milestones);
-  const usersById = useMemo(() => new Map(users.map((user) => [user.id, user])), [users]);
+  const [currentUpdates, setCurrentUpdates] = useState(updates);
+  const [currentDocuments, setCurrentDocuments] = useState(documents);
+  const [currentUsers, setCurrentUsers] = useState(users);
+  const usersById = useMemo(() => new Map(currentUsers.map((user) => [user.id, user])), [currentUsers]);
 
-  const selectProject = useCallback((id: string) => {
-    document.cookie = `${FLUX_PROJECT_COOKIE}=${id}; path=/; max-age=31536000`;
-    window.location.reload();
-  }, []);
+  const selectProject = useCallback(async (id: string) => {
+    const result = await selectFluxProject(id);
+    if (!result.board) return;
+    setCurrentProjects(result.board.projects);
+    setCurrentProject(result.board.project);
+    setCurrentTasks(result.board.tasks);
+    setCurrentMilestones(result.board.milestones);
+    setCurrentUpdates(result.board.updates);
+    setCurrentDocuments(result.board.documents);
+    setCurrentUsers(result.board.users);
+    if (/^\/projects\/\d+$/.test(pathname)) {
+      router.replace(`/projects/${id}`);
+    }
+  }, [pathname, router]);
 
   const setTaskStatus = useCallback((id: number, status: FluxTaskStatus) => {
     setCurrentTasks((current) => current.map((task) => task.id === id ? { ...task, status } : task));
@@ -98,8 +116,8 @@ export function FluxDataProvider({
   }, []);
 
   const value = useMemo(
-    () => ({ projects, selectedProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, tasks: currentTasks, milestones: currentMilestones, addMilestone, replaceMilestone, removeMilestone, updates, documents, usersById }),
-    [projects, selectedProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, currentTasks, currentMilestones, addMilestone, replaceMilestone, removeMilestone, updates, documents, usersById],
+    () => ({ projects: currentProjects, selectedProject: currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, tasks: currentTasks, milestones: currentMilestones, addMilestone, replaceMilestone, removeMilestone, updates: currentUpdates, documents: currentDocuments, usersById }),
+    [currentProjects, currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, currentTasks, currentMilestones, addMilestone, replaceMilestone, removeMilestone, currentUpdates, currentDocuments, usersById],
   );
 
   return (

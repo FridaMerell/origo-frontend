@@ -46,6 +46,20 @@ export async function updateMilestone(
   return { success: true, data: milestone }
 }
 
+export async function updateMilestoneOrders(
+  milestones: Array<{ id: number; order: number }>,
+): Promise<FluxActionState> {
+  const results = await Promise.all(
+    milestones.map(({ id, order }) =>
+      fluxRequest(`${FLUX_ENDPOINTS.milestones}${id}/`, "PATCH", { order }),
+    ),
+  )
+  const failed = results.find((result) => result.error)
+  if (failed?.error) return { error: failed.error }
+
+  return { success: true }
+}
+
 export async function deleteMilestone(id: number): Promise<FluxActionState> {
   const { error } = await fluxRequest(`${FLUX_ENDPOINTS.milestones}${id}/`, "DELETE")
   if (error) return { error }

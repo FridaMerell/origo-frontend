@@ -16,10 +16,6 @@ const Page = async () => {
     )
   const secondaryCategories = categories
     .filter((category) => !isPrimaryCategory(category))
-    .sort((a, b) =>
-      Number(b.species_count) - Number(a.species_count) ||
-      a.label.localeCompare(b.label, "sv")
-    )
 
   const categoryLabel = (count: number) =>
     count === 0 ? "Inga arter" : `${count} ${count === 1 ? "art" : "arter"}`

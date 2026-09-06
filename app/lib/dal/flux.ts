@@ -17,6 +17,7 @@ export type FluxMilestoneStatus = "not_started" | "in_progress" | "done"
 export type FluxMilestone = {
   id: number
   project: number
+  order: number
   title: string
   description: string
   status: FluxMilestoneStatus

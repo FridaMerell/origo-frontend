@@ -20,6 +20,7 @@ type FluxDataContextValue = {
   tasks: FluxTask[];
   milestones: FluxMilestone[];
   addMilestone: (milestone: FluxMilestone) => void;
+  replaceMilestones: (milestones: FluxMilestone[]) => void;
   replaceMilestone: (milestone: FluxMilestone) => void;
   removeMilestone: (id: number) => void;
   updates: FluxUpdate[];
@@ -44,6 +45,7 @@ const FluxDataContext = createContext<FluxDataContextValue>({
   tasks: [],
   milestones: [],
   addMilestone: () => {},
+  replaceMilestones: () => {},
   replaceMilestone: () => {},
   removeMilestone: () => {},
   updates: [],
@@ -126,6 +128,10 @@ export function FluxDataProvider({
     setCurrentMilestones((current) => [...current, milestone]);
   }, []);
 
+  const replaceMilestones = useCallback((milestones: FluxMilestone[]) => {
+    setCurrentMilestones(milestones);
+  }, []);
+
   const replaceMilestone = useCallback((milestone: FluxMilestone) => {
     setCurrentMilestones((current) => current.map((item) => item.id === milestone.id ? milestone : item));
   }, []);
@@ -147,8 +153,8 @@ export function FluxDataProvider({
   const replaceDocument = useCallback((document: FluxDocument) => setCurrentDocuments((current) => current.map((item) => item.id === document.id ? document : item)), []);
 
   const value = useMemo(
-    () => ({ projects: currentProjects, addProject, replaceProject, removeProject, selectedProject: currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, tasks: currentTasks, milestones: currentMilestones, addMilestone, replaceMilestone, removeMilestone, updates: currentUpdates, addUpdate, replaceUpdate, removeUpdate, documents: currentDocuments, addDocument, replaceDocument, usersById }),
-    [currentProjects, addProject, replaceProject, removeProject, currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, currentTasks, currentMilestones, addMilestone, replaceMilestone, removeMilestone, currentUpdates, addUpdate, replaceUpdate, removeUpdate, currentDocuments, addDocument, replaceDocument, usersById],
+    () => ({ projects: currentProjects, addProject, replaceProject, removeProject, selectedProject: currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, tasks: currentTasks, milestones: currentMilestones, addMilestone, replaceMilestones, replaceMilestone, removeMilestone, updates: currentUpdates, addUpdate, replaceUpdate, removeUpdate, documents: currentDocuments, addDocument, replaceDocument, usersById }),
+    [currentProjects, addProject, replaceProject, removeProject, currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, currentTasks, currentMilestones, addMilestone, replaceMilestones, replaceMilestone, removeMilestone, currentUpdates, addUpdate, replaceUpdate, removeUpdate, currentDocuments, addDocument, replaceDocument, usersById],
   );
 
   return (
@@ -187,8 +193,8 @@ export function useFluxMilestones() {
 }
 
 export function useFluxMilestoneActions() {
-  const { addMilestone, replaceMilestone, removeMilestone } = useContext(FluxDataContext);
-  return { addMilestone, replaceMilestone, removeMilestone };
+  const { addMilestone, replaceMilestones, replaceMilestone, removeMilestone } = useContext(FluxDataContext);
+  return { addMilestone, replaceMilestones, replaceMilestone, removeMilestone };
 }
 
 export function useFluxUpdates() {

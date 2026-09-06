@@ -47,11 +47,12 @@ export default async function ChecklistsPage() {
           </div>
           <ul className="divide-y divide-border border-b border-border">
           {checklists.map((checklist) => {
-            const count =
+            const speciesCount =
               checklist.species_count ??
               checklist.item_count ??
               checklist.items?.length ??
               0
+            const completedSpeciesCount = checklist.completed_species_count ?? 0
             const startDate = formatDateLongOrNull(checklist.start_date)
             const endDate = formatDateLongOrNull(checklist.end_date)
             const dateRange = startDate
@@ -72,7 +73,7 @@ export default async function ChecklistsPage() {
                     {checklist.description || "—"}
                   </span>
                   <span className="font-mono text-xs tabular-nums text-text-muted sm:text-right">
-                    {count} {count === 1 ? "art" : "arter"}
+                    {completedSpeciesCount}/{speciesCount}
                   </span>
                   <span className="text-sm text-text-muted sm:text-right">
                     {checklist.geo_area_name || "—"}

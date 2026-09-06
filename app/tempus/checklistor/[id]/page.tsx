@@ -60,6 +60,11 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
       ? `${startDate} – ${endDate}`
       : startDate
     : endDate
+  const speciesCount =
+    checklist.species_count ??
+    checklist.item_count ??
+    registerPage.count
+  const completedSpeciesCount = checklist.completed_species_count ?? 0
   return (
     <div className="container mx-auto py-5 max-sm:px-3 sm:py-7">
       <input id="checklist-columns" type="checkbox" className="peer sr-only" />
@@ -121,10 +126,14 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
             </div>
           </div>
 
-          <dl className="grid border-b border-border font-display text-[11px] sm:grid-cols-[.7fr_1.15fr_1.5fr]">
+          <dl className="grid border-b border-border font-display text-[11px] sm:grid-cols-[.7fr_1fr_1.15fr_1.5fr]">
             <div className="flex min-w-0 gap-2 border-b border-border px-3 py-1.5 sm:border-b-0 sm:border-r">
               <dt className="shrink-0 italic text-text-faint">Poster:</dt>
               <dd>{registerPage.count}</dd>
+            </div>
+            <div className="flex min-w-0 gap-2 border-b border-border px-3 py-1.5 sm:border-b-0 sm:border-r">
+              <dt className="shrink-0 italic text-text-faint">Kryssade:</dt>
+              <dd>{completedSpeciesCount}/{speciesCount}</dd>
             </div>
             <div className="flex min-w-0 gap-2 border-b border-border px-3 py-1.5 sm:border-b-0 sm:border-r">
               <dt className="shrink-0 italic text-text-faint">Område:</dt>

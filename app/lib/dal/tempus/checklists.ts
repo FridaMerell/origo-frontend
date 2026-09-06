@@ -44,6 +44,7 @@ export type TempusChecklist = {
   route: string | null
   species_count?: number
   item_count?: number
+  completed_species_count?: number
   items?: TempusChecklistItem[]
   created_by?: string | null
   created_at: string

@@ -118,7 +118,7 @@ export default function ObservationWidget({
             <dd className="mt-0.5 text-xs italic">{observation.count ?? "—"}</dd>
           </div>
           <div className="border-b border-r border-border px-3 py-2">
-            <dt className="text-[9px] italic text-text-faint">Livsstadie</dt>
+            <dt className="text-[9px] italic text-text-faint">Stadium</dt>
             <dd className="mt-0.5 text-xs italic">{observation.life_stage || "—"}</dd>
           </div>
           <div className="border-b border-r border-border px-3 py-2">

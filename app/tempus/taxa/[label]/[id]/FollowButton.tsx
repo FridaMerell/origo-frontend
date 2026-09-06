@@ -126,7 +126,7 @@ const FollowButton = ({ initial, initialNotify, taxa, props }: { initial: boolea
               className="flex w-full items-center justify-between gap-3 rounded px-2.5 py-2 text-left text-sm hover:bg-surface-2"
             >
               <span className="flex flex-col">
-                <span className="font-medium text-text">Notifiera mig</span>
+                <span className="font-medium text-text">Påminn mig</span>
                 <span className="text-xs text-text-muted">Få notiser om den här arten</span>
               </span>
               <span

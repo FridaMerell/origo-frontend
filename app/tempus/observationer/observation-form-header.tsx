@@ -8,7 +8,7 @@ export function ObservationFormHeader({ mapSpecies }: { mapSpecies: TempusSpecie
     <header className="px-4 pb-3 pt-3 sm:px-5 sm:pb-4">
       <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
         <span>Observationsförteckning</span>
-        <span>Ny införsel</span>
+        <span>Ny obs</span>
       </div>
 
       <div className="grid border-b border-border sm:grid-cols-[minmax(0,1fr)_15rem]">

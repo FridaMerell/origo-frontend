@@ -16,6 +16,7 @@ const Page = async () => {
     )
   const secondaryCategories = categories
     .filter((category) => !isPrimaryCategory(category))
+    
 
   const categoryLabel = (count: number) =>
     count === 0 ? "Inga arter" : `${count} ${count === 1 ? "art" : "arter"}`

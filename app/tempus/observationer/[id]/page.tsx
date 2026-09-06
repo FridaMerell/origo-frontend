@@ -56,7 +56,7 @@ export default async function ObservationDetailPage({ params }: PageProps) {
       />
 
       <div className="mt-3">
-        <ObservationEditor observation={observation} />
+        <ObservationEditor observation={observation} stages={species?.stages ?? []} />
       </div>
     </div>
   )

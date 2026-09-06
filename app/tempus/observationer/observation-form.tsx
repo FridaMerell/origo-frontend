@@ -61,7 +61,7 @@ export default function ObservationForm() {
     if (stagedIds.has(item.id)) return
     setRows((current) => [
       ...current,
-      { key: rowKey(), speciesId: item.id, count: "1", notes: "" },
+      { key: rowKey(), speciesId: item.id, count: "1", lifeStage: "", notes: "" },
     ])
     setSelectedSpecies((current) => new Map(current).set(item.id, item))
     setQuery("")
@@ -113,6 +113,7 @@ export default function ObservationForm() {
           observed_at: observedAtIso,
           ...(location ? { location } : {}),
           count: row.count.trim() ? Number(row.count.trim()) : null,
+          life_stage: row.lifeStage.trim(),
           notes: row.notes.trim(),
         })),
       )

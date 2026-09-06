@@ -1,5 +1,5 @@
 import { Binoculars, Check, Loader2, Plus, X } from "lucide-react"
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
@@ -37,6 +37,8 @@ export default function QuickObservation({
   const [query, setQuery] = useState("")
   const [picked, setPicked] = useState<PresetSpecies | null>(null)
   const [count, setCount] = useState("1")
+  const [lifeStage, setLifeStage] = useState("")
+  const [customLifeStage, setCustomLifeStage] = useState(false)
   const [observedAt, setObservedAt] = useState(nowLocal())
   const [lat, setLat] = useState("")
   const [lon, setLon] = useState("")
@@ -51,9 +53,15 @@ export default function QuickObservation({
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
+  const stages = useMemo(() => picked?.stages ?? [], [picked])
 
   const searchRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  const customLifeStageInputRef = useRef<HTMLInputElement>(null)
+
+  const focusCustomLifeStage = () => {
+    requestAnimationFrame(() => customLifeStageInputRef.current?.focus())
+  }
 
   useEffect(() => {
     if (!open) return
@@ -66,15 +74,46 @@ export default function QuickObservation({
   }, [open])
 
   useEffect(() => {
+    if (!open || !picked || stages.length === 0) return
+    const onStageShortcut = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      if (event.target instanceof HTMLElement && event.target.matches("input, textarea, select, [contenteditable='true']")) return
+      const shortcutIndex = event.key === "0" ? stages.length : Number(event.key) - 1
+      if (!Number.isInteger(shortcutIndex) || shortcutIndex < 0 || shortcutIndex > stages.length) return
+      event.preventDefault()
+      if (shortcutIndex === stages.length) {
+        setCustomLifeStage(true)
+        if (stages.includes(lifeStage)) setLifeStage("")
+        requestAnimationFrame(() => customLifeStageInputRef.current?.focus())
+        return
+      }
+      setCustomLifeStage(false)
+      setLifeStage(stages[shortcutIndex])
+    }
+    window.addEventListener("keydown", onStageShortcut)
+    return () => window.removeEventListener("keydown", onStageShortcut)
+  }, [lifeStage, open, picked, stages])
+
+  useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (picked) {
+          setPicked(null)
+          setChecklistItems([])
+          setSelectedChecklistItemIds([])
+          setLifeStage("")
+          setCustomLifeStage(false)
+          setError(null)
+          requestAnimationFrame(() => searchRef.current?.focus())
+          return
+        }
         requestClose()
       }
     }
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
-  }, [open])
+  }, [open, picked])
 
   const onConsumedRef = useRef(onConsumed)
   onConsumedRef.current = onConsumed
@@ -83,6 +122,8 @@ export default function QuickObservation({
     if (!species) return
     const nextChecklistItems = checklistItem ? [checklistItem] : (species.checklistItems ?? [])
     setPicked(species)
+    setLifeStage("")
+    setCustomLifeStage(false)
     setChecklistItems(nextChecklistItems)
     setSelectedChecklistItemIds(nextChecklistItems.map((item) => item.id))
     setQuery("")
@@ -99,6 +140,8 @@ export default function QuickObservation({
     setChecklistItems([])
     setSelectedChecklistItemIds([])
     setCount("1")
+    setLifeStage("")
+    setCustomLifeStage(false)
     setError(null)
     if (!keepComment) {
       setNotes("")
@@ -122,7 +165,7 @@ export default function QuickObservation({
     setKeepCommentForNext(false)
   }
 
-  const hasDraft = Boolean(query || picked || count !== "1" || lat || lon || notes || selectedChecklistItemIds.length > 0 || showTime || showPlace || showComment)
+  const hasDraft = Boolean(query || picked || count !== "1" || lifeStage || lat || lon || notes || selectedChecklistItemIds.length > 0 || showTime || showPlace || showComment)
 
   const requestClose = () => {
     if (pending) return
@@ -172,6 +215,7 @@ export default function QuickObservation({
         observed_at: new Date(observedAt).toISOString(),
         ...(location ? { location } : {}),
         count: trimmed ? Number(trimmed) : null,
+        life_stage: lifeStage.trim(),
         notes: notes.trim(),
       })
 
@@ -252,6 +296,8 @@ export default function QuickObservation({
                   picked={picked}
                   onPick={(nextPicked) => {
                     setPicked(nextPicked)
+                    setLifeStage("")
+                    setCustomLifeStage(false)
                     setChecklistItems(nextPicked?.checklistItems ?? [])
                     setSelectedChecklistItemIds((nextPicked?.checklistItems ?? []).map((item) => item.id))
                   }}
@@ -285,6 +331,67 @@ export default function QuickObservation({
                         )
                       })}
                   </div>
+                </fieldset>
+              ) : null}
+
+              {stages.length > 0 ? (
+                <fieldset className="flex flex-col gap-1.5">
+                  <legend className="text-sm font-medium">Livsstadie <span className="font-normal text-text-muted">(valfritt)</span></legend>
+                  <div
+                    className="flex flex-wrap gap-1.5"
+                    role="group"
+                    aria-label="Livsstadie"
+                    onKeyDown={(event) => {
+                      const shortcutIndex = event.key === "0" ? stages.length : Number(event.key) - 1
+                      if (!Number.isInteger(shortcutIndex) || shortcutIndex < 0 || shortcutIndex > stages.length) return
+                      event.preventDefault()
+                      if (shortcutIndex === stages.length) {
+                        setCustomLifeStage(true)
+                        if (stages.includes(lifeStage)) setLifeStage("")
+                        focusCustomLifeStage()
+                        return
+                      }
+                      setCustomLifeStage(false)
+                      setLifeStage(stages[shortcutIndex])
+                    }}
+                  >
+                    {stages.map((stage, index) => (
+                      <button
+                        key={stage}
+                        type="button"
+                        aria-keyshortcuts={String(stages.indexOf(stage) + 1)}
+                        onClick={() => {
+                          setCustomLifeStage(false)
+                          setLifeStage(stage)
+                        }}
+                        className={`rounded border px-3 py-1.5 text-sm ${lifeStage === stage && !customLifeStage ? "border-accent bg-accent-wash text-accent" : "border-field-border text-text-muted hover:border-border-strong"}`}
+                      >
+                        {index + 1}. {stage}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      aria-keyshortcuts="0"
+                      onClick={() => {
+                        setCustomLifeStage(true)
+                        if (stages.includes(lifeStage)) setLifeStage("")
+                        focusCustomLifeStage()
+                      }}
+                      className={`rounded border px-3 py-1.5 text-sm ${customLifeStage ? "border-accent bg-accent-wash text-accent" : "border-field-border text-text-muted hover:border-border-strong"}`}
+                    >
+                      0. Annat
+                    </button>
+                  </div>
+                  {customLifeStage ? (
+                    <input
+                      value={lifeStage}
+                      ref={customLifeStageInputRef}
+                      onChange={(event) => setLifeStage(event.target.value)}
+                      placeholder="Ange livsstadie"
+                      aria-label="Annat livsstadie"
+                      className="rounded border border-field-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                    />
+                  ) : null}
                 </fieldset>
               ) : null}
 

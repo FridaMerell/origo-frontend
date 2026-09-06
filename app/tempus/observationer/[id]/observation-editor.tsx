@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
@@ -16,7 +16,13 @@ function toLocalInput(iso: string) {
   return date.toISOString().slice(0, 16)
 }
 
-export default function ObservationEditor({ observation }: { observation: TempusObservation }) {
+export default function ObservationEditor({
+  observation,
+  stages,
+}: {
+  observation: TempusObservation
+  stages: string[]
+}) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -32,7 +38,38 @@ export default function ObservationEditor({ observation }: { observation: Tempus
   const [lat, setLat] = useState(initialPoint ? String(initialPoint[1]) : "")
   const [lon, setLon] = useState(initialPoint ? String(initialPoint[0]) : "")
   const [count, setCount] = useState(observation.count ? String(observation.count) : "")
+  const [lifeStage, setLifeStage] = useState(observation.life_stage ?? "")
   const [notes, setNotes] = useState(observation.notes ?? "")
+  const [customLifeStage, setCustomLifeStage] = useState(
+    Boolean(observation.life_stage && !stages.includes(observation.life_stage)),
+  )
+  const hasLifeStageChoices = stages.length > 0 || Boolean(observation.life_stage)
+  const customLifeStageInputRef = useRef<HTMLInputElement>(null)
+
+  const focusCustomLifeStage = () => {
+    requestAnimationFrame(() => customLifeStageInputRef.current?.focus())
+  }
+
+  useEffect(() => {
+    if (!editing || !hasLifeStageChoices) return
+    const onStageShortcut = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      if (event.target instanceof HTMLElement && event.target.matches("input, textarea, select, [contenteditable='true']")) return
+      const shortcutIndex = event.key === "0" ? stages.length : Number(event.key) - 1
+      if (!Number.isInteger(shortcutIndex) || shortcutIndex < 0 || shortcutIndex > stages.length) return
+      event.preventDefault()
+      if (shortcutIndex === stages.length) {
+        setCustomLifeStage(true)
+        if (stages.includes(lifeStage)) setLifeStage("")
+        requestAnimationFrame(() => customLifeStageInputRef.current?.focus())
+        return
+      }
+      setCustomLifeStage(false)
+      setLifeStage(stages[shortcutIndex])
+    }
+    window.addEventListener("keydown", onStageShortcut)
+    return () => window.removeEventListener("keydown", onStageShortcut)
+  }, [editing, hasLifeStageChoices, lifeStage, stages])
 
   const save = () => {
     setError(null)
@@ -57,6 +94,7 @@ export default function ObservationEditor({ observation }: { observation: Tempus
           ? { location: { type: "Point" as const, coordinates: [lonNum, latNum] as [number, number] } }
           : {}),
         count: count.trim() ? Number(count.trim()) : null,
+        life_stage: lifeStage.trim(),
         notes: notes.trim(),
       })
       if (result.error) {
@@ -138,6 +176,67 @@ export default function ObservationEditor({ observation }: { observation: Tempus
             className="mt-0.5 h-8 rounded-none border border-field-border bg-surface-raised px-2.5 font-body text-xs not-italic text-text focus:border-accent focus:outline-none"
           />
         </label>
+
+        {hasLifeStageChoices ? (
+          <div className="border-b border-r border-border px-3 py-2 sm:px-4">
+            <p className="font-display text-[9px] italic text-text-faint">Livsstadie <span>(valfritt)</span></p>
+            <div
+              className="mt-1 flex flex-wrap gap-1"
+              role="group"
+              aria-label="Livsstadie"
+              onKeyDown={(event) => {
+                const shortcutIndex = event.key === "0" ? stages.length : Number(event.key) - 1
+                if (!Number.isInteger(shortcutIndex) || shortcutIndex < 0 || shortcutIndex > stages.length) return
+                event.preventDefault()
+                if (shortcutIndex === stages.length) {
+                  setCustomLifeStage(true)
+                  if (stages.includes(lifeStage)) setLifeStage("")
+                  focusCustomLifeStage()
+                  return
+                }
+                setCustomLifeStage(false)
+                setLifeStage(stages[shortcutIndex])
+              }}
+            >
+              {stages.map((stage, index) => (
+                <button
+                  key={stage}
+                  type="button"
+                  aria-keyshortcuts={String(stages.indexOf(stage) + 1)}
+                  onClick={() => {
+                    setCustomLifeStage(false)
+                    setLifeStage(stage)
+                  }}
+                  className={`rounded border px-2.5 py-1 text-xs ${lifeStage === stage && !customLifeStage ? "border-accent bg-accent-wash text-accent" : "border-field-border text-text-muted hover:border-border-strong"}`}
+                >
+                  {index + 1}. {stage}
+                </button>
+              ))}
+              <button
+                type="button"
+                aria-keyshortcuts="0"
+                onClick={() => {
+                  setCustomLifeStage(true)
+                  if (stages.includes(lifeStage)) setLifeStage("")
+                  focusCustomLifeStage()
+                }}
+                className={`rounded border px-2.5 py-1 text-xs ${customLifeStage ? "border-accent bg-accent-wash text-accent" : "border-field-border text-text-muted hover:border-border-strong"}`}
+              >
+                0. Annat
+              </button>
+            </div>
+            {customLifeStage ? (
+              <input
+                value={lifeStage}
+                ref={customLifeStageInputRef}
+                onChange={(event) => setLifeStage(event.target.value)}
+                placeholder="Ange livsstadie"
+                aria-label="Annat livsstadie"
+                className="mt-2 h-8 w-full rounded-none border border-field-border bg-surface-raised px-2.5 text-xs text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+              />
+            ) : null}
+          </div>
+        ) : null}
 
         <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:px-4">
           Antal

@@ -30,6 +30,7 @@ export type TempusSpecies = {
   taxon_rank: string
   parent_dyntaxa_taxon_id: number | null
   is_active: boolean
+  stages: string[]
   // Raw Dyntaxa taxon record — vernacular names, redlistCategory, category,
   // status, etc. Opaque; the UI does not read into it.
   api_data: Record<string, unknown> | null
@@ -51,6 +52,7 @@ export type TempusSpeciesChecklist = {
 export type TempusSpeciesCategory = {
   id: string
   label: string
+  stages: string[]
   image_url: string
   is_primary: boolean
   parent_category?: string | null

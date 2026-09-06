@@ -27,6 +27,7 @@ export type TempusObservation = {
   observed_at: string
   location: TempusObservationLocation
   count: number | null
+  life_stage: string
   notes: string
   created_at: string
 }

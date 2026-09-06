@@ -108,7 +108,7 @@ export default function ObservationWidget({
       </header>
 
       <section className="px-3 pb-3 sm:px-5 sm:pb-5">
-        <dl className="grid border-l border-t border-border font-display sm:grid-cols-[1.4fr_.55fr_1.15fr_.7fr]">
+        <dl className="grid border-l border-t border-border font-display sm:grid-cols-[1.4fr_.55fr_.7fr_1.15fr_.7fr]">
           <div className="border-b border-r border-border px-3 py-2">
             <dt className="text-[9px] italic text-text-faint">Tidpunkt</dt>
             <dd className="mt-0.5 text-xs italic">{observedAt ?? "—"}</dd>
@@ -116,6 +116,10 @@ export default function ObservationWidget({
           <div className="border-b border-r border-border px-3 py-2">
             <dt className="text-[9px] italic text-text-faint">Antal</dt>
             <dd className="mt-0.5 text-xs italic">{observation.count ?? "—"}</dd>
+          </div>
+          <div className="border-b border-r border-border px-3 py-2">
+            <dt className="text-[9px] italic text-text-faint">Livsstadie</dt>
+            <dd className="mt-0.5 text-xs italic">{observation.life_stage || "—"}</dd>
           </div>
           <div className="border-b border-r border-border px-3 py-2">
             <dt className="text-[9px] italic text-text-faint">Position</dt>

@@ -14,6 +14,7 @@ export type PresetSpecies = {
   id: string
   label: string
   scientific: string
+  stages?: string[]
   checklistItems?: PresetChecklistItem[]
 }
 
@@ -76,6 +77,7 @@ export function SpeciesPicker({
       id: item.id,
       label: speciesName(item),
       scientific: item.scientific_name,
+      stages: item.stages,
       checklistItems: (item.checklists ?? []).map((checklist) => ({
         id: checklist.item_id,
         checklistId: checklist.id,
@@ -152,9 +154,9 @@ export function SpeciesPicker({
               } else if (event.key === "ArrowUp") {
                 event.preventDefault()
                 setActiveIndex((index) => index === -1 ? matches.length - 1 : Math.max(index - 1, 0))
-              } else if (event.key === "Enter" && activeIndex >= 0) {
+              } else if (event.key === "Enter") {
                 event.preventDefault()
-                selectSpecies(matches[activeIndex])
+                selectSpecies(matches[Math.max(activeIndex, 0)])
               }
             }}
             placeholder="Sök art"

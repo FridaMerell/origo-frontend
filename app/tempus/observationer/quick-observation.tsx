@@ -15,6 +15,12 @@ function nowLocal() {
   return now.toISOString().slice(0, 16)
 }
 
+function defaultLifeStage(stages?: string[]) {
+  return stages?.find((stage) => stage.localeCompare("Imago", "sv", { sensitivity: "accent" }) === 0)
+    ?? stages?.find((stage) => stage.localeCompare("Blomma", "sv", { sensitivity: "accent" }) === 0)
+    ?? ""
+}
+
 export default function QuickObservation({
   hideTrigger = false,
   species = null,
@@ -122,7 +128,7 @@ export default function QuickObservation({
     if (!species) return
     const nextChecklistItems = checklistItem ? [checklistItem] : (species.checklistItems ?? [])
     setPicked(species)
-    setLifeStage("")
+    setLifeStage(defaultLifeStage(species.stages))
     setCustomLifeStage(false)
     setChecklistItems(nextChecklistItems)
     setSelectedChecklistItemIds(nextChecklistItems.map((item) => item.id))
@@ -296,7 +302,7 @@ export default function QuickObservation({
                   picked={picked}
                   onPick={(nextPicked) => {
                     setPicked(nextPicked)
-                    setLifeStage("")
+                    setLifeStage(defaultLifeStage(nextPicked?.stages))
                     setCustomLifeStage(false)
                     setChecklistItems(nextPicked?.checklistItems ?? [])
                     setSelectedChecklistItemIds((nextPicked?.checklistItems ?? []).map((item) => item.id))

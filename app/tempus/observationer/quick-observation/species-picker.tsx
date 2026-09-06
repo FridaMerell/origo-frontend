@@ -104,7 +104,7 @@ export function SpeciesPicker({
             role="tooltip"
             className="pointer-events-none absolute left-0 top-full z-10 mt-2 hidden w-52 rounded border border-border bg-surface-2 px-2.5 py-2 text-xs font-normal text-text shadow-md group-hover:block group-focus-within:block"
           >
-            Använd ↑ och ↓ för att välja art. Enter väljer, och Enter igen sparar.
+            Enter väljer första träffen, eller den du markerat med ↑ och ↓. Efter artval går Tab till checklistor, 1–9 väljer livsstadie och 0 väljer Annat. Esc rensar vald art.
           </span>
         </span>
       </div>

@@ -25,6 +25,12 @@ function nowLocal() {
   return now.toISOString().slice(0, 16)
 }
 
+function defaultLifeStage(stages: string[]) {
+  return stages.find((stage) => stage.localeCompare("Imago", "sv", { sensitivity: "accent" }) === 0)
+    ?? stages.find((stage) => stage.localeCompare("Blomma", "sv", { sensitivity: "accent" }) === 0)
+    ?? ""
+}
+
 export default function ObservationForm() {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -61,7 +67,7 @@ export default function ObservationForm() {
     if (stagedIds.has(item.id)) return
     setRows((current) => [
       ...current,
-      { key: rowKey(), speciesId: item.id, count: "1", lifeStage: "", notes: "" },
+      { key: rowKey(), speciesId: item.id, count: "1", lifeStage: defaultLifeStage(item.stages), notes: "" },
     ])
     setSelectedSpecies((current) => new Map(current).set(item.id, item))
     setQuery("")

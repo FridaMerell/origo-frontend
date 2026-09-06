@@ -8,6 +8,19 @@ const nextConfig: NextConfig = {
     // pinned to an exact string here — the route itself validates the url.
     localPatterns: [{ pathname: "/api/files" }],
   },
+  async headers() {
+    return [
+      {
+        // The push service worker must never be cached — clients need to pick
+        // up new logic immediately.
+        source: "/sw.js",
+        headers: [
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig

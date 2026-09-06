@@ -1,6 +1,6 @@
 "use client"
 
-import { startTransition, useCallback, useState, type ReactNode } from "react"
+import { startTransition, useCallback, useEffect, useState, type ReactNode } from "react"
 import {
   getNotificationSummary,
   getNotification,
@@ -8,8 +8,129 @@ import {
   markNotificationAsRead,
   type NotificationPreview,
 } from "@/app/actions/notifications"
+import { removePushSubscription, savePushSubscription, sendTestPush } from "@/app/actions/push"
+import {
+  currentTenant,
+  getExistingSubscription,
+  isIOS,
+  isPushSupported,
+  isStandalone,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from "@/app/lib/push-client"
 import { useUser } from "@/app/lib/user-context"
 import { useDismissableOpen } from "./use-dismissable-open"
+
+type PushState = "loading" | "unsupported" | "denied" | "off" | "on" | "busy"
+
+function PushToggle() {
+  const [state, setState] = useState<PushState>("loading")
+  const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      if (!isPushSupported()) {
+        if (!cancelled) setState("unsupported")
+        return
+      }
+      if (Notification.permission === "denied") {
+        if (!cancelled) setState("denied")
+        return
+      }
+      const subscription = await getExistingSubscription()
+      if (!cancelled) setState(subscription ? "on" : "off")
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const enable = async () => {
+    setMessage(null)
+    setState("busy")
+    try {
+      const subscription = await subscribeToPush()
+      const json = subscription.toJSON()
+      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+        throw new Error("Kunde inte skapa prenumerationen.")
+      }
+      const result = await savePushSubscription(
+        { endpoint: json.endpoint, keys: { p256dh: json.keys.p256dh, auth: json.keys.auth } },
+        { tenant: currentTenant(), userAgent: navigator.userAgent },
+      )
+      if (!result.ok) {
+        await subscription.unsubscribe().catch(() => {})
+        setState("off")
+        setMessage(result.error ?? "Kunde inte spara prenumerationen.")
+        return
+      }
+      setState("on")
+    } catch (error) {
+      if (error instanceof Error && error.message === "permission-denied") {
+        setState("denied")
+        return
+      }
+      setState("off")
+      setMessage(error instanceof Error ? error.message : "Något gick fel.")
+    }
+  }
+
+  const disable = async () => {
+    setMessage(null)
+    setState("busy")
+    try {
+      const endpoint = await unsubscribeFromPush()
+      if (endpoint) await removePushSubscription(endpoint)
+    } finally {
+      setState("off")
+    }
+  }
+
+  const test = async () => {
+    setMessage(null)
+    const result = await sendTestPush()
+    setMessage(result.ok ? "Testnotis skickad." : result.error ?? "Kunde inte skicka testnotis.")
+  }
+
+  if (state === "loading" || state === "unsupported") return null
+
+  return (
+    <div className="border-b border-border px-3 py-2 text-xs">
+      {isIOS() && !isStandalone() ? (
+        <p className="text-text-muted">
+          Lägg till appen på hemskärmen för att få pushnotiser på iOS.
+        </p>
+      ) : state === "denied" ? (
+        <p className="text-text-muted">
+          Pushnotiser är blockerade. Tillåt notiser för sidan i webbläsarinställningarna.
+        </p>
+      ) : state === "on" ? (
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-text-muted">Pushnotiser är på.</span>
+          <span className="flex gap-3">
+            <button type="button" onClick={() => void test()} className="font-medium text-accent hover:text-accent-hover">
+              Skicka testnotis
+            </button>
+            <button type="button" onClick={() => void disable()} className="font-medium text-text-muted hover:text-text">
+              Stäng av
+            </button>
+          </span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => void enable()}
+          disabled={state === "busy"}
+          className="font-medium text-accent hover:text-accent-hover disabled:opacity-50"
+        >
+          {state === "busy" ? "Aktiverar …" : "Slå på pushnotiser"}
+        </button>
+      )}
+      {message && <p className="mt-1 text-text-faint">{message}</p>}
+    </div>
+  )
+}
 
 type NotificationMenuProps = {
   align?: "left" | "right"
@@ -110,6 +231,7 @@ export function NotificationMenu({ align = "right", dropUp = false, footer, chil
               </button>
             )}
           </div>
+          <PushToggle />
           <div className="max-h-80 overflow-y-auto border-y border-border">
             {notifications.length > 0 ? notifications.map((notification) => (
               <button

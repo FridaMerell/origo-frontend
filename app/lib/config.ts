@@ -28,6 +28,8 @@ export const ACCOUNTS_ENDPOINTS = {
   notificationsSummary: "/api/accounts/notifications/summary/",
   notificationRead: (id: string) => `/api/accounts/notifications/${encodeURIComponent(id)}/read/`,
   notificationsReadAll: "/api/accounts/notifications/read-all/",
+  pushSubscriptions: "/api/accounts/push-subscriptions/",
+  pushTest: "/api/accounts/push-subscriptions/test/",
 } as const;
 
 export const VERSO_ENDPOINTS = {

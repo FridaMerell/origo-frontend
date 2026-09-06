@@ -6,6 +6,7 @@ import { UserProvider } from "@/app/lib/user-context";
 import { NavProgressProvider } from "@/app/lib/nav-progress";
 import { resolveTenant } from "@/app/lib/tenant";
 import { ToastProvider } from "@/app/components/ui/ToastProvider";
+import { ServiceWorkerRegistrar } from "@/app/components/ServiceWorkerRegistrar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,7 +22,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Origo",
   description: "Origo application",
-  manifest: "/manifest.json",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -54,7 +54,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <NavProgressProvider>
           <ToastProvider theme={tenant}>
-            <UserProvider user={user} users={users}>{children}</UserProvider>
+            <UserProvider user={user} users={users}>
+              <ServiceWorkerRegistrar />
+              {children}
+            </UserProvider>
           </ToastProvider>
         </NavProgressProvider>
       </body>

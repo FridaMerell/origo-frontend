@@ -1,23 +1,43 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { ChevronDown } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
+import { useToast } from "@/app/components/ui/ToastProvider"
 import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
+import type { TempusSpeciesCategory } from "@/app/lib/dal"
 import {
   deleteChecklist,
   syncChecklistCategory,
   syncChecklistObservations,
 } from "@/app/tempus/_actions/checklists"
 
-export default function ChecklistActions({ id, name }: { id: string; name: string }) {
+export default function ChecklistActions({
+  id,
+  name,
+  categories,
+}: {
+  id: string
+  name: string
+  categories: TempusSpeciesCategory[]
+}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [pendingAction, setPendingAction] = useState<"category" | "observations" | "delete" | null>(null)
   const [syncMenuOpen, setSyncMenuOpen] = useState(false)
+  const [speciesCategoryId, setSpeciesCategoryId] = useState("")
+  const [categoryQuery, setCategoryQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
   const { requestConfirm, dialog } = useConfirmDialog()
+  const { toast } = useToast()
+  const categoryMatches = useMemo(() => {
+    const query = categoryQuery.trim().toLocaleLowerCase("sv")
+    if (!query) return []
+    return categories
+      .filter((category) => category.label.toLocaleLowerCase("sv").includes(query))
+      .slice(0, 8)
+  }, [categories, categoryQuery])
 
   const remove = () => {
     requestConfirm({
@@ -33,6 +53,7 @@ export default function ChecklistActions({ id, name }: { id: string; name: strin
             const result = await deleteChecklist(id)
             if (result.error) {
               setError(result.error)
+              toast({ title: "Kunde inte ta bort checklistan", description: result.error, variant: "error" })
               return
             }
             router.push("/checklistor")
@@ -44,17 +65,22 @@ export default function ChecklistActions({ id, name }: { id: string; name: strin
     })
   }
 
-  const sync = (
-    actionName: "category" | "observations",
-    action: (checklistId: string) => Promise<{ error?: string }>,
-  ) => {
+  const sync = (actionName: "category" | "observations", action: () => Promise<{ error?: string }>) => {
     setError(null)
     setSyncMenuOpen(false)
     setPendingAction(actionName)
     startTransition(async () => {
       try {
-        const result = await action(id)
-        if (result.error) setError(result.error)
+        const result = await action()
+        if (result.error) {
+          setError(result.error)
+          toast({ title: "Synkroniseringen misslyckades", description: result.error, variant: "error" })
+          return
+        }
+        toast({
+          title: actionName === "category" ? "Underarter synkroniserade" : "Observationer har synkats",
+          variant: "success",
+        })
       } finally {
         setPendingAction(null)
       }
@@ -87,28 +113,60 @@ export default function ChecklistActions({ id, name }: { id: string; name: strin
                 className="fixed inset-0 z-10 cursor-default"
                 onClick={() => setSyncMenuOpen(false)}
               />
-              <div
-                role="menu"
-                aria-label="Synkronisera checklista"
-                className="absolute left-0 top-full z-20 mt-1.5 w-52 rounded border border-border bg-surface p-1 shadow-md"
-              >
+              <div className="absolute left-0 top-full z-20 mt-1.5 w-64 rounded border border-border bg-surface p-2 shadow-md">
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    if (speciesCategoryId) sync("category", () => syncChecklistCategory(id, speciesCategoryId))
+                  }}
+                >
+                  <label className="block text-xs text-text-muted">
+                    Kategori
+                    <input
+                      type="search"
+                      value={categoryQuery}
+                      onChange={(event) => {
+                        setCategoryQuery(event.target.value)
+                        setSpeciesCategoryId("")
+                      }}
+                      disabled={pending}
+                      placeholder="Sök kategori"
+                      className="mt-1 w-full rounded border border-border bg-surface px-2 py-1.5 text-sm text-text placeholder:text-text-faint disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                  </label>
+                  {categoryMatches.length > 0 ? (
+                    <ul className="mt-1 max-h-40 overflow-y-auto rounded border border-border py-1">
+                      {categoryMatches.map((category) => (
+                        <li key={category.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSpeciesCategoryId(category.id)
+                              setCategoryQuery(category.label)
+                            }}
+                            className={`w-full px-2 py-1.5 text-left text-sm hover:bg-surface-2 ${speciesCategoryId === category.id ? "bg-accent-wash text-accent" : ""}`}
+                          >
+                            {category.label}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <button
+                    type="submit"
+                    disabled={pending || !speciesCategoryId}
+                    className="mt-2 flex w-full rounded px-2.5 py-2 text-left text-sm hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {pendingAction === "category" ? "Synkar underarter…" : "Synka underarter"}
+                  </button>
+                </form>
                 <button
                   type="button"
-                  role="menuitem"
-                  onClick={() => sync("category", syncChecklistCategory)}
+                  onClick={() => sync("observations", () => syncChecklistObservations(id))}
                   disabled={pending}
                   className="flex w-full rounded px-2.5 py-2 text-left text-sm hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {pendingAction === "category" ? "Synkar underarter…" : "Synka underarter"}
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => sync("observations", syncChecklistObservations)}
-                  disabled={pending}
-                  className="flex w-full rounded px-2.5 py-2 text-left text-sm hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {pendingAction === "observations" ? "Synkar observationer…" : "Synka observationer"}
+                  {pendingAction === "observations" ? "Synkronisera alla observationer" : "Synkronisera observationer"}
                 </button>
               </div>
             </>

@@ -179,16 +179,18 @@ export async function deleteChecklist(id: string): Promise<{ success?: boolean; 
 
 type ChecklistSyncResult = { success?: boolean; error?: string }
 
-async function syncChecklist(
+export async function syncChecklistCategory(
   id: string,
-  endpoint: (id: string) => string,
+  speciesCategoryId: string,
 ): Promise<ChecklistSyncResult> {
   if (!z.string().uuid().safeParse(id).success) return { error: "Checklistan har ett ogiltigt ID." }
+  if (!z.string().uuid().safeParse(speciesCategoryId).success) return { error: "Välj en giltig kategori." }
   if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
 
-  const response = await fetchOrigoApi(endpoint(id), {
+  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.checklistSyncCategory(id), {
     method: "POST",
     headers: await authedJsonHeaders(),
+    body: JSON.stringify({ species_category_id: speciesCategoryId }),
   })
   if (!response.ok) {
     const detail = await response.text().catch(() => "")
@@ -200,10 +202,21 @@ async function syncChecklist(
   return { success: true }
 }
 
-export async function syncChecklistCategory(id: string): Promise<ChecklistSyncResult> {
-  return await syncChecklist(id, TEMPUS_ENDPOINTS.checklistSyncCategory)
-}
-
 export async function syncChecklistObservations(id: string): Promise<ChecklistSyncResult> {
-  return await syncChecklist(id, TEMPUS_ENDPOINTS.checklistSyncObservations)
+  if (!z.string().uuid().safeParse(id).success) return { error: "Checklistan har ett ogiltigt ID." }
+  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
+
+  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.observationsSyncChecklists, {
+    method: "POST",
+    headers: await authedJsonHeaders(),
+  })
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  revalidatePath("/checklistor")
+  revalidatePath(`/checklistor/${id}`)
+  revalidatePath("/observationer")
+  return { success: true }
 }

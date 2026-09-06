@@ -5,6 +5,7 @@ import { getCurrentUser, getUsers } from "@/app/lib/dal";
 import { UserProvider } from "@/app/lib/user-context";
 import { NavProgressProvider } from "@/app/lib/nav-progress";
 import { resolveTenant } from "@/app/lib/tenant";
+import { ToastProvider } from "@/app/components/ui/ToastProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,9 +27,10 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const requestHeaders = await headers();
   const hostname = requestHeaders.get("host")?.split(":")[0] ?? "";
+  const tenant = resolveTenant(hostname) ?? "tempus";
   const [user, users] = await Promise.all([
     getCurrentUser(),
-    resolveTenant(hostname) === "flux" ? Promise.resolve([]) : getUsers(),
+    tenant === "flux" ? Promise.resolve([]) : getUsers(),
   ]);
   
   return (
@@ -51,7 +53,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="min-h-full flex flex-col">
         <NavProgressProvider>
-          <UserProvider user={user} users={users}>{children}</UserProvider>
+          <ToastProvider theme={tenant}>
+            <UserProvider user={user} users={users}>{children}</UserProvider>
+          </ToastProvider>
         </NavProgressProvider>
       </body>
     </html>

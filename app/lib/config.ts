@@ -77,9 +77,9 @@ export const TEMPUS_ENDPOINTS = {
   checklists: "/api/tempus/checklists/",
   checklistRegister: (id: string) => `/api/tempus/checklists/${id}/register/`,
   checklistSyncCategory: (id: string) => `/api/tempus/checklists/${id}/sync-category/`,
-  checklistSyncObservations: (id: string) => `/api/tempus/checklists/${id}/sync-observations/`,
   checklistItems: "/api/tempus/checklist-items/",
   observations: "/api/tempus/observations/",
+  observationsSyncChecklists: "/api/tempus/observations/sync-checklists/",
   geoAreas: "/api/tempus/geo-areas/",
   speciesFollow: "/api/tempus/species-follows/",
   speciesUnfollow: (taxonId: string) =>

@@ -72,7 +72,8 @@ en observation kopplas till checklistan.
 
 ## Synkronisera underarter
 
-Synkroniserar checklistan med underarter i dess valda kategori.
+Synkroniserar checklistan med underarter i dess valda kategori. Befintliga
+matchande observationer länkas automatiskt till de nya checklistpunkterna.
 
 **Sökväg:** \`/api/tempus/checklists/<checklista-uuid>/sync-category/\`
 
@@ -80,17 +81,25 @@ Synkroniserar checklistan med underarter i dess valda kategori.
 POST /api/tempus/checklists/checklista-uuid/sync-category/ HTTP/1.1
 Host: origin.api.fåvitsko.se
 Authorization: Token din-token
+Content-Type: application/json
 Accept: application/json
 \`\`\`
 
-## Synkronisera observationer
+\`\`\`json
+{
+  "species_category_id": "kategori-uuid"
+}
+\`\`\`
 
-Synkroniserar checklistans observationer.
+## Backfyll observationer för alla checklistor
 
-**Sökväg:** \`/api/tempus/checklists/<checklista-uuid>/sync-observations/\`
+Backfyller observationer för alla dina checklistor. För en specifik checklista
+sker motsvarande backfill automatiskt när du synkroniserar en kategori.
+
+**Sökväg:** \`/api/tempus/observations/sync-checklists/\`
 
 \`\`\`http
-POST /api/tempus/checklists/checklista-uuid/sync-observations/ HTTP/1.1
+POST /api/tempus/observations/sync-checklists/ HTTP/1.1
 Host: origin.api.fåvitsko.se
 Authorization: Token din-token
 Accept: application/json

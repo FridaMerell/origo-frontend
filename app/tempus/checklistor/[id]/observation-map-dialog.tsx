@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import { loadChecklistObservationPoints } from "@/app/tempus/_actions/checklists"
 import { SwedenMap, type SwedenMapPoint } from "@/app/tempus/ui/biotope-map/SwedenMap"
 import { Expand, X } from "lucide-react"
+import Loading from "../../loading"
 
 export default function ObservationMapDialog({
   children,
@@ -64,7 +65,7 @@ export default function ObservationMapDialog({
                 <h2 id="observation-map-title" className="mt-0.5 font-display text-xl font-semibold">Dina observationer i Sverige</h2>
                 <p className="mt-1 text-xs text-text-muted">
                   {points === null
-                    ? "Hämtar observationer…"
+                    ? 'Laddar...'
                     : `${points.length} ${points.length === 1 ? "observation med position" : "observationer med position"}`}
                 </p>
               </div>

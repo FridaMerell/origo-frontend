@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { loadChecklistRegisterPage } from "@/app/tempus/_actions/checklists"
 import {
   getTempusChecklistItem,
+  getTempusSpeciesCategoriesAll,
 } from "@/app/lib/dal"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
 import { BiotopeMap } from "@/app/tempus/ui/biotope-map/BiotopeMap"
@@ -30,6 +31,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
   const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
   const searchQuery = resolvedSearchParams.search?.trim() ?? ""
   const checklistPromise = getTempusChecklistItem(id)
+  const categoriesPromise = getTempusSpeciesCategoriesAll()
   const registerPagePromise = loadChecklistRegisterPage({
     checklistId: id,
     page: currentPage,
@@ -37,7 +39,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
   })
   const checklist = await checklistPromise
   if (!checklist) notFound()
-  const registerPage = await registerPagePromise
+  const [registerPage, categories] = await Promise.all([registerPagePromise, categoriesPromise])
   const registerRows = registerPage.results.map((row) => ({
     id: row.id,
     sequence: row.sequence,
@@ -69,7 +71,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
           ← Checklistor
         </Link>
         <div className="flex items-center gap-4">
-          <ChecklistActions id={checklist.id} name={checklist.name} />
+          <ChecklistActions id={checklist.id} name={checklist.name} categories={categories} />
           <label
             htmlFor="checklist-columns"
             className="hidden cursor-pointer items-center gap-1.5 border-l border-border pl-4 font-mono text-[9px] uppercase tracking-[.14em] text-text-muted hover:text-text sm:inline-flex"

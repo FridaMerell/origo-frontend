@@ -18,10 +18,16 @@ export function buildCookieHeader(cookies: Record<string, string | undefined>): 
     .join("; ");
 }
 
-function shouldLogChecklistFetch(path: string, method?: string) {
-  if (method && method !== "GET") return false
-  const pathname = path.split("?", 1)[0]
-  return /^\/api\/tempus\/checklists\/[^/]+\/(?:register\/)?$/.test(pathname)
+function shouldLogChecklistRequest(path: string) {
+  const url = new URL(path, "https://origo.local")
+  return [
+    /^\/api\/accounts\/(?:csrf|self)\/$/,
+    /^\/api\/tempus\/checklists\//,
+    /^\/api\/tempus\/checklist-items\//,
+    /^\/api\/tempus\/observations\//,
+    /^\/api\/tempus\/species\//,
+    /^\/api\/tempus\/species-categories\//,
+  ].some((pattern) => pattern.test(url.pathname))
 }
 
 export async function fetchOrigoApi(path: string, init: RequestInit = {}) {
@@ -30,7 +36,7 @@ export async function fetchOrigoApi(path: string, init: RequestInit = {}) {
   const host = requestHeaders.get("host");
   const resolvedOrigin = origin ?? (host ? `https://${host}` : undefined);
   const url = `${API_BASE_URL}${path}`
-  const logTiming = shouldLogChecklistFetch(path, init.method)
+  const logTiming = shouldLogChecklistRequest(path)
   const started = logTiming ? performance.now() : 0
   const response = await fetch(url, {
     ...init,
@@ -40,7 +46,7 @@ export async function fetchOrigoApi(path: string, init: RequestInit = {}) {
   if (logTiming) {
     const headersMs = performance.now() - started
     const bodyStarted = performance.now()
-    void response.clone().json().then(() => {
+    void response.clone().json().catch(() => undefined).then(() => {
       const bodyMs = performance.now() - bodyStarted
       console.log({
         endpoint: new URL(url).pathname,

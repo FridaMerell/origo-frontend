@@ -31,6 +31,23 @@ const FollowButton = ({ initial, taxa, props }: { initial: boolean, taxa: string
     })
   }
 
+  const toggleNotifications = () => {
+    const next = !notify
+    setError(null)
+    setNotify(next)
+    if (!isFollowing) return
+
+    startTransition(async () => {
+      const result = await followSpecies(taxa, { notificationsEnabled: next })
+      if (result.ok) {
+        router.refresh()
+      } else {
+        setNotify(!next)
+        setError(result.error ?? "Något gick fel. Försök igen.")
+      }
+    })
+  }
+
   return (
     <div className="relative flex flex-col items-end gap-1.5">
       <div className="inline-flex overflow-hidden rounded-md border border-accent bg-surface">
@@ -65,7 +82,8 @@ const FollowButton = ({ initial, taxa, props }: { initial: boolean, taxa: string
               type="button"
               role="menuitemcheckbox"
               aria-checked={notify}
-              onClick={() => setNotify((v) => !v)}
+              disabled={isPending}
+              onClick={toggleNotifications}
               className="flex w-full items-center justify-between gap-3 rounded px-2.5 py-2 text-left text-sm hover:bg-surface-2"
             >
               <span className="flex flex-col">

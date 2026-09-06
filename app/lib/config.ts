@@ -76,6 +76,8 @@ export const TEMPUS_ENDPOINTS = {
   birdnetDevices: "/api/tempus/birdnet-devices/",
   checklists: "/api/tempus/checklists/",
   checklistRegister: (id: string) => `/api/tempus/checklists/${id}/register/`,
+  checklistSyncCategory: (id: string) => `/api/tempus/checklists/${id}/sync-category/`,
+  checklistSyncObservations: (id: string) => `/api/tempus/checklists/${id}/sync-observations/`,
   checklistItems: "/api/tempus/checklist-items/",
   observations: "/api/tempus/observations/",
   geoAreas: "/api/tempus/geo-areas/",

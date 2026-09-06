@@ -1,19 +1,26 @@
 "use client"
 
 import { useEffect, useState, type ReactNode } from "react"
+import { loadChecklistObservationPoints } from "@/app/tempus/_actions/checklists"
 import { SwedenMap, type SwedenMapPoint } from "@/app/tempus/ui/biotope-map/SwedenMap"
 import { Expand, X } from "lucide-react"
 
 export default function ObservationMapDialog({
   children,
   caption,
-  points,
+  checklistId,
 }: {
   children: ReactNode
   caption: string
-  points: readonly SwedenMapPoint[]
+  checklistId: string
 }) {
   const [open, setOpen] = useState(false)
+  const [points, setPoints] = useState<readonly SwedenMapPoint[] | null>(null)
+
+  useEffect(() => {
+    if (!open || points !== null) return
+    void loadChecklistObservationPoints(checklistId).then(setPoints)
+  }, [checklistId, open, points])
 
   useEffect(() => {
     if (!open) return
@@ -56,7 +63,9 @@ export default function ObservationMapDialog({
                 <p className="font-mono text-[9px] uppercase tracking-[.16em] text-text-faint">Observationernas utbredning</p>
                 <h2 id="observation-map-title" className="mt-0.5 font-display text-xl font-semibold">Dina observationer i Sverige</h2>
                 <p className="mt-1 text-xs text-text-muted">
-                  {points.length} {points.length === 1 ? "observation med position" : "observationer med position"}
+                  {points === null
+                    ? "Hämtar observationer…"
+                    : `${points.length} ${points.length === 1 ? "observation med position" : "observationer med position"}`}
                 </p>
               </div>
               <button
@@ -70,7 +79,7 @@ export default function ObservationMapDialog({
             </header>
 
             <div className="relative min-h-0 flex-1 overflow-auto bg-surface-2/30 p-3 sm:p-5">
-              <SwedenMap
+              {points ? <SwedenMap
                 points={points}
                 pointRadius={10}
                 showLakeLabels
@@ -78,8 +87,8 @@ export default function ObservationMapDialog({
                 title="Sverigekarta med dina observationer markerade"
                 className="mx-auto max-w-full"
                 style={{ height: "min(68vh, 42rem)", width: "auto" }}
-              />
-              {points.length === 0 ? (
+              /> : null}
+              {points?.length === 0 ? (
                 <p className="absolute inset-x-4 top-1/2 -translate-y-1/2 rounded border border-border bg-surface/90 px-4 py-3 text-center text-sm text-text-muted sm:inset-x-1/4">
                   Det finns ännu inga observationer med sparad position.
                 </p>

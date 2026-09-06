@@ -4,12 +4,13 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
-import { getCurrentUser } from "@/app/lib/dal"
+import { getCurrentUser, getTempusObservations } from "@/app/lib/dal"
 import {
   getTempusChecklistRegisterPage,
   type TempusChecklistRegisterRow,
   type TempusPage,
 } from "@/app/tempus/_data/checklists"
+import { formatDateLongOrNull } from "@/app/lib/formatters"
 import {
   checklistFormSchema,
   type ChecklistFormValues,
@@ -71,6 +72,14 @@ export async function createChecklist(input: ChecklistFormValues): Promise<Creat
 
 export type LoadChecklistRegisterPageInput = { checklistId: string; page?: number; search?: string }
 
+const checklistRegisterPageSize = 100
+
+export type ChecklistObservationPoint = {
+  id: string
+  coordinates: [number, number]
+  label: string
+}
+
 export async function loadChecklistRegisterPage({
   checklistId,
   page = 1,
@@ -78,27 +87,29 @@ export async function loadChecklistRegisterPage({
 }: LoadChecklistRegisterPageInput): Promise<TempusPage<TempusChecklistRegisterRow>> {
   const requestedPage = Number.isInteger(page) && page > 0 ? page : 1
   const normalizedSearch = search.trim().toLocaleLowerCase("sv")
-  if (!normalizedSearch) {
-    return getTempusChecklistRegisterPage(checklistId, { page: requestedPage, page_size: 250 })
-  }
+  return getTempusChecklistRegisterPage(checklistId, {
+    page: requestedPage,
+    page_size: checklistRegisterPageSize,
+    search: normalizedSearch || undefined,
+  })
+}
 
-  const firstPage = await getTempusChecklistRegisterPage(checklistId, { page: 1, page_size: 250 })
-  const totalSourcePages = Math.max(1, Math.ceil(firstPage.count / 250))
-  const remainingPages = await Promise.all(Array.from({ length: totalSourcePages - 1 }, (_, index) =>
-    getTempusChecklistRegisterPage(checklistId, { page: index + 2, page_size: 250 }),
-  ))
-  const matches = [firstPage, ...remainingPages]
-    .flatMap((result) => result.results)
-    .filter((row) => [row.swedish_name, row.scientific_name, String(row.dyntaxa_taxon_id)]
-      .some((value) => value.toLocaleLowerCase("sv").includes(normalizedSearch)))
-  const start = (requestedPage - 1) * 250
-  return {
-    results: matches.slice(start, start + 250),
-    count: matches.length,
-    previous: requestedPage > 1 ? String(requestedPage - 1) : null,
-    next: start + 250 < matches.length ? String(requestedPage + 1) : null,
-    pageSize: 250,
-  }
+export async function loadChecklistObservationPoints(
+  checklistId: string,
+): Promise<ChecklistObservationPoint[]> {
+  const observations = await getTempusObservations({ checklist: checklistId, ordering: "-observed_at" })
+  return observations.flatMap((observation) => {
+    if (!("coordinates" in observation.location)) return []
+    const [longitude, latitude] = observation.location.coordinates
+    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return []
+    const observedAt = formatDateLongOrNull(observation.observed_at)
+    const speciesName = observation.species_detail.swedish_name || "Okänd art"
+    return [{
+      id: observation.id,
+      coordinates: [longitude, latitude] as [number, number],
+      label: `${speciesName}${observedAt ? ` · ${observedAt}` : ""}`,
+    }]
+  })
 }
 
 export async function updateChecklist(
@@ -164,4 +175,35 @@ export async function deleteChecklist(id: string): Promise<{ success?: boolean; 
   }
   revalidatePath("/checklistor")
   return { success: true }
+}
+
+type ChecklistSyncResult = { success?: boolean; error?: string }
+
+async function syncChecklist(
+  id: string,
+  endpoint: (id: string) => string,
+): Promise<ChecklistSyncResult> {
+  if (!z.string().uuid().safeParse(id).success) return { error: "Checklistan har ett ogiltigt ID." }
+  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
+
+  const response = await fetchOrigoApi(endpoint(id), {
+    method: "POST",
+    headers: await authedJsonHeaders(),
+  })
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "")
+    return { error: firstErrorMessage(detail, response.status) }
+  }
+
+  revalidatePath("/checklistor")
+  revalidatePath(`/checklistor/${id}`)
+  return { success: true }
+}
+
+export async function syncChecklistCategory(id: string): Promise<ChecklistSyncResult> {
+  return await syncChecklist(id, TEMPUS_ENDPOINTS.checklistSyncCategory)
+}
+
+export async function syncChecklistObservations(id: string): Promise<ChecklistSyncResult> {
+  return await syncChecklist(id, TEMPUS_ENDPOINTS.checklistSyncObservations)
 }

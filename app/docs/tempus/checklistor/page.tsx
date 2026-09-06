@@ -68,7 +68,33 @@ Accept: application/json
 
 Varje checklistpunkt innehåller \`id\`, \`checklist\`, \`species\`,
 \`sequence\` och \`notes\`. Dess \`id\` används som \`checklist_items\` när
-en observation kopplas till checklistan.`
+en observation kopplas till checklistan.
+
+## Synkronisera underarter
+
+Synkroniserar checklistan med underarter i dess valda kategori.
+
+**Sökväg:** \`/api/tempus/checklists/<checklista-uuid>/sync-category/\`
+
+\`\`\`http
+POST /api/tempus/checklists/checklista-uuid/sync-category/ HTTP/1.1
+Host: origin.api.fåvitsko.se
+Authorization: Token din-token
+Accept: application/json
+\`\`\`
+
+## Synkronisera observationer
+
+Synkroniserar checklistans observationer.
+
+**Sökväg:** \`/api/tempus/checklists/<checklista-uuid>/sync-observations/\`
+
+\`\`\`http
+POST /api/tempus/checklists/checklista-uuid/sync-observations/ HTTP/1.1
+Host: origin.api.fåvitsko.se
+Authorization: Token din-token
+Accept: application/json
+\`\`\``
 
 export default function TempusChecklistsDocsPage() {
   return (

@@ -4,7 +4,6 @@ import { notFound } from "next/navigation"
 import { loadChecklistRegisterPage } from "@/app/tempus/_actions/checklists"
 import {
   getTempusChecklistItem,
-  getTempusObservations,
 } from "@/app/lib/dal"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
 import { BiotopeMap } from "@/app/tempus/ui/biotope-map/BiotopeMap"
@@ -30,17 +29,15 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
   const requestedPage = Number(resolvedSearchParams.page)
   const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
   const searchQuery = resolvedSearchParams.search?.trim() ?? ""
-  const checklist = await getTempusChecklistItem(id)
+  const checklistPromise = getTempusChecklistItem(id)
+  const registerPagePromise = loadChecklistRegisterPage({
+    checklistId: id,
+    page: currentPage,
+    search: searchQuery || undefined,
+  })
+  const checklist = await checklistPromise
   if (!checklist) notFound()
-
-  const [registerPage, observations] = await Promise.all([
-    loadChecklistRegisterPage({
-      checklistId: id,
-      page: currentPage,
-      search: searchQuery || undefined,
-    }),
-    getTempusObservations({ checklist: id, ordering: "-observed_at" }),
-  ])
+  const registerPage = await registerPagePromise
   const registerRows = registerPage.results.map((row) => ({
     id: row.id,
     sequence: row.sequence,
@@ -54,12 +51,6 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
     speciesDetails: null,
     checklistNames: [checklist.name],
   }))
-  const speciesNameById = new Map(
-    registerPage.results.map((row) => [
-      row.species_id,
-      row.swedish_name || row.scientific_name || "Okänd art",
-    ]),
-  )
   const startDate = formatDateLongOrNull(checklist.start_date)
   const endDate = formatDateLongOrNull(checklist.end_date)
   const dateRange = startDate
@@ -67,18 +58,6 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
       ? `${startDate} – ${endDate}`
       : startDate
     : endDate
-  const observationPoints = observations.flatMap((observation) => {
-    if (!("coordinates" in observation.location)) return []
-    const [longitude, latitude] = observation.location.coordinates
-    if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return []
-    const speciesName = speciesNameById.get(observation.species) || "Okänd art"
-    const observedAt = formatDateLongOrNull(observation.observed_at)
-    return [{
-      id: observation.id,
-      coordinates: [longitude, latitude] as const,
-      label: `${speciesName}${observedAt ? ` · ${observedAt}` : ""}`,
-    }]
-  })
   return (
     <div className="container mx-auto py-5 max-sm:px-3 sm:py-7">
       <input id="checklist-columns" type="checkbox" className="peer sr-only" />
@@ -122,7 +101,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
             </div>
             <div className="relative min-h-24 overflow-hidden border-t border-border bg-surface-2/25 sm:border-l sm:border-t-0">
               <ObservationMapDialog
-                points={observationPoints}
+                checklistId={id}
                 caption="Biotopskiss"
               >
                 <BiotopeMap

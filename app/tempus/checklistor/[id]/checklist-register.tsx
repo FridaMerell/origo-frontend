@@ -23,6 +23,17 @@ export type RegisterRow = {
   checklistNames: string[]
 }
 
+type RegisterPage = {
+  rows: RegisterRow[]
+  count: number
+  hasPrevious: boolean
+  hasNext: boolean
+}
+
+function pageCacheKey(page: number, search: string) {
+  return `${page}:${search.trim().toLocaleLowerCase("sv")}`
+}
+
 export default function ChecklistRegister({
   rows,
   checklistId,
@@ -44,6 +55,14 @@ export default function ChecklistRegister({
 }) {
   const requestSequence = useRef(0)
   const lastQuery = useRef(initialQuery)
+  const pageCache = useRef(new Map<string, RegisterPage>([
+    [pageCacheKey(initialPage, initialQuery), {
+      rows,
+      count: initialCount,
+      hasPrevious: initialHasPrevious,
+      hasNext: initialHasNext,
+    }],
+  ]))
   const [visibleRows, setVisibleRows] = useState(rows)
   const [resultPage, setResultPage] = useState(initialPage)
   const [resultCount, setResultCount] = useState(initialCount)
@@ -73,23 +92,46 @@ export default function ChecklistRegister({
       checklistNames: [checklistName],
     }))
 
+  const replaceUrl = (page: number, search: string) => {
+    const next = new URLSearchParams()
+    if (search) next.set("search", search)
+    if (page > 1) next.set("page", String(page))
+    const queryString = next.toString()
+    window.history.replaceState(null, "", queryString ? `?${queryString}` : window.location.pathname)
+  }
+
   const loadPage = async (page: number, search: string) => {
     const requestId = ++requestSequence.current
+    const cacheKey = pageCacheKey(page, search)
+    const cached = pageCache.current.get(cacheKey)
+    if (cached) {
+      setVisibleRows(cached.rows)
+      setResultPage(page)
+      setResultCount(cached.count)
+      setHasPrevious(cached.hasPrevious)
+      setHasNext(cached.hasNext)
+      replaceUrl(page, search)
+      return
+    }
+
     setSearchLoading(true)
     try {
       const result = await loadChecklistRegisterPage({ checklistId, page, search })
       if (requestId !== requestSequence.current) return
-      setVisibleRows(mapRows(result.results))
+      const nextPage = {
+        rows: mapRows(result.results),
+        count: result.count,
+        hasPrevious: Boolean(result.previous),
+        hasNext: Boolean(result.next),
+      }
+      pageCache.current.set(cacheKey, nextPage)
+      setVisibleRows(nextPage.rows)
       setResultPage(page)
-      setResultCount(result.count)
-      setHasPrevious(Boolean(result.previous))
-      setHasNext(Boolean(result.next))
+      setResultCount(nextPage.count)
+      setHasPrevious(nextPage.hasPrevious)
+      setHasNext(nextPage.hasNext)
 
-      const next = new URLSearchParams()
-      if (search) next.set("search", search)
-      if (page > 1) next.set("page", String(page))
-      const queryString = next.toString()
-      window.history.replaceState(null, "", queryString ? `?${queryString}` : window.location.pathname)
+      replaceUrl(page, search)
     } finally {
       if (requestId === requestSequence.current) setSearchLoading(false)
     }
@@ -162,11 +204,16 @@ export default function ChecklistRegister({
         checklistItem={preset ? { id: preset.checklistItemId, checklistId, name: checklistName } : null}
         onConsumed={() => setPreset(null)}
         onSaved={(checklistItemIds, observationId) => {
-          setVisibleRows((current) => current.map((row) =>
-            checklistItemIds.includes(row.id)
+          const observedIds = new Set(checklistItemIds)
+          const updateRows = (current: RegisterRow[]) => current.map((row) =>
+            observedIds.has(row.id)
               ? { ...row, isObserved: true, observationId: observationId ?? row.observationId }
               : row,
-          ))
+          )
+          for (const [cacheKey, cached] of pageCache.current) {
+            pageCache.current.set(cacheKey, { ...cached, rows: updateRows(cached.rows) })
+          }
+          setVisibleRows((current) => updateRows(current))
         }}
       />
     </>

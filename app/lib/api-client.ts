@@ -18,13 +18,40 @@ export function buildCookieHeader(cookies: Record<string, string | undefined>): 
     .join("; ");
 }
 
+function shouldLogChecklistFetch(path: string, method?: string) {
+  if (method && method !== "GET") return false
+  const pathname = path.split("?", 1)[0]
+  return /^\/api\/tempus\/checklists\/[^/]+\/(?:register\/)?$/.test(pathname)
+}
+
 export async function fetchOrigoApi(path: string, init: RequestInit = {}) {
   const requestHeaders = await headers();
   const origin = requestHeaders.get("origin");
   const host = requestHeaders.get("host");
   const resolvedOrigin = origin ?? (host ? `https://${host}` : undefined);
-  return fetch(`${API_BASE_URL}${path}`, {
+  const url = `${API_BASE_URL}${path}`
+  const logTiming = shouldLogChecklistFetch(path, init.method)
+  const started = logTiming ? performance.now() : 0
+  const response = await fetch(url, {
     ...init,
     headers: { ...init.headers, ...(resolvedOrigin ? { Origin: resolvedOrigin } : {}) },
   });
+
+  if (logTiming) {
+    const headersMs = performance.now() - started
+    const bodyStarted = performance.now()
+    void response.clone().json().then(() => {
+      const bodyMs = performance.now() - bodyStarted
+      console.log({
+        endpoint: new URL(url).pathname,
+        status: response.status,
+        headersMs: Math.round(headersMs),
+        bodyMs: Math.round(bodyMs),
+        bytes: response.headers.get("content-length"),
+        region: process.env.VERCEL_REGION,
+      })
+    })
+  }
+
+  return response
 }

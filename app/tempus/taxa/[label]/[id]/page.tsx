@@ -111,7 +111,7 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
           </a>
         </div>
         <div className="flex items-center justify-end">
-          <FollowButton taxa={String(species.dyntaxa_taxon_id)} initial={species.is_followed} />
+          <FollowButton taxa={String(species.dyntaxa_taxon_id)} initial={species.is_followed} initialNotify={species.is_notify ?? false} />
         </div>
       </div>
       <Card className="relative overflow-hidden shadow-sm min-h-70">

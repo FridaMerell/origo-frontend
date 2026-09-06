@@ -63,7 +63,7 @@ export function ObservationRowList({
 
   return (
     <section className="px-3 pb-3 sm:px-5 sm:pb-5">
-      <div className="hidden grid-cols-[2.25rem_minmax(12rem,1.5fr)_6rem_minmax(12rem,1fr)_minmax(10rem,1fr)_2.5rem] border-l border-t border-border font-display text-[9px] italic text-text-muted sm:grid">
+      <div className="hidden grid-cols-[2.25rem_minmax(0,1.5fr)_6rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] border-l border-t border-border font-display text-[9px] italic text-text-muted sm:grid">
         <span className="border-b border-r border-border px-2 py-1.5 text-center">Nr</span>
         <span className="border-b border-r border-border px-3 py-1.5">Artens namn</span>
         <span className="border-b border-r border-border px-2 py-1.5 text-center">Antal</span>
@@ -79,7 +79,7 @@ export function ObservationRowList({
             const stages = [...new Set((match?.stages ?? []).map((stage) => stage.trim()).filter(Boolean))]
             const usesCustomLifeStage = customLifeStageRows.has(row.key) || Boolean(row.lifeStage && !stages.includes(row.lifeStage))
             return (
-              <li key={row.key} className="grid grid-cols-[2rem_minmax(0,1fr)_2.5rem] border-b border-border font-display sm:grid-cols-[2.25rem_minmax(12rem,1.5fr)_6rem_minmax(12rem,1fr)_minmax(10rem,1fr)_2.5rem]">
+              <li key={row.key} className="grid grid-cols-[2rem_minmax(0,1fr)_2.5rem] border-b border-border font-display sm:grid-cols-[2.25rem_minmax(0,1.5fr)_6rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem]">
                 <span className="row-span-4 flex justify-end border-r border-border px-2 py-2 text-[10px] italic text-text-faint sm:row-span-1">
                   {index + 1}
                 </span>
@@ -192,9 +192,9 @@ export function ObservationRowList({
           })}
         </ol>
       ) : (
-        <div className="border-l border-t border-border" aria-label="Inga arter tillagda än">
+        <div className="border-l border-t border-border sm:border-t-0" aria-label="Inga arter tillagda än">
           {[1, 2, 3].map((line) => (
-            <div key={line} className="grid h-10 grid-cols-[2.25rem_minmax(0,1fr)_6rem_minmax(12rem,1fr)_minmax(10rem,1fr)_2.5rem] border-b border-border">
+            <div key={line} className="grid h-10 grid-cols-[2.25rem_minmax(0,1.5fr)_6rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] border-b border-border">
               <span className="border-r border-border" />
               <span className="border-r border-border" />
               <span className="border-r border-border" />

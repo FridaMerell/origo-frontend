@@ -40,6 +40,7 @@ export type TempusSpecies = {
   created_at: string
   updated_at: string
   is_followed: boolean
+  is_notify?: boolean
   checklists?: TempusSpeciesChecklist[]
 }
 

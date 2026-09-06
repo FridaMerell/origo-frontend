@@ -81,7 +81,7 @@ const Page = async ({ params, searchParams }: {
                 </span>
               </div>
             </Link>
-            <FollowButton props={{ variant: "primary", size: 'sm' }} taxa={String(sp.dyntaxa_taxon_id)} initial={sp.is_followed} />
+            <FollowButton props={{ variant: "primary", size: 'sm' }} taxa={String(sp.dyntaxa_taxon_id)} initial={sp.is_followed} initialNotify={sp.is_notify ?? false} />
           </div>
         ))}
       </dl>

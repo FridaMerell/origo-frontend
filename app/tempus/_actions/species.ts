@@ -204,14 +204,32 @@ export async function registerSpeciesBatch(speciesCategory: string, taxonIds: nu
 }
 
 type FollowSpeciesOptions = { priority?: number; notificationsEnabled?: boolean }
+type SpeciesFollow = { id: string; species: number | string }
 
 export async function followSpecies(taxonId: string, options: FollowSpeciesOptions = {}): Promise<{ ok: boolean; error?: string }> {
   if (!(await getCurrentUser())) return { ok: false, error: "Du måste vara inloggad." }
-  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesFollow, {
-    method: "POST",
-    headers: await authedJsonHeaders(),
-    body: JSON.stringify({ species: Number(taxonId), priority: options.priority ?? 2, notifications_enabled: options.notificationsEnabled ?? false }),
-  })
+  const headers = await authedJsonHeaders()
+  const body = { species: Number(taxonId), priority: options.priority ?? 2, notifications_enabled: options.notificationsEnabled ?? false }
+  const followsResponse = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesFollowsMine, { headers })
+  if (!followsResponse.ok) {
+    const detail = await followsResponse.text().catch(() => "")
+    return { ok: false, error: firstErrorMessage(detail, followsResponse.status) }
+  }
+  const follows: unknown = await followsResponse.json().catch(() => [])
+  const existing = Array.isArray(follows)
+    ? (follows as SpeciesFollow[]).find((follow) => String(follow.species) === taxonId)
+    : undefined
+  const response = existing
+    ? await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesFollowItem(existing.id), {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ notifications_enabled: body.notifications_enabled }),
+    })
+    : await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesFollow, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    })
   if (response.ok) return { ok: true }
   const detail = await response.text().catch(() => "")
   return { ok: false, error: firstErrorMessage(detail, response.status) }

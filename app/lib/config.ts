@@ -82,6 +82,8 @@ export const TEMPUS_ENDPOINTS = {
   observationsSyncChecklists: "/api/tempus/observations/sync-checklists/",
   geoAreas: "/api/tempus/geo-areas/",
   speciesFollow: "/api/tempus/species-follows/",
+  speciesFollowsMine: "/api/tempus/species-follows/my_follows/",
+  speciesFollowItem: (id: string) => `/api/tempus/species-follows/${encodeURIComponent(id)}/`,
   speciesUnfollow: (taxonId: string) =>
     `/api/tempus/species-follows/unfollow/?species=${encodeURIComponent(taxonId)}`,
   species: "/api/tempus/species/",

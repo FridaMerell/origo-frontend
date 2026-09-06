@@ -1,49 +1,88 @@
 'use client'
 import { followSpecies, unfollowSpecies } from "@/app/tempus/_actions/species"
 import { Button } from "@/app/components/ui/Button"
+import { useToast } from "@/app/components/ui/ToastProvider"
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { Check, ChevronDown } from "lucide-react"
 
-const FollowButton = ({ initial, taxa, props }: { initial: boolean, taxa: string, props?: React.ComponentProps<typeof Button> }) => {
+const FollowButton = ({ initial, initialNotify, taxa, props }: { initial: boolean, initialNotify: boolean, taxa: string, props?: React.ComponentProps<typeof Button> }) => {
   const [isFollowing, setIsFollowing] = useState(initial)
-  const [notify, setNotify] = useState(false)
+  const [notify, setNotify] = useState(initialNotify)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
+  const { toast } = useToast()
+
+  useEffect(() => {
+    setIsFollowing(initial)
+    setNotify(initialNotify)
+  }, [initial, initialNotify])
 
   const toggle = () => {
     const next = !isFollowing
-    setError(null)
     setMenuOpen(false)
     setIsFollowing(next)
     startTransition(async () => {
-      const result = next
-        ? await followSpecies(taxa, { notificationsEnabled: notify })
-        : await unfollowSpecies(taxa)
-      if (result.ok) {
-        router.refresh()
-      } else {
+      try {
+        const result = next
+          ? await followSpecies(taxa, { notificationsEnabled: notify })
+          : await unfollowSpecies(taxa)
+        if (result.ok) {
+          toast({
+            title: next ? "Arten är sparad" : "Arten är inte längre sparad",
+            variant: "success",
+          })
+          router.refresh()
+          return
+        }
         setIsFollowing(!next)
-        setError(result.error ?? "Något gick fel. Försök igen.")
+        toast({
+          title: "Kunde inte ändra sparningen",
+          description: result.error ?? "Något gick fel. Försök igen.",
+          variant: "error",
+        })
+      } catch {
+        setIsFollowing(!next)
+        toast({
+          title: "Kunde inte ändra sparningen",
+          description: "Kunde inte kontakta servern. Försök igen.",
+          variant: "error",
+        })
       }
     })
   }
 
   const toggleNotifications = () => {
     const next = !notify
-    setError(null)
     setNotify(next)
     if (!isFollowing) return
 
     startTransition(async () => {
-      const result = await followSpecies(taxa, { notificationsEnabled: next })
-      if (result.ok) {
-        router.refresh()
-      } else {
+      try {
+        const result = await followSpecies(taxa, { notificationsEnabled: next })
+        if (result.ok) {
+          toast({
+            title: "Notisinställningen är sparad",
+            description: next ? "Du får notiser om den här arten." : "Du får inte längre notiser om den här arten.",
+            variant: "success",
+          })
+          router.refresh()
+          return
+        }
         setNotify(!next)
-        setError(result.error ?? "Något gick fel. Försök igen.")
+        toast({
+          title: "Kunde inte spara notisinställningen",
+          description: result.error ?? "Något gick fel. Försök igen.",
+          variant: "error",
+        })
+      } catch {
+        setNotify(!next)
+        toast({
+          title: "Kunde inte spara notisinställningen",
+          description: "Kunde inte kontakta servern. Försök igen.",
+          variant: "error",
+        })
       }
     })
   }
@@ -102,8 +141,6 @@ const FollowButton = ({ initial, taxa, props }: { initial: boolean, taxa: string
           </div>
         </>
       )}
-
-      {error && <span className="text-xs text-danger">{error}</span>}
     </div>
   )
 }

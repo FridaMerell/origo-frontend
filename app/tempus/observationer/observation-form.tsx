@@ -25,9 +25,10 @@ function nowLocal() {
   return now.toISOString().slice(0, 16)
 }
 
-function defaultLifeStage(stages: string[]) {
-  return stages.find((stage) => stage.localeCompare("Imago", "sv", { sensitivity: "accent" }) === 0)
-    ?? stages.find((stage) => stage.localeCompare("Blomma", "sv", { sensitivity: "accent" }) === 0)
+function defaultLifeStage(stages: string[] | undefined) {
+  const availableStages = stages ?? []
+  return availableStages.find((stage) => stage.localeCompare("Imago", "sv", { sensitivity: "accent" }) === 0)
+    ?? availableStages.find((stage) => stage.localeCompare("Blomma", "sv", { sensitivity: "accent" }) === 0)
     ?? ""
 }
 

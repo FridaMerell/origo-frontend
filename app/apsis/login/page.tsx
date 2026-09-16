@@ -9,12 +9,19 @@ export const metadata: Metadata = {
   description: `Logga in på ${TENANTS.apsis.name}`,
 };
 
-export default function ApsisLoginPage() {
+export default async function ApsisLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string | string[] }>;
+}) {
+  const { redirect } = await searchParams;
+  const redirectTo = typeof redirect === "string" ? redirect : "/";
+
   return (
     <div className="flex min-h-screen flex-1 flex-col items-center justify-center px-6 py-24">
       <Card className="flex w-full max-w-sm flex-col items-center gap-6 p-8">
         <LogoMark />
-        <LoginForm redirectTo="/" variant="tenant" />
+        <LoginForm redirectTo={redirectTo} variant="tenant" />
       </Card>
     </div>
   );

@@ -35,6 +35,7 @@ export default async function EditChecklistPage({ params }: PageProps) {
         start_date: checklist.start_date,
         end_date: checklist.end_date,
         geo_area: checklist.geo_area,
+        locale: checklist.locale,
         nextSequence: registerRows.reduce((highest, row) => Math.max(highest, row.sequence), 0) + 1,
         species: registerRows.map((row) => ({
           id: row.species_id,

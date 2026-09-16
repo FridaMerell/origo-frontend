@@ -194,7 +194,7 @@ export function RouteSuggestions({
         </p>
 
         <div className="flex flex-wrap items-center gap-4 border-b border-border px-3 py-3">
-          <Button type="button" variant="paper" onClick={search} disabled={loading}>
+          <Button type="button" variant="paper-bordered" onClick={search} disabled={loading}>
             {loading ? "Söker längs rutten…" : "Sök stoppställen"}
           </Button>
           <span className="font-display text-xs italic text-text-faint">

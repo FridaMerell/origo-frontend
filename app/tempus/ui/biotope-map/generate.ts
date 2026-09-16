@@ -25,7 +25,7 @@ type Ctx = {
 };
 
 /** every element is stamped with the layer that is currently being drawn */
-function push(c: Ctx, el: El) {
+function push(c: { elements: El[]; layer?: LayerId }, el: El) {
   c.elements.push({ ...el, layer: c.layer } as El);
 }
 
@@ -403,7 +403,11 @@ function scatter(
   }
 }
 
-function treeGlyph(c: Ctx, x: number, y: number, s: number) {
+// Strukturellt (inte nominellt) typade — accepterar den fullständiga `Ctx`
+// här i generatorn, men även en minimal `{ elements: El[] }`-behållare för
+// annan kod (t.ex. den geografiska kartans texturlager) som vill återanvända
+// exakt samma handritade symboler utan att bygga en hel generator-`Ctx`.
+export function treeGlyph(c: { elements: El[] }, x: number, y: number, s: number) {
   const h = 11 * s;
   const w = 3.6 * s;
   let d = `M${x.toFixed(1)} ${(y + h * 0.28).toFixed(1)}L${x.toFixed(1)} ${(y - h * 0.72).toFixed(1)}`;
@@ -415,7 +419,7 @@ function treeGlyph(c: Ctx, x: number, y: number, s: number) {
   push(c, { t: "path", d, s: PALETTE.ink, w: 0.55, f: "none", o: 0.75 });
 }
 
-function tuftGlyph(c: Ctx, x: number, y: number, s: number) {
+export function tuftGlyph(c: { elements: El[] }, x: number, y: number, s: number) {
   const h = 4.5 * s;
   const d =
     `M${(x - 2.4).toFixed(1)} ${y.toFixed(1)}L${(x - 1.6).toFixed(1)} ${(y - h * 0.7).toFixed(1)}` +
@@ -424,7 +428,7 @@ function tuftGlyph(c: Ctx, x: number, y: number, s: number) {
   push(c, { t: "path", d, s: PALETTE.inkSoft, w: 0.5, f: "none", o: 0.85 });
 }
 
-function marshGlyph(c: Ctx, x: number, y: number, s: number) {
+export function marshGlyph(c: { elements: El[] }, x: number, y: number, s: number) {
   const w = 5 * s;
   let d = "";
   for (let i = 0; i < 3; i++) {

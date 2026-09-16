@@ -16,6 +16,15 @@ Never run Git, database-migration, or Next.js dev/build/start commands. Do not s
 
 Use the shared `container` utility for route-level page content. It supplies the responsive gutters and maximum page width; do not let page content run directly against the viewport or recreate ad-hoc page-width wrappers. Do not use `max-w-*`, arbitrary widths, or custom page-width rules on page layout sections — they must fill their container.
 
+## Form inputs
+
+Always build form fields from the shared, prepared input components for the module you're in — never hand-roll an `<input>`, `<select>`, or `<textarea>` styled with inline Tailwind classes.
+
+- Tempus (`app/tempus/**`): `Label`, `TextField`, `TextArea`, `Checkbox` from `app/tempus/forms/Fields.tsx`, and `Select` from `app/tempus/forms/Select.tsx`.
+- Elsewhere (Flux, Verso, etc., typically react-hook-form-based): `Field` and `fieldInputClass` from `app/components/form/Field.tsx`, alongside `useSubmitAction`, `zodResolver`, and `form-contracts` in `app/components/form/`.
+
+If the shared set is missing an input type a form needs, add it to the relevant shared file (matching its existing styling conventions) instead of duplicating styled markup inline. This keeps every form's look and behavior consistent and makes forms reusable across create/edit variants.
+
 ## File editing
 
 Use the direct Edit/Write tools or `apply_patch` for file changes.

@@ -75,14 +75,22 @@ export const APSIS_ENDPOINTS = {
 } as const;
 
 export const TEMPUS_ENDPOINTS = {
+  countryOverview: "/api/tempus/country-overview/",
+  landCover: "/api/tempus/land-cover/",
+  administrativeBoundaries: "/api/tempus/administrative-boundaries/",
   birdnetDevices: "/api/tempus/birdnet-devices/",
   checklists: "/api/tempus/checklists/",
   checklistRegister: (id: string) => `/api/tempus/checklists/${id}/register/`,
   checklistSyncCategory: (id: string) => `/api/tempus/checklists/${id}/sync-category/`,
   checklistItems: "/api/tempus/checklist-items/",
   observations: "/api/tempus/observations/",
+  observationsByCategory: "/api/tempus/observations/by-category/",
   observationsSyncChecklists: "/api/tempus/observations/sync-checklists/",
   geoAreas: "/api/tempus/geo-areas/",
+  locales:"/api/tempus/locales/",
+  localeLandCover: (id: number | string) => `/api/tempus/locales/${encodeURIComponent(id)}/land-cover/`,
+  localeLandCoverMap: (id: number | string) => `/api/tempus/locales/${encodeURIComponent(id)}/land-cover/map/`,
+  localeAdministrativeBoundaries: (id: number | string) => `/api/tempus/locales/${encodeURIComponent(id)}/administrative-boundaries/`,
   speciesFollow: "/api/tempus/species-follows/",
   speciesFollowsMine: "/api/tempus/species-follows/my_follows/",
   speciesFollowItem: (id: string) => `/api/tempus/species-follows/${encodeURIComponent(id)}/`,

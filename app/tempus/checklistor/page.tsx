@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { getTempusChecklists } from "@/app/lib/dal"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
+import { LocaleLabel } from "@/app/tempus/locale-label"
 
 export const metadata: Metadata = {
   title: "Checklistor | Tempus",
@@ -76,7 +77,7 @@ export default async function ChecklistsPage() {
                     {completedSpeciesCount}/{speciesCount}
                   </span>
                   <span className="text-sm text-text-muted sm:text-right">
-                    {checklist.geo_area_name || "—"}
+                    {checklist.locale ? <LocaleLabel localeId={checklist.locale} /> : checklist.geo_area_name || "—"}
                     {dateRange ? <span className="block text-xs text-text-faint">{dateRange}</span> : null}
                   </span>
                 </Link>

@@ -300,7 +300,7 @@ export default function ObservationEditor({
       {error ? <p className="border-b border-border bg-danger-wash px-4 py-2 text-xs text-danger">{error}</p> : null}
 
       <div className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
-        <Button type="button" variant="paper" size="sm" className="rounded-none" onClick={save} disabled={pending}>
+        <Button type="button" variant="paper-bordered" size="sm" className="rounded-none" onClick={save} disabled={pending}>
           {pending ? "Sparar…" : "Spara ändringar"}
         </Button>
         <button

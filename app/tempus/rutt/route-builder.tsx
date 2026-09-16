@@ -149,7 +149,7 @@ export default function RouteBuilder() {
         ) : null}
 
         <div className="flex items-center gap-3">
-          <Button type="submit" variant="paper" disabled={pending || !name.trim() || !geometry}>
+          <Button type="submit" variant="paper-bordered" disabled={pending || !name.trim() || !geometry}>
             {pending ? "Sparar…" : "Spara rutt"}
           </Button>
           {planned ? (

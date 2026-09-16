@@ -17,6 +17,10 @@ export function LoginForm({
   buttonClass = "",
   variant = "origo",
 }: LoginFormProps) {
+  const redirectToAfterLogin =
+    redirectTo.startsWith("/") && !redirectTo.startsWith("//") && !redirectTo.startsWith("/\\")
+      ? redirectTo
+      : "/"
   const {
     register,
     handleSubmit,
@@ -33,7 +37,7 @@ export function LoginForm({
       setError("root", { message: result.error })
       return
     }
-    window.location.href = redirectTo
+    window.location.href = redirectToAfterLogin
   })
 
   const usesTenantTheme = variant === "tenant"

@@ -3,19 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
-import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton";
+import { Field, fieldInputClass } from "@/app/components/form/Field";
 import { LockIcon } from "lucide-react";
 import { FileUpload } from "@/app/components/ui/FileUpload";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import { useUser } from "@/app/lib/user-context";
 import { createApsisPost } from "@/app/actions/apsis";
+import { PlacePicker } from "@/app/tempus/observationer/quick-observation/place-picker";
+import { parseLatLon } from "@/app/tempus/formatters";
 
 export default function UploadView() {
   const user = useUser();
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [place, setPlace] = useState("");
+  const [lat, setLat] = useState("");
+  const [lon, setLon] = useState("");
   const uploadedFiles = useUploadedFiles();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -41,9 +44,20 @@ export default function UploadView() {
       setError("Välj en bild att ladda upp.");
       return;
     }
+    const coordinates = parseLatLon(lat, lon);
+    if ("error" in coordinates) {
+      setError(coordinates.error);
+      return;
+    }
     setSubmitting(true);
     const result = await createApsisPost(
-      { name, geolocation: place },
+      {
+        name,
+        geolocation:
+          coordinates.lat === null || coordinates.lon === null
+            ? ""
+            : `${coordinates.lat.toFixed(6)}, ${coordinates.lon.toFixed(6)}`,
+      },
       uploadedFiles.files.map((file) => ({ name: file.name, url: file.url })),
     );
     setSubmitting(false);
@@ -56,39 +70,27 @@ export default function UploadView() {
 
   return (
     <form className="mx-auto flex max-w-[520px] flex-col gap-4 px-6 pt-7 pb-12 sm:px-12" onSubmit={onSubmit}>
-      <label className="flex flex-col gap-1 text-sm">
-        Kyrkans namn (valfritt)
+      <Field label="Kyrkans namn (valfritt)">
         <input
           type="text"
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="T.ex. Lunds Domkyrka"
-          className="rounded border border-field-border bg-surface px-3 py-2 text-text"
+          className={fieldInputClass}
         />
-      </label>
+      </Field>
 
-      <label className="flex flex-col gap-1 text-sm">
-        Plats (valfritt)
-        <div className="flex gap-2">
-          <input
-            type="text"
-            readOnly
-            value={place}
-            placeholder="Hämtad plats visas här"
-            className="flex-1 rounded border border-field-border bg-surface-2 px-3 py-2 text-text"
-          />
-          <CurrentLocationButton
-            label="Hämta plats"
-            onLocate={({ latitude, longitude }) => {
-              const ns = latitude >= 0 ? "N" : "S";
-              const ew = longitude >= 0 ? "E" : "W";
-              setPlace(
-                `${Math.abs(latitude).toFixed(4)}° ${ns}, ${Math.abs(longitude).toFixed(4)}° ${ew}`,
-              );
-            }}
-          />
-        </div>
-      </label>
+      <PlacePicker
+        lat={lat}
+        lon={lon}
+        legend="Plats"
+        onChange={({ lat: nextLat, lon: nextLon }) => {
+          setLat(nextLat);
+          setLon(nextLon);
+        }}
+        onClearError={() => setError(null)}
+        onError={setError}
+      />
 
       <div className="flex flex-col gap-1 text-sm">
         Bild

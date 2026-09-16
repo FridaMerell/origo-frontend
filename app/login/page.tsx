@@ -7,14 +7,21 @@ export const metadata: Metadata = {
   description: "Sign in to Origo",
 }
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string | string[] }>
+}) {
+  const { redirect } = await searchParams
+  const redirectTo = typeof redirect === "string" ? redirect : "/"
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 text-black  py-32 font-sans bg-[#E7E5DE] ">
       <Section title={'Logga in'}>
         <p className="text-dimmed">
           Logga in i Origo för åtkomst till samtliga sidor
         </p>
-        <LoginForm />
+        <LoginForm redirectTo={redirectTo} />
       </Section>
     </div>
   )

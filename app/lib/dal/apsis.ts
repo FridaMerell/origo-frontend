@@ -9,6 +9,7 @@ export type ApsisPost = {
   id: number
   files: ApsisFile[]
   author: number | null
+  has_apsis: boolean
   geolocation: string
   content: string
   name: string

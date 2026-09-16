@@ -32,6 +32,7 @@ const checklistUpdatePayloadSchema = z.object({
     start_date: z.string().nullable().optional(),
     end_date: z.string().nullable().optional(),
     geo_area: z.string().uuid("Välj ett giltigt område.").nullable().optional(),
+    locale: z.coerce.number().int().positive("Välj en giltig plats.").nullable().optional(),
   }).strict(),
   addSpeciesIds: z.array(z.string().uuid()),
   removeItemIds: z.array(z.string().uuid()),
@@ -54,6 +55,7 @@ export async function createChecklist(input: ChecklistFormValues): Promise<Creat
       start_date: parsed.data.start_date,
       end_date: parsed.data.end_date,
       geo_area: parsed.data.geo_area,
+      locale: parsed.data.locale,
       route: null,
       species: parsed.data.species,
       species_category_ids: parsed.data.species_category_ids,
@@ -70,7 +72,7 @@ export async function createChecklist(input: ChecklistFormValues): Promise<Creat
   return { success: true, checklistId: checklist.id }
 }
 
-export type LoadChecklistRegisterPageInput = { checklistId: string; page?: number; search?: string }
+export type LoadChecklistRegisterPageInput = { checklistId: string; page?: number; search?: string, completed?: boolean|null }
 
 const checklistRegisterPageSize = 100
 
@@ -84,6 +86,7 @@ export async function loadChecklistRegisterPage({
   checklistId,
   page = 1,
   search = "",
+  completed = null
 }: LoadChecklistRegisterPageInput): Promise<TempusPage<TempusChecklistRegisterRow>> {
   const requestedPage = Number.isInteger(page) && page > 0 ? page : 1
   const normalizedSearch = search.trim().toLocaleLowerCase("sv")
@@ -91,6 +94,7 @@ export async function loadChecklistRegisterPage({
     page: requestedPage,
     page_size: checklistRegisterPageSize,
     search: normalizedSearch || undefined,
+    is_completed: completed
   })
 }
 

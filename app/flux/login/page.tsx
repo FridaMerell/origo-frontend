@@ -9,12 +9,19 @@ export const metadata: Metadata = {
   description: `Logga in på ${TENANTS.flux.name}`,
 };
 
-export default function FluxLoginPage() {
+export default async function FluxLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ redirect?: string | string[] }>;
+}) {
+  const { redirect } = await searchParams;
+  const redirectTo = typeof redirect === "string" ? redirect : "/";
+
   return (
     <div className="container flex flex-1 flex-col items-center justify-center">
       <Card className="-translate-y-20 flex w-full max-w-sm flex-col items-center gap-6 p-8">
         <LogoMark />
-        <LoginForm redirectTo="/" variant="tenant" />
+        <LoginForm redirectTo={redirectTo} variant="tenant" />
       </Card>
     </div>
   );

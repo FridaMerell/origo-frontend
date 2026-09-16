@@ -64,12 +64,14 @@ function PlaceSearch({
 export function PlacePicker({
   lat,
   lon,
+  legend = "Position",
   onChange,
   onClearError,
   onError,
 }: {
   lat: string
   lon: string
+  legend?: string
   onChange: (coords: { lat: string; lon: string }) => void
   onClearError: () => void
   onError: (message: string) => void
@@ -134,7 +136,7 @@ export function PlacePicker({
   return (
     <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">
-          Position <span className="font-normal text-text-faint">(valfritt)</span>
+          {legend} <span className="font-normal text-text-faint">(valfritt)</span>
         </legend>
 
         {hasCoords && !editingPlace ? (

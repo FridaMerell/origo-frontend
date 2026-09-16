@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { updateChecklist } from "@/app/tempus/_actions/checklists"
-import { speciesName, useTempusGeoAreas } from "@/app/tempus/_state/tempus-context"
+import { speciesName, useTempusGeoAreas, useTempusLocales } from "@/app/tempus/_state/tempus-context"
 import type { TempusSpecies } from "@/app/lib/dal"
 import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
 
@@ -17,11 +17,12 @@ export type ChecklistEditorData = {
   start_date: string | null
   end_date: string | null
   geo_area: string | null
+  locale: number | null
   species: Array<{ id: string; itemId: string; name: string; sequence: number }>
   nextSequence: number
 }
 
-type MetadataField = "name" | "description" | "auto_add" | "start_date" | "end_date" | "geo_area"
+type MetadataField = "name" | "description" | "auto_add" | "start_date" | "end_date" | "geo_area" | "locale"
 
 export default function ChecklistEditor({
   checklist,
@@ -30,11 +31,13 @@ export default function ChecklistEditor({
 }) {
   const router = useRouter()
   const { geoAreas } = useTempusGeoAreas()
+  const locales = useTempusLocales()
   const [pending, startTransition] = useTransition()
   const [name, setName] = useState(checklist.name)
   const [description, setDescription] = useState(checklist.description)
   const [autoAdd, setAutoAdd] = useState(checklist.auto_add)
   const [geoAreaId, setGeoAreaId] = useState(checklist.geo_area ?? "")
+  const [localeId, setLocaleId] = useState(String(checklist.locale ?? ""))
   const [startDate, setStartDate] = useState(checklist.start_date ?? "")
   const [endDate, setEndDate] = useState(checklist.end_date ?? "")
   const [dirtyMetadataFields, setDirtyMetadataFields] = useState<Set<MetadataField>>(() => new Set())
@@ -88,6 +91,7 @@ export default function ChecklistEditor({
       ...(dirtyMetadataFields.has("start_date") ? { start_date: startDate || null } : {}),
       ...(dirtyMetadataFields.has("end_date") ? { end_date: endDate || null } : {}),
       ...(dirtyMetadataFields.has("geo_area") ? { geo_area: geoAreaId || null } : {}),
+      ...(dirtyMetadataFields.has("locale") ? { locale: localeId ? Number(localeId) : null } : {}),
     }
     startTransition(async () => {
       const result = await updateChecklist(checklist.id, {
@@ -127,12 +131,19 @@ export default function ChecklistEditor({
                 <textarea value={description} onChange={(event) => { setDescription(event.target.value); markMetadataDirty("description") }} rows={2} className="w-full resize-none border-0 bg-transparent text-center font-display text-xs italic leading-5 text-text-muted outline-none placeholder:text-text-faint" placeholder="Beskrivning (valfritt)" />
               </label>
             </div>
-            <div className="grid border-b border-border font-display text-[11px] sm:grid-cols-3">
+            <div className="grid border-b border-border font-display text-[11px] sm:grid-cols-4">
               <label className="flex flex-col gap-1 border-b border-border px-3 py-2 sm:border-b-0 sm:border-r">
                 <span className="italic text-text-faint">Område</span>
                 <select value={geoAreaId} onChange={(event) => { setGeoAreaId(event.target.value); markMetadataDirty("geo_area") }} className="w-full bg-transparent text-xs outline-none">
                   <option value="">—</option>
                   {geoAreas.map((area) => <option key={area.id} value={area.id}>{area.name}</option>)}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 border-b border-border px-3 py-2 sm:border-b-0 sm:border-r">
+                <span className="italic text-text-faint">Plats</span>
+                <select value={localeId} onChange={(event) => { setLocaleId(event.target.value); markMetadataDirty("locale") }} className="w-full bg-transparent text-xs outline-none">
+                  <option value="">—</option>
+                  {locales.map((locale) => <option key={locale.id} value={locale.id}>{locale.name}</option>)}
                 </select>
               </label>
               <label className="flex flex-col gap-1 border-b border-border px-3 py-2 sm:border-b-0 sm:border-r">
@@ -159,7 +170,7 @@ export default function ChecklistEditor({
                     <input type="checkbox" checked={autoAdd} onChange={(event) => { setAutoAdd(event.target.checked); markMetadataDirty("auto_add") }} className="size-4 accent-[var(--accent)]" />
                     Lägg till automatiskt
                   </label>
-                  <Button type="submit" variant="paper" size="sm" rounded="rounded-none" disabled={pending}>
+                  <Button type="submit" variant="paper-bordered" size="sm" rounded="rounded-none" disabled={pending}>
                     {pending ? "Sparar…" : "Spara"}
                   </Button>
                 </div>
@@ -206,7 +217,7 @@ export default function ChecklistEditor({
 
             {error ? <p className="mt-3 border-y border-danger px-2 py-2 text-sm text-danger" role="alert">{error}</p> : null}
             <div className="mt-3 flex items-center gap-3">
-              <Button type="submit" variant="paper" size="sm" rounded="rounded-none" disabled={pending}>
+              <Button type="submit" variant="paper-bordered" size="sm" rounded="rounded-none" disabled={pending}>
                 {pending ? "Sparar…" : "Spara ändringar"}
               </Button>
               <Link href={`/checklistor/${checklist.id}`} className="text-xs text-text-muted hover:text-text">Avbryt</Link>

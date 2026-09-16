@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import ChecklistBuilder from "../checklist-builder"
-import { getTempusSpeciesCategoriesPage } from "@/app/lib/dal"
+import { getTempusLocales, getTempusSpeciesCategoriesPage } from "@/app/lib/dal"
 
 export const metadata: Metadata = {
   title: "Ny checklista | Tempus",
@@ -9,5 +9,6 @@ export const metadata: Metadata = {
 
 export default async function NewChecklistPage() {
   const { results: categories } = await getTempusSpeciesCategoriesPage({ page_size: 50 })
-  return <ChecklistBuilder categories={categories} />
+  const locales = await getTempusLocales()
+  return <ChecklistBuilder categories={categories} locales={locales} />
 }

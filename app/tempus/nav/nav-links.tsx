@@ -3,6 +3,7 @@ export const primaryLinks = [
   { href: "/rutt", label: "Rutt", icon: "route" },
   { href: "/checklistor", label: "Checklistor", icon: "list-checks" },
   { href: "/observationer", label: "Observationer", icon: "binoculars" },
+  { href: "/lokaler", label: "Platser", icon: "map-pin" },
   { href: "/birdnet", label: "Birdnet", icon: "bird" },
   { href: "/taxa", label: "Taxonomier", icon: "leaf" },
 ] as const
@@ -12,7 +13,7 @@ export const mainLinks = primaryLinks.filter((link) =>
 )
 
 export const moreLinks = primaryLinks.filter((link) =>
-  link.href === "/rutt" || link.href === "/taxa",
+  link.href === "/rutt" || link.href === "/lokaler" || link.href === "/taxa",
 )
 
 export const isActiveLink = (pathname: string, href: string) =>
@@ -60,6 +61,11 @@ export function FieldIcon({ name, className = "" }: { name: FieldIconName; class
           <path {...line} d="M5.1 14.7c1.2-3.2 3.6-5.1 7-5.4 1.6-.1 3 .3 4.2 1.1l1.6-1 .8 1.3-1.2.7c.2.5.3 1.1.3 1.7 0 2.7-2.2 4.9-5 4.9-1.7 0-3.1-.7-4.1-1.9l-2.3 1.2-1-1.8 1.7-1c-.2-.6-.2-1.2 0-1.8Z" />
           <circle {...line} cx="14.7" cy="11" r=".55" />
           <path {...line} d="M10.7 15.6h-2m6.9 1.7 1.3 1.4" />
+        </>
+      ) : name === "map-pin" ? (
+        <>
+          <path {...line} d="M12 21s6-5.4 6-11a6 6 0 1 0-12 0c0 5.6 6 11 6 11Z" />
+          <circle {...line} cx="12" cy="10" r="2" />
         </>
       ) : name === "folio" ? (
         <>

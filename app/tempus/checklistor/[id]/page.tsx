@@ -12,10 +12,11 @@ import ChecklistActions from "./checklist-actions"
 import ChecklistRegister from "./checklist-register"
 import ObservationMapDialog from "./observation-map-dialog"
 import { Columns2 } from "lucide-react"
+import { LocaleLabel } from "@/app/tempus/locale-label"
 
 type PageProps = {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ page?: string; search?: string }>
+  searchParams: Promise<{ page?: string; search?: string, checked?: boolean }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -30,12 +31,14 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
   const requestedPage = Number(resolvedSearchParams.page)
   const currentPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
   const searchQuery = resolvedSearchParams.search?.trim() ?? ""
+  const checkedOnly = Boolean(resolvedSearchParams.checked)
   const checklistPromise = getTempusChecklistItem(id)
   const categoriesPromise = getTempusSpeciesCategoriesAll()
   const registerPagePromise = loadChecklistRegisterPage({
     checklistId: id,
     page: currentPage,
     search: searchQuery || undefined,
+    completed: checkedOnly ? true : null
   })
   const checklist = await checklistPromise
   if (!checklist) notFound()
@@ -126,7 +129,7 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
             </div>
           </div>
 
-          <dl className="grid border-b border-border font-display text-[11px] sm:grid-cols-[.7fr_1fr_1.15fr_1.5fr]">
+          <dl className="grid border-b border-border font-display text-[11px] sm:grid-cols-[.7fr_1fr_1.15fr_1.15fr_1.5fr]">
             <div className="flex min-w-0 gap-2 border-b border-border px-3 py-1.5 sm:border-b-0 sm:border-r">
               <dt className="shrink-0 italic text-text-faint">Poster:</dt>
               <dd>{registerPage.count}</dd>
@@ -138,6 +141,10 @@ export default async function ChecklistDetailPage({ params, searchParams }: Page
             <div className="flex min-w-0 gap-2 border-b border-border px-3 py-1.5 sm:border-b-0 sm:border-r">
               <dt className="shrink-0 italic text-text-faint">Område:</dt>
               <dd className="truncate">{checklist.geo_area_name || "—"}</dd>
+            </div>
+            <div className="flex min-w-0 gap-2 border-b border-border px-3 py-1.5 sm:border-b-0 sm:border-r">
+              <dt className="shrink-0 italic text-text-faint">Plats:</dt>
+              <dd className="truncate"><LocaleLabel localeId={checklist.locale} /></dd>
             </div>
             <div className="flex min-w-0 gap-2 px-3 py-1.5">
               <dt className="shrink-0 italic text-text-faint">Tid:</dt>

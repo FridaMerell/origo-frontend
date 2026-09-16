@@ -12,6 +12,7 @@ import { ObservationFormHeader } from "./observation-form-header"
 import { ObservationSpeciesSearch } from "./observation-species-search"
 import { ObservationRowList, type ObservationRow } from "./observation-row-list"
 import { Check, Loader2 } from "lucide-react"
+import { LocaleMatch } from "@/app/tempus/locale-match"
 
 let rowSeq = 0
 function rowKey() {
@@ -197,6 +198,7 @@ export default function ObservationForm() {
                     }}
                   />
                 </div>
+                <LocaleMatch lat={lat} lon={lon} />
               </fieldset>
             </div>
 
@@ -229,7 +231,7 @@ export default function ObservationForm() {
         ) : null}
 
         <div className="flex items-center gap-3">
-          <Button type="submit" variant="paper" disabled={pending || rows.length === 0}>
+          <Button type="submit" variant="paper-bordered" disabled={pending || rows.length === 0}>
             {pending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
             {pending
               ? "Sparar…"

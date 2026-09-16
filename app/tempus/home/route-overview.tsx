@@ -26,7 +26,7 @@ export function RouteOverview({ routeOverview }: { routeOverview: HomeRouteOverv
         </div>
         <div className="flex flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-display text-xl font-semibold">Ingen kommande rutt</h2>
+            <h2 className="font-display text-xl font-semibold">Ingen resa inplanerad</h2>
             <p className="mt-1 text-base text-text-muted">
               Planera en tur så förs föreslagna arter och stopp längs vägen in här.
             </p>

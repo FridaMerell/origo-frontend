@@ -226,6 +226,7 @@ export const checklistFormSchema = z.object({
     .nullable()
     .transform((value) => (value ? value : null)),
   geo_area: z.string().uuid("Välj ett giltigt område.").nullable(),
+  locale: z.coerce.number().int().positive("Välj en giltig plats.").nullable(),
   species: z.array(z.string().uuid()),
   species_category_ids: z.array(z.string().uuid()).default([]),
 })
@@ -252,6 +253,7 @@ export const checklistUpdateSchema = z.object({
     .nullable()
     .transform((value) => (value ? value : null)),
   geo_area: z.string().uuid("Välj ett giltigt område.").nullable(),
+  locale: z.coerce.number().int().positive("Välj en giltig plats.").nullable(),
   species: z.array(z.string().uuid()).min(1, "Välj minst en art."),
 })
   .refine(

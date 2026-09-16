@@ -1,4 +1,6 @@
-import { useId, type ComponentPropsWithoutRef } from "react";
+"use client";
+
+import { useId, type ComponentPropsWithoutRef, type MouseEvent } from "react";
 import { SWEDEN_LAKES, SWEDEN_LAND, type PolygonCoordinates } from "./sweden-data";
 import { mapThemeStyle } from "./theme";
 import { PALETTE, type MapTheme } from "./types";
@@ -35,11 +37,22 @@ export type SwedenMapPoint = {
   label?: string;
 };
 
+export type SwedenMapOverlayLayer = {
+  id: string;
+  features: readonly SwedenMapFeature[];
+  fill?: string;
+  fillOpacity?: number;
+  stroke?: string;
+  strokeWidth?: number;
+  strokeDasharray?: string;
+};
+
 export type SwedenMapProps = Omit<
   ComponentPropsWithoutRef<"svg">,
   "children" | "width" | "height" | "points"
 > & {
   areas?: SwedenMapFeatureCollection | readonly SwedenMapFeature[];
+  overlays?: readonly SwedenMapOverlayLayer[];
   points?: readonly SwedenMapPoint[];
   width?: number;
   height?: number;
@@ -47,6 +60,9 @@ export type SwedenMapProps = Omit<
   areaFillOpacity?: number;
   areaStrokeWidth?: number;
   pointRadius?: number;
+  onPointClick?: (point: SwedenMapPoint) => void;
+  onMapClick?: (coordinates: GeoJsonPosition) => void;
+  selectedPoint?: SwedenMapPoint | null;
   autoZoom?: boolean;
   showLakeLabels?: boolean;
   title?: string | undefined;
@@ -98,6 +114,21 @@ function createProject(width: number, height: number, padding: number): Project 
     const [x, y] = projected(position);
     return [offsetX + (x - BOUNDS.minX) * scale, offsetY + (y - BOUNDS.minY) * scale];
   };
+}
+
+function createUnproject(width: number, height: number, padding: number) {
+  const availableWidth = Math.max(1, width - padding * 2);
+  const availableHeight = Math.max(1, height - padding * 2);
+  const dataWidth = BOUNDS.maxX - BOUNDS.minX;
+  const dataHeight = BOUNDS.maxY - BOUNDS.minY;
+  const scale = Math.min(availableWidth / dataWidth, availableHeight / dataHeight);
+  const offsetX = padding + (availableWidth - dataWidth * scale) / 2;
+  const offsetY = padding + (availableHeight - dataHeight * scale) / 2;
+
+  return (x: number, y: number): GeoJsonPosition => [
+    ((x - offsetX) / scale) / LONGITUDE_SCALE,
+    -((y - offsetY) / scale),
+  ];
 }
 
 function ringPath(ring: readonly (readonly number[])[], project: Project): string {
@@ -181,6 +212,7 @@ function featureId(feature: SwedenMapFeature, index: number): string {
 
 export function SwedenMap({
   areas,
+  overlays = [],
   points = [],
   width = 600,
   height = 900,
@@ -188,6 +220,9 @@ export function SwedenMap({
   areaFillOpacity = 0.3,
   areaStrokeWidth = 1.5,
   pointRadius = 5,
+  onPointClick,
+  onMapClick,
+  selectedPoint,
   showLakeLabels = false,
   title,
   theme,
@@ -198,13 +233,14 @@ export function SwedenMap({
 }: SwedenMapProps) {
   const landClipId = `sweden-land-${useId().replace(/:/g, "")}`;
   const project = createProject(width, height, padding);
+  const unproject = createUnproject(width, height, padding);
   const features = areaFeatures(areas);
   const landPath = SWEDEN_LAND.map((polygon) => polygonPath(polygon, project)).join("");
   const lakesPath = SWEDEN_LAKES.map((lake) => polygonPath(lake.coordinates, project)).join("");
 
   let viewBox = `0 0 ${width} ${height}`;
   if (autoZoom) {
-    const bounds = contentBounds(features, points, project);
+    const bounds = contentBounds(features, [], project) ?? contentBounds([], points, project);
     if (bounds) {
       const zoomPadding = Math.max(padding * 5, pointRadius * 16);
       const minX = Math.max(0, bounds.minX - zoomPadding);
@@ -234,6 +270,16 @@ export function SwedenMap({
     }
   }
 
+  const handleMapClick = (event: MouseEvent<SVGSVGElement>) => {
+    if (!onMapClick) return;
+    const svg = event.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const [viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight] = viewBox.split(" ").map(Number);
+    const x = viewBoxX + ((event.clientX - rect.left) / rect.width) * viewBoxWidth;
+    const y = viewBoxY + ((event.clientY - rect.top) / rect.height) * viewBoxHeight;
+    onMapClick(unproject(x, y));
+  };
+
   return (
     <svg
       {...svgProps}
@@ -242,6 +288,7 @@ export function SwedenMap({
       style={{ ...mapThemeStyle(theme), ...style }}
       role={title ? "img" : svgProps.role}
       aria-label={title ?? svgProps["aria-label"]}
+      onClick={handleMapClick}
     >
       {title ? <title>{title}</title> : null}
       <defs>
@@ -297,6 +344,16 @@ export function SwedenMap({
               key={String(point.id ?? index)}
               data-point-id={String(point.id ?? index)}
               transform={`translate(${cx} ${cy})`}
+              onClick={onPointClick ? (event) => {
+                event.stopPropagation();
+                onPointClick(point);
+              } : undefined}
+              className={onPointClick ? "cursor-pointer" : undefined}
+              role={onPointClick ? "button" : undefined}
+              tabIndex={onPointClick ? 0 : undefined}
+              onKeyDown={onPointClick ? (event) => {
+                if (event.key === "Enter" || event.key === " ") onPointClick(point);
+              } : undefined}
             >
               <circle
                 r={pointRadius * 2.2}
@@ -315,6 +372,39 @@ export function SwedenMap({
           );
         })}
       </g>
+
+      {overlays.map((overlay) => (
+        <g
+          key={overlay.id}
+          clipPath={`url(#${landClipId})`}
+          fill={overlay.fill ?? "none"}
+          fillOpacity={overlay.fillOpacity ?? 1}
+          stroke={overlay.stroke ?? PALETTE.ink}
+          strokeWidth={overlay.strokeWidth ?? 1}
+          strokeDasharray={overlay.strokeDasharray}
+          strokeLinejoin="round"
+          pointerEvents="none"
+        >
+          {overlay.features.map((feature, index) => feature.geometry ? (
+            <path
+              key={featureId(feature, index)}
+              data-overlay-id={overlay.id}
+              d={geometryPath(feature.geometry, project)}
+              fillRule="evenodd"
+            />
+          ) : null)}
+        </g>
+      ))}
+
+      {selectedPoint ? (() => {
+        const [cx, cy] = project(selectedPoint.coordinates);
+        return (
+          <g transform={`translate(${cx} ${cy})`} pointerEvents="none">
+            <circle r={pointRadius * 2.8} fill="none" stroke={PALETTE.accent} strokeWidth={1.5} />
+            <circle r={pointRadius * 1.1} fill={PALETTE.accent} stroke={PALETTE.paper} strokeWidth={1.5} />
+          </g>
+        );
+      })() : null}
 
       {showLakeLabels ? (
         <g

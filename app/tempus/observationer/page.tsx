@@ -6,6 +6,7 @@ import {
   getTempusSpeciesItems,
 } from "@/app/lib/dal"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
+import { LocaleLabel } from "@/app/tempus/locale-label"
 
 export const metadata: Metadata = {
   title: "Observationer | Tempus",
@@ -79,6 +80,7 @@ export default async function ObservationsPage() {
                     </span>
                     <span className="col-span-2 row-start-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] tracking-wide text-text-muted sm:col-span-1 sm:row-start-auto">
                       <span>{observedAt ?? "Utan datum"}</span>
+                      {observation.locale ? <LocaleLabel localeId={observation.locale} chip /> : null}
                       {checklistNames.map((name) => (
                         <Chip key={name} variant="neutral" className="px-2 py-0.5 text-[10px]">
                           {name}

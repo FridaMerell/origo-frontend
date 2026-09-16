@@ -41,6 +41,7 @@ export type TempusChecklist = {
   end_date: string | null
   geo_area: string | null
   geo_area_name?: string | null
+  locale: number | null
   route: string | null
   species_count?: number
   item_count?: number
@@ -54,6 +55,14 @@ export type TempusChecklist = {
 export const getTempusChecklists = cache(
   (params?: TempusListParams): Promise<TempusChecklist[]> =>
     fetchList(TEMPUS_ENDPOINTS.checklists, params)
+)
+
+export const getTempusChecklistsPage = cache(
+  async (params?: TempusListParams): Promise<TempusPage<TempusChecklist>> => {
+    const query = paginationQuery(params, 25, 100)
+    const page = await fetchTempusPage<TempusChecklist>(TEMPUS_ENDPOINTS.checklists, query)
+    return { ...page, pageSize: query.page_size }
+  },
 )
 
 export const getTempusChecklistItem = cache(

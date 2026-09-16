@@ -8,6 +8,7 @@ import { createObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import { PlacePicker } from "./quick-observation/place-picker"
 import { SpeciesPicker, type PresetChecklistItem, type PresetSpecies } from "./quick-observation/species-picker"
+import { LocaleField } from "@/app/tempus/locale-match"
 
 function nowLocal() {
   const now = new Date()
@@ -426,6 +427,17 @@ export default function QuickObservation({
                   </label>
                 ) : null}
               </div>
+
+              <LocaleField
+                lat={lat}
+                lon={lon}
+                onChange={({ lat: nextLat, lon: nextLon }) => {
+                  setLat(nextLat)
+                  setLon(nextLon)
+                  setShowPlace(true)
+                  setError(null)
+                }}
+              />
 
               {!showTime || !showPlace || !showComment ? (
                 <div className="flex flex-wrap gap-3 text-sm">

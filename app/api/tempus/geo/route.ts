@@ -3,32 +3,37 @@ import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
 import { getSessionCookies } from "@/app/lib/session"
 
-const resources = {
-  "country-overview": () => TEMPUS_ENDPOINTS.countryOverview,
-  "land-cover": () => TEMPUS_ENDPOINTS.landCover,
-  "administrative-boundaries": () => TEMPUS_ENDPOINTS.administrativeBoundaries,
+const globalResources = {
+  "country-overview": TEMPUS_ENDPOINTS.countryOverview,
+  "land-cover": TEMPUS_ENDPOINTS.landCover,
+  "administrative-boundaries": TEMPUS_ENDPOINTS.administrativeBoundaries,
+} as const
+
+const localeResources = {
   "locale-land-cover": (localeId: string) => TEMPUS_ENDPOINTS.localeLandCover(localeId),
   "locale-land-cover-map": (localeId: string) => TEMPUS_ENDPOINTS.localeLandCoverMap(localeId),
   "locale-land-cover-fetch": (localeId: string) => TEMPUS_ENDPOINTS.localeLandCoverFetch(localeId),
   "locale-administrative-boundaries": (localeId: string) => TEMPUS_ENDPOINTS.localeAdministrativeBoundaries(localeId),
 } as const
 
-type Resource = keyof typeof resources
+function isGlobalResource(value: string | null): value is keyof typeof globalResources {
+  return value !== null && value in globalResources
+}
 
-function isResource(value: string | null): value is Resource {
-  return value !== null && value in resources
+function isLocaleResource(value: string | null): value is keyof typeof localeResources {
+  return value !== null && value in localeResources
 }
 
 export async function GET(request: NextRequest) {
   const resource = request.nextUrl.searchParams.get("resource")
   const localeId = request.nextUrl.searchParams.get("locale")
-  if (!isResource(resource)) return Response.json({ detail: "Okänd kartresurs." }, { status: 400 })
-  if (resource.startsWith("locale-") && !localeId) return Response.json({ detail: "Plats saknas." }, { status: 400 })
+  if (!isGlobalResource(resource) && !isLocaleResource(resource)) return Response.json({ detail: "Okänd kartresurs." }, { status: 400 })
+  if (isLocaleResource(resource) && !localeId) return Response.json({ detail: "Plats saknas." }, { status: 400 })
 
   const { sessionId, csrfToken } = await getSessionCookies()
   if (!sessionId) return Response.json({ detail: "Inloggning krävs." }, { status: 401 })
 
-  const path = resource.startsWith("locale-") ? resources[resource](localeId!) : resources[resource]()
+  const path = isLocaleResource(resource) ? localeResources[resource](localeId!) : globalResources[resource]
   const params = new URLSearchParams(request.nextUrl.searchParams)
   params.delete("resource")
   params.delete("locale")

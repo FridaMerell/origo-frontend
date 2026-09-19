@@ -400,8 +400,8 @@ export function SwedenMap({
         const [cx, cy] = project(selectedPoint.coordinates);
         return (
           <g transform={`translate(${cx} ${cy})`} pointerEvents="none">
-            <circle r={pointRadius * 2.8} fill="none" stroke={PALETTE.accent} strokeWidth={1.5} />
-            <circle r={pointRadius * 1.1} fill={PALETTE.accent} stroke={PALETTE.paper} strokeWidth={1.5} />
+            <circle r={pointRadius * 2.8} fill="none" stroke={PALETTE.areaFill} strokeWidth={1.5} />
+            <circle r={pointRadius * 1.1} fill={PALETTE.areaFill} stroke={PALETTE.paper} strokeWidth={1.5} />
           </g>
         );
       })() : null}

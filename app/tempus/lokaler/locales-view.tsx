@@ -12,11 +12,11 @@ export default function LocalesView() {
   const locales = useTempusLocales()
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<number | null>(null)
   const { requestConfirm, dialog } = useConfirmDialog()
   const { toast } = useToast()
 
-  const remove = (id: string, name: string) => {
+  const remove = (id: number, name: string) => {
     requestConfirm({
       title: "Ta bort plats",
       message: `Ta bort platsen \"${name}\"? Det går inte att ångra.`,

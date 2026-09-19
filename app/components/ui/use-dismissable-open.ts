@@ -9,10 +9,11 @@ export function useDismissableOpen<T extends HTMLElement>(options?: {
   const [openState, setOpenState] = useState(false)
   const open = options?.open ?? openState
   const ref = useRef<T>(null)
-  const setOpen = useCallback((nextOpen: boolean) => {
+  const setOpen = useCallback((next: boolean | ((current: boolean) => boolean)) => {
+    const nextOpen = typeof next === "function" ? next(open) : next
     setOpenState(nextOpen)
     options?.onOpenChange?.(nextOpen)
-  }, [options?.onOpenChange])
+  }, [open, options?.onOpenChange])
 
   useEffect(() => {
     if (!open) return

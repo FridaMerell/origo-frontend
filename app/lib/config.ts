@@ -90,6 +90,7 @@ export const TEMPUS_ENDPOINTS = {
   locales:"/api/tempus/locales/",
   localeLandCover: (id: number | string) => `/api/tempus/locales/${encodeURIComponent(id)}/land-cover/`,
   localeLandCoverMap: (id: number | string) => `/api/tempus/locales/${encodeURIComponent(id)}/land-cover/map/`,
+  localeLandCoverFetch: (id: number | string) => `/api/tempus/locales/${encodeURIComponent(id)}/land-cover/fetch/`,
   localeAdministrativeBoundaries: (id: number | string) => `/api/tempus/locales/${encodeURIComponent(id)}/administrative-boundaries/`,
   speciesFollow: "/api/tempus/species-follows/",
   speciesFollowsMine: "/api/tempus/species-follows/my_follows/",

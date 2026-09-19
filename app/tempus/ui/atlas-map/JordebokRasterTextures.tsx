@@ -29,7 +29,6 @@ type TextureProfile = {
 }
 type TextureGroup = {
 	kind: TextureKind
-	layers: readonly string[]
 	detail: TextureProfile
 	overview: TextureProfile
 	growsWithZoom?: boolean
@@ -38,6 +37,11 @@ type TextureGroup = {
 	opacity?: readonly [number, number]
 	clip?: boolean
 	tileSeamless?: boolean
+	// Overrides DETAIL_ZOOM_THRESHOLD for just this group. Agriculture uses
+	// this to keep its overview tile (a real, larger field-overview texture)
+	// showing across most of the zoom range, only switching to the small
+	// furrow detail texture once truly close in.
+	detailZoomThreshold?: number
 }
 
 const BASE_ZOOM = 16
@@ -63,37 +67,44 @@ const MAX_STAMPS_PER_FRAME = 4000
 // a fully covered field. Given its own generous headroom instead.
 const MAX_STAMPS_PER_FIELD_FRAME = 12000
 
+// Every group here is driven entirely by Lantmäteriet's own land-cover data
+// (the `features` prop, from origo-land-cover) — there is no external
+// basemap to fall back to outside it. A parcel with no Lantmäteriet coverage
+// simply has no texture; that's the whole visible extent of this atlas.
 const GROUPS: readonly TextureGroup[] = [
 	{
 		kind: "agriculture",
-		layers: ["origo-texture-agriculture"],
 		// Smaller spacing = smaller, more numerous tiles = denser texture.
 		// Zoomed in (detail) should be the denser one; zoomed out (overview)
-		// coarser — swapped before, which also meant more, smaller tiles had
-		// to be stamped across the much larger visible area at low zoom.
-		// (drawSeamlessGroup, which renders this group, sizes each tile
-		// directly from `spacing` — its `size` field is unused here, unlike
-		// the scatter groups below.)
+		// coarser. (drawSeamlessGroup, which renders this group, sizes each
+		// tile directly from `spacing` — its `size` field is unused here,
+		// unlike the scatter groups below.)
 		detail: { spacing: 58, size: 50, density: 1 },
 		overview: { spacing: 90, size: 76, density: 1 },
 		fill: true,
 		tileSeamless: true,
-		opacity: [0.3, 0.3],
+		opacity: [0.6, 0.6],
 		// Unlike the scattered groups, this is a seamless tiled furrow pattern —
 		// clipping it exactly to the parcel edge cut furrows off mid-row right
 		// at the boundary instead of letting them run the field's full length.
-		clip: false,
+		clip: true,
+		// field-overview is the real texture for a field at any normal viewing
+		// distance; the small furrow "detail" texture only replaces it once
+		// truly zoomed in close. drawSeamlessGroup always stretches each tile
+		// to exactly fill its own spacing×spacing grid cell (see its own
+		// comment), so raising this threshold to favour the overview tile
+		// longer doesn't introduce any gap — adjacent tiles still tile exactly
+		// edge-to-edge, just as bigger tiles.
+		detailZoomThreshold: 17,
 	},
 	{
 		kind: "grass",
-		layers: ["origo-texture-grass"],
 		detail: { spacing: 230, size: 62, density: 0.18 },
 		overview: { spacing: 430, size: 52, density: 0.055 },
 	},
 	{
 		kind: "forest",
-		layers: ["origo-texture-coniferous-forest"],
-		detail: { spacing: 78, size: 38, density: 0.82 },
+		detail: { spacing: 130, size: 38, density: 0.82 },
 		overview: { spacing: 155, size: 30, density: 0.58 },
 		growsWithZoom: true,
 		maxStamps: MAX_STAMPS_PER_FRAME,
@@ -102,8 +113,7 @@ const GROUPS: readonly TextureGroup[] = [
 	},
 	{
 		kind: "mixed-forest",
-		layers: ["origo-texture-mixed-forest"],
-		detail: { spacing: 78, size: 38, density: 0.82 },
+		detail: { spacing: 130, size: 38, density: 0.82 },
 		overview: { spacing: 155, size: 30, density: 0.58 },
 		growsWithZoom: true,
 		maxStamps: MAX_STAMPS_PER_FRAME,
@@ -112,8 +122,7 @@ const GROUPS: readonly TextureGroup[] = [
 	},
 	{
 		kind: "deciduous-forest",
-		layers: ["origo-texture-deciduous-forest"],
-		detail: { spacing: 96, size: 34, density: 0.72 },
+		detail: { spacing: 140, size: 34, density: 0.72 },
 		overview: { spacing: 175, size: 27, density: 0.5 },
 		growsWithZoom: true,
 		maxStamps: MAX_STAMPS_PER_FRAME,
@@ -122,68 +131,18 @@ const GROUPS: readonly TextureGroup[] = [
 	},
 	{
 		kind: "wetland",
-		layers: ["origo-texture-wetland"],
 		detail: { spacing: 230, size: 36, density: 0.2 },
 		overview: { spacing: 430, size: 30, density: 0.06 },
 	},
 	{
 		kind: "open",
-		layers: [
-			"origo-texture-open",
-			"origo-texture-alvar",
-			"origo-texture-mountains",
-		],
-		detail: { spacing: 260, size: 62, density: 0.16 },
+		detail: { spacing: 260, size: 102, density: 0.36 },
 		overview: { spacing: 460, size: 52, density: 0.05 },
 	},
 	{
 		kind: "general",
-		layers: ["origo-texture-general"],
 		detail: { spacing: 360, size: 28, density: 0.08 },
 		overview: { spacing: 520, size: 22, density: 0.04 },
-	},
-	{
-		kind: "building",
-		layers: ["buildings-fill"],
-		detail: { spacing: 34, size: 24, density: 1 },
-		overview: { spacing: 60, size: 18, density: 1 },
-	},
-]
-
-// OSM's own landcover-wood/grass/wetland are the visible fallback (see
-// style.ts) wherever the locale's own Lantmäteriet-backed land-cover has no
-// data — everywhere outside the locale's own boundary, since that data is
-// deliberately never fetched for an unbounded area. Left as flat fills they
-// looked inconsistent next to the textured land-cover inside the locale, but
-// texturing them the same way `features` are above would double-stamp
-// wherever OSM's and Lantmäteriet's differently-digitized shapes overlap
-// inside the locale. Instead these are stamped from MapLibre's own rendered
-// OSM layers (same `queryRenderedFeatures` trick as the "building" group),
-// then the locale's own boundary polygon is erased out of the canvas right
-// after — before anything else is drawn — so only the area outside the
-// locale ever keeps this texture.
-const OSM_FALLBACK_GROUPS: readonly TextureGroup[] = [
-	{
-		kind: "forest",
-		layers: ["landcover-wood"],
-		detail: { spacing: 78, size: 38, density: 0.82 },
-		overview: { spacing: 155, size: 30, density: 0.58 },
-		growsWithZoom: true,
-		maxStamps: MAX_STAMPS_PER_FRAME,
-		opacity: [0.55, 0.6],
-		clip: false,
-	},
-	{
-		kind: "grass",
-		layers: ["landcover-grass"],
-		detail: { spacing: 230, size: 34, density: 0.18 },
-		overview: { spacing: 430, size: 28, density: 0.055 },
-	},
-	{
-		kind: "wetland",
-		layers: ["landcover-wetland"],
-		detail: { spacing: 230, size: 36, density: 0.2 },
-		overview: { spacing: 430, size: 30, density: 0.06 },
 	},
 ]
 
@@ -279,8 +238,7 @@ function polygonKey(kind: TextureKind, polygon: Polygon) {
 // would draw a doubled line right along the old seam). It must only run when
 // `features` changes, never inside the per-frame draw() loop — dissolve is
 // synchronous and heavy enough to freeze the tab if run every animation
-// frame (see the CORINE dissolve note this project already learned that
-// from). If it fails on degenerate/overlapping input, skip the ink border
+// frame. If it fails on degenerate/overlapping input, skip the ink border
 // for that render rather than risk drawing it wrong.
 function dissolveByKind(features: readonly RasterPolygonFeature[], kind: TextureKind): Polygon[] {
 	const flat: TurfFeature<TurfPolygon>[] = []
@@ -361,7 +319,7 @@ function erasePolygon(context: CanvasRenderingContext2D, map: MaplibreMap, polyg
 // two different things being chosen, so kept as two small functions rather
 // than one that returns both.
 function pickProfile(group: TextureGroup, zoom: number): TextureProfile {
-	return zoom < DETAIL_ZOOM_THRESHOLD ? group.overview : group.detail
+	return zoom < (group.detailZoomThreshold ?? DETAIL_ZOOM_THRESHOLD) ? group.overview : group.detail
 }
 
 // spacingX/spacingY only exist on a profile when a group needs anisotropic
@@ -371,8 +329,8 @@ function resolveSpacing(profile: TextureProfile): { x: number; y: number } {
 	return { x: profile.spacingX ?? profile.spacing, y: profile.spacingY ?? profile.spacing }
 }
 
-function pickVariants(rasterSet: RasterSet, zoom: number): readonly RasterSprite[] {
-	if (zoom >= DETAIL_ZOOM_THRESHOLD) return rasterSet.detailVariants?.length ? rasterSet.detailVariants : rasterSet.variants
+function pickVariants(rasterSet: RasterSet, zoom: number, threshold: number = DETAIL_ZOOM_THRESHOLD): readonly RasterSprite[] {
+	if (zoom >= threshold) return rasterSet.detailVariants?.length ? rasterSet.detailVariants : rasterSet.variants
 	return rasterSet.overviewVariants?.length ? rasterSet.overviewVariants : rasterSet.variants
 }
 
@@ -488,6 +446,7 @@ function drawSeamlessGroup(
 	clip: boolean,
 	budget: { stamps: number },
 	redraw: () => void,
+	detailZoomThreshold: number,
 ) {
 	if (!groupPolygons.length) return
 	const bounds = worldBoundsMulti(groupPolygons)
@@ -506,7 +465,7 @@ function drawSeamlessGroup(
 	// No fallback sprite left to reach for here on purpose (see
 	// RASTER_ASSETS.agriculture) — better to draw nothing than the wrong,
 	// badly-stretched one.
-	const sprite = pickVariants(rasterSet, map.getZoom())[0]
+	const sprite = pickVariants(rasterSet, map.getZoom(), detailZoomThreshold)[0]
 	if (!sprite) { context.restore(); return }
 	const image = getImage(sprite, redraw)
 	if (!image) { context.restore(); return }
@@ -568,8 +527,8 @@ function drawPolygon(
 	// stamp landing in the visible viewport, which looked like fewer and
 	// fewer rasters the further in you zoomed — the opposite of the density
 	// profile's intent. Clamping the grid to the current viewport (with a
-	// small margin so edge stamps still pop in smoothly while panning) keeps
-	// the budget spent on what can actually be seen.
+	// small margin so edge stamps still pop in smoothly while panning/
+	// zooming) keeps the budget spent on what can actually be seen.
 	const viewBounds = map.getBounds()
 	const [westX] = worldPoint([viewBounds.getWest(), 0])
 	const [eastX] = worldPoint([viewBounds.getEast(), 0])
@@ -596,20 +555,13 @@ function drawPolygon(
 	// coordinate system, independent of the current zoom) rather than screen
 	// space, so that a given point on the ground always hashes to the same
 	// column/row/seed — see the `hash(key:column:row)` call below — and its
-	// scatter pattern stays visually stable while panning or zooming, instead
-	// of reshuffling every frame the way a screen-space grid would.
+	// scatter pattern stays visually stable while zooming, instead of
+	// reshuffling every frame the way a screen-space grid would.
 	// `spacingX`/`spacingY` on each group were tuned by eye against this exact
 	// conversion (zoom relative to DENSITY_REFERENCE_ZOOM), so it keeps the
 	// same on-screen appearance those values were chosen for — changing the
 	// reference zoom would silently re-scale every group's already-tuned
-	// density. It used to be capped at zoom 16 to stop a single large
-	// polygon's full-extent grid from blowing up the candidate count at deep
-	// zoom, but the grid is now clamped to the visible viewport above
-	// (clampedMinX/Y..clampedMaxX/Y), which already bounds the candidate
-	// count at every zoom level on its own — the cap's actual effect, past
-	// zoom 16, was to let on-screen spacing drift sparser again the deeper
-	// you zoomed (viewport shrinking while cell size stood still), which is
-	// the "hill" (denser, then sparser again) this removes.
+	// density.
 	const effectiveSpacingX = spacingX / 2 ** (map.getZoom() - DENSITY_REFERENCE_ZOOM)
 	const effectiveSpacingY = spacingY / 2 ** (map.getZoom() - DENSITY_REFERENCE_ZOOM)
 	const firstColumn = Math.floor(clampedMinX / effectiveSpacingX)
@@ -646,8 +598,14 @@ function drawPolygon(
 			const [lng, lat] = lngLat([x, y])
 			if (!insidePolygon([lng, lat], polygon)) continue
 			const point = map.project([lng, lat])
+			// Capped at 1.4 (not higher) — a fully zoomed-in conifer/mixed-forest
+			// sprite (size 38 × up to 1.4 × up to 1.08 random) stays close
+			// enough to the grid's own on-screen spacing (spacingX/4, a fixed
+			// ~19-30px regardless of zoom) that crowns overlap the way a
+			// continuous canopy should, without collapsing into an
+			// undifferentiated blob.
 			const zoomScale = growsWithZoom
-				? Math.min(1.75, Math.max(0.78, 0.78 + (map.getZoom() - 11) * 0.16))
+				? Math.min(1.4, Math.max(0.78, 0.78 + (map.getZoom() - 11) * 0.16))
 				: 1
 			const width = size * zoomScale * (0.76 + sample() * 0.32)
 			const height = width * (sprite.height / sprite.width)
@@ -669,18 +627,16 @@ function drawPolygon(
 }
 
 /**
- * Transparent Canvas layer for the locale atlas. It samples only MapLibre's
- * already-rendered land polygons, clips every stamp to that polygon, and does
- * not alter the base style or its geometry.
+ * Transparent Canvas layer for the locale atlas. It samples only the
+ * locale's own Lantmäteriet land-cover features, clips every stamp to its
+ * polygon, and does not alter the base style or its geometry.
  */
 export function JordebokRasterTextures({
 	map,
 	features,
-	localeBoundary,
 }: {
 	map: MaplibreMap
 	features: readonly RasterPolygonFeature[]
-	localeBoundary?: RasterPolygonFeature["geometry"] | null
 }) {
 	useEffect(() => {
 		const canvas = document.createElement("canvas")
@@ -703,8 +659,6 @@ export function JordebokRasterTextures({
 			rawSeamlessClustersByKind.set(group.kind, clusterPolygonsByBounds(raw))
 			seamlessPolygonsByKind.set(group.kind, dissolveByKind(features, group.kind))
 		}
-
-		const localeBoundaryPolygons = localeBoundary ? polygons({ geometry: localeBoundary }) : []
 
 		let frame: number | null = null
 		let disposed = false
@@ -741,15 +695,8 @@ export function JordebokRasterTextures({
 			canvas.style.width = `${width}px`
 			canvas.style.height = `${height}px`
 			canvas.style.transform = ""
-			// Used to be gated at zoom 11 — mainly a leftover safety margin from
-			// before the grid was clamped to the viewport and budgeted per kind
-			// (see drawPolygon), when a locale-wide texture pass at low zoom could
-			// scan an unbounded number of candidates. Both of those are bounded
-			// now regardless of zoom, so there's no structural reason left to hide
-			// the texture zoomed further out — lowered to let it show alongside
-			// the OSM fallback fills (visible from zoom 4–5, see style.ts).
 			const context = canvas.getContext("2d")
-			if (!context || map.getZoom() < 6) return
+			if (!context) return
 
 			context.setTransform(dpr, 0, 0, dpr, 0, 0)
 			context.clearRect(0, 0, width, height)
@@ -758,9 +705,7 @@ export function JordebokRasterTextures({
 			// one pool — a dominant kind (e.g. coniferous forest, first in GROUPS
 			// and often the largest area on a big locale) could otherwise exhaust
 			// the whole per-frame budget before a less common kind listed later
-			// (e.g. deciduous forest) ever got a single stamp drawn, leaving that
-			// area showing only the unclipped conifer bleed from a neighbouring
-			// polygon instead of its own, correctly classified texture.
+			// (e.g. deciduous forest) ever got a single stamp drawn.
 			const markBudgets = new Map<TextureKind, { stamps: number }>()
 			const budgetForKind = (kind: TextureKind) => {
 				let budget = markBudgets.get(kind)
@@ -799,30 +744,11 @@ export function JordebokRasterTextures({
 				)
 			}
 
-			// Stamped and masked to outside the locale boundary before anything
-			// else is drawn this frame, so the erase below can only remove these
-			// fallback stamps — the locale's own land-cover, drawn afterwards,
-			// is never touched by it.
-			if (localeBoundaryPolygons.length) {
-				for (const group of OSM_FALLBACK_GROUPS) {
-					const rasterSet = RASTER_ASSETS[group.kind]
-					if (!rasterSet) continue
-					for (const feature of map.queryRenderedFeatures(undefined, { layers: [...group.layers] })) {
-						for (const polygon of polygons(feature as unknown as RasterPolygonFeature)) {
-							drawTextured({ group, rasterSet, polygon, key: `osm:${group.kind}:${feature.id ?? polygonKey(group.kind, polygon)}` })
-						}
-					}
-				}
-				for (const boundaryPolygon of localeBoundaryPolygons) erasePolygon(context, map, boundaryPolygon)
-			}
-
-			// Tile-seamless groups (agriculture's furrows) drawn here, before the
-			// main scatter groups below — they used to run in their own pass
-			// AFTER everything else, including "building", painting furrows
-			// straight over house stamps wherever a field's parcel extends under
-			// or around a building. Drawing them first means "building" (last in
-			// GROUPS, so last in the main loop below) always paints back over
-			// any such overlap.
+			// Tile-seamless groups (agriculture's furrows) drawn first — they
+			// used to run after the scatter groups, which meant a field's
+			// furrows could paint straight over a neighbouring parcel's stamps.
+			// Drawing them first means every scatter group below paints back
+			// over any such overlap.
 			for (const group of GROUPS) {
 				if (!group.tileSeamless) continue
 				const rasterSet = RASTER_ASSETS[group.kind]
@@ -842,6 +768,7 @@ export function JordebokRasterTextures({
 						group.clip !== false,
 						fieldBudget,
 						onImageReady,
+						group.detailZoomThreshold ?? DETAIL_ZOOM_THRESHOLD,
 					)
 				}
 				// Drawn after the fill so the hand-inked edge sits crisply on top —
@@ -864,21 +791,6 @@ export function JordebokRasterTextures({
 				const rasterSet = RASTER_ASSETS[group.kind]
 				if (!rasterSet) continue
 				if (group.tileSeamless) continue
-				if (group.kind === "building") {
-					for (const feature of map.queryRenderedFeatures(undefined, {
-						layers: [...group.layers],
-					})) {
-						for (const polygon of polygons(
-							feature as unknown as RasterPolygonFeature,
-						)) {
-							const key = `building:${feature.id ?? polygonKey(group.kind, polygon)}`
-							if (seen.has(key)) continue
-							seen.add(key)
-							texturedPolygons.push({ group, rasterSet, polygon, key })
-						}
-					}
-					continue
-				}
 				for (const feature of features) {
 					if (feature.kind !== group.kind) continue
 					for (const polygon of polygons(feature)) {
@@ -906,13 +818,13 @@ export function JordebokRasterTextures({
 		const followMove = () => {
 			if (!dragAnchor) return
 			const point = map.project(dragAnchor.location)
-			// A pan-only move is a pure translate, but this map also animates
-			// zoom (the +/- buttons, flyTo from search, fitBounds on load) —
-			// "move" fires for those too. Translating without also scaling left
-			// the frozen raster canvas at its old zoom level while MapLibre's
-			// own vector layers (the polygon fill/clip) rescale every frame,
-			// so during any zoom animation the stamps visibly drifted out of
-			// alignment with the polygon underneath until the next full redraw.
+			// This map only ever animates zoom (the +/- buttons, fitBounds on
+			// load) — no pan — but "move" still fires during a zoom animation.
+			// Translating without also scaling left the frozen raster canvas at
+			// its old zoom level while MapLibre's own vector layers (the polygon
+			// fill/clip) rescale every frame, so during the animation the stamps
+			// visibly drifted out of alignment with the polygon underneath until
+			// the next full redraw.
 			const scale = 2 ** (map.getZoom() - dragAnchor.zoom)
 			const x = point.x - dragAnchor.point.x * scale
 			const y = point.y - dragAnchor.point.y * scale
@@ -948,7 +860,7 @@ export function JordebokRasterTextures({
 			map.off("resize", schedule)
 			canvas.remove()
 		}
-	}, [map, features, localeBoundary])
+	}, [map, features])
 
 	return null
 }

@@ -1,11 +1,15 @@
+"use client"
+
+// Purely decorative — the map never rotates (dragRotate is off), so this
+// always points the same way. It's here for the antique-map look, not for
+// orientation.
 export function Compass() {
-  return <div className="pointer-events-none absolute bottom-5 left-5 z-20 grid size-18 place-items-center rounded-full border border-[#4a3526]/70 bg-[#fbf8f0]/90 text-[#4a3526] shadow-sm" aria-label="Kompass, norr uppåt">
-    <svg viewBox="0 0 80 80" className="size-15" aria-hidden="true">
-      <path d="M40 5 46 32 40 40 34 32ZM40 75 46 48 40 40 34 48ZM5 40l27-6 8 6-8 6ZM75 40l-27-6-8 6 8 6Z" fill="currentColor" opacity=".9" />
-      <path d="m40 7 4 10-4 8-4-8Z" fill="#9a4c38" />
-      <path d="M40 2c-5 4-5 9 0 14 5-5 5-10 0-14ZM34 9h12" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <circle cx="40" cy="40" r="4" fill="#fbf8f0" stroke="currentColor" />
-      <text x="40" y="14" textAnchor="middle" className="font-display" fontSize="10">N</text>
+  return <div className="absolute left-5 top-5 z-20" aria-hidden="true">
+    <svg width="44" height="44" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="20" fill="#fbf8f0" fillOpacity="0.92" stroke="#4a3526" strokeWidth="1" />
+      <path d="M22 6 L26.5 22 L22 38 L17.5 22 Z" fill="#8f3509" />
+      <path d="M6 22 L22 19.5 L38 22 L22 24.5 Z" fill="#4a3526" fillOpacity="0.55" />
+      <text x="22" y="11" textAnchor="middle" fontSize="8" fontFamily="serif" fill="#4a3526">N</text>
     </svg>
   </div>
 }

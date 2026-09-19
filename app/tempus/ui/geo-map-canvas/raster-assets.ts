@@ -29,16 +29,7 @@ const numberedFiles = (stem: string) => Array.from({ length: 8 }, (_, index) => 
 // This is the only asset register to maintain. Add a filename to the matching
 // list when you add a new raster; missing files retain the reference fallback.
 const RASTER_FILE_MANIFEST = {
-  agriculture: { overview: numberedFiles("field-overview"), detail: [
-    "field-detail-01.png",
-    "field-detail-02.png",
-    "field-detail-03.png",
-    "field-detail-4.png",
-    "field-detail-5.png",
-    "field-detail-6.png",
-    "field-detail-7.png",
-    "field-detail-8.png",
-  ]},
+  agriculture: { overview: numberedFiles("field-overview"), detail: numberedFiles("field-detail") },
   coniferousForest: { overview: numberedFiles("conifer-overview"), detail: [
     "conifer-detail-01.png",
     "conifer-detail-02.png",

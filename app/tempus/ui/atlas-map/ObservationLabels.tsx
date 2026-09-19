@@ -32,15 +32,11 @@ function chunkItems(items: readonly Item[]): { rows: Item[][]; overflow: number 
 }
 
 /**
- * Same reasoning as PlaceLabels: MapLibre's text-font can only use glyphs
- * pre-rendered on the `glyphs` server (Noto Sans only, no serif), so the
- * observation markers ("A.3" etc.) drawn via the `locale-observation-points`
- * symbol layer could never show Petrona either. That layer is kept (its
- * paint text-opacity set near-zero elsewhere) purely so click hit-testing
- * still works; the visible text is this plain HTML overlay instead. Unlike
- * PlaceLabels, no MapLibre query is needed here — the points and their
- * labels already come straight from React state (`points` prop), so this
- * just reprojects them to screen space on move/zoom.
+ * MapLibre's text-font can only use glyphs pre-rendered on a `glyphs` server,
+ * which the atlas no longer even points at, so observation markers ("A.3"
+ * etc.) are drawn as plain HTML in Petrona instead — this reprojects the
+ * `points` prop (already plain React state, not a MapLibre source) to screen
+ * space on move/zoom.
  *
  * Observations that share the exact same coordinates (several sightings
  * recorded at one spot) are combined onto lines, comma-separated, up to 4

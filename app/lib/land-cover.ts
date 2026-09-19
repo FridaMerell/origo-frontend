@@ -1,9 +1,9 @@
-import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
-
 export type GeoPosition = readonly [longitude: number, latitude: number]
 export type GeoPolygon = { type: "Polygon"; coordinates: readonly (readonly GeoPosition[])[] }
 export type GeoMultiPolygon = { type: "MultiPolygon"; coordinates: readonly (readonly (readonly GeoPosition[])[])[] }
 export type GeoGeometry = GeoPolygon | GeoMultiPolygon
+export type GeoLineString = { type: "LineString"; coordinates: readonly GeoPosition[] }
+export type GeoMultiLineString = { type: "MultiLineString"; coordinates: readonly (readonly GeoPosition[])[] }
 
 export type LandCoverFeature = {
   collection: string
@@ -93,6 +93,66 @@ export type CountryOverviewResponse = {
   cities: { name: string; coordinates: readonly [number, number] }[]
 }
 
+// The background prefetch job queued whenever a Locale is created or its
+// geometry changes (see land-cover-fetch-handoff.md) — the Locale's own
+// bounding box padded 5 km in every direction, computed once server-side
+// instead of live per pan/zoom. This replaces getViewportLandCover for the
+// locale atlas map: no bbox math, no tier degradation, no client-driven
+// retries, just polling a status until it settles. `land_cover` has the same
+// per-feature shape as `LandCoverMapLayer` — no hydrography, land/wetland
+// only.
+export type LocaleLandCoverFetchStatus = "missing" | "pending" | "running" | "succeeded" | "failed"
+
+export type LocaleLandCoverFetch =
+  | { locale: number; status: "missing" }
+  | {
+      locale: number
+      status: "pending" | "running"
+      buffer_metres: number
+      geometry: GeoGeometry | Record<string, never>
+      created_at: string
+      started_at: string | null
+      finished_at: string | null
+    }
+  | {
+      locale: number
+      status: "succeeded"
+      buffer_metres: number
+      geometry: GeoGeometry
+      created_at: string
+      started_at: string
+      finished_at: string
+      land_cover: { type: "FeatureCollection"; features: LandCoverMapFeature[] }
+      hydrography?: { type: "FeatureCollection"; features: HydrographyFeature[] }
+      roads?: { type: "FeatureCollection"; features: RoadFeature[] }
+    }
+  | {
+      locale: number
+      status: "failed"
+      buffer_metres: number
+      geometry: Record<string, never>
+      created_at: string
+      started_at: string
+      finished_at: string
+      error: string
+    }
+
+export type HydrographyFeature = {
+  collection: string
+  feature_id: string | number | null
+  kind: "lake" | "watercourse" | "coastline"
+  properties: Record<string, unknown>
+  geometry: GeoPolygon | GeoMultiPolygon | GeoLineString | GeoMultiLineString
+}
+
+export type RoadFeature = {
+  collection: string
+  feature_id: string | number | null
+  kind: "road"
+  properties: Record<string, unknown>
+  geometry: GeoLineString | GeoMultiLineString
+}
+
 export class LandCoverLookupError extends Error {
   constructor(readonly status?: number, readonly retryAfterSeconds?: number) {
     super("Land-cover lookup failed")
@@ -129,6 +189,10 @@ export function getLocaleLandCoverMap(localeId: number, signal?: AbortSignal) {
 
 export function getLocaleAdministrativeBoundaries(localeId: number, signal?: AbortSignal) {
   return fetchAuthenticatedTempus<LandCoverMapLayer>("locale-administrative-boundaries", new URLSearchParams({ locale: String(localeId) }), signal)
+}
+
+export function getLocaleLandCoverFetch(localeId: number, signal?: AbortSignal) {
+  return fetchAuthenticatedTempus<LocaleLandCoverFetch>("locale-land-cover-fetch", new URLSearchParams({ locale: String(localeId) }), signal)
 }
 
 export function getCountryOverview(signal?: AbortSignal) {

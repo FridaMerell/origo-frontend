@@ -9,6 +9,7 @@ const resources = {
   "administrative-boundaries": () => TEMPUS_ENDPOINTS.administrativeBoundaries,
   "locale-land-cover": (localeId: string) => TEMPUS_ENDPOINTS.localeLandCover(localeId),
   "locale-land-cover-map": (localeId: string) => TEMPUS_ENDPOINTS.localeLandCoverMap(localeId),
+  "locale-land-cover-fetch": (localeId: string) => TEMPUS_ENDPOINTS.localeLandCoverFetch(localeId),
   "locale-administrative-boundaries": (localeId: string) => TEMPUS_ENDPOINTS.localeAdministrativeBoundaries(localeId),
 } as const
 

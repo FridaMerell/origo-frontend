@@ -51,7 +51,7 @@ Standardvärden för lokal utveckling finns i `app/lib/config.ts`.
 
 | Variabel | Användning |
 | --- | --- |
-| `BLOB_READ_WRITE_TOKEN` | Krävs för filuppladdning och filhämtning via Vercel Blob. |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Krävs för filuppladdning och filhämtning via Cloudflare R2 (S3). Bucketen ska vara privat. |
 | `ORIGO_API_URL` | Serverns bas-URL till Origo API. |
 | `NEXT_PUBLIC_ORIGO_API_URL` | API-bas-URL i webbläsaren; används för BirdNET:s direkta SSE-ström. |
 | `ORIGO_COOKIE_DOMAIN` | Delad cookie-domän för Origos subdomäner. |

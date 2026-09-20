@@ -10,7 +10,8 @@ components, see [`app/components/README.md`](../components/README.md).
 | `api-client.ts` | Low-level HTTP client (`fetchOrigoApi`, cookie helpers) everything else builds on. |
 | `api-errors.ts` | Parses the Origo API's DRF-style error bodies — `firstErrorMessage()` (single message) and `readErrorBody()` (per-field errors), both never surfacing a raw non-JSON body. |
 | `config.ts` | Env-derived constants and each product's `*_ENDPOINTS` objects. |
-| `files.ts` | Normalizes uploaded-file references (`FileLike`) and builds the Vercel Blob proxy URL. |
+| `files.ts` | Normalizes uploaded-file references (`FileLike`) and builds the file proxy URL. |
+| `storage.ts` | Cloudflare R2 (S3) client and helpers mapping between object keys and stored file URLs. |
 | `formatters.ts` | `formatDate`/`formatDateShort` — Swedish-locale date display, shared by Flux and Verso. (Tempus keeps its own `app/tempus/formatters.ts` for domain-specific formats like `formatKm` and `parseLatLon`.) |
 | `nav-progress.tsx` | Top-of-page loading indicator wired into `AppLink`'s pending navigation state. |
 | `schemas.ts` | Every form's zod schema + inferred type — the single source of truth shared by forms and their server actions. See `app/components/form/README.md`. |

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { dissolve as turfDissolve } from "@turf/turf"
+import turfDissolve from "@turf/dissolve"
 import type { Map as MaplibreMap } from "maplibre-gl"
 import type { Feature as TurfFeature, Polygon as TurfPolygon } from "geojson"
 import {

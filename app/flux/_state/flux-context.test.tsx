@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({
 }))
 
 function makeProject(id: number, name: string): FluxProject {
-  return { id, name, description: "", members: [], files: [], created_at: "", updated_at: "" }
+  return { id, name, description: "", members: [], files: [], include_identity: false, identity: null, created_at: "", updated_at: "" }
 }
 
 function makeTask(id: number, project: number): FluxTask {

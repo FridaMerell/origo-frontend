@@ -129,12 +129,12 @@ function TaskRow({
 		<>
 			<div
 				onClick={() => onOpenTask(task.id)}
-				className={`flex cursor-pointer items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-sm last:border-b-0 ${isTaskOverdue(task.due_date, task.status) ? OVERDUE_ROW_TONE : "hover:bg-surface-2"}`}>
-				<div className='flex min-w-0 items-center gap-2'>
+				className={`flex flex-col items-stretch gap-2 border-b border-border px-4 py-3 text-sm last:border-b-0 ${isTaskOverdue(task.due_date, task.status) ? OVERDUE_ROW_TONE : "hover:bg-surface-2"}`}>
+				<div className='flex min-w-0 items-start gap-2'>
 					<TaskCompletionButton id={task.id} status={task.status} />
-					<span className='min-w-0 truncate text-text'>{task.title}</span>
+					<span className='min-w-0 flex-1 text-text'>{task.title}</span>
 				</div>
-				<span className='flex shrink-0 items-center gap-3'>
+				<span className='flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border/70 pt-2 sm:gap-3'>
 					<TaskStatusBadge status={task.status} />
 					<span
 						className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${FLUX_PRIORITY_BADGE_TONE[task.priority]}`}>
@@ -310,15 +310,15 @@ export default function FluxProjectDetailView() {
 	const overallProgress = progressOf(projectTasks)
 
 	return (
-		<div className='container flex w-full flex-col gap-9 pb-12'>
+		<div className='container flex w-full flex-col gap-6 pb-12 sm:gap-9'>
 			<section className='border-b border-border pb-7'>
-				<div className='flex flex-wrap items-start justify-between gap-4'>
+				<div className='flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:justify-between sm:gap-4'>
 					<div className='min-w-0'>
 						<p className='mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-text-faint'>
 							Projekt
 						</p>
-						<div className='flex items-center gap-2'>
-							<h1 className='m-0 font-display text-3xl font-semibold tracking-tight text-text'>
+						<div className='flex min-w-0 items-center gap-2'>
+							<h1 className='m-0 truncate font-display text-2xl font-semibold tracking-tight text-text sm:text-3xl'>
 								{project.name}
 							</h1>
 							<EditProjectButton project={project} />
@@ -346,7 +346,7 @@ export default function FluxProjectDetailView() {
 							))}
 						</div>
 					)}
-					<div className='min-w-48 flex-1 max-w-md'>
+					<div className='min-w-0 max-w-md flex-1 sm:min-w-48'>
 						<span className='mb-2 block text-xs font-medium text-text-muted'>
 							Projektstatus
 						</span>
@@ -356,7 +356,7 @@ export default function FluxProjectDetailView() {
 			</section>
 
 			<div className='flex flex-col gap-5'>
-				<div className='flex items-center justify-between'>
+					<div className='flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between'>
 					<div>
 						<p className='text-xs font-semibold uppercase tracking-[0.12em] text-text-faint'>
 							Arbetsplan
@@ -401,8 +401,8 @@ export default function FluxProjectDetailView() {
 									dropMilestone(dropIndexForCard(event, index))
 								}}
 								className={`flex flex-col !gap-0 overflow-hidden border-l-4 border-l-secondary !p-0 transition-opacity ${draggedMilestoneId === milestone.id ? "opacity-40" : ""}`}>
-							<div className='flex items-center justify-between gap-3 border-b border-border bg-secondary-wash/50 px-5 py-4'>
-								<div className='flex min-w-0 items-center gap-2'>
+			<div className='flex flex-col items-stretch gap-3 border-b border-border bg-secondary-wash/50 px-4 py-3 lg:flex-row lg:items-center lg:justify-between lg:px-5 lg:py-4'>
+								<div className='flex min-w-0 flex-wrap items-center gap-2'>
 									<button
 										type='button'
 										draggable={!isReordering}
@@ -422,7 +422,7 @@ export default function FluxProjectDetailView() {
 										<GripVertical size={16} aria-hidden />
 									</button>
 									<Flag size={15} className='shrink-0 text-text-muted' />
-									<span className='truncate text-base font-semibold text-text'>
+									<span className='min-w-0 flex-1 text-base font-semibold text-text'>
 										{milestone.title}
 									</span>
 									<button
@@ -441,7 +441,7 @@ export default function FluxProjectDetailView() {
 										<button type='button' onClick={() => void moveMilestone(milestone.id, index)} disabled={index === projectMilestones.length - 1 || isReordering} aria-label={`Flytta ${milestone.title} nedåt`} title='Flytta nedåt' className='rounded px-1.5 py-1 text-text-faint hover:bg-secondary-wash hover:text-text disabled:cursor-not-allowed disabled:opacity-35'><ArrowDown size={14} aria-hidden /></button>
 									</div>
 								</div>
-								<div className='flex shrink-0 items-center gap-3'>
+								<div className='flex shrink-0 flex-wrap items-center justify-end gap-3'>
 									{milestone.update_count > 0 && (
 										<span className='flex items-center gap-1 font-mono text-xs text-text-faint'>
 											<MessageSquare size={12} />

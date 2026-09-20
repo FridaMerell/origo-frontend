@@ -24,7 +24,11 @@ const NAV_LINKS = [
 	{ label: "Uppgifter", href: "/tasks" },
 	{ label: "Tidslinje", href: "/timeline" },
 	{ label: "Backlog", href: "/backlog" },
+	{ label: "Datamodell", href: "/model" },
 ]
+
+// Shown only for projects that have opted in to a visual identity.
+const IDENTITY_LINK = { label: "Identitet", href: "/identity" }
 
 function SwitchProductMenu() {
 	return (
@@ -142,6 +146,8 @@ export default function Toolbar({
 	const pathname = usePathname()
 	const user = useUser()
 	const userName = user ? formatUserName(user) : "?"
+		const { selectedProject } = useSelectedFluxProject()
+		const navLinks = selectedProject?.include_identity ? [...NAV_LINKS, IDENTITY_LINK] : NAV_LINKS
 	const [menuOpen, setMenuOpen] = useState(false)
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 	const [drawer, setDrawer] = useState<"task" | "project" | null>(null)
@@ -168,12 +174,12 @@ export default function Toolbar({
 						</Link>
 						<div className='h-8 w-px bg-border' />
 						<ProjectSelector />
-						{NAV_LINKS.map(item => (
+						{navLinks.map(item => (
 							<Link
 								key={item.href}
 								href={item.href}
 								className={
-									pathname === item.href
+									pathname === item.href || pathname.startsWith(`${item.href}/`)
 										? "rounded-3xl bg-surface-2 px-4 py-2.5 text-base font-medium text-text no-underline"
 										: "rounded-3xl px-4 py-2.5 text-base font-medium text-text-muted no-underline hover:bg-surface-2"
 								}>
@@ -260,7 +266,18 @@ export default function Toolbar({
 								<Plus size={16} className='text-accent-contrast' />
 								Ny uppgift
 							</Button>
-							<NotificationMenu align='left' dropUp>
+							{navLinks
+									.filter(item => item.href === "/model" || item.href === "/identity")
+									.map(item => (
+										<Link
+											key={item.href}
+											href={item.href}
+											onClick={() => setMobileMenuOpen(false)}
+											className='block w-full rounded-md px-3 py-2.5 text-sm text-text no-underline hover:bg-surface-2'>
+											{item.label}
+										</Link>
+									))}
+								<NotificationMenu align='left' dropUp>
 								{({ unreadCount, notificationLabel, toggle }) => (
 									<button
 										type='button'

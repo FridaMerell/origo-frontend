@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { APIProvider, Map, Marker, Polygon, useApiIsLoaded, useMap, useMapsLibrary } from "@vis.gl/react-google-maps"
-import { kinks as turfKinks } from "@turf/turf"
+import turfKinks from "@turf/kinks"
 import { GOOGLE_MAPS_API_KEY } from "@/app/lib/config"
 import { SearchField } from "@/app/tempus/forms/Fields"
 import { openRing, polygonFromPoints } from "@/app/tempus/ui/biotope-map/sweden-map-area-geometry"

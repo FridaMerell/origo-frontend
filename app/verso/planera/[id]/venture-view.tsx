@@ -1,262 +1,173 @@
 "use client"
 
-import { useParams } from "next/navigation"
+import { useState } from "react"
 import Link from "next/link"
-import { useVentureData } from "@/app/verso/_state/venture-context"
-import { useUpdateData } from "@/app/verso/_state/update-context"
+import { useParams } from "next/navigation"
+import type { Album, Drawing, Photo, PhotoTag } from "@/app/lib/dal"
+import { PhotoGrid } from "@/app/verso/bilder/photo-grid"
+import { PhotoUploadForm } from "@/app/verso/bilder/photo-upload-form"
+import { DrawingForm } from "@/app/verso/ritningar/drawing-form"
+import { useUpdateData, useVentureData } from "@/app/verso/_state/verso-context"
 import { Card } from "@/app/components/ui/Card"
 import { Badge } from "@/app/components/ui/Badge"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { Gallery } from "@/app/components/ui/Gallery"
-import UpdateForm from "@/app/verso/update-form"
-import ExpenseForm from "@/app/verso/expense-form"
-import VentureTaskForm from "@/app/verso/venture-task-form"
-import { UpdateCard } from "@/app/verso/update-card"
-import { VentureEditForm } from "@/app/verso/planera/venture-edit-form"
-import { VentureFilesForm } from "@/app/verso/planera/venture-files-form"
-import { ToggleTaskButton } from "@/app/verso/toggle-task-button"
+import { Tabs, type TabItem } from "@/app/components/ui/Tabs"
+import UpdateForm from "@/app/verso/forms/update-form"
+import { UpdateCard } from "@/app/verso/updates/update-card"
+import { VentureForm } from "@/app/verso/planera/venture-form"
+import { VentureFilesForm } from "@/app/verso/forms/venture-files-form"
+import { priorityLabel } from "@/app/verso/planera/venture-priority"
 import {
-	ventureTaskStatus,
-	VentureTaskStatusBadge,
-} from "@/app/verso/venture-task-status"
-import { formatDate } from "@/app/lib/formatters"
-import { CheckCircle2, ChevronLeft, ChevronRight, Circle } from "lucide-react"
+  VentureExpenseList,
+  VentureStats,
+  VentureTaskList,
+} from "@/app/verso/planera/[id]/venture-sections"
+import { BackLink, DetailNotFound, SectionHeading } from "@/app/verso/ui/DetailPage"
 
-const PRIORITY_LABEL: Record<number, string> = {
-	1: "Hög prio",
-	2: "Bör göras",
-	3: "Vore kul",
-}
+type TabId = "activity" | "photos" | "drawings" | "expenses"
 
-export default function VentureView() {
-	const { id } = useParams<{ id: string }>()
-	const { ventures, ventureTasks, expenses } = useVentureData()
-	const { updates } = useUpdateData()
+export default function VentureView({
+  drawings,
+  photos,
+  albums,
+  tags,
+}: {
+  drawings: Drawing[]
+  photos: Photo[]
+  albums: Album[]
+  tags: PhotoTag[]
+}) {
+  const { id } = useParams<{ id: string }>()
+  const { ventures, ventureTasks, expenses } = useVentureData()
+  const { updates } = useUpdateData()
+  const [tab, setTab] = useState<TabId>("activity")
 
-	const venture = ventures.find(v => String(v.id) === id)
+  const venture = ventures.find((v) => String(v.id) === id)
 
-	if (!venture) {
-		return (
-			<div className='flex flex-1 flex-col gap-5 p-7'>
-				<Link
-					href='/planera'
-					className='flex items-center gap-1 text-sm text-text-muted hover:text-accent'>
-					<ChevronLeft size={14} />
-					Planering
-				</Link>
-				<div className='text-text-muted'>Projektet kunde inte hittas.</div>
-			</div>
-		)
-	}
+  if (!venture) {
+    return <DetailNotFound backHref="/planera" backLabel="Planering" message="Projektet kunde inte hittas." />
+  }
 
-	const tasks = ventureTasks.filter(
-		t => String(t.venture) === String(venture.id),
-	)
-	const taskIds = new Set(tasks.map(t => String(t.id)))
-	const ventureUpdates = updates.filter(
-		u =>
-			String(u.venture) === String(venture.id) ||
-			(u.task !== null && taskIds.has(String(u.task))),
-	)
-	const ventureExpenses = expenses.filter(
-		e => String(e.venture) === String(venture.id),
-	)
-	const allFiles = Array.from(
-		new Set([...venture.files, ...ventureUpdates.flatMap(u => u.files)]),
-	)
+  const tasks = ventureTasks.filter((t) => String(t.venture) === String(venture.id))
+  const taskIds = new Set(tasks.map((t) => String(t.id)))
+  const ventureUpdates = updates.filter(
+    (u) => String(u.venture) === String(venture.id) || (u.task !== null && taskIds.has(String(u.task)))
+  )
+  const ventureExpenses = expenses.filter((e) => String(e.venture) === String(venture.id))
+  const allFiles = Array.from(new Set([...venture.files, ...ventureUpdates.flatMap((u) => u.files)]))
 
-	return (
-		<div className='flex flex-1 flex-col gap-5 p-7'>
-			<Link
-				href='/planera'
-				className='flex items-center gap-1 text-sm text-text-muted hover:text-accent'>
-				<ChevronLeft size={14} />
-				Planering
-			</Link>
+  const tabs: TabItem<TabId>[] = [
+    { id: "activity", label: "Uppgifter & uppdateringar", count: tasks.length + ventureUpdates.length },
+    { id: "photos", label: "Bilder", count: photos.length },
+    { id: "drawings", label: "Ritningar", count: drawings.length },
+    { id: "expenses", label: "Utgifter", count: ventureExpenses.length },
+  ]
 
-			<div className='flex items-center justify-between gap-3'>
-				<div className='flex items-center gap-3'>
-					<h1 className='m-0 font-display text-2xl font-semibold text-text'>
-						{venture.name}
-					</h1>
-					<Badge variant='accent'>
-						{PRIORITY_LABEL[venture.priority] ?? "Ej prio"}
-					</Badge>
-				</div>
-				<div className='flex items-center gap-2'>
-					<Drawer
-						trigger='Redigera'
-						triggerVariant='ghost'
-						triggerSize='sm'
-						title='Redigera projekt'>
-						<VentureEditForm venture={venture} />
-					</Drawer>
-					<Drawer
-						trigger='Ny uppdatering'
-						triggerVariant='secondary'
-						triggerSize='sm'
-						title='Ny uppdatering'>
-						<UpdateForm defaultVenture={venture.id} />
-					</Drawer>
-				</div>
-			</div>
+  return (
+    <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:gap-6 sm:py-8">
+      <BackLink href="/planera">Planering</BackLink>
 
-			<Card className='flex flex-col gap-4'>
-				<p className='whitespace-pre-wrap text-sm text-text'>
-					{venture.description}
-				</p>
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+          <h1 className="m-0 font-display text-2xl font-semibold text-text">{venture.name}</h1>
+          <Badge variant="accent">{priorityLabel(venture.priority)}</Badge>
+        </div>
+        <Drawer trigger="Redigera" triggerVariant="ghost" triggerSize="sm" title="Redigera projekt">
+          <VentureForm venture={venture} />
+        </Drawer>
+      </div>
 
-				<hr className='border-border' />
+      <Card className="flex flex-col gap-4">
+        {venture.description && (
+          <p className="whitespace-pre-wrap text-sm text-text">{venture.description}</p>
+        )}
+        <VentureStats venture={venture} />
 
-				<div className='flex gap-6'>
-					{venture.budget > 0 && (
-						<div className='flex flex-col'>
-							<span className='text-xs font-semibold text-text-faint'>
-								Budget
-							</span>
-							<span className='text-sm font-mono text-text'>
-								{venture.budget}
-							</span>
-						</div>
-					)}
-					{venture.total_spent > 0 && (
-						<div className='flex flex-col'>
-							<span className='text-xs font-semibold text-text-faint'>
-								Kostnad
-							</span>
-							<span className='text-sm font-mono text-text'>
-								{venture.total_spent}
-							</span>
-						</div>
-					)}
-					<div className='flex flex-col'>
-						<span className='text-xs font-semibold text-text-faint'>
-							Delmål
-						</span>
-						<span className='text-sm font-mono text-text'>
-							{venture.finished_tasks_count}/{venture.total_tasks_count ?? 0}
-						</span>
-					</div>
-				</div>
+        <hr className="border-border" />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-text-faint">Bilagor</span>
+          <Drawer trigger="Lägg till filer" triggerVariant="ghost" triggerSize="sm" title="Lägg till filer">
+            <VentureFilesForm venture={venture} />
+          </Drawer>
+        </div>
+        <Gallery files={allFiles} />
+      </Card>
 
-				<div className='flex items-center justify-between gap-2'>
-					<span className='text-xs font-semibold text-text-faint'>Bilagor</span>
-					<Drawer
-						trigger='Lägg till filer'
-						triggerVariant='ghost'
-						triggerSize='sm'
-						title='Lägg till filer'>
-						<VentureFilesForm venture={venture} />
-					</Drawer>
-				</div>
-				<Gallery files={allFiles} />
-			</Card>
+      <Tabs tabs={tabs} active={tab} onChange={setTab} />
 
-			<div className='flex flex-col gap-2'>
-				<div className='flex items-baseline justify-between'>
-					<h2 className='m-0 font-display text-lg font-semibold text-text'>
-						Uppgifter
-					</h2>
-					<Drawer
-						trigger='Ny uppgift'
-						triggerVariant='secondary'
-						triggerSize='sm'
-						title='Ny uppgift'>
-						<VentureTaskForm venture={venture.id} />
-					</Drawer>
-				</div>
-				{tasks.length === 0 ? (
-					<div className='text-sm text-text-muted'>Inga uppgifter ännu.</div>
-				) : (
-					<Card className='flex flex-col gap-0 p-0'>
-						{tasks.map(task => (
-							<Link
-								key={task.id}
-								href={`/planera/${venture.id}/tasks/${task.id}`}
-								className='flex items-center justify-between gap-2 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0 hover:bg-surface-2'>
-								<span className='flex items-center gap-2'>
-									{ventureTaskStatus(task) === "done" ? (
-										<CheckCircle2 size={14} className='text-success' />
-									) : (
-										<Circle size={14} className='text-text-faint' />
-									)}
-									{task.name}
-								</span>
-								<span className='flex items-center gap-3'>
-									<VentureTaskStatusBadge task={task} />
-									<ToggleTaskButton
-										id={task.id}
-										status={ventureTaskStatus(task)}
-									/>
-									<ChevronRight
-										size={14}
-										className='text-text-faint'
-									/>
-								</span>
-							</Link>
-						))}
-					</Card>
-				)}
-			</div>
+      {tab === "activity" && (
+        <div className="flex flex-col gap-6">
+          <VentureTaskList venture={venture} tasks={tasks} />
 
-			<div className='flex flex-col gap-2'>
-				<h2 className='m-0 font-display text-lg font-semibold text-text'>
-					Uppdateringar
-				</h2>
-				{ventureUpdates.length === 0 ? (
-					<div className='text-sm text-text-muted'>
-						Inga uppdateringar ännu.
-					</div>
-				) : (
-					<div className='flex flex-col gap-2'>
-						{ventureUpdates.map(update => (
-							<UpdateCard
-								key={update.id}
-								update={update}
-								taskLabel={
-									update.task
-										? (tasks.find(t => String(t.id) === String(update.task))
-												?.name ?? "Uppgift")
-										: undefined
-								}
-							/>
-						))}
-					</div>
-				)}
-			</div>
-			<div className='flex flex-col gap-2'>
-				<div className='flex items-baseline justify-between'>
-					<h2 className='m-0 font-display text-lg font-semibold text-text'>
-						Utgifter
-					</h2>
-					<Drawer
-						trigger='Ny utgift'
-						triggerVariant='secondary'
-						triggerSize='sm'
-						title='Ny utgift'>
-						<ExpenseForm venture={venture.id} />
-					</Drawer>
-				</div>
-				{ventureExpenses.length === 0 ? (
-					<div className='text-sm text-text-muted'>Inga utgifter ännu.</div>
-				) : (
-					<Card className='flex flex-col gap-0 p-0'>
-						{ventureExpenses.map(expense => (
-							<div
-								key={expense.id}
-								className='flex items-center justify-between gap-2 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0'>
-								<span>{expense.description}</span>
-								<span className='flex items-center gap-3'>
-									<span className='font-mono'>{expense.amount}</span>
-									<span className='text-xs text-text-faint'>
-										{formatDate(expense.date_incurred)}
-									</span>
-								</span>
-							</div>
-						))}
-					</Card>
-				)}
-			</div>
-		</div>
-	)
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between">
+              <SectionHeading>Uppdateringar</SectionHeading>
+              <Drawer trigger="Ny uppdatering" triggerVariant="secondary" triggerSize="sm" title="Ny uppdatering">
+                <UpdateForm defaultVenture={venture.id} />
+              </Drawer>
+            </div>
+            {ventureUpdates.length === 0 ? (
+              <div className="text-sm text-text-muted">Inga uppdateringar ännu.</div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {ventureUpdates.map((update) => (
+                  <UpdateCard
+                    key={update.id}
+                    update={update}
+                    taskLabel={update.task ? (tasks.find((t) => String(t.id) === String(update.task))?.name ?? "Uppgift") : undefined}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "photos" && (
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-end">
+            <Drawer trigger="Ladda upp" triggerVariant="secondary" triggerSize="sm" title="Ladda upp bilder">
+              <PhotoUploadForm albums={albums} tags={tags} defaultVenture={venture.id} />
+            </Drawer>
+          </div>
+          {photos.length === 0 && <div className="text-sm text-text-muted">Inga bilder ännu.</div>}
+          <PhotoGrid photos={photos} albums={albums} tags={tags} />
+        </div>
+      )}
+
+      {tab === "drawings" && (
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-end">
+            <Drawer trigger="Ny ritning" triggerVariant="secondary" triggerSize="sm" title="Ny ritning">
+              <DrawingForm defaultVenture={venture.id} />
+            </Drawer>
+          </div>
+          {drawings.length === 0 ? (
+            <div className="text-sm text-text-muted">Inga ritningar ännu.</div>
+          ) : (
+            <Card className="flex flex-col gap-0 p-0">
+              {drawings.map((drawing) => (
+                <Link
+                  key={drawing.id}
+                  href={`/ritningar/${drawing.id}`}
+                  className="flex items-center justify-between gap-4 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-surface-2"
+                >
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-sm text-text">{drawing.name}</span>
+                    <span className="truncate text-xs text-text-faint">{drawing.description}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-text-faint">
+                    {drawing.pages.length} {drawing.pages.length === 1 ? "sida" : "sidor"} · {drawing.unit}
+                  </span>
+                </Link>
+              ))}
+            </Card>
+          )}
+        </div>
+      )}
+
+      {tab === "expenses" && <VentureExpenseList venture={venture} expenses={ventureExpenses} />}
+    </div>
+  )
 }

@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@/app/components/form/zodResolver"
 import { createProject, updateProject } from "@/app/actions/flux/projects"
+import { listIdentities } from "@/app/actions/flux/identities"
 import { fluxProjectFormSchema, type FluxProjectFormValues } from "@/app/lib/schemas"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
@@ -12,7 +13,7 @@ import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles"
 import { UserMultiSelect } from "@/app/flux/user-multiselect"
 import { useUser } from "@/app/lib/user-context"
-import type { FluxProject } from "@/app/lib/dal"
+import type { FluxIdentity, FluxProject } from "@/app/lib/dal"
 import { useFluxProjectActions, useFluxUsers } from "@/app/flux/_state/flux-context"
 
 export function ProjectFormDrawer({
@@ -40,9 +41,29 @@ export function ProjectFormDrawer({
       name: project?.name ?? "",
       description: project?.description ?? "",
       members: defaultMembers,
+      include_identity: project?.include_identity ?? false,
+      identity: project?.identity ?? null,
     },
   })
   const members = useWatch({ control, name: "members" })
+  const includeIdentity = useWatch({ control, name: "include_identity" })
+
+  // Identities are only needed once the switch is on, so they are fetched lazily.
+  const [identities, setIdentities] = useState<FluxIdentity[] | null>(null)
+  useEffect(() => {
+    if (!open || !includeIdentity || identities !== null) return
+    let active = true
+    void listIdentities().then((list) => {
+      if (active) setIdentities(list)
+    })
+    return () => {
+      active = false
+    }
+  }, [open, includeIdentity, identities])
+  // You can only choose an identity you own; keeping the project's current one is always allowed.
+  const choosableIdentities = (identities ?? []).filter(
+    (identity) => identity.owner === user?.id || identity.id === project?.identity,
+  )
 
   useEffect(() => {
     if (!open) return
@@ -50,6 +71,8 @@ export function ProjectFormDrawer({
       name: project?.name ?? "",
       description: project?.description ?? "",
       members: defaultMembers,
+      include_identity: project?.include_identity ?? false,
+      identity: project?.identity ?? null,
     })
   }, [open, project, reset])
 
@@ -91,6 +114,24 @@ export function ProjectFormDrawer({
             {...register("description")}
           />
         </Field>
+
+        <div className="flex flex-col gap-3 rounded-md border border-border p-3">
+          <label className="flex items-center gap-2 text-sm text-text-muted">
+            <input type="checkbox" {...register("include_identity")} />
+            Inkludera visuell identitet
+          </label>
+          {includeIdentity && (
+            <Field label="Identitet" error={errors.identity}>
+              <select className={fieldInputClass} {...register("identity")}>
+                <option value="">Ingen vald än</option>
+                {choosableIdentities.map((identity) => (
+                  <option key={identity.id} value={identity.id}>{identity.name}</option>
+                ))}
+              </select>
+            </Field>
+          )}
+          {includeIdentity && identities === null && <p className="text-xs text-text-faint">Hämtar identiteter…</p>}
+        </div>
 
         <div className="flex flex-col gap-1.5 text-sm text-text-muted">
           Medlemmar

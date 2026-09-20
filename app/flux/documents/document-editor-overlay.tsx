@@ -18,6 +18,26 @@ import { downloadMarkdown } from "./download"
 
 type Scope = "project" | "milestone" | "task"
 
+const DECISION_TEMPLATE = `## Status
+
+Föreslagen
+
+## Bakgrund
+
+Vilket problem eller vilken fråga gäller beslutet?
+
+## Beslut
+
+Vad har vi bestämt?
+
+## Alternativ som övervägdes
+
+-
+
+## Konsekvenser
+
+Vad blir enklare, och vad blir svårare?`
+
 export function DocumentEditorOverlay({
   onClose,
   projectId,
@@ -57,13 +77,23 @@ export function DocumentEditorOverlay({
     resolver: zodResolver(fluxDocumentFormSchema),
     defaultValues: {
       title: document?.title ?? "",
-      kind: "markdown",
+      // Legacy flowchart/schema documents are converted to markdown on save; decisions keep their kind.
+      kind: document?.kind === "decision" ? "decision" : "markdown",
       content: document?.content ?? "",
       milestone: document?.milestone ?? null,
       task: document?.task ?? null,
     },
   })
   const title = watch("title")
+  const kind = watch("kind")
+
+  const changeKind = (next: "markdown" | "decision") => {
+    setValue("kind", next)
+    // Offer the ADR skeleton, but only over an empty new document so nothing typed is lost.
+    if (next === "decision" && !document && !serializeBlocks(blocks).trim()) {
+      setBlocks(parseBlocks(DECISION_TEMPLATE))
+    }
+  }
 
   const content = serializeBlocks(blocks)
   useEffect(() => {
@@ -144,6 +174,14 @@ export function DocumentEditorOverlay({
               <Field label="Rubrik" error={errors.title}>
                 <input className={fieldInputClass} placeholder="t.ex. Teknisk översikt" {...register("title")} />
               </Field>
+
+              <label className="flex flex-col gap-1 text-sm text-text-muted">
+                Typ
+                <select className={fieldInputClass} value={kind === "decision" ? "decision" : "markdown"} onChange={(event) => changeKind(event.target.value as "markdown" | "decision")}>
+                  <option value="markdown">Dokument</option>
+                  <option value="decision">Beslut (ADR)</option>
+                </select>
+              </label>
 
               <label className="flex flex-col gap-1 text-sm text-text-muted">
                 Hör till

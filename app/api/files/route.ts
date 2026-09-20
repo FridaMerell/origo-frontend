@@ -1,6 +1,7 @@
-import { get } from "@vercel/blob";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { NextResponse } from "next/server";
 import { getSessionCookies } from "@/app/lib/session";
+import { STORAGE_BUCKET, storage, storageKeyFromUrl } from "@/app/lib/storage";
 
 export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url).searchParams.get("url");
@@ -8,10 +9,15 @@ export async function GET(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "No url provided" }, { status: 400 });
   }
 
-  // Apsis posts are public; their files live under the "apsis/" blob prefix
+  const key = storageKeyFromUrl(url);
+  if (!key) {
+    return NextResponse.json({ error: "File not found" }, { status: 404 });
+  }
+
+  // Apsis posts are public; their files live under the "apsis/" key prefix
   // (see app/api/upload/route.ts) and are readable without a session. Every
   // other tenant's files stay gated behind a session.
-  const isApsisFile = new URL(url).pathname.startsWith("/apsis/");
+  const isApsisFile = key.startsWith("apsis/");
 
   const { sessionId } = await getSessionCookies();
   if (!sessionId && !isApsisFile) {
@@ -19,18 +25,23 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const result = await get(url, { access: "private" });
-    if (!result || result.statusCode !== 200) {
+    const result = await storage.send(
+      new GetObjectCommand({ Bucket: STORAGE_BUCKET, Key: key })
+    );
+    if (!result.Body) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    return new NextResponse(result.stream, {
-      headers: {
-        "Content-Type": result.blob.contentType,
-        "Content-Disposition": result.blob.contentDisposition,
-      },
-    });
+    const headers: Record<string, string> = {
+      "Content-Type": result.ContentType ?? "application/octet-stream",
+    };
+    if (result.ContentDisposition) headers["Content-Disposition"] = result.ContentDisposition;
+
+    return new NextResponse(result.Body.transformToWebStream(), { headers });
   } catch (error) {
+    if ((error as { name?: string }).name === "NoSuchKey") {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 400 }

@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Drawer } from "../components/ui/Drawer"
-import { SidebarContent, type SidebarProps } from "./sidebar"
-import Logo from "./ui/Logo"
+import { Drawer } from "@/app/components/ui/Drawer"
+import { SidebarContent, type SidebarProps } from "@/app/verso/sidebar"
+import Logo from "@/app/verso/ui/Logo"
 import { Menu } from "lucide-react"
 
 export default function MobileNav({ mode, onToggleMode }: SidebarProps) {

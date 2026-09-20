@@ -1,10 +1,10 @@
 "use client"
 
-import { useUpdateData } from "@/app/verso/_state/update-context"
+import { useUpdateData } from "@/app/verso/_state/verso-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
 import { Drawer } from "@/app/components/ui/Drawer"
-import UpdateForm from "@/app/verso/update-form"
+import UpdateForm from "@/app/verso/forms/update-form"
 import { formatDateLong } from "@/app/lib/formatters"
 import type { VersoUpdate } from "@/app/lib/dal"
 
@@ -20,10 +20,15 @@ export default function UpdatesView() {
   const groups = groupItems(sorted, (u) => groupLabel(u.created_at))
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-7">
-      <div className="flex items-baseline justify-between">
+    <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:gap-6 sm:py-8">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
         <h1 className="m-0 font-display text-2xl font-semibold text-text">Uppdateringar</h1>
-        <Drawer trigger="Lägg till uppdatering" triggerSize={'sm'} title="Ny uppdatering">
+        <Drawer
+          trigger="Lägg till uppdatering"
+          triggerSize="sm"
+          triggerClassName="self-start"
+          title="Ny uppdatering"
+        >
           <UpdateForm />
         </Drawer>
       </div>
@@ -39,7 +44,7 @@ export default function UpdatesView() {
               <span className="truncate text-sm text-text">{update.title}</span>
               <span className="truncate text-xs text-text-faint">{update.content}</span>
             </span>
-            <span className="shrink-0 text-xs text-text-faint">
+            <span className="shrink-0 whitespace-nowrap text-xs text-text-faint">
               {getUserLabel(users, update.author)}
             </span>
           </>

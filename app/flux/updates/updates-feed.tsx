@@ -52,7 +52,7 @@ function UpdateRow({ update, showScope }: { update: FluxUpdate; showScope: boole
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="shrink-0 text-xs text-text-faint opacity-0 hover:text-text group-hover:opacity-100"
+        className="shrink-0 text-xs text-text-faint opacity-100 hover:text-text sm:opacity-0 sm:group-hover:opacity-100"
       >
         Redigera
       </button>

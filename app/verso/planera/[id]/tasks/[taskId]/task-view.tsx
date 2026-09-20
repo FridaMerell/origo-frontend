@@ -1,16 +1,14 @@
 "use client"
 
 import { useParams } from "next/navigation"
-import Link from "next/link"
-import { useVentureData } from "@/app/verso/_state/venture-context"
-import { useUpdateData } from "@/app/verso/_state/update-context"
+import { useUpdateData, useVentureData } from "@/app/verso/_state/verso-context"
 import { Card } from "@/app/components/ui/Card"
 import { Drawer } from "@/app/components/ui/Drawer"
-import UpdateForm from "@/app/verso/update-form"
-import VentureTaskForm from "@/app/verso/venture-task-form"
-import { UpdateCard } from "@/app/verso/update-card"
-import { VentureTaskStatusBadge } from "@/app/verso/venture-task-status"
-import { ChevronLeft } from "lucide-react"
+import UpdateForm from "@/app/verso/forms/update-form"
+import VentureTaskForm from "@/app/verso/forms/venture-task-form"
+import { UpdateCard } from "@/app/verso/updates/update-card"
+import { VentureTaskStatusBadge } from "@/app/verso/planera/venture-task-status"
+import { BackLink, DetailNotFound, SectionHeading } from "@/app/verso/ui/DetailPage"
 
 export default function VentureTaskView() {
   const { id, taskId } = useParams<{ id: string; taskId: string }>()
@@ -21,28 +19,14 @@ export default function VentureTaskView() {
   const task = ventureTasks.find((t) => String(t.id) === taskId)
 
   if (!venture || !task) {
-    return (
-      <div className="flex flex-1 flex-col gap-5 p-7">
-        <Link href="/planera" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-          <ChevronLeft size={14} />
-          Planering
-        </Link>
-        <div className="text-text-muted">Uppgiften kunde inte hittas.</div>
-      </div>
-    )
+    return <DetailNotFound backHref="/planera" backLabel="Planering" message="Uppgiften kunde inte hittas." />
   }
 
   const taskUpdates = updates.filter((u) => String(u.task) === String(task.id))
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-7">
-      <Link
-        href={`/planera/${venture.id}`}
-        className="flex items-center gap-1 text-sm text-text-muted hover:text-accent"
-      >
-        <ChevronLeft size={14} />
-        {venture.name}
-      </Link>
+      <BackLink href={`/planera/${venture.id}`}>{venture.name}</BackLink>
 
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -64,7 +48,7 @@ export default function VentureTaskView() {
       </Card>
 
       <div className="flex flex-col gap-2">
-        <h2 className="m-0 font-display text-lg font-semibold text-text">Uppdateringar</h2>
+        <SectionHeading>Uppdateringar</SectionHeading>
         {taskUpdates.length === 0 ? (
           <div className="text-sm text-text-muted">Inga uppdateringar ännu.</div>
         ) : (

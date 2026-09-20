@@ -1,7 +1,7 @@
 "use client"
 
-import { Card } from "../../components/ui/Card"
-import { useUpdateData } from "../_state/update-context"
+import { Card } from "@/app/components/ui/Card"
+import { useUpdateData } from "@/app/verso/_state/verso-context"
 import { ListChecks, ArrowUpRight } from "lucide-react"
 import Link from "next/link"
 export function UpdatesWidget() {

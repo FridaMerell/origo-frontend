@@ -1,8 +1,8 @@
 "use client"
 
 import { ArrowUpRight, Receipt } from "lucide-react"
-import { Card } from "../../components/ui/Card"
-import { useFacilities } from "../_state/facility-context"
+import { Card } from "@/app/components/ui/Card"
+import { useFacilities } from "@/app/verso/_state/verso-context"
 import Link from "next/link"
 
 export function RecentExpensesWidget() {

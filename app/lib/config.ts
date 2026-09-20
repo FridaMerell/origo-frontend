@@ -2,6 +2,19 @@ export const API_BASE_URL = process.env.ORIGO_API_URL ?? "http://api.origo.test:
 // Public API origin for browser-to-API requests. This is intentionally limited
 // to the base URL: authentication continues through the shared session cookie.
 export const PUBLIC_API_BASE_URL = process.env.NEXT_PUBLIC_ORIGO_API_URL ?? "http://api.origo.test:8000";
+
+// Browser-to-API URL. In dev (API on an explicit port) this uses the page's own
+// hostname on the API port: cookies ignore ports, so the session cookie is sent
+// even in browsers (Firefox, mobile) that withhold it from api.<host>.
+// Server-side, or with a default port (production), the URL is returned as is.
+export function browserApiUrl(path: string): URL {
+  const url = new URL(path, PUBLIC_API_BASE_URL);
+  if (typeof window === "undefined" || !url.port) return url;
+  const pageHost = window.location.hostname;
+  const parentHost = url.hostname.replace(/^api\./, "");
+  if (url.hostname !== pageHost && pageHost.endsWith(parentHost)) url.hostname = pageHost;
+  return url;
+}
 export const ORIGO_VERSION = process.env.NEXT_PUBLIC_ORIGO_VERSION ?? "0.0.1";
 
 // Google Maps JavaScript API key. Inlined into the client bundle at build time,
@@ -44,6 +57,16 @@ export const VERSO_ENDPOINTS = {
   expenses: "/api/verso/expenses/",
   yearlyExpenses: "/api/verso/expenses/year_expenses/",
   versoUpdates: "/api/verso/updates/",
+  drawings: "/api/verso/drawings/",
+  drawingPages: "/api/verso/drawing-pages/",
+  photos: "/api/verso/photos/",
+  albums: "/api/verso/albums/",
+  photoTags: "/api/verso/photo-tags/",
+  people: "/api/verso/people/",
+  personRelations: "/api/verso/person-relations/",
+  documents: "/api/verso/documents/",
+  onThisDay: "/api/verso/houses/on_this_day/",
+  historyEvents: "/api/verso/history-events/",
 } as const;
 
 export const FLUX_ENDPOINTS = {
@@ -54,6 +77,20 @@ export const FLUX_ENDPOINTS = {
   tasks: "/api/flux/tasks/",
   updates: "/api/flux/updates/",
   documents: "/api/flux/documents/",
+  entities: "/api/flux/entities/",
+  fields: "/api/flux/fields/",
+  relations: "/api/flux/relations/",
+  stackProfiles: "/api/flux/stack-profiles/",
+  resources: "/api/flux/resources/",
+  roles: "/api/flux/roles/",
+  rolePermissions: "/api/flux/role-permissions/",
+  screens: "/api/flux/screens/",
+  integrations: "/api/flux/integrations/",
+  seedRows: "/api/flux/seed-rows/",
+  identities: "/api/flux/identities/",
+  projectScaffold: (id: number | string) => `/api/flux/projects/${encodeURIComponent(String(id))}/scaffold/`,
+  projectScaffoldDocument: (id: number | string) => `/api/flux/projects/${encodeURIComponent(String(id))}/scaffold-document/`,
+  projectGenerateTasks: (id: number | string) => `/api/flux/projects/${encodeURIComponent(String(id))}/generate-tasks/`,
 } as const;
 
 // BirdNET acoustic detections. The detection stream sits *outside* the
@@ -113,6 +150,7 @@ export const TEMPUS_ENDPOINTS = {
 export const SESSION_COOKIE = "origo_sessionid";
 export const CSRF_COOKIE = "origo_csrftoken";
 export const FACILITY_COOKIE = "verso_facility";
+export const VERSO_MODE_COOKIE = "verso_mode";
 export const FLUX_PROJECT_COOKIE = "flux_project";
 export const TEMPUS_GEO_AREA_COOKIE = "tempus_geo_area";
 export const TEMPUS_ALL_SWEDEN = "__all_sweden__";

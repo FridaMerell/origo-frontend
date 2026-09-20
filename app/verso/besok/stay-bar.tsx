@@ -1,6 +1,6 @@
 "use client";
 
-import { useOpenBookingDrawer } from "@/app/verso/besok/booking-drawer-context";
+import { useBookingDrawer } from "@/app/verso/_state/booking-drawer";
 import type { Booking } from "@/app/lib/dal";
 
 export function StayBar({
@@ -16,12 +16,12 @@ export function StayBar({
   roundLeft: boolean;
   roundRight: boolean;
 }) {
-  const openBooking = useOpenBookingDrawer();
+  const { openEdit } = useBookingDrawer();
 
   return (
     <button
       type="button"
-      onClick={() => openBooking(booking)}
+      onClick={() => openEdit(booking)}
       className={`mt-1.5 block h-5 w-full appearance-none border-0 text-left font-body text-[11px] leading-5 text-white ${showLabel ? "px-1.5" : "px-0"} ${roundLeft ? "rounded-l" : ""} ${roundRight ? "rounded-r" : ""}`}
       style={{ background: color }}
     >

@@ -1,21 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/app/components/ui/Button";
-
-import { BookingFormDrawer } from "@/app/verso/booking-form-drawer";
-import { Plus } from "lucide-react"
+import { useBookingDrawer } from "@/app/verso/_state/booking-drawer";
+import { Plus } from "lucide-react";
 
 export function BookVisitButton() {
-  const [open, setOpen] = useState(false);
+  const { openNew } = useBookingDrawer();
 
   return (
-    <>
-      <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
-        <Plus size={14} className="text-accent-contrast" />
-        Boka stugan
-      </Button>
-      <BookingFormDrawer open={open} onClose={() => setOpen(false)} />
-    </>
+    <Button variant="primary" size="sm" onClick={openNew}>
+      <Plus size={14} className="text-accent-contrast" />
+      Boka stugan
+    </Button>
   );
 }

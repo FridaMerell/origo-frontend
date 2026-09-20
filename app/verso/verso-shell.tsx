@@ -1,28 +1,25 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { VERSO_MODE_COOKIE } from "@/app/lib/config";
 import Sidebar from "./sidebar";
 import MobileNav from "./mobile-nav";
 
-const STORAGE_KEY = "verso-mode";
+export type VersoMode = "light" | "dark";
 
-export default function VersoShell({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<"light" | "dark">("light");
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
+
+/** `initialMode` comes from a cookie read on the server, so the first paint already has the right theme. */
+export default function VersoShell({ children, initialMode }: { children: ReactNode; initialMode: VersoMode }) {
+  const [mode, setMode] = useState<VersoMode>(initialMode);
   const pathname = usePathname();
   const isLoginRoute = pathname === "/login";
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    setMode(stored === "dark" || stored === "light" ? stored : "light");
-  }, []);
-
   const toggleMode = () => {
-    setMode((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem(STORAGE_KEY, next);
-      return next;
-    });
+    const next = mode === "dark" ? "light" : "dark";
+    document.cookie = `${VERSO_MODE_COOKIE}=${next}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
+    setMode(next);
   };
 
   if (isLoginRoute) {

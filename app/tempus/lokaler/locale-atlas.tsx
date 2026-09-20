@@ -199,9 +199,9 @@ export function LocaleAtlas({
                 )}
               </section>
               {!observationsOpen ? <>
-                <section className="mt-12">
-                  <h3 className="border-t border-[#857354] px-4 pt-5 font-display text-base font-medium italic tracking-wide">Checklistor</h3>
-                  {checklistsPage.results.length === 0 ? <p className="mt-3 px-4 font-display italic text-text-muted">Inga checklistor är registrerade för platsen.</p> : <ol className="mt-3 divide-y divide-[#b9a779]/60 px-4 font-display text-base italic leading-6">{checklistsPage.results.map((checklist, index) => <li key={checklist.id} className="py-2 first:pt-0"><Link href={`/checklistor/${checklist.id}`} className="hover:text-accent">{String(index + 1).padStart(2, "0")} · {checklist.name}<span className="text-sm text-text-muted">, {checklist.species_count ?? checklist.item_count ?? 0} arter</span></Link></li>)}</ol>}
+                <section>
+                  <h3 className="border-t border-[#857354] px-4 pb-2 pt-3 font-display text-lg font-medium italic tracking-[.05em]">Checklistor</h3>
+                  {checklistsPage.results.length === 0 ? <p className="px-4 py-3 font-display text-sm italic text-text-muted">Inga checklistor är registrerade för platsen.</p> : <ol className="divide-y divide-[#b9a779]/60 px-4 py-3 font-display text-base italic leading-6">{checklistsPage.results.map((checklist, index) => <li key={checklist.id} className="py-2 first:pt-0 last:pb-0"><Link href={`/checklistor/${checklist.id}`} className="hover:text-accent">{String(index + 1).padStart(2, "0")} · {checklist.name}<span className="text-sm text-text-muted">, {checklist.species_count ?? checklist.item_count ?? 0} arter</span></Link></li>)}</ol>}
                 </section>
               </> : null}
             </aside>

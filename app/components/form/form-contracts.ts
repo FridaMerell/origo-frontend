@@ -2,6 +2,7 @@ import type { ZodType } from "zod"
 import {
   apsisPostFormSchema,
   bookingFormSchema,
+  drawingFormSchema,
   expenseFormSchema,
   fluxMilestoneFormSchema,
   fluxProjectFormSchema,
@@ -34,6 +35,11 @@ export const formContracts: FormContract[] = [
     name: "venture",
     schema: ventureFormSchema,
     validValues: { name: "Rev-C", description: "Test", priority: "3", budget: "1000.50" },
+  },
+  {
+    name: "drawing",
+    schema: drawingFormSchema,
+    validValues: { name: "Fönster kök", description: "", unit: "mm", venture: "" },
   },
   {
     name: "venture task",
@@ -90,6 +96,6 @@ export const formContracts: FormContract[] = [
   {
     name: "Apsis upload",
     schema: apsisPostFormSchema,
-    validValues: { name: "Bild", geolocation: "59.3,18.1" },
+    validValues: { name: "Bild", geolocation: "59.3,18.1", has_apsis: true },
   },
 ]

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { FLUX_ENDPOINTS, FLUX_PROJECT_COOKIE, PUBLIC_API_BASE_URL } from "@/app/lib/config";
+import { FLUX_ENDPOINTS, FLUX_PROJECT_COOKIE, browserApiUrl } from "@/app/lib/config";
 import type { FluxBoard, FluxDocument, FluxMilestone, FluxProject, FluxTask, FluxTaskStatus, FluxUpdate, FluxUser } from "@/app/lib/dal";
 import { formatUserName } from "@/app/lib/user-context";
 
@@ -30,6 +30,7 @@ type FluxDataContextValue = {
   documents: FluxDocument[];
   addDocument: (document: FluxDocument) => void;
   replaceDocument: (document: FluxDocument) => void;
+  removeDocument: (id: number) => void;
   usersById: Map<number, FluxUser>;
 };
 
@@ -51,7 +52,7 @@ const FluxDataContext = createContext<FluxDataContextValue>({
   updates: [],
   addUpdate: () => {}, replaceUpdate: () => {}, removeUpdate: () => {},
   documents: [],
-  addDocument: () => {}, replaceDocument: () => {},
+  addDocument: () => {}, replaceDocument: () => {}, removeDocument: () => {},
   usersById: new Map(),
 });
 
@@ -94,7 +95,7 @@ export function FluxDataProvider({
     }
     const destination = /^\/projects\/\d+$/.test(pathname) ? `/projects/${id}` : pathname;
     window.history.pushState(null, "", destination);
-    const response = await fetch(new URL(FLUX_ENDPOINTS.projectBoard(id), PUBLIC_API_BASE_URL), {
+    const response = await fetch(browserApiUrl(FLUX_ENDPOINTS.projectBoard(id)), {
       credentials: "include",
     });
     if (!response.ok) return;
@@ -151,10 +152,11 @@ export function FluxDataProvider({
   const removeUpdate = useCallback((id: number) => setCurrentUpdates((current) => current.filter((update) => update.id !== id)), []);
   const addDocument = useCallback((document: FluxDocument) => setCurrentDocuments((current) => [...current, document]), []);
   const replaceDocument = useCallback((document: FluxDocument) => setCurrentDocuments((current) => current.map((item) => item.id === document.id ? document : item)), []);
+  const removeDocument = useCallback((id: number) => setCurrentDocuments((current) => current.filter((document) => document.id !== id)), []);
 
   const value = useMemo(
-    () => ({ projects: currentProjects, addProject, replaceProject, removeProject, selectedProject: currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, tasks: currentTasks, milestones: currentMilestones, addMilestone, replaceMilestones, replaceMilestone, removeMilestone, updates: currentUpdates, addUpdate, replaceUpdate, removeUpdate, documents: currentDocuments, addDocument, replaceDocument, usersById }),
-    [currentProjects, addProject, replaceProject, removeProject, currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, currentTasks, currentMilestones, addMilestone, replaceMilestones, replaceMilestone, removeMilestone, currentUpdates, addUpdate, replaceUpdate, removeUpdate, currentDocuments, addDocument, replaceDocument, usersById],
+    () => ({ projects: currentProjects, addProject, replaceProject, removeProject, selectedProject: currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, tasks: currentTasks, milestones: currentMilestones, addMilestone, replaceMilestones, replaceMilestone, removeMilestone, updates: currentUpdates, addUpdate, replaceUpdate, removeUpdate, documents: currentDocuments, addDocument, replaceDocument, removeDocument, usersById }),
+    [currentProjects, addProject, replaceProject, removeProject, currentProject, selectProject, setTaskStatus, addTask, replaceTask, removeTask, currentTasks, currentMilestones, addMilestone, replaceMilestones, replaceMilestone, removeMilestone, currentUpdates, addUpdate, replaceUpdate, removeUpdate, currentDocuments, addDocument, replaceDocument, removeDocument, usersById],
   );
 
   return (
@@ -207,7 +209,7 @@ export function useFluxDocuments() {
   return useContext(FluxDataContext).documents;
 }
 
-export function useFluxDocumentActions() { const { addDocument, replaceDocument } = useContext(FluxDataContext); return { addDocument, replaceDocument }; }
+export function useFluxDocumentActions() { const { addDocument, replaceDocument, removeDocument } = useContext(FluxDataContext); return { addDocument, replaceDocument, removeDocument }; }
 
 export function useFluxUsers() {
   return useContext(FluxDataContext).usersById;

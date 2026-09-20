@@ -1,69 +1,52 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import { FACILITY_COOKIE } from "@/app/lib/config";
+import { FACILITY_COOKIE, VERSO_MODE_COOKIE } from "@/app/lib/config";
 import { getVersoDashboard } from "@/app/lib/dal";
-import { BookingDataProvider } from "@/app/verso/_state/booking-context";
-import { FacilityProvider } from "@/app/verso/_state/facility-context";
-import { VentureDataProvider } from "@/app/verso/_state/venture-context";
-import { UpdateDataProvider } from "@/app/verso/_state/update-context";
+import { VersoDataProvider } from "@/app/verso/_state/verso-context";
+import { BookingDrawerProvider } from "@/app/verso/_state/booking-drawer";
 import { NavProgressBar } from "@/app/lib/nav-progress";
 import { Splash } from "@/app/components/ui/Splash";
-import VersoShell from "./verso-shell";
+import VersoShell, { type VersoMode } from "./verso-shell";
 
 export const metadata = {
   title: "Verso | Origo",
   description: "Verso - Origo",
 };
 
-export default function VersoLayout({ children }: { children: ReactNode }) {
+export default async function VersoLayout({ children }: { children: ReactNode }) {
+  const cookieStore = await cookies();
+  const mode: VersoMode = cookieStore.get(VERSO_MODE_COOKIE)?.value === "dark" ? "dark" : "light";
+
   return (
-    <div data-theme="verso" className="flex flex-1 flex-col bg-bg font-body text-text">
+    <div data-theme="verso" data-mode={mode} className="flex flex-1 flex-col bg-bg font-body text-text">
       <NavProgressBar />
       <Suspense fallback={<Splash tenant="verso" />}>
-        <VersoData>{children}</VersoData>
+        <VersoData mode={mode}>{children}</VersoData>
       </Suspense>
     </div>
   );
 }
 
-async function VersoData({ children }: { children: ReactNode }) {
+async function VersoData({ children, mode }: { children: ReactNode; mode: VersoMode }) {
   const cookieStore = await cookies();
   const selectedId = cookieStore.get(FACILITY_COOKIE)?.value;
   const dashboard = await getVersoDashboard(selectedId, new Date().getFullYear());
 
-  const facilities = dashboard?.houses ?? [];
-  const selectedFacility = dashboard?.house ?? null;
-  const bookings = dashboard?.bookings ?? [];
-  const bookingRequests = dashboard?.booking_requests ?? [];
-  const checkOuts = dashboard?.check_outs ?? [];
-  const houseVentures = dashboard?.ventures ?? [];
-  const ventureTasks = dashboard?.venture_tasks ?? [];
-  const houseExpenses = dashboard?.expenses ?? [];
-  const updates = dashboard?.updates ?? [];
-  const yearlyExpenses = dashboard?.yearly_expense_total ?? 0;
-
   return (
-    <FacilityProvider
-      facilities={facilities}
-      selectedFacility={selectedFacility}
-      yearlyExpenses={yearlyExpenses}
+    <VersoDataProvider
+      facilities={dashboard?.houses ?? []}
+      selectedFacility={dashboard?.house ?? null}
+      yearlyExpenses={dashboard?.yearly_expense_total ?? 0}
+      bookings={dashboard?.bookings ?? []}
+      ventures={dashboard?.ventures ?? []}
+      ventureTasks={dashboard?.venture_tasks ?? []}
+      expenses={dashboard?.expenses ?? []}
+      updates={dashboard?.updates ?? []}
     >
-      <BookingDataProvider
-        bookings={bookings}
-        bookingRequests={bookingRequests}
-        checkOuts={checkOuts}
-      >
-        <VentureDataProvider
-          ventures={houseVentures}
-          ventureTasks={ventureTasks}
-          expenses={houseExpenses}
-        >
-          <UpdateDataProvider updates={updates}>
-            <VersoShell>{children}</VersoShell>
-          </UpdateDataProvider>
-        </VentureDataProvider>
-      </BookingDataProvider>
-    </FacilityProvider>
+      <BookingDrawerProvider>
+        <VersoShell initialMode={mode}>{children}</VersoShell>
+      </BookingDrawerProvider>
+    </VersoDataProvider>
   );
 }

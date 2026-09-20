@@ -45,3 +45,8 @@ export async function updateDocument(
 
   return document ? { success: true, data: document } : { error: "Dokumentet kunde inte läsas tillbaka." }
 }
+
+export async function deleteDocument(id: number): Promise<FluxActionState> {
+  const { error } = await fluxRequest(`${FLUX_ENDPOINTS.documents}${id}/`, "DELETE")
+  return error ? { error } : { success: true }
+}

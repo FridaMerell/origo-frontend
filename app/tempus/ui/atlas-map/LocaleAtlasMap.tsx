@@ -1,7 +1,9 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
-import { area as turfArea, booleanPointInPolygon as turfBooleanPointInPolygon, buffer as turfBuffer } from "@turf/turf"
+import { type ComponentType, useEffect, useMemo, useRef, useState } from "react"
+import turfArea from "@turf/area"
+import turfBooleanPointInPolygon from "@turf/boolean-point-in-polygon"
+import turfBuffer from "@turf/buffer"
 import type { Geometry, MultiPolygon, Polygon } from "geojson"
 import type { TempusLocale } from "@/app/lib/dal"
 import { getLocaleLandCoverFetch, type LandCoverMapFeature, type LocaleLandCoverFetch } from "@/app/lib/land-cover"
@@ -51,7 +53,15 @@ function boundsForGeometry(geometry: Geometry) {
 // ground drew the same parcels twice, with visible seams wherever they
 // disagreed. One call in, one continuous drawing out — no merging, no
 // clipping between sources needed at all.
-export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick }: { locale: TempusLocale; points: readonly AtlasPoint[]; selectedPoint: AtlasPoint | null; onPointClick: (point: AtlasPoint) => void }) {
+export type LocaleAtlasMapProps = {
+  locale: TempusLocale
+  points: readonly AtlasPoint[]
+  selectedPoint: AtlasPoint | null
+  onPointClick: (point: AtlasPoint) => void
+  CompassComponent?: ComponentType
+}
+
+export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, CompassComponent = Compass }: LocaleAtlasMapProps) {
   const node = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<import("maplibre-gl").Map | null>(null)
   const onPointClickRef = useRef(onPointClick)
@@ -126,6 +136,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick }: 
         zoom: 4.3,
         minZoom: 3,
         maxZoom: 19,
+        attributionControl: false,
         // Fixed view of one Locale — no panning or free interaction away
         // from it. ZoomControl's buttons are the only thing that moves the
         // camera after fitBounds below.
@@ -143,7 +154,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick }: 
         if (!map || disposed) return
         const geometry = locale.geometry as Geometry | null
         const bounds = geometry ? boundsForGeometry(geometry) : null
-        if (bounds) map.fitBounds(bounds, { padding: 80, maxZoom: 15, animate: false })
+        if (bounds) map.fitBounds(bounds, { padding: 48, maxZoom: 16, animate: false })
         if (geometry) {
           map.addSource("locale-boundary", { type: "geojson", data: { type: "Feature", properties: {}, geometry } })
           map.addLayer({ id: "locale-boundary", type: "line", source: "locale-boundary", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": JORDEBOK_INK, "line-width": 1.8, "line-dasharray": [1.2, 1.4] } })
@@ -291,24 +302,18 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick }: 
   // The initial fitBounds (in "load", above) fits tight to the locale's own
   // shape so the very first paint isn't a blank, zoomed-out world view while
   // the background fetch is still running. Once land-cover/fetch/ has
-  // actually succeeded, the fixed view is re-fit to include its full padded
-  // extent too — the data now reaches up to 5 km past the locale, so the
-  // view should too, instead of clipping that data out of frame at the
-  // original tight fit.
+  // actually succeeded, keep the framing on the Locale itself. The background
+  // coverage deliberately extends beyond it, but using that padded extent for
+  // fitBounds made the actual place appear unnecessarily small on first view.
   useEffect(() => {
     const map = mapRef.current
     if (!map?.isStyleLoaded() || landCoverFetch?.status !== "succeeded") return
     const geometry = locale.geometry as Geometry | null
     const localeBounds = geometry ? boundsForGeometry(geometry) : null
     const surroundingBounds = boundsForGeometry(landCoverFetch.geometry as unknown as Geometry)
-    if (!localeBounds && !surroundingBounds) return
-    const bounds: [[number, number], [number, number]] = localeBounds && surroundingBounds
-      ? [
-          [Math.min(localeBounds[0][0], surroundingBounds[0][0]), Math.min(localeBounds[0][1], surroundingBounds[0][1])],
-          [Math.max(localeBounds[1][0], surroundingBounds[1][0]), Math.max(localeBounds[1][1], surroundingBounds[1][1])],
-        ]
-      : (surroundingBounds ?? localeBounds)!
-    map.fitBounds(bounds, { padding: 80, maxZoom: 15, animate: true, duration: 400 })
+    const bounds = localeBounds ?? surroundingBounds
+    if (!bounds) return
+    map.fitBounds(bounds, { padding: 48, maxZoom: 16, animate: true, duration: 400 })
   }, [locale.geometry, landCoverFetch, mapReady])
 
   // The only land-cover call this atlas makes. Runs continuously (not
@@ -351,7 +356,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick }: 
     {mapInstance ? <ObservationLabels map={mapInstance} points={points} selectedPoint={selectedPoint} /> : null}
     {mapInstance ? <ZoomControl map={mapInstance} /> : null}
     <LayerPanel layers={layers} onChange={setLayers} />
-    <Compass />
+    <CompassComponent />
     <ScaleBar metersPerPixel={metersPerPixel} />
     {selectedPoint ? <span className="sr-only">Vald observation: {selectedPoint.label}</span> : null}
     {landCoverStatus ? <p className="absolute bottom-16 right-5 z-20 max-w-60 rounded border border-[#4a3526]/50 bg-[#fbf8f0]/90 px-2 py-1 text-xs text-[#4a3526]" role="status">{landCoverStatus}</p> : null}

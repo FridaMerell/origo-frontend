@@ -43,6 +43,7 @@ export async function createApsisPost(
       author: user.id,
       name,
       geolocation: parsed.data.geolocation?.trim() ?? "",
+      has_apsis: parsed.data.has_apsis,
       // content is required by the API; fall back to the church name or a label.
       content: name || "Absidfoto",
       files,

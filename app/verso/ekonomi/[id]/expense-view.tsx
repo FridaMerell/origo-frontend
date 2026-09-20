@@ -2,11 +2,11 @@
 
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { useVentureData } from "@/app/verso/_state/venture-context"
+import { useVentureData } from "@/app/verso/_state/verso-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { Card } from "@/app/components/ui/Card"
+import { BackLink, DetailNotFound } from "@/app/verso/ui/DetailPage"
 import { formatDate } from "@/app/lib/formatters"
-import { ChevronLeft } from "lucide-react"
 
 export default function ExpenseView() {
   const { id } = useParams<{ id: string }>()
@@ -16,25 +16,16 @@ export default function ExpenseView() {
   const expense = expenses.find((e) => String(e.id) === id)
 
   if (!expense) {
-    return (
-      <div className="flex flex-1 flex-col gap-5 p-7">
-        <Link href="/ekonomi" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-          <ChevronLeft size={14} />
-          Utgifter
-        </Link>
-        <div className="text-text-muted">Utgiften kunde inte hittas.</div>
-      </div>
-    )
+    return <DetailNotFound backHref="/ekonomi" backLabel="Utgifter" message="Utgiften kunde inte hittas." />
   }
 
-  const linkedVenture = expense.venture ? ventures.find((v) => String(v.id) === String(expense.venture)) : null
+  const linkedVenture = expense.venture
+    ? ventures.find((v) => String(v.id) === String(expense.venture))
+    : null
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-7">
-      <Link href="/ekonomi" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-        <ChevronLeft size={14} />
-        Utgifter
-      </Link>
+      <BackLink href="/ekonomi">Utgifter</BackLink>
 
       <Card className="flex flex-col gap-1">
         <span className="text-sm text-text-muted">{expense.description || "Utgift"}</span>

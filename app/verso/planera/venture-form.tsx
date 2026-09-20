@@ -3,14 +3,21 @@
 import { usePathname } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@/app/components/form/zodResolver";
-import { createVenture } from "@/app/actions/venture";
+import { createVenture, updateVenture } from "@/app/actions/venture";
 import { ventureFormSchema, type VentureFormValues } from "@/app/lib/schemas";
 import { Field, fieldInputClass } from "@/app/components/form/Field";
+import { FileUpload } from "@/app/components/ui/FileUpload";
 import { useSubmitAction } from "@/app/components/form/useSubmitAction";
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";
+import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
+import { useDrawerClose } from "@/app/components/ui/Drawer";
+import type { Venture } from "@/app/lib/dal";
+import { priorityLabel } from "@/app/verso/planera/venture-priority";
 
-export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
+/** Creates a venture, or edits `venture` (including its attachments) when given. */
+export function VentureForm({ venture }: { venture?: Venture }) {
   const pathname = usePathname();
+  const uploadedFiles = useUploadedFiles(venture?.files, venture?.id ?? null);
   const {
     register,
     handleSubmit,
@@ -19,12 +26,26 @@ export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<VentureFormValues>({
     resolver: zodResolver(ventureFormSchema),
-    defaultValues: { name: "", description: "", priority: 3, budget: 0 },
+    defaultValues: {
+      name: venture?.name ?? "",
+      description: venture?.description ?? "",
+      priority: venture?.priority ?? 3,
+      budget: venture?.budget ?? 0,
+    },
   });
   const priority = useWatch({ control, name: "priority" });
   const submit = useSubmitAction(setError);
+  const closeDrawer = useDrawerClose();
 
-  const onSubmit = handleSubmit((data) => submit(() => createVenture(data, pathname), onSuccess));
+  const onSubmit = handleSubmit((data) =>
+    submit(
+      () =>
+        venture
+          ? updateVenture(venture.id, data, uploadedFiles.urls, pathname)
+          : createVenture(data, pathname),
+      closeDrawer
+    )
+  );
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">
@@ -36,20 +57,20 @@ export function VentureForm({ onSuccess }: { onSuccess?: () => void }) {
         <textarea className={fieldInputClass} {...register("description")} />
       </Field>
 
-      <Field label={`Prioritet (${priority})`} error={errors.priority}>
-        <input
-          type="range"
-          min={1}
-          max={5}
-          step={1}
-          className="accent-accent"
-          {...register("priority")}
-        />
+      <Field label={`Prioritet: ${priority} – ${priorityLabel(Number(priority))}`} error={errors.priority}>
+        <input type="range" min={1} max={5} step={1} className="accent-accent" {...register("priority")} />
       </Field>
 
       <Field label="Budget" error={errors.budget}>
         <input type="text" inputMode="decimal" className={fieldInputClass} {...register("budget")} />
       </Field>
+
+      {venture && (
+        <div className="flex flex-col gap-1 text-sm text-text-muted">
+          Bilagor
+          <FileUpload folder="verso" files={uploadedFiles.files} onChange={uploadedFiles.setFiles} />
+        </div>
+      )}
 
       <FormRootError error={errors.root} />
       <FormActions isSubmitting={isSubmitting} />

@@ -3,18 +3,20 @@
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { usePathname } from "next/navigation"
 import { useState, useEffect } from "react"
-import { BellIcon, CalendarIcon, ChevronDownIcon, ListTodoIcon, ReceiptIcon } from "lucide-react"
-import { useDismissableOpen } from "../components/ui/use-dismissable-open"
-import { useFacilities } from "./_state/facility-context"
-import { useUser } from "../lib/user-context"
-import { ORIGO_VERSION } from "../lib/config"
-import { APP_LINKS, appHref } from "../lib/tenant-links"
-import Logo from "./ui/Logo"
-import { Profile } from "../components/ui/Profile"
+import { BellIcon, CalendarIcon, ChevronDownIcon, ImageIcon, ListTodoIcon, ReceiptIcon, RulerIcon, ScrollTextIcon } from "lucide-react"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
+import { useFacilities } from "@/app/verso/_state/verso-context"
+import { ORIGO_VERSION } from "@/app/lib/config"
+import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
+import Logo from "@/app/verso/ui/Logo"
+import { Profile } from "@/app/components/ui/Profile"
 
 const NAV_ITEMS = [
   { label: "Kalender", href: "/besok", icon: CalendarIcon },
   { label: "Planering", href: "/planera", icon: ListTodoIcon },
+  { label: "Ritningar", href: "/ritningar", icon: RulerIcon },
+  { label: "Bilder", href: "/bilder", icon: ImageIcon },
+  { label: "Historia", href: "/historia", icon: ScrollTextIcon },
   { label: "Ekonomi", href: "/ekonomi", icon: ReceiptIcon },
   { label: "Uppdateringar", href: "/updates", icon: BellIcon },
 ] as const
@@ -82,7 +84,7 @@ const FacilitySelector = () => {
                 setOpen(false)
                 if (facility.id !== selectedFacility?.id) selectFacility(String(facility.id))
               }}
-              className={`block w-full truncate px-2.5 py-1.5 text-left text-sm ${facility.id === selectedFacility?.id ? "text-text" : "text-text"} hover:bg-accent-wash hover:text-accent`}
+              className={`block w-full truncate px-2.5 py-1.5 text-left text-sm text-text hover:bg-accent-wash hover:text-accent`}
             >
               {facility.name}
             </button>
@@ -108,7 +110,7 @@ export function SidebarContent({
   }, [])
 
   return (
-    <div className="flex h-full flex-col gap-0.5 font-body">
+    <div className="flex h-full flex-col gap-0.5 font-body text-text">
       <div className="px-2.5 pb-6 pt-3 ">
         <a href="/" className="font-display text-2xl font-semibold text-accent flex items-center ">
           <Logo height={75} />

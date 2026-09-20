@@ -11,12 +11,16 @@ import {
   LayoutPanelLeftIcon,
   PencilIcon,
   PlusIcon,
+  ScaleIcon,
   type LucideIcon,
 } from "lucide-react"
 import type { FluxDocument, FluxMilestone, FluxTask } from "@/app/lib/dal"
 import { DocumentContent } from "./document-content"
 import { DocumentEditorOverlay } from "./document-editor-overlay"
 import { downloadMarkdown } from "./download"
+import { deleteDocument } from "@/app/actions/flux/documents"
+import { DeleteButton } from "@/app/components/ui/DeleteButton"
+import { useFluxDocumentActions } from "@/app/flux/_state/flux-context"
 
 const LEGACY_KIND_LABELS = {
   markdown: "Dokument",
@@ -25,6 +29,7 @@ const LEGACY_KIND_LABELS = {
 } as const
 
 function documentMeta(document: FluxDocument): { icon: LucideIcon; label: string } {
+  if (document.kind === "decision") return { icon: ScaleIcon, label: "Beslut" }
   if (document.kind !== "markdown") {
     return { icon: document.kind === "flowchart" ? GitForkIcon : DatabaseIcon, label: LEGACY_KIND_LABELS[document.kind] }
   }
@@ -34,6 +39,14 @@ function documentMeta(document: FluxDocument): { icon: LucideIcon; label: string
 
 function DocumentCard({ document, location, onEdit }: { document: FluxDocument; location: string; onEdit: () => void }) {
   const meta = documentMeta(document)
+  const { removeDocument } = useFluxDocumentActions()
+
+  const handleDelete = () => {
+    void deleteDocument(document.id).then((result) => {
+      if (!result?.error) removeDocument(document.id)
+    })
+  }
+
   return (
     <Card className="gap-3 p-4">
       <details>
@@ -49,6 +62,13 @@ function DocumentCard({ document, location, onEdit }: { document: FluxDocument; 
             <button type="button" onClick={(event) => { event.preventDefault(); onEdit() }} className="rounded p-1 text-text-muted hover:bg-surface-2 hover:text-text" aria-label="Redigera dokument">
               <PencilIcon size={14} />
             </button>
+            <DeleteButton
+              label="Ta bort dokument"
+              confirmTitle="Ta bort dokumentet?"
+              confirmMessage={`Dokumentet “${document.title}” tas bort permanent.`}
+              onDelete={handleDelete}
+              className="rounded p-1 text-text-muted hover:bg-surface-2 hover:text-danger disabled:opacity-50"
+            />
             <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-muted">{meta.label}</span>
           </span>
         </summary>
@@ -78,7 +98,7 @@ export function DocumentsSection({
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="m-0 text-base font-semibold text-text-muted">Dokument</h2>
         <Button variant="secondary" size="sm" onClick={() => setEditingDocument("new")}>
           <PlusIcon size={14} /> Nytt dokument

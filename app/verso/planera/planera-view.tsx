@@ -1,26 +1,24 @@
 "use client"
 
 import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
-import { useVentureData } from "@/app/verso/_state/venture-context"
-import { AddVentureButton } from "@/app/verso/planera/add-venture-button"
+import { Drawer } from "@/app/components/ui/Drawer"
+import { useVentureData } from "@/app/verso/_state/verso-context"
+import { VentureForm } from "@/app/verso/planera/venture-form"
+import { priorityLabel } from "@/app/verso/planera/venture-priority"
 import type { Venture } from "@/app/lib/dal"
-
-const PRIORITY_LABEL: Record<number, string> = {
-  1: "Hög prio",
-  2: "Bör göras",
-  3: "Vore kul",
-}
 
 export default function PlaneraView() {
   const { ventures } = useVentureData()
   const sorted = [...ventures].sort((a, b) => a.priority - b.priority)
-  const groups = groupItems(sorted, (venture) => PRIORITY_LABEL[venture.priority] ?? "Ej prio")
+  const groups = groupItems(sorted, (venture) => priorityLabel(venture.priority))
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-7">
       <div className="flex items-baseline justify-between">
         <h1 className="text-2xl font-display font-semibold">Planering</h1>
-        <AddVentureButton />
+        <Drawer trigger="Nytt projekt" triggerSize="sm" title="Nytt projekt">
+          <VentureForm />
+        </Drawer>
       </div>
 
       <GroupedList<Venture>

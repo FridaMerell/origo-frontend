@@ -82,12 +82,12 @@ export default function RootHome() {
         className='absolute left-0 top-1/2 h-px w-full bg-[#1B252B]/15'
       />
       <div className='relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col'>
-        <header className='flex items-center justify-between'>
+        <header className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
           <span className='font-mono text-[11px] font-medium uppercase tracking-[0.18em]'>
             ORIGO / 00°00′
           </span>
           {user && (
-            <div className='flex items-center gap-4'>
+            <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
               <a
                 href='/konto'
                 className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
@@ -151,9 +151,11 @@ export default function RootHome() {
                   key={app.id}
                   href={hrefs[app.id] ?? "#"}
                   onPointerEnter={event =>
+                    event.pointerType === "mouse" &&
                     updatePreview(app.id, event.clientX, event.clientY)
                   }
                   onPointerMove={event =>
+                    event.pointerType === "mouse" &&
                     updatePreview(app.id, event.clientX, event.clientY)
                   }
                   onPointerLeave={() => setPreview(null)}
@@ -186,6 +188,9 @@ export default function RootHome() {
                     </span>
                     <span className='font-mono text-[11px] uppercase tracking-widest text-[#58636A] group-hover:text-[#C9D0CE]'>
                       {APP_NOTE[app.id]}
+                    </span>
+                    <span className='mt-2 hidden text-sm leading-relaxed text-[#58636A] [@media(hover:none)]:block'>
+                      {APP_DESCRIPTION[app.id]}
                     </span>
                   </span>
                   <span className='font-mono text-lg'>

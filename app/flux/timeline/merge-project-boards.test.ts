@@ -3,7 +3,7 @@ import { mergeProjectBoards } from "./merge-project-boards"
 import type { FluxBoard, FluxProject, FluxTask, FluxUser } from "@/app/lib/dal"
 
 function makeProject(id: number): FluxProject {
-  return { id, name: `Projekt ${id}`, description: "", members: [], files: [], created_at: "", updated_at: "" }
+  return { id, name: `Projekt ${id}`, description: "", members: [], files: [], include_identity: false, identity: null, created_at: "", updated_at: "" }
 }
 
 function makeTask(id: number, project: number): FluxTask {

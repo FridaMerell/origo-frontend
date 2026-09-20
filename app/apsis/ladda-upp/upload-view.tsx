@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
-import { Field, fieldInputClass } from "@/app/components/form/Field";
+import { Checkbox, Field, fieldInputClass } from "@/app/components/form/Field";
 import { LockIcon } from "lucide-react";
 import { FileUpload } from "@/app/components/ui/FileUpload";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
@@ -19,6 +19,7 @@ export default function UploadView() {
   const [name, setName] = useState("");
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
+  const [hasApsis, setHasApsis] = useState(true);
   const uploadedFiles = useUploadedFiles();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -53,6 +54,7 @@ export default function UploadView() {
     const result = await createApsisPost(
       {
         name,
+        has_apsis: hasApsis,
         geolocation:
           coordinates.lat === null || coordinates.lon === null
             ? ""
@@ -79,6 +81,12 @@ export default function UploadView() {
           className={fieldInputClass}
         />
       </Field>
+
+      <Checkbox
+        label="Kyrkan har en absid"
+        checked={hasApsis}
+        onChange={(event) => setHasApsis(event.target.checked)}
+      />
 
       <PlacePicker
         lat={lat}

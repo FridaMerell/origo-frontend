@@ -1,16 +1,15 @@
 "use client"
 
 import { useParams } from "next/navigation"
-import Link from "next/link"
-import { useUpdateData } from "@/app/verso/_state/update-context"
-import { useVentureData } from "@/app/verso/_state/venture-context"
+import { useUpdateData, useVentureData } from "@/app/verso/_state/verso-context"
 import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { Card } from "@/app/components/ui/Card"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { Gallery } from "@/app/components/ui/Gallery"
-import UpdateForm from "@/app/verso/update-form"
-import { ChevronLeft, Link2 } from "lucide-react"
+import UpdateForm from "@/app/verso/forms/update-form"
+import { BackLink, DetailNotFound } from "@/app/verso/ui/DetailPage"
+import { Link2 } from "lucide-react"
 
 export default function UpdateView() {
   const { id } = useParams<{ id: string }>()
@@ -22,13 +21,7 @@ export default function UpdateView() {
 
   if (!update) {
     return (
-      <div className="flex flex-1 flex-col gap-5 p-7">
-        <Link href="/updates" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-          <ChevronLeft size={14} />
-          Uppdateringar
-        </Link>
-        <div className="text-text-muted">Uppdateringen kunde inte hittas.</div>
-      </div>
+      <DetailNotFound backHref="/updates" backLabel="Uppdateringar" message="Uppdateringen kunde inte hittas." />
     )
   }
 
@@ -37,10 +30,7 @@ export default function UpdateView() {
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-7">
-      <Link href="/updates" className="flex items-center gap-1 text-sm text-text-muted hover:text-accent">
-        <ChevronLeft size={14} />
-        Uppdateringar
-      </Link>
+      <BackLink href="/updates">Uppdateringar</BackLink>
 
       <div className="flex items-baseline justify-between">
         <h1 className="m-0 font-display text-2xl font-semibold text-text">{update.title}</h1>

@@ -1,15 +1,10 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { FACILITY_COOKIE } from "@/app/lib/config";
-import { getFacilities } from "@/app/lib/dal";
-import HomeView from "./home-view"
+import { getOnThisDay } from "@/app/lib/dal";
+import { getSelectedFacility, resolveSelectedHouse } from "@/app/lib/selected-facility";
+import HomeView from "./home-view";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const facilities = await getFacilities();
-  const cookieStore = await cookies();
-  const selectedId = cookieStore.get(FACILITY_COOKIE)?.value;
-  const selectedFacility =
-    facilities.find((facility) => String(facility.id) === selectedId) ?? facilities[0] ?? null;
+  const selectedFacility = await getSelectedFacility();
 
   return {
     title: selectedFacility ? `${selectedFacility.name} | Verso` : "Verso | Origo",
@@ -18,5 +13,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function VersoPage() {
-  return <HomeView />;
+  const house = await resolveSelectedHouse();
+  const onThisDay = house ? await getOnThisDay(house) : null;
+
+  return <HomeView onThisDay={onThisDay} />;
 }

@@ -1,16 +1,16 @@
-import type { MetadataRoute } from "next";
-import { headers } from "next/headers";
-import { resolveTenant, TENANTS, type TenantId } from "@/app/lib/tenant";
+import type { MetadataRoute } from "next"
+import { headers } from "next/headers"
+import { resolveTenant, TENANTS, type TenantId } from "@/app/lib/tenant"
 
 // One manifest route served per subdomain tenant. `headers()` makes this
 // dynamic, so verso/flux/tempus/apsis each get their own name, colours and
 // icons while sharing a single `/manifest.webmanifest` endpoint.
 
 type TenantManifest = {
-  description: string;
-  background_color: string;
-  theme_color: string;
-};
+  description: string
+  background_color: string
+  theme_color: string
+}
 
 const TENANT_MANIFESTS: Record<TenantId, TenantManifest> = {
   verso: {
@@ -33,14 +33,20 @@ const TENANT_MANIFESTS: Record<TenantId, TenantManifest> = {
     background_color: "#EDE7D8",
     theme_color: "#4B5A3E",
   },
-};
+  opus: {
+    description: "Opus - Origo",
+    background_color: "#f5ecda",
+    theme_color:'#6d0d35'
+  }
+
+}
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-  const requestHeaders = await headers();
-  const hostname = requestHeaders.get("host")?.split(":")[0] ?? "";
-  const tenant = resolveTenant(hostname) ?? "tempus";
-  const { name } = TENANTS[tenant];
-  const config = TENANT_MANIFESTS[tenant];
+  const requestHeaders = await headers()
+  const hostname = requestHeaders.get("host")?.split(":")[0] ?? ""
+  const tenant = resolveTenant(hostname) ?? "tempus"
+  const { name } = TENANTS[tenant]
+  const config = TENANT_MANIFESTS[tenant]
 
   return {
     id: `/?tenant=${tenant}`,
@@ -60,5 +66,5 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         purpose: "any",
       },
     ],
-  };
+  }
 }

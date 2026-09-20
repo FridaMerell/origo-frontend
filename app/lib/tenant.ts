@@ -1,4 +1,4 @@
-export type TenantId = "verso" | "flux" | "tempus" | "apsis"
+export type TenantId = "verso" | "flux" | "tempus" | "apsis" | "opus"
 
 type TenantConfig = {
   name: string
@@ -14,6 +14,7 @@ export const TENANTS: Record<TenantId, TenantConfig> = {
   verso: { name: "Verso" },
   flux: { name: "Flux" },
   tempus: { name: "Tempus", publicPaths: ["/"] },
+  opus: {name: "Opus", publicPaths: ["/"]},
   apsis: { name: "Apsis", publicPaths: ["/"] },
 }
 

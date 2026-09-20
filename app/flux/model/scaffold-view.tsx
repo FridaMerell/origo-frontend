@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { CopyIcon, DownloadIcon, FileTextIcon } from "lucide-react"
+import { DownloadIcon, FileTextIcon } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
+import { CopyButton } from "@/app/components/ui/CopyButton"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { getScaffold, saveScaffoldDocument } from "@/app/actions/flux/design"
 import { useFluxDocumentActions, useFluxDocuments, useSelectedFluxProject } from "@/app/flux/_state/flux-context"
@@ -73,15 +74,6 @@ export function ScaffoldView() {
   }
 
   const selected = files.find((file) => file.path === selectedPath) ?? null
-
-  const copy = async (text: string, message: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setNotice(message)
-    } catch {
-      setNotice("Kunde inte kopiera. Markera texten manuellt.")
-    }
-  }
 
   const saveAsDocument = async () => {
     const result = await saveScaffoldDocument(projectId, target)
@@ -163,10 +155,7 @@ export function ScaffoldView() {
               <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2">
                 <span className="truncate font-mono text-xs text-text-muted">{selected.path}</span>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button variant="secondary" size="sm" onClick={() => copy(selected.content, "Filen kopierades.")}>
-                    <CopyIcon size={14} />
-                    Kopiera
-                  </Button>
+                  <CopyButton text={selected.content} />
                   <Button variant="secondary" size="sm" onClick={() => downloadTextFile(selected.path, selected.content)}>
                     <DownloadIcon size={14} />
                     Ladda ner

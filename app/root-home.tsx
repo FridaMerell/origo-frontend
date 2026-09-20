@@ -10,26 +10,30 @@ import apsisIcon from "./apsis/icon.png"
 import fluxIcon from "./flux/icon.png"
 import tempusIcon from "./tempus/icon.png"
 import versoIcon from "./verso/icon.png"
+import opusIcon from "./opus/icon.png"
 
 const APP_ICONS: Record<string, StaticImageData> = {
   apsis: apsisIcon,
   flux: fluxIcon,
   tempus: tempusIcon,
   verso: versoIcon,
+  opus: opusIcon
 }
 const APP_NOTE: Record<string, string> = {
-  verso: "Fastighetsnav",
+  verso: "Modulbaserad fastighetsnav",
   flux: "Projekthantering",
   tempus: "Artrikedom och säsonger",
   apsis: "Verkligen bara absider",
+  opus: "Läs böcker och jämför utgåvor"
 }
 const APP_DESCRIPTION: Record<string, string> = {
   verso:
-    "Besökskalender, projekthantering, ekonomi och viktiga dokument för hus eller sommarstugor.",
-  flux: "Projekthantering med milstolpar, uppgifter, dokumentation och deadlines.",
+    "Besökskalender, projekthantering, ekonomi och viktiga dokument för hus eller sommarstugor. Dessutom underlag för husets historia och inblandade",
+  flux: "Projekthantering med milstolpar, uppgifter, dokumentation och deadlines. Innehåller även bootstrapping för tekniska projekt med db-entities, crud, och design",
+  opus: "Läs gamla böcker och jämför versioner. Du kan även definera ord, annotera och träna glosor",
   tempus:
     "Taxonomisk data, säsongsbedömningar och biotoper för arter. Men även observationer, krysslistor, hjälp att planera utflykter och en ML-mottagare för automatisk klassificering av fågelsång.",
-  apsis: "Det är på riktigt bara bilder på absider.",
+  apsis: "VI gillar absider. Det är på riktigt bara bilder på absider.",
 }
 
 // Add a public path here when a product screenshot is available, for example
@@ -178,7 +182,7 @@ export default function RootHome() {
                         alt=''
                         width={64}
                         height={64}
-                        className='size-14 object-contain sm:size-16'
+                        className='size-14 border-border rounded-sm object-contain sm:size-16'
                       />
                     )}
                   </span>
@@ -238,7 +242,7 @@ export default function RootHome() {
                     alt=''
                     width={76}
                     height={76}
-                    className='relative size-16 object-contain'
+                    className='relative size-16 object-contain border-border'
                   />
                   <span className='absolute bottom-2 left-3 font-mono text-[9px] uppercase tracking-[0.12em] text-[#C9D0CE]'>
                     Förhandsvisning saknas

@@ -1,6 +1,7 @@
 "use client"
 
 import { Fragment, useMemo, useState, useSyncExternalStore, type DragEvent } from "react"
+import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Card } from "@/app/components/ui/Card"
 import { Gallery } from "@/app/components/ui/Gallery"
@@ -129,12 +130,12 @@ function TaskRow({
 		<>
 			<div
 				onClick={() => onOpenTask(task.id)}
-				className={`flex flex-col items-stretch gap-2 border-b border-border px-4 py-3 text-sm last:border-b-0 ${isTaskOverdue(task.due_date, task.status) ? OVERDUE_ROW_TONE : "hover:bg-surface-2"}`}>
+				className={`flex flex-col items-stretch gap-2 border-b border-border px-4 py-3 text-sm last:border-b-0 lg:flex-row lg:items-center lg:justify-between lg:gap-3 lg:py-2.5 ${isTaskOverdue(task.due_date, task.status) ? OVERDUE_ROW_TONE : "hover:bg-surface-2"}`}>
 				<div className='flex min-w-0 items-start gap-2'>
 					<TaskCompletionButton id={task.id} status={task.status} />
 					<span className='min-w-0 flex-1 text-text'>{task.title}</span>
 				</div>
-				<span className='flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border/70 pt-2 sm:gap-3'>
+				<span className='flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border/70 pt-2 sm:gap-3 lg:border-t-0 lg:pt-0'>
 					<TaskStatusBadge status={task.status} />
 					<span
 						className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${FLUX_PRIORITY_BADGE_TONE[task.priority]}`}>
@@ -328,6 +329,10 @@ export default function FluxProjectDetailView() {
 								{project.description}
 							</p>
 						)}
+						<nav aria-label='Projektvyer' className='mt-4 flex flex-wrap gap-2'>
+							<Link href='/tasks' className='rounded-full border border-border px-3 py-1.5 text-sm font-medium text-text-muted no-underline hover:bg-surface-2 hover:text-text'>Uppgifter</Link>
+							<Link href='/backlog' className='rounded-full border border-border px-3 py-1.5 text-sm font-medium text-text-muted no-underline hover:bg-surface-2 hover:text-text'>Backlog</Link>
+						</nav>
 					</div>
 					<span className='rounded-full bg-accent-wash px-3 py-1.5 text-sm font-semibold text-accent'>
 						{overallProgress.done} av {overallProgress.total} klara

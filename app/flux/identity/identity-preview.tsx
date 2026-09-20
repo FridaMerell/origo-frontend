@@ -29,10 +29,13 @@ export function IdentityPreview({
   identity,
   accessibilityTarget,
   height = "36rem",
+  showcase = false,
 }: {
   identity: PreviewIdentity
   accessibilityTarget: "AA" | "AAA"
   height?: string
+  /** The full visual brand board is shown on the identity page, not in the editor. */
+  showcase?: boolean
 }) {
   const modes = supportedModes(identity.theme_modes)
   const [chosen, setChosen] = useState<PreviewMode>(() => initialPreviewMode(identity))
@@ -55,7 +58,7 @@ export function IdentityPreview({
   }, [logoUrl, inlineImages])
 
   // Plain computation: an unchanged srcDoc string does not reload the frame.
-  const document = origin ? buildPreviewDocument(identity, mode, origin, inlineImages) : ""
+  const document = origin ? buildPreviewDocument(identity, mode, origin, inlineImages, showcase) : ""
   const report = contrastReport(identity.colors, accessibilityTarget, identity.theme_modes).filter((row) => row.mode === mode)
 
   return (

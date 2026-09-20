@@ -13,6 +13,8 @@ function readTheme(el: Element) {
     borderStrong: v("--border-strong", "#4a4a73"),
     text: v("--text", "#ece9f5"),
     textMuted: v("--text-muted", "#c0bed2"),
+    accent: v("--accent", "#A86B27"),
+    accentWash: v("--accent-wash", "#F1E6D6"),
     line: v("--link", v("--secondary", "#4fd8e8")),
     font: v("--font-body", "inherit"),
   }
@@ -33,38 +35,69 @@ function withErPolish(svg: string, id: string, t: Theme): string {
     #${id} .node .attribute-type, #${id} .node .attribute-type span { fill: ${t.textMuted}; color: ${t.textMuted}; font-style: italic; }
     #${id} .node .attribute-keys, #${id} .node .attribute-keys span { fill: ${t.textMuted}; color: ${t.textMuted}; letter-spacing: .05em; }
     #${id} .relationshipLine { stroke: ${t.borderStrong}; }
-    #${id} .edgeLabel .label, #${id} .edgeLabel .label span { color: ${t.textMuted}; }
+    #${id} .node foreignObject,
+    #${id} .node foreignObject > div,
+    #${id} .node .label,
+    #${id} .node .label span,
+    #${id} .node text { overflow: visible !important; white-space: nowrap; }
   `
   return svg.replace(/(<svg[^>]*>)/, `$1<style>${css}</style>`)
 }
 
-/** Mermaid draws every ER shape as a hard-cornered <path>, so `rx` and CSS
- *  `clip-path: inset(round …)` on the group don't take. Give each entity a real
- *  userSpace clipPath and a matching rounded outline. */
+function styleErLabels(root: SVGSVGElement, t: Theme) {
+  const edges = Array.from(root.querySelectorAll<SVGGeometryElement>(".relationshipLine"))
+  const labels = Array.from(root.querySelectorAll<SVGGElement>("g.edgeLabel"))
+
+  labels.forEach((label, index) => {
+    const edge = edges[index]
+    if (edge) {
+      const point = edge.getPointAtLength(edge.getTotalLength() / 2)
+      label.setAttribute("transform", `translate(${point.x}, ${point.y})`)
+    }
+
+    const labelGroup = label.querySelector<SVGGElement>("g.label")
+    const foreignObject = label.querySelector<SVGForeignObjectElement>("foreignObject")
+    const background = label.querySelector<HTMLElement>("foreignObject .labelBkg")
+    if (!labelGroup || !foreignObject || !background || label.dataset.styled) return
+
+    label.dataset.styled = "1"
+    const originalWidth = Number(foreignObject.getAttribute("width") ?? 0)
+    const originalHeight = Number(foreignObject.getAttribute("height") ?? 0)
+    const width = originalWidth + 16
+    const height = originalHeight + 6
+
+    background.style.display = "flex"
+    background.style.alignItems = "center"
+    background.style.justifyContent = "center"
+    background.style.boxSizing = "border-box"
+    background.style.width = `${width}px`
+    background.style.height = `${height}px`
+    background.style.padding = "3px 8px"
+    background.style.border = `1px solid ${t.accent}`
+    background.style.borderRadius = "999px"
+    background.style.background = t.accentWash
+    background.style.color = t.accent
+    background.style.fontWeight = "600"
+    background.style.lineHeight = "1.2"
+    background.style.textAlign = "center"
+
+    foreignObject.setAttribute("width", String(width))
+    foreignObject.setAttribute("height", String(height))
+    labelGroup.setAttribute("transform", `translate(${-width / 2}, ${-height / 2})`)
+  })
+}
+
+/** Add a rounded outline without clipping Mermaid's text labels. */
 function roundErEntities(root: SVGSVGElement, t: Theme) {
   const svgNs = "http://www.w3.org/2000/svg"
-  const defs = root.querySelector("defs") ?? root.insertBefore(document.createElementNS(svgNs, "defs"), root.firstChild)
-  root.querySelectorAll<SVGGElement>("g.node").forEach((node, i) => {
+  root.querySelectorAll<SVGGElement>("g.node").forEach((node) => {
     const outer = node.querySelector<SVGPathElement>("path.outer-path")
     if (!outer || node.dataset.rounded) return
     node.dataset.rounded = "1"
     const { x, y, width, height } = outer.getBBox()
-    const clipId = `${root.id}-erclip-${i}`
-    const clip = document.createElementNS("http://www.w3.org/2000/svg", "clipPath")
-    clip.setAttribute("id", clipId)
-    clip.setAttribute("clipPathUnits", "userSpaceOnUse")
-    const clipRect = document.createElementNS("http://www.w3.org/2000/svg", "rect")
-    clipRect.setAttribute("x", String(x))
-    clipRect.setAttribute("y", String(y))
-    clipRect.setAttribute("width", String(width))
-    clipRect.setAttribute("height", String(height))
-    clipRect.setAttribute("rx", String(ER_RADIUS))
-    clip.appendChild(clipRect)
-    defs!.appendChild(clip)
-    node.setAttribute("clip-path", `url(#${clipId})`)
-
     outer.setAttribute("stroke", "none")
-    // Inset by half a pixel so the stroke sits fully inside the rounded clip.
+    // Keep labels outside the background path's clipping box when Mermaid's
+    // measured width is a few pixels too narrow.
     const border = document.createElementNS("http://www.w3.org/2000/svg", "rect")
     border.setAttribute("x", String(x + 0.5))
     border.setAttribute("y", String(y + 0.5))
@@ -84,6 +117,7 @@ export function MermaidDiagram({ chart }: { chart: string }) {
   const svgRef = useRef<HTMLDivElement>(null)
   const [svg, setSvg] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [zoom, setZoom] = useState(1)
   const isEr = /^\s*erDiagram\b/m.test(chart)
 
   useEffect(() => {
@@ -99,7 +133,7 @@ export function MermaidDiagram({ chart }: { chart: string }) {
           securityLevel: "strict",
           theme: "base",
           fontFamily: t.font,
-          er: { useMaxWidth: true, entityPadding: 18, diagramPadding: 14, minEntityWidth: 120 },
+          er: { useMaxWidth: false, entityPadding: 32, diagramPadding: 24, minEntityWidth: 320 },
           themeVariables: {
             background: "transparent",
             primaryColor: isEr ? t.surface2 : "transparent",
@@ -110,7 +144,8 @@ export function MermaidDiagram({ chart }: { chart: string }) {
             lineColor: isEr ? t.borderStrong : t.line,
             textColor: t.text,
             fontSize: "13px",
-            edgeLabelBackground: t.bg,
+            edgeLabelBackground: "transparent",
+            labelBkgColor: "transparent",
             clusterBkg: "transparent",
             clusterBorder: t.textMuted,
             nodeTextColor: t.text,
@@ -142,7 +177,9 @@ export function MermaidDiagram({ chart }: { chart: string }) {
     const el = svgRef.current?.querySelector("svg")
     if (!el) return
     const host = hostRef.current ?? document.documentElement
-    roundErEntities(el as SVGSVGElement, readTheme(host))
+    const theme = readTheme(host)
+    roundErEntities(el as SVGSVGElement, theme)
+    styleErLabels(el as SVGSVGElement, theme)
   }, [svg, isEr])
 
   return (
@@ -152,7 +189,37 @@ export function MermaidDiagram({ chart }: { chart: string }) {
       ) : !svg ? (
         <p className="text-sm text-text-muted">Ritar diagram…</p>
       ) : (
-        <div ref={svgRef} className="overflow-x-auto [&_svg]:h-auto [&_svg]:max-w-none" dangerouslySetInnerHTML={{ __html: svg }} />
+        <div className="relative">
+          <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-md border border-border bg-surface/95 p-1 shadow-sm">
+            <button
+              type="button"
+              aria-label="Zooma ut"
+              onClick={() => setZoom(value => Math.max(0.5, Number((value - 0.1).toFixed(2))))}
+              className="size-7 rounded text-sm font-semibold text-text-muted hover:bg-surface-2 hover:text-text"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              aria-label="Återställ zoom"
+              onClick={() => setZoom(1)}
+              className="min-w-12 rounded px-1 text-xs font-medium text-text-muted hover:bg-surface-2 hover:text-text"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <button
+              type="button"
+              aria-label="Zooma in"
+              onClick={() => setZoom(value => Math.min(2, Number((value + 0.1).toFixed(2))))}
+              className="size-7 rounded text-sm font-semibold text-text-muted hover:bg-surface-2 hover:text-text"
+            >
+              +
+            </button>
+          </div>
+          <div className="max-h-[70vh] overflow-auto rounded-md bg-bg p-3">
+            <div ref={svgRef} style={{ zoom }} className="w-max min-w-full [&_svg]:h-auto [&_svg]:max-w-none" dangerouslySetInnerHTML={{ __html: svg }} />
+          </div>
+        </div>
       )}
     </div>
   )

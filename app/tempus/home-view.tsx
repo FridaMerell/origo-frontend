@@ -4,6 +4,7 @@ import { SeasonOverviewHeader } from "./home/season-overview-header"
 import { SeasonWindows } from "./home/season-windows"
 import { SpeciesRegister } from "./home/species-register"
 import { RouteOverview, type HomeRouteOverview } from "./home/route-overview"
+import { InterestingSpots } from "./home/interesting-spots"
 
 export type { HomeSpecies, HomeRouteOverview }
 
@@ -20,6 +21,14 @@ export default function HomeView({
   overviewHasPrevious,
   overviewIncoming,
   overviewOutgoing,
+  overviewIncomingCount,
+  overviewOutgoingCount,
+  overviewIncomingPage,
+  overviewOutgoingPage,
+  overviewIncomingHasNext,
+  overviewIncomingHasPrevious,
+  overviewOutgoingHasNext,
+  overviewOutgoingHasPrevious,
   routeOverview,
 }: {
   items: HomeSpecies[]
@@ -34,6 +43,14 @@ export default function HomeView({
   overviewHasPrevious: boolean
   overviewIncoming: TempusSeasonalOverview[]
   overviewOutgoing: TempusSeasonalOverview[]
+  overviewIncomingCount: number
+  overviewOutgoingCount: number
+  overviewIncomingPage: number
+  overviewOutgoingPage: number
+  overviewIncomingHasNext: boolean
+  overviewIncomingHasPrevious: boolean
+  overviewOutgoingHasNext: boolean
+  overviewOutgoingHasPrevious: boolean
   routeOverview: HomeRouteOverview | null
 }) {
   const isAll = view === "all"
@@ -56,8 +73,8 @@ export default function HomeView({
   const tally = isAll
     ? [
         { label: "Arter i urvalet", value: overviewCount, lead: true },
-        { label: "På väg in", value: overviewIncoming.length, lead: false },
-        { label: "På väg ut", value: overviewOutgoing.length, lead: false },
+        { label: "På väg in", value: overviewIncomingCount, lead: false },
+        { label: "På väg ut", value: overviewOutgoingCount, lead: false },
       ]
     : [
         { label: "Följda arter", value: items.length, lead: false },
@@ -92,6 +109,8 @@ export default function HomeView({
           habitatNote={habitatNote}
         />
 
+        <InterestingSpots allowLocation />
+
         <RouteOverview routeOverview={routeOverview} />
 
         <SpeciesRegister
@@ -106,7 +125,19 @@ export default function HomeView({
           currentMonth={currentMonth}
         />
 
-        <SeasonWindows isAll={isAll} incomingEntries={incomingEntries} outgoingEntries={outgoingEntries} />
+        <SeasonWindows
+          isAll={isAll}
+          incomingEntries={incomingEntries}
+          outgoingEntries={outgoingEntries}
+          incomingCount={overviewIncomingCount}
+          outgoingCount={overviewOutgoingCount}
+          incomingPage={overviewIncomingPage}
+          outgoingPage={overviewOutgoingPage}
+          incomingHasNext={overviewIncomingHasNext}
+          incomingHasPrevious={overviewIncomingHasPrevious}
+          outgoingHasNext={overviewOutgoingHasNext}
+          outgoingHasPrevious={overviewOutgoingHasPrevious}
+        />
 
         <p className="text-right font-display text-[10px] italic text-text-faint">
           Sammanställt ur Dyntaxa · aktuellt per {todayLabel}

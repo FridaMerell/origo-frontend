@@ -15,7 +15,10 @@ import { AssetFileField } from "./asset-file-field"
 import { COLOR_FORMATS_HINT, normalizeColor } from "./color-parse"
 import { IdentityPreview } from "./identity-preview"
 import { COLOR_ROLES, FONT_WEIGHTS, isHex } from "./identity-utils"
+import { ColorToolbox } from "./color-toolbox"
 import { StandardTokensPanel } from "./standard-tokens-panel"
+import { ThemeImportPanel } from "./theme-import-panel"
+import type { ImportedTheme } from "./theme-import"
 
 /** Grid columns of the colour table: swatch, name, role, then one column per mode in use, delete. */
 const colorColumns = (showLight: boolean, showDark: boolean) =>
@@ -95,6 +98,15 @@ export function IdentityEditor({
     onClose()
   })
 
+  const applyImportedTheme = (theme: ImportedTheme) => {
+    setValue("theme_modes", theme.themeModes, { shouldDirty: true, shouldValidate: true })
+    if (theme.colors.length) setValue("colors", theme.colors, { shouldDirty: true, shouldValidate: true })
+    if (theme.headingFont) setValue("heading_font", theme.headingFont, { shouldDirty: true, shouldValidate: true })
+    if (theme.bodyFont) setValue("body_font", theme.bodyFont, { shouldDirty: true, shouldValidate: true })
+    if (theme.fontImportUrl) setValue("font_import_url", theme.fontImportUrl, { shouldDirty: true, shouldValidate: true })
+    if (theme.radii.length) setValue("radii", theme.radii, { shouldDirty: true, shouldValidate: true })
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex bg-black/60 transition-opacity"
@@ -150,6 +162,7 @@ export function IdentityEditor({
 
               <section className={sectionClass}>
                 <h3 className={sectionTitle}>Teman</h3>
+                <ThemeImportPanel onApply={applyImportedTheme} />
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Teman" error={errors.theme_modes}>
                     <select className={fieldInputClass} {...register("theme_modes")}>
@@ -184,11 +197,14 @@ export function IdentityEditor({
                   Skriv färger som {COLOR_FORMATS_HINT}. Allt konverteras till #rrggbb, eftersom det är vad identiteten lagrar.
                   Ge färgerna roller: kontrasten räknas på text, background, surface, muted, primary och accent.
                 </p>
-                <StandardTokensPanel
-                  themeModes={themeModes}
-                  existing={(watched.colors ?? []).map((color) => ({ name: color?.name ?? "", role: color?.role ?? "" }))}
-                  onAdd={(added) => colors.append(added)}
-                />
+                <div className="flex flex-wrap items-start gap-2">
+                  <ColorToolbox themeModes={themeModes} onAdd={(color) => colors.append(color)} />
+                  <StandardTokensPanel
+                    themeModes={themeModes}
+                    existing={(watched.colors ?? []).map((color) => ({ name: color?.name ?? "", role: color?.role ?? "" }))}
+                    onAdd={(added) => colors.append(added)}
+                  />
+                </div>
                 {colors.fields.length === 0 && <p className="text-sm text-text-muted">Inga färger än.</p>}
                 {colors.fields.length > 0 && (
                   <div className="overflow-x-auto">

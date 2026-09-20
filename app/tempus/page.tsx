@@ -18,13 +18,14 @@ export const metadata: Metadata = {
 export default async function TempusPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; p?: string }>
+  searchParams: Promise<{ view?: string; p?: string; incoming_page?: string; outgoing_page?: string }>
 }) {
-  const { view: rawView, p: rawPage } = await searchParams
+  const { view: rawView, p: rawPage, incoming_page: rawIncomingPage, outgoing_page: rawOutgoingPage } = await searchParams
   const view = rawView === "all" ? "all" : "followed"
-  const overviewPage = Number.isInteger(Number(rawPage)) && Number(rawPage) > 0
-    ? Number(rawPage)
-    : 1
+  const parsePage = (value?: string) => Number.isInteger(Number(value)) && Number(value) > 0 ? Number(value) : 1
+  const overviewPage = parsePage(rawPage)
+  const incomingPage = parsePage(rawIncomingPage)
+  const outgoingPage = parsePage(rawOutgoingPage)
   const [geoAreas, cookieStore, routes] = await Promise.all([
     getTempusGeoAreas(),
     cookies(),
@@ -73,6 +74,7 @@ export default async function TempusPage({
       ? getTempusSeasonalOverviewPage({
           ...overviewParams,
           status: "coming_into_season",
+          page: incomingPage,
           page_size: 3,
         })
       : Promise.resolve(emptyOverview),
@@ -80,6 +82,7 @@ export default async function TempusPage({
       ? getTempusSeasonalOverviewPage({
           ...overviewParams,
           status: "going_out_of_season",
+          page: outgoingPage,
           page_size: 3,
         })
       : Promise.resolve(emptyOverview),
@@ -101,6 +104,14 @@ export default async function TempusPage({
       overviewHasPrevious={Boolean(overview.previous)}
       overviewIncoming={overviewIncoming.results}
       overviewOutgoing={overviewOutgoing.results}
+      overviewIncomingCount={overviewIncoming.count}
+      overviewOutgoingCount={overviewOutgoing.count}
+      overviewIncomingPage={incomingPage}
+      overviewOutgoingPage={outgoingPage}
+      overviewIncomingHasNext={Boolean(overviewIncoming.next)}
+      overviewIncomingHasPrevious={Boolean(overviewIncoming.previous)}
+      overviewOutgoingHasNext={Boolean(overviewOutgoing.next)}
+      overviewOutgoingHasPrevious={Boolean(overviewOutgoing.previous)}
       routeOverview={resolvedRouteOverview}
     />
   )

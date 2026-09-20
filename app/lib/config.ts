@@ -123,6 +123,7 @@ export const TEMPUS_ENDPOINTS = {
   observations: "/api/tempus/observations/",
   observationsByCategory: "/api/tempus/observations/by-category/",
   observationsSyncChecklists: "/api/tempus/observations/sync-checklists/",
+  interestingSpots: "/api/tempus/interesting-spots/",
   geoAreas: "/api/tempus/geo-areas/",
   locales:"/api/tempus/locales/",
   localeLandCover: (id: number | string) => `/api/tempus/locales/${encodeURIComponent(id)}/land-cover/`,

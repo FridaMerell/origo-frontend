@@ -115,6 +115,13 @@ export function SeasonOverviewHeader({
           </div>
         ))}
       </dl>
+
+      {isAll ? (
+        <p className="-mt-3 text-xs leading-relaxed text-text-muted">
+          Urvalet omfattar arter med minst 20 rapporter i valt område. Arter med färre rapporter ingår därför inte i totalsiffran.
+          Lågkonfidensarter kan fortfarande ingå om de uppfyller rapportgränsen.
+        </p>
+      ) : null}
     </header>
   )
 }

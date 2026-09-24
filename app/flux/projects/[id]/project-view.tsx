@@ -35,7 +35,7 @@ import { formatDate } from "@/app/lib/formatters"
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date"
 import { isTaskOverdue, OVERDUE_ROW_TONE } from "@/app/lib/flux-task-dates"
 import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort"
-import { useTaskPanel } from "@/app/lib/task-panel-context"
+import { useTaskPanel } from "@/app/flux/_state/task-panel-context"
 import {
 	FLUX_PRIORITY_BADGE_TONE,
 	FLUX_PRIORITY_LABEL,

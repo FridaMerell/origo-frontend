@@ -60,7 +60,14 @@ export default function UploadView() {
             ? ""
             : `${coordinates.lat.toFixed(6)}, ${coordinates.lon.toFixed(6)}`,
       },
-      uploadedFiles.files.map((file) => ({ name: file.name, url: file.url })),
+      uploadedFiles.files.flatMap((file) =>
+        file.thumbnailUrl
+          ? [
+              { name: `${file.name} (miniatyr)`, url: file.thumbnailUrl },
+              { name: file.name, url: file.url },
+            ]
+          : [{ name: file.name, url: file.url }],
+      ),
     );
     setSubmitting(false);
     if (result?.error) {
@@ -102,7 +109,14 @@ export default function UploadView() {
 
       <div className="flex flex-col gap-1 text-sm">
         Bild
-        <FileUpload folder="apsis" files={uploadedFiles.files} onChange={uploadedFiles.setFiles} multiple={false} accept="image/*" />
+        <FileUpload
+          folder="apsis"
+          files={uploadedFiles.files}
+          onChange={uploadedFiles.setFiles}
+          multiple={false}
+          accept="image/*"
+          thumbnailOptions={{ maxEdge: 1024, quality: 0.78 }}
+        />
       </div>
 
       {error && <p className="text-sm text-danger">{error}</p>}

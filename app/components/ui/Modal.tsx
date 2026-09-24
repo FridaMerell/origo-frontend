@@ -60,6 +60,7 @@ export function Modal({
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const [theme, setTheme] = useState<{ theme?: string; mode?: string }>({});
+  const [fontVariableClasses, setFontVariableClasses] = useState("");
   const titleId = useId();
   const descriptionId = useId();
   const confirmExitOptions = typeof confirmExit === "object" ? confirmExit : {};
@@ -87,7 +88,21 @@ export function Modal({
       ? document.activeElement
       : null;
     const scope = anchorRef.current?.closest<HTMLElement>("[data-theme]");
-    if (scope) setTheme({ theme: scope.dataset.theme, mode: scope.dataset.mode });
+    if (scope) {
+      setTheme({ theme: scope.dataset.theme, mode: scope.dataset.mode });
+      // A portal sits outside the tenant layout, where next/font attaches its
+      // CSS variable classes. Carry just those classes over so modal content
+      // uses the active tenant's loaded typefaces rather than fallback fonts.
+      let fontScope: HTMLElement | null = scope;
+      while (fontScope && !Array.from(fontScope.classList).some((className) => className.includes("__variable"))) {
+        fontScope = fontScope.parentElement;
+      }
+      setFontVariableClasses(
+        Array.from(fontScope?.classList ?? [])
+          .filter((className) => className.includes("__variable"))
+          .join(" "),
+      );
+    }
 
     const frame = requestAnimationFrame(() => {
       setEntered(true);
@@ -137,7 +152,10 @@ export function Modal({
             <div
               data-theme={theme.theme}
               data-mode={theme.mode}
-              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 transition-opacity"
+              className={`${fontVariableClasses} fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 transition-opacity`}
+              onPointerDown={(event) => {
+                if (event.target === event.currentTarget) requestClose();
+              }}
               style={{
                 transitionDuration: "var(--duration-normal)",
                 transitionTimingFunction: "var(--ease-standard)",
@@ -154,7 +172,7 @@ export function Modal({
                 aria-labelledby={titleId}
                 aria-describedby={description ? descriptionId : undefined}
                 tabIndex={-1}
-                className={`flex max-h-[calc(100vh-2rem)] w-full flex-col rounded-card border border-border bg-surface shadow-lg outline-none transition-transform ${SIZES[size]} ${className}`}
+                className={`flex max-h-[calc(100vh-2rem)] w-full flex-col !rounded-[14px] border border-border bg-surface font-body text-text shadow-lg outline-none transition-transform ${SIZES[size]} ${className}`}
                 style={{
                   transitionDuration: "var(--duration-normal)",
                   transitionTimingFunction: "var(--ease-standard)",

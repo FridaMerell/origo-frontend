@@ -44,7 +44,6 @@ export function NavProgressBar() {
 
   useEffect(() => {
     if (!active) return
-    // Small delay so instant navigations don't flash the bar.
     const timer = setTimeout(() => setShown(true), 120)
     return () => {
       clearTimeout(timer)

@@ -2,11 +2,12 @@
 
 import { useRef, useState } from "react"
 import { fileProxyUrl } from "@/app/lib/files"
+import { readImageInfo, type ThumbnailOptions } from "@/app/lib/image-thumbnail"
 import { Loader, Upload, X } from "lucide-react"
 
 export type UploadFolder = "verso" | "flux" | "apsis"
 
-export type UploadedFile = { url: string; name: string }
+export type UploadedFile = { url: string; name: string; thumbnailUrl?: string }
 
 type FileUploadProps = {
   folder: UploadFolder
@@ -15,6 +16,8 @@ type FileUploadProps = {
   multiple?: boolean
   accept?: string
   uploadUrl?: string
+  /** Generates and uploads a thumbnail before the original image. */
+  thumbnailOptions?: ThumbnailOptions
   className?: string
 }
 
@@ -25,6 +28,7 @@ export function FileUpload({
   multiple = true,
   accept,
   uploadUrl = "/api/upload",
+  thumbnailOptions,
   className = "",
 }: FileUploadProps) {
   const [uploading, setUploading] = useState(false)
@@ -39,19 +43,27 @@ export function FileUpload({
     setUploading(true)
     setError(null)
     try {
-      const uploaded = await Promise.all(
-        selected.map(async (file) => {
-          const body = new FormData()
-          body.set("file", file)
-          body.set("folder", folder)
+      const uploadFile = async (file: File) => {
+        const body = new FormData()
+        body.set("file", file)
+        body.set("folder", folder)
 
-          const response = await fetch(uploadUrl, { method: "POST", body })
-          if (!response.ok) throw new Error("Upload failed")
+        const response = await fetch(uploadUrl, { method: "POST", body })
+        if (!response.ok) throw new Error("Upload failed")
 
-          const blob = (await response.json()) as { url: string; pathname: string }
-          return { url: blob.url, name: blob.pathname.split("/").pop() ?? blob.pathname }
-        })
-      )
+        return (await response.json()) as { url: string; pathname: string }
+      }
+      const uploaded = await Promise.all(selected.map(async (file) => {
+        const thumbnailUrl = thumbnailOptions
+          ? (await uploadFile((await readImageInfo(file, thumbnailOptions)).thumbnail)).url
+          : undefined
+        const blob = await uploadFile(file)
+        return {
+          url: blob.url,
+          name: blob.pathname.split("/").pop() ?? blob.pathname,
+          thumbnailUrl,
+        }
+      }))
       onChange(multiple ? [...files, ...uploaded] : uploaded)
     } catch {
       setError("Uppladdningen misslyckades. Försök igen.")

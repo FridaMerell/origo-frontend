@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
-import { ApsisProviders } from "@/app/lib/apsis-providers";
+import { ApsisProviders } from "./_state/apsis-providers";
 import { NavProgressBar } from "@/app/lib/nav-progress";
 import { Splash } from "@/app/components/ui/Splash";
 import ApsisShell from "./apsis-shell";

@@ -148,6 +148,28 @@ export const TEMPUS_ENDPOINTS = {
   routeSuggestedStops: (id: string) => `/api/tempus/routes/${id}/suggested-stops/`,
 } as const;
 
+
+export const OPUS_ENDPOINTS = {
+  alignmentSets: "/api/opus/alignment-sets/",
+  alignments: "/api/opus/alignments/",
+  annotations: "/api/opus/annotations/",
+  bookmarks: "/api/opus/bookmarks/",
+  excerpts: "/api/opus/excerpts/",
+  lexicalEntries: "/api/opus/lexical-entries/",
+	read: (workId: number | string) => `/api/opus/read/${encodeURIComponent(String(workId))}/`,
+	readProgress: (workId: number | string) => `/api/opus/read/${encodeURIComponent(String(workId))}/progress/`,
+  sourceFiles: "/api/opus/source-files/",
+  textUnits: "/api/opus/text-units/",
+	editions: "/api/opus/editions/",
+	authors: "/api/opus/authors/",
+	authorAliases: "/api/opus/author-aliases/",
+	authorIdentifiers: "/api/opus/author-identifiers/",
+	bibliographyEntries: "/api/opus/bibliography-entries/",
+	workContributors: "/api/opus/work-contributors/",
+  users: "/api/opus/users/",
+  works: "/api/opus/works/",
+} as const;
+
 export const SESSION_COOKIE = "origo_sessionid";
 export const CSRF_COOKIE = "origo_csrftoken";
 export const FACILITY_COOKIE = "verso_facility";

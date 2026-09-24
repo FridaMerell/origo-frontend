@@ -1,6 +1,6 @@
 "use client";
 
-import { useApsisPosts } from "@/app/lib/apsis-context";
+import { useApsisPosts } from "@/app/apsis/_state/apsis-context";
 
 export default function WallOfShamePage() {
   const absentApsisPosts = useApsisPosts().filter((post) => !post.has_apsis);

@@ -9,7 +9,7 @@ import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
 import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app/flux/_state/flux-context";
 import { FLUX_PRIORITY_SECTIONS } from "@/app/flux/flux-priority";
 import type { FluxTask, FluxUser } from "@/app/lib/dal";
-import { useTaskPanel } from "@/app/lib/task-panel-context";
+import { useTaskPanel } from "@/app/flux/_state/task-panel-context";
 
 function BacklogRow({
   task,

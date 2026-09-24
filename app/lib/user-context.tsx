@@ -10,26 +10,15 @@ type UserContextValue = {
 
 const UserContext = createContext<UserContextValue>({ user: null, users: [] });
 
-export function UserProvider({
-  user,
-  users,
-  children,
-}: {
-  user: User | null;
-  users: FluxUser[];
-  children: React.ReactNode;
-}) {
+export function UserProvider({ user, users, children }: { user: User | null; users: FluxUser[]; children: React.ReactNode }) {
   return <UserContext.Provider value={{ user, users }}>{children}</UserContext.Provider>;
 }
 
-export function useUser() {
-  return useContext(UserContext).user;
-}
+export function useUser() { return useContext(UserContext).user; }
 
 export function useUsers() {
   const { user, users } = useContext(UserContext);
   if (!user || users.some((candidate) => candidate.id === user.id)) return users;
-
   return [user, ...users];
 }
 

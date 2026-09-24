@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { AllProjectsTimelineData } from "@/app/flux/timeline/all-projects-timeline-data"
-import { TaskPanelProvider } from "@/app/lib/task-panel-context"
+import { TaskPanelProvider } from "@/app/flux/_state/task-panel-context"
 import FluxShell from "@/app/flux/flux-shell"
 import { TaskPanel } from "@/app/flux/tasks/task-panel"
 

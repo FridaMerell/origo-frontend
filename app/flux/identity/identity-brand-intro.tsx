@@ -101,8 +101,8 @@ export function IdentityBrandIntro({ identity }: { identity: FluxIdentity }) {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
           <article className="flex min-h-36 flex-col justify-between rounded-lg border p-5 sm:col-span-2 lg:col-span-1" style={{ backgroundColor: primary, borderColor: primary, color: onPrimary }}>
             <span className="text-xs font-semibold uppercase tracking-[0.12em] opacity-75">Huvudhandling</span>
-            <strong className="text-2xl leading-tight" style={{ fontFamily: headingFont }}>En tydlig väg framåt</strong>
-            <span className="text-sm opacity-80">Färg, hierarki och handling i samma riktning.</span>
+            <strong className="text-2xl leading-tight" style={{ fontFamily: headingFont }}>En tydlig rubrik</strong>
+            <span className="text-sm opacity-80">Typdokument för digital inriktning.</span>
           </article>
           <article className="rounded-lg border p-4" style={{ backgroundColor: surface, borderColor: border }}>
             <p className="text-xs font-semibold uppercase tracking-[0.12em]" style={{ color: muted }}>Status</p>

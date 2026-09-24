@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getSessionCookies } from "@/app/lib/session";
 import { STORAGE_BUCKET, STORAGE_ENDPOINT, storage, storageUrlForKey } from "@/app/lib/storage";
 
-const ALLOWED_FOLDERS = ["verso", "flux", "apsis"];
+const ALLOWED_FOLDERS = ["verso", "flux", "apsis", "opus"];
 
 // Same shape as the old random suffix: "report.pdf" -> "report-<uuid>.pdf".
 function uniqueKey(folder: string, fileName: string): string {

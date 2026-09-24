@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { ShuffleIcon } from "lucide-react";
-import { useApsisPosts } from "@/app/lib/apsis-context";
+import { useApsisPosts } from "@/app/apsis/_state/apsis-context";
 import { fileProxyUrl } from "@/app/lib/files";
 
 export default function SlumpaView() {

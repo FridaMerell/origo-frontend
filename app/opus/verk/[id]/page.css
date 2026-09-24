@@ -1,0 +1,279 @@
+.reading-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.reading-article {
+  overflow: visible;
+  padding-top: 1.75rem;
+}
+
+.reading-gutter-heading,
+.reading-edition-heading {
+  height: 4.6rem;
+  padding: .8rem 1rem;
+  color: var(--background);
+  background: var(--accent-wash);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.reading-gutter-heading {
+  width: 5.1%;
+  border-top-left-radius: 1rem;
+  border-right: 1px solid color-mix(in oklab, var(--background) 14%, transparent);
+  color: var(--accent);
+  font-size: .7rem;
+  text-align: center;
+}
+
+.reading-edition-heading {
+  border-left: 4px solid var(--accent);
+}
+
+.reading-edition-heading > span,
+.reading-edition-heading > small {
+  display: block;
+}
+
+.reading-edition-heading > small {
+  margin-top: .15rem;
+  color: color-mix(in oklab, var(--background) 55%, var(--text));
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.reading-edition-heading.edition-primary > small {
+  color: var(--primary);
+}
+
+.reading-edition-heading.edition-accent > small {
+  color: var(--accent);
+}
+
+.reading-notes-heading,
+.reading-notes-cell {
+  width: 19.3%;
+  border-left: 1px dashed color-mix(in oklab, var(--text) 18%, transparent);
+  vertical-align: top;
+}
+
+.reading-notes-heading {
+  display: table-cell;
+  padding: 1.75rem 1.5rem 1rem;
+  color: var(--primary);
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.reading-row-label,
+.reading-cell {
+  border-top: 1px solid color-mix(in oklab, var(--text) 13%, transparent);
+  border-left: 1px solid color-mix(in oklab, var(--text) 13%, transparent);
+  vertical-align: top;
+}
+
+.reading-row-label {
+  padding: 1.65rem .75rem;
+  color: var(--text);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: .875rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.reading-cell {
+  min-width: 0;
+  padding: 1.15rem 1rem 1.4rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.reading-notes-cell {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid color-mix(in oklab, var(--text) 13%, transparent);
+  background: var(--bg);
+}
+
+.reading-notes-cell:empty {
+  padding: 0;
+}
+
+.reading-row.is-current .reading-row-label {
+  color: var(--background);
+  background: var(--primary);
+}
+
+.reading-row.is-current .reading-cell {
+  background: color-mix(in oklab, var(--surface) 88%, var(--primary));
+}
+
+.reading-note {
+  position: relative;
+  padding: 1rem;
+  border: 1px solid color-mix(in oklab, var(--accent) 40%, var(--border));
+  border-radius: .25rem;
+  background: color-mix(in oklab, var(--surface) 92%, var(--accent));
+}
+
+.reading-note::before {
+  position: absolute;
+  top: 1.2rem;
+  right: 100%;
+  width: 1.5rem;
+  border-top: 1px solid var(--border);
+  content: "";
+}
+
+.reading-note + .reading-note {
+  margin-top: .75rem;
+}
+
+.reading-note-meta {
+  margin: 0 0 .5rem;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  font-weight: 500;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.reading-note-body {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: .95rem;
+  font-weight: 600;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.reading-row.is-current .reading-note {
+  color: var(--background);
+  border-color: var(--accent-wash);
+  background: var(--accent-wash);
+}
+
+.reading-row.is-current .reading-note-meta {
+  color: var(--accent);
+}
+
+.reading-toolbar {
+  padding: .75rem 1.25rem;
+  border-top: 1px solid color-mix(in oklab, var(--text) 13%, transparent);
+  color: var(--text-muted);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: .72rem;
+}
+
+.reading-toolbar span + span {
+  margin-left: 1.5rem;
+}
+
+.reading-toolbar button {
+  float: right;
+  padding: .45rem .7rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 45%, var(--border));
+  border-radius: .35rem;
+  color: var(--primary);
+  background: transparent;
+  font: inherit;
+}
+
+.reading-reference {
+  margin-right: .4rem;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  font-weight: 400;
+  vertical-align: super;
+}
+
+@media (max-width: 1023px) {
+  .reading-table,
+  .reading-table tbody,
+  .reading-table tr,
+  .reading-table td,
+  .reading-table th {
+    display: block;
+    width: 100%;
+  }
+
+  .reading-table thead,
+  .reading-table tfoot {
+    display: none;
+  }
+
+  .reading-table {
+    border: 0;
+    background: transparent;
+  }
+
+  .reading-row {
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    border: 1px solid color-mix(in oklab, var(--text) 13%, transparent);
+    border-radius: .75rem;
+    background: var(--surface);
+  }
+
+  .reading-row-label {
+    padding: .75rem 1rem;
+    border: 0;
+    border-bottom: 1px solid color-mix(in oklab, var(--text) 13%, transparent);
+    text-align: left;
+  }
+
+  .reading-cell {
+    display: grid;
+    grid-template-columns: 7.25rem minmax(0, 1fr);
+    padding: 1rem;
+    border: 0;
+    border-left: 3px solid var(--accent);
+    border-top: 1px solid color-mix(in oklab, var(--text) 13%, transparent);
+  }
+
+  .reading-cell::before {
+    content: attr(data-edition);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .reading-cell-content {
+    min-width: 0;
+    padding-left: .75rem;
+  }
+
+  .reading-notes-cell {
+    padding: 1rem;
+    border: 0;
+    border-top: 1px dashed color-mix(in oklab, var(--text) 18%, transparent);
+    background: transparent;
+  }
+
+  .reading-note::before { display: none; }
+}

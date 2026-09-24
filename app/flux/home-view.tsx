@@ -27,7 +27,7 @@ import {
   useFluxUsers,
   useSelectedFluxProject,
 } from "./_state/flux-context"
-import { useTaskPanel } from "../lib/task-panel-context"
+import { useTaskPanel } from "@/app/flux/_state/task-panel-context"
 import { progressOf } from "../lib/flux-progress"
 import { formatDate } from "../lib/formatters"
 import { isTaskOverdue } from "../lib/flux-task-dates"

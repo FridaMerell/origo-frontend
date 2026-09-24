@@ -35,7 +35,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   
   return (
     <html
-      lang="en"
+      lang="sv"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       data-theme="origo"
     >

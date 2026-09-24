@@ -17,7 +17,7 @@ import { isTaskOverdue } from "@/app/lib/flux-task-dates";
 import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
 import { formatDate } from "@/app/lib/formatters";
 import type { FluxMilestone, FluxTask, FluxUser } from "@/app/lib/dal";
-import { useTaskPanel } from "@/app/lib/task-panel-context";
+import { useTaskPanel } from "@/app/flux/_state/task-panel-context";
 import { CheckCircleIcon, CircleIcon, Flag, PlayCircleIcon } from "lucide-react"
 
 const MILESTONE_STATUS: Record<FluxMilestone["status"], { label: string; variant: "neutral" | "warning" | "success" }> = {

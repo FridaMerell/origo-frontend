@@ -177,12 +177,67 @@ function TempusSpinner() {
 	)
 }
 
+// Right-hand page of an open book, drawn outwards from the spine at x = 40.
+// The left-hand page is the same shape mirrored, so a page flipped over the
+// spine lands exactly on top of it.
+const OPUS_PAGE = "M40 14C47 10 61 9 74 12V47C61 44 47 45 40 49Z"
+const OPUS_LINES = [
+	{ y: 22, x2: 58, heading: true },
+	{ y: 28, x2: 67, heading: false },
+	{ y: 34, x2: 67, heading: false },
+	{ y: 40, x2: 60, heading: false },
+]
+
+function OpusPage({ mirrored = false }: { mirrored?: boolean }) {
+	return (
+		<g transform={mirrored ? "translate(80 0) scale(-1 1)" : undefined}>
+			<path
+				d={OPUS_PAGE}
+				fill='var(--surface)'
+				stroke='var(--text)'
+				strokeWidth='2'
+				strokeLinejoin='round'
+				vectorEffect='non-scaling-stroke'
+			/>
+			{OPUS_LINES.map(line => (
+				<line
+					key={line.y}
+					x1='47'
+					x2={line.x2}
+					y1={line.y}
+					y2={line.y}
+					stroke={line.heading ? "var(--accent)" : "var(--text-muted)"}
+					strokeWidth={line.heading ? 2 : 1.5}
+					strokeLinecap='round'
+				/>
+			))}
+		</g>
+	)
+}
+
+function OpusSpinner() {
+	return (
+		<svg width='80' height='60' viewBox='0 0 80 60' aria-hidden>
+			<path d='M37 44V57L40 54L43 57V44Z' fill='var(--primary)' />
+			<OpusPage mirrored />
+			<OpusPage />
+			<g
+				style={{
+					transformOrigin: "40px 30px",
+					animation: `splash-opus-flip 1.8s ${EASE} infinite`,
+				}}>
+				<OpusPage />
+			</g>
+		</svg>
+	)
+}
+
 const SPINNERS: Record<SplashTenant, () => ReactElement> = {
 	verso: VersoSpinner,
 	flux: FluxSpinner,
 	apsis: ApsisSpinner,
 	tempus: TempusSpinner,
-	opus: ApsisSpinner,
+	opus: OpusSpinner,
 }
 
 export function Splash({ tenant }: { tenant: SplashTenant }) {

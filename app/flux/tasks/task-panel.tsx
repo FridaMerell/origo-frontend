@@ -16,7 +16,7 @@ import { useFluxMilestones, useFluxProjects, useFluxTaskActions, useFluxTaskStat
 import { progressOf } from "@/app/lib/flux-progress";
 import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
-import { useTaskPanel } from "@/app/lib/task-panel-context";
+import { useTaskPanel } from "@/app/flux/_state/task-panel-context";
 import { FLUX_PRIORITY_BADGE_TONE, FLUX_PRIORITY_LABEL } from "@/app/flux/flux-priority";
 import type { FluxTask } from "@/app/lib/dal";
 import { Check, MessageSquare, Pencil, Plus } from "lucide-react"

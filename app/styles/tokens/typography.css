@@ -25,3 +25,51 @@
 [data-theme="origo"]{
 --font-mono:'Geist Mono','Geist Mono Fallback',monospace;
 }
+[data-theme="opus"]{
+  --font-display: var(--font-opus-fraunces), Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-opus-space-grotesk), 'Helvetica Neue', sans-serif;
+  --font-mono: var(--font-opus-space-grotesk), ui-monospace, monospace;
+  --text-xs: 0.64rem;
+  --text-sm: 0.8rem;
+  --text-base: 1rem;
+  --text-md: 1.118rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.562rem;
+  --text-2xl: 1.953rem;
+  --text-3xl: 2.441rem;
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+  --tracking-tight: -.015em;
+  --tracking-normal: 0;
+  --tracking-wide: .06em;
+  --brand-font-size-base: 16px;
+  --brand-text-xs: 0.64rem;
+  --brand-text-sm: 0.8rem;
+  --brand-text-base: 1rem;
+  --brand-text-lg: 1.25rem;
+  --brand-text-xl: 1.562rem;
+  --brand-text-2xl: 1.953rem;
+  --brand-text-3xl: 2.441rem;
+  --brand-text-4xl: 3.052rem;
+  --brand-space-unit: 4px;
+  --brand-space-1: calc(var(--brand-space-unit) * 1);
+  --brand-space-2: calc(var(--brand-space-unit) * 2);
+  --brand-space-3: calc(var(--brand-space-unit) * 3);
+  --brand-space-4: calc(var(--brand-space-unit) * 4);
+  --brand-space-5: calc(var(--brand-space-unit) * 5);
+  --brand-space-6: calc(var(--brand-space-unit) * 6);
+  --brand-space-8: calc(var(--brand-space-unit) * 8);
+  --brand-space-10: calc(var(--brand-space-unit) * 10);
+  --brand-space-12: calc(var(--brand-space-unit) * 12);
+  --brand-space-16: calc(var(--brand-space-unit) * 16);
+  --brand-radius-lg: 8px;
+  --brand-radius-md: 6px;
+  --brand-radius-sm: 4px;
+  --brand-radius-xl: 12px;
+  --brand-font-heading: var(--font-opus-fraunces), system-ui, sans-serif;
+  --brand-font-body: var(--font-opus-space-grotesk), system-ui, sans-serif;
+  --brand-font-mono: var(--font-opus-space-grotesk), ui-monospace, monospace;
+
+}

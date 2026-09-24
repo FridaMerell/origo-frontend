@@ -4,7 +4,7 @@ import Image from "next/image";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/Button";
-import { useApsisPosts } from "@/app/lib/apsis-context";
+import { useApsisPosts } from "./_state/apsis-context";
 import { fileProxyUrl } from "@/app/lib/files";
 
 const INITIAL_POSTS = 2;
@@ -36,7 +36,8 @@ export default function HomeView() {
   const [lightboxPostId, setLightboxPostId] = useState<number | null>(null);
   const visiblePosts = apsisPosts.slice(0, visibleCount);
   const lightboxPost = apsisPosts.find((post) => post.id === lightboxPostId);
-  const lightboxImage = lightboxPost?.files?.[0];
+  // Apsis uploads store a thumbnail before the original. Older posts only have the original.
+  const lightboxImage = lightboxPost?.files?.[1] ?? lightboxPost?.files?.[0];
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {

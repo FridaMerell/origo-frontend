@@ -54,8 +54,7 @@ product's own folder instead of adding more of these.
 
 | File | Product |
 | --- | --- |
-| `apsis-context.tsx`, `apsis-providers.tsx` | Apsis |
 | `birdnet-live.ts` | Tempus (BirdNET SSE stream) |
-| `flux-progress.ts`, `flux-task-dates.ts`, `task-panel-context.tsx` | Flux |
+| `flux-progress.ts`, `flux-task-dates.ts` | Flux |
 | `weather-client.ts` | Verso |
 | `selected-facility.ts` | Resolves the selected Verso facility/house from its cookie. |

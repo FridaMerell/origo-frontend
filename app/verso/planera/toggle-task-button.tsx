@@ -2,7 +2,7 @@
 
 import { useTransition } from "react"
 import { usePathname } from "next/navigation"
-import { setVentureTaskStatus } from "@/app/actions/venture-task"
+import { setVentureTaskStatus } from "../forms/_actions/venture-task"
 import type { VentureTaskStatus } from "./venture-task-status"
 import { CheckCircle2, Circle } from "lucide-react"
 

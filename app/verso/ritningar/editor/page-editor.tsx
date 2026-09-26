@@ -21,7 +21,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react"
-import { saveDrawingPage } from "@/app/actions/drawing"
+import { saveDrawingPage } from "../_actions/drawing"
 import { Button } from "@/app/components/ui/Button"
 import type { Drawing, DrawingElement, DrawingPage, DrawingRole } from "@/app/lib/dal"
 import { AddRectForm } from "./add-rect-form"

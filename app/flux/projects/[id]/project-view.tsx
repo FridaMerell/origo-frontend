@@ -18,7 +18,7 @@ import { TaskStatusBadge } from "@/app/flux/tasks/task-status-badge"
 import { UpdatesFeed } from "@/app/flux/updates/updates-feed"
 import { DocumentsSection } from "@/app/flux/documents/documents-section"
 import { Markdown } from "@/app/flux/documents/markdown"
-import { updateMilestoneOrders } from "@/app/actions/flux/milestones"
+import { updateMilestoneOrders } from "../_actions/milestones"
 import {
 	useFluxDocuments,
 	useFluxMilestoneActions,

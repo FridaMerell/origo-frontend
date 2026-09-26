@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import Link from "next/link"
 
 export default function OpusError({
 	error,
@@ -39,11 +38,11 @@ export default function OpusError({
 					className='inline-flex items-center rounded-md border border-text bg-text px-5 py-2.5 font-medium text-bg transition-colors hover:bg-transparent hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'>
 					Försök igen
 				</button>
-				<Link
+				<a
 					href='/'
 					className='inline-flex items-center rounded-md border border-text px-5 py-2.5 font-medium text-text no-underline transition-colors hover:bg-text hover:text-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'>
 					Till bokhyllan
-				</Link>
+				</a>
 			</div>
 		</section>
 	)

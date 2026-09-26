@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { getDrawings } from "@/app/lib/dal"
+import { getDrawings } from "@/app/lib/dal/verso"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import DrawingsView from "./drawings-view"
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { getExpense } from "@/app/lib/dal"
+import { getExpense } from "@/app/lib/dal/verso"
 import ExpenseView from "./expense-view"
 
 export async function generateMetadata({

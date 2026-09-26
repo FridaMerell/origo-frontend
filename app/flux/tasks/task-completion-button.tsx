@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { toggleTaskStatus } from "@/app/actions/flux/tasks";
+import { toggleTaskStatus } from "./_actions/tasks";
 
 import { useFluxTaskStatus } from "@/app/flux/_state/flux-context";
 import type { FluxTaskStatus } from "@/app/lib/dal";

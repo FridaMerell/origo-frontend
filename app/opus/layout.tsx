@@ -28,9 +28,7 @@ export default async function OpusLayout({
 }) {
 	const user = await getCurrentUser()
 	const works = user ? await workApi.list() : []
-	const selectedWork = user ?  await getSelectedWork(): null
-
-
+	const selectedWork = user ? await getSelectedWork() : null
 
 	return (
 		<div
@@ -40,8 +38,7 @@ export default async function OpusLayout({
 			<Suspense fallback={<Splash tenant='opus' />}>
 				<OpusDataProvider
 					works={works}
-					selectedWork={selectedWork}
-					readingProgress={null}>
+					selectedWork={selectedWork}>
 					<OpusShell>{children}</OpusShell>
 				</OpusDataProvider>
 			</Suspense>

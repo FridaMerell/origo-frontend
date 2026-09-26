@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { fetchOrigoApi } from "@/app/lib/api-client"
-import { getCurrentUser } from "@/app/lib/dal"
+import { getCurrentUser } from "@/app/lib/dal/auth"
 import { readErrorBody } from "@/app/lib/api-errors"
 import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { createHouseSchema, type CreateHouseValues } from "@/app/lib/schemas"

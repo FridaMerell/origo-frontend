@@ -16,7 +16,7 @@ export function FormActions({
   pendingLabel = "Sparar...",
   onCancel,
   size = "sm",
-  className = "mt-2 flex justify-end gap-2.5",
+  className = "mt-2 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end",
 }: {
   isSubmitting: boolean;
   submitLabel?: string;
@@ -28,11 +28,11 @@ export function FormActions({
   return (
     <div className={className}>
       {onCancel ? (
-        <Button type="button" variant="ghost" size={size} onClick={onCancel}>
+        <Button type="button" variant="ghost" size={size} onClick={onCancel} className="w-full justify-center sm:w-auto">
           Avbryt
         </Button>
       ) : null}
-      <Button type="submit" variant="primary" size={size} disabled={isSubmitting}>
+      <Button type="submit" variant="primary" size={size} disabled={isSubmitting} className="w-full justify-center sm:w-auto">
         {isSubmitting ? pendingLabel : submitLabel}
       </Button>
     </div>

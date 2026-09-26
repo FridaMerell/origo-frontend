@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { getTempusRouteItem, getTempusRouteStops } from "@/app/lib/dal"
+import { getTempusRouteItem, getTempusRouteStops } from "@/app/lib/dal/tempus/routes"
 import RouteDetail from "../route-detail"
 
 type PageProps = { params: Promise<{ id: string }> }

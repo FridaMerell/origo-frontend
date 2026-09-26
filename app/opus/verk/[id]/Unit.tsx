@@ -1,7 +1,6 @@
 "use client"
 import { ReadingUnit } from "@/app/lib/dal/opus"
 import React, { useState } from "react"
-import { COLORS } from "./page"
 
 
 type UnitProps = {

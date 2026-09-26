@@ -3,11 +3,11 @@ import userEvent from "@testing-library/user-event"
 import { describe, expect, it, vi } from "vitest"
 import { TaskCompletionButton } from "./task-completion-button"
 import { FluxDataProvider, useFluxTasks } from "@/app/flux/_state/flux-context"
-import { toggleTaskStatus } from "@/app/actions/flux/tasks"
-import type { FluxActionState } from "@/app/actions/flux/shared"
+import { toggleTaskStatus } from "./_actions/tasks"
+import type { FluxActionState } from "../_actions/shared"
 import type { FluxTask } from "@/app/lib/dal"
 
-vi.mock("@/app/actions/flux/tasks", () => ({
+vi.mock("./_actions/tasks", () => ({
   toggleTaskStatus: vi.fn(),
 }))
 

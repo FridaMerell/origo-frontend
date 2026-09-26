@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { getAlbums, getPhotos, getPhotoTags, type PhotoStage } from "@/app/lib/dal"
+import { getAlbums, getPhotos, getPhotoTags, type PhotoStage } from "@/app/lib/dal/verso"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import PhotosView from "./photos-view"
 

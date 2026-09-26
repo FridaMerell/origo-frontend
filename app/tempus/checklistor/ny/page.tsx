@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import ChecklistBuilder from "../checklist-builder"
-import { getTempusLocales, getTempusSpeciesCategoriesPage } from "@/app/lib/dal"
+import { getTempusLocales } from "@/app/lib/dal/tempus/geo"
+import { getTempusSpeciesCategoriesPage } from "@/app/lib/dal/tempus/species"
 
 export const metadata: Metadata = {
   title: "Ny checklista | Tempus",

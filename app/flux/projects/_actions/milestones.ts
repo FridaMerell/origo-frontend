@@ -1,0 +1,68 @@
+"use server"
+
+import { FLUX_ENDPOINTS } from "@/app/lib/config"
+import { fluxMilestoneFormSchema, type FluxMilestoneFormValues } from "@/app/lib/schemas"
+import { fluxRequest, type FluxActionState } from "../../_actions/shared"
+import type { FluxMilestone } from "@/app/lib/dal"
+
+export async function createMilestone(
+  projectId: number,
+  data: FluxMilestoneFormValues,
+  files: string[],
+): Promise<FluxActionState<FluxMilestone>> {
+  const parsed = fluxMilestoneFormSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: "Alla fält måste fyllas i." }
+  }
+
+  const { data: milestone, error } = await fluxRequest<FluxMilestone>(FLUX_ENDPOINTS.milestones, "POST", {
+    project: projectId,
+    ...parsed.data,
+    files,
+  })
+  if (error) return { error }
+
+  if (!milestone) return { error: "Delmålet skapades, men kunde inte läsas tillbaka." }
+  return { success: true, data: milestone }
+}
+
+export async function updateMilestone(
+  id: number,
+  data: FluxMilestoneFormValues,
+  files: string[],
+): Promise<FluxActionState<FluxMilestone>> {
+  const parsed = fluxMilestoneFormSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: "Alla fält måste fyllas i." }
+  }
+
+  const { data: milestone, error } = await fluxRequest<FluxMilestone>(`${FLUX_ENDPOINTS.milestones}${id}/`, "PATCH", {
+    ...parsed.data,
+    files,
+  })
+  if (error) return { error }
+
+  if (!milestone) return { error: "Delmålet sparades, men kunde inte läsas tillbaka." }
+  return { success: true, data: milestone }
+}
+
+export async function updateMilestoneOrders(
+  milestones: Array<{ id: number; order: number }>,
+): Promise<FluxActionState> {
+  const results = await Promise.all(
+    milestones.map(({ id, order }) =>
+      fluxRequest(`${FLUX_ENDPOINTS.milestones}${id}/`, "PATCH", { order }),
+    ),
+  )
+  const failed = results.find((result) => result.error)
+  if (failed?.error) return { error: failed.error }
+
+  return { success: true }
+}
+
+export async function deleteMilestone(id: number): Promise<FluxActionState> {
+  const { error } = await fluxRequest(`${FLUX_ENDPOINTS.milestones}${id}/`, "DELETE")
+  if (error) return { error }
+
+  return { success: true }
+}

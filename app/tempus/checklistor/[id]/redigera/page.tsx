@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { getTempusChecklistItem, getTempusChecklistRegisterPage } from "@/app/lib/dal"
+import { getTempusChecklistItem, getTempusChecklistRegisterPage } from "@/app/lib/dal/tempus/checklists"
 import ChecklistEditor from "./checklist-editor"
 
 type PageProps = { params: Promise<{ id: string }> }

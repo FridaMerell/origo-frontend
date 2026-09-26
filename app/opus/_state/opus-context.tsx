@@ -5,12 +5,10 @@ import { createContext, useContext, type ReactNode } from "react"
 type OpusData = {
 	works: Work[]
 	selectedWork: Work | null
-	readingProgress: WorkReadingResponse | null
 }
 const EMPTY_DATA: OpusData = {
 	works: [],
 	selectedWork: null,
-	readingProgress: null,
 }
 const OpusContext = createContext<OpusData>(EMPTY_DATA)
 
@@ -24,6 +22,31 @@ export function OpusDataProvider({
 export function useWorks() {
 	const { works, selectedWork } = useContext(OpusContext)
 	return { works, selectedWork }
+}
+
+
+/**
+ * Reading provider
+ * 
+ */
+
+type OpusReadingData = {
+	readingProgress: WorkReadingResponse | null
+}
+export const OpusReadingContext = createContext<OpusReadingData>({readingProgress:null})
+export function OpusReadingProvider({
+	children,
+	readingProgress,
+}: OpusReadingData & { children: ReactNode }) {
+	return (
+		<OpusReadingContext.Provider value={{ readingProgress }}>
+			{children}
+		</OpusReadingContext.Provider>
+	)
+}
+
+export function useReading(){
+	const {readingProgress} = useContext(OpusReadingContext)
 }
 
 export function useAnnotations() {}

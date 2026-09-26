@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { getVenture, getVentureTask } from "@/app/lib/dal"
+import { getVenture, getVentureTask } from "@/app/lib/dal/verso"
 import VentureTaskView from "./task-view"
 
 export async function generateMetadata({

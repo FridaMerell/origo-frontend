@@ -125,7 +125,7 @@ const ProjectSummary = ({ project, tasks, users }: { project: FluxProject; tasks
 }
 
 const ProjectPulse = ({ projectId, milestones, tasks, updates, users }: { projectId: number; milestones: ReturnType<typeof useFluxMilestones>; tasks: FluxTask[]; updates: ReturnType<typeof useFluxUpdates>; users: Map<number, FluxUser> }) => (
-  <section className="border-t border-border pt-8">
+  <section className="rounded-card border border-border bg-surface p-5 sm:p-6">
     <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Projektpuls</p><h2 className="mt-1 text-xl font-semibold text-text">Delmål och aktivitet</h2></div><AddMilestoneButton projectId={projectId} /></div>
     <div className="mt-7 border-l border-border pl-7">
       {milestones.slice(0, 3).map((milestone) => {
@@ -190,10 +190,10 @@ export default function HomeView() {
     )
 
   return (
-    <div className="flex w-full flex-col gap-9 pb-12">
+    <div className="flex w-full flex-col gap-8 pb-12">
       <ProjectSummary project={selectedProject} tasks={tasks} users={users} />
-      <div className="flex flex-col gap-10">
-        <section>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)] lg:items-start">
+        <section className="rounded-card border border-border bg-surface p-5 sm:p-6">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-text-faint">Arbetsyta</p><h2 className="mt-1 text-lg font-semibold text-text">Öppna uppgifter</h2></div>
             <Link href="/tasks" className="text-sm font-medium text-link hover:underline">Alla uppgifter</Link>

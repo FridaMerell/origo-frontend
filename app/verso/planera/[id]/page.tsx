@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { getAlbums, getPhotos, getPhotoTags, getVenture, getVentureDrawings } from "@/app/lib/dal"
+import { getAlbums, getPhotos, getPhotoTags, getVenture, getVentureDrawings } from "@/app/lib/dal/verso"
 import VentureView from "./venture-view"
 
 export async function generateMetadata({

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { addSubtask, toggleTaskStatus } from "@/app/actions/flux/tasks";
+import { addSubtask, toggleTaskStatus } from "./_actions/tasks";
 import { Avatar } from "@/app/components/ui/Avatar";
 import { Drawer } from "@/app/components/ui/Drawer";
 import { Gallery } from "@/app/components/ui/Gallery";

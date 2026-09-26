@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Printer } from "lucide-react"
-import { getDrawing, getDrawingPages } from "@/app/lib/dal"
+import { getDrawing, getDrawingPages } from "@/app/lib/dal/verso"
 import { BackLink, DetailNotFound } from "@/app/verso/ui/DetailPage"
 import { DrawingEditor } from "@/app/verso/ritningar/editor/drawing-editor"
 

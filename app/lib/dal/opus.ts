@@ -140,6 +140,7 @@ export type Edition = {
   source: string;
   created_at: ISODateTime;
   updated_at: ISODateTime;
+  index: TextUnit[]
 };
 
 export type EditionCreate = {
@@ -164,6 +165,8 @@ export type Work = {
   editions: Edition[];
   created_at: ISODateTime;
   updated_at: ISODateTime;
+  index: TextUnit[]
+
 };
 
 export type WorkCreate = {
@@ -391,6 +394,7 @@ export type EditionReadingStatus = {
   status: string;
   status_percent: number;
   units: ReadingUnit[];
+  chapters:TextUnit[]
 };
 
 export type WorkReadingResponse = {

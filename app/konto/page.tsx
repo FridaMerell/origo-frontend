@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { verifySession } from "@/app/lib/dal";
+import { verifySession } from "@/app/lib/dal/auth";
 import { AccountView } from "./account-view";
 
 export const metadata: Metadata = {

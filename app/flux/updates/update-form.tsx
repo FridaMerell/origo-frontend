@@ -2,7 +2,7 @@
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@/app/components/form/zodResolver";
-import { createUpdate, updateUpdate } from "@/app/actions/flux/updates";
+import { createUpdate, updateUpdate } from "./_actions/updates";
 import { fluxUpdateFormSchema, type FluxUpdateFormValues } from "@/app/lib/schemas";
 import { FileUpload } from "@/app/components/ui/FileUpload";
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback";

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { createPhotoTag } from "@/app/actions/photo"
+import { createPhotoTag } from "./_actions/photo"
 import { fieldInputClass } from "@/app/components/form/Field"
 import { Button } from "@/app/components/ui/Button"
 import { useDrawerClose } from "@/app/components/ui/Drawer"

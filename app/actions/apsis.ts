@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { APSIS_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
-import { getCurrentUser } from "@/app/lib/dal"
+import { getCurrentUser } from "@/app/lib/dal/auth"
 import { apsisPostFormSchema, type ApsisPostFormValues } from "@/app/lib/schemas"
 import { firstErrorMessage } from "@/app/lib/api-errors"
 

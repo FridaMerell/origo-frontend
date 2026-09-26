@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { FACILITY_COOKIE, VERSO_MODE_COOKIE } from "@/app/lib/config";
-import { getVersoDashboard } from "@/app/lib/dal";
+import { getVersoDashboard } from "@/app/lib/dal/verso";
 import { VersoDataProvider } from "@/app/verso/_state/verso-context";
 import { BookingDrawerProvider } from "@/app/verso/_state/booking-drawer";
 import { NavProgressBar } from "@/app/lib/nav-progress";

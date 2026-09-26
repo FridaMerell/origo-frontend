@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { getTempusRoutes } from "@/app/lib/dal"
+import { getTempusRoutes } from "@/app/lib/dal/tempus/routes"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
 
 export const metadata: Metadata = {

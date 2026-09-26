@@ -163,7 +163,7 @@ export type FluxRelation = {
   description: string
 }
 
-export type FluxScaffoldTarget = "django" | "typescript" | "csharp" | "skeleton" | "design"
+export type FluxScaffoldTarget = "django" | "typescript" | "csharp" | "skeleton" | "design" | "integration"
 
 export type IdentityThemeModes = "light" | "dark" | "both"
 export type IdentityDefaultMode = "system" | "light" | "dark"
@@ -223,6 +223,11 @@ export type FluxIdentity = {
 
 export type FluxScaffoldFile = { path: string; content: string }
 
+export type FluxScaffold = {
+  target: FluxScaffoldTarget
+  files: FluxScaffoldFile[]
+}
+
 export type FluxStackTarget = "django" | "typescript" | "csharp"
 
 export type FluxStackProfile = {
@@ -236,15 +241,12 @@ export type FluxStackProfile = {
   namespace: string
 }
 
-export type FluxOperation = "list" | "retrieve" | "create" | "update" | "delete"
-
 export type FluxResource = {
   id: number
   entity: number
   path: string
-  operations: FluxOperation[]
-  filters: string[]
-  ordering: string
+  title: string
+  description: string
 }
 
 export type FluxRole = {
@@ -259,8 +261,7 @@ export type FluxPermissionScope = "all" | "own" | "member"
 export type FluxRolePermission = {
   id: number
   role: number
-  resource: number
-  operation: FluxOperation
+  api_operation: number
   scope: FluxPermissionScope
 }
 
@@ -283,6 +284,16 @@ export type FluxIntegration = {
   kind: FluxIntegrationKind
   description: string
   env_vars: string[]
+  base_url: string
+  auth_type: "none" | "api_key_header" | "api_key_query" | "bearer" | "basic" | "oauth_client"
+  auth_name: string
+  auth_env_var: string
+  auth_secret_env_var: string
+  oauth_token_url: string
+  timeout_seconds: number
+  retries: number
+  rate_limit_per_minute: number | null
+  cache_ttl_seconds: number
 }
 
 export type FluxSeedRow = {
@@ -290,6 +301,84 @@ export type FluxSeedRow = {
   entity: number
   data: Record<string, unknown>
   order: number
+}
+
+export type FluxApiOperationResponse = {
+  id: number
+  operation: number
+  status_code: number
+  description: string
+  projection: number | null
+}
+
+export type FluxApiProjection = {
+  id: number
+  project: number | null
+  name: string
+  schema: Record<string, unknown>
+  description: string
+}
+
+export type FluxApiOperation = {
+  id: number
+  resource: number
+  key: "list" | "retrieve" | "create" | "update" | "delete" | "custom"
+  title: string
+  description: string
+  method: string
+  path: string
+  parameters: unknown[]
+  request_schema: Record<string, unknown> | null
+  pagination: Record<string, unknown> | null
+}
+
+export type FluxProvider = {
+  id: number
+  project: number
+  name: string
+  description: string
+  resources: number[]
+}
+
+export type FluxIntegrationOperation = {
+  id: number
+  integration: number
+  entity: number | null
+  name: string
+  description: string
+  method: string
+  path: string
+  body_format: "json" | "form"
+  params: unknown[]
+  items_path: string
+  pagination: "none" | "offset" | "page" | "cursor"
+  pagination_config: Record<string, string | number>
+  filters: unknown[]
+  key_field: string
+  mappings: { path: string; field: string }[]
+  sync: boolean
+  sync_interval_minutes: number | null
+  cache_ttl_seconds: number | null
+  sample_response: unknown | null
+}
+
+/** The complete, ID-preserving design contract for one Flux project. */
+export type FluxDesign = {
+  entities: FluxEntity[]
+  fields: FluxField[]
+  relations: FluxRelation[]
+  stack_profile: FluxStackProfile | null
+  resources: FluxResource[]
+  api_operations: FluxApiOperation[]
+  api_projections: FluxApiProjection[]
+  api_operation_responses: FluxApiOperationResponse[]
+  providers: FluxProvider[]
+  roles: FluxRole[]
+  role_permissions: FluxRolePermission[]
+  screens: FluxScreen[]
+  integrations: FluxIntegration[]
+  integration_operations: FluxIntegrationOperation[]
+  seed_rows: FluxSeedRow[]
 }
 
 export type FluxUser = {
@@ -322,6 +411,16 @@ export type FluxTimeline = {
 export const getFluxBoard = cache(
   (id: string): Promise<FluxBoard | null> =>
     fetchItem<FluxBoard>(FLUX_ENDPOINTS.projectBoard(id))
+)
+
+export const getFluxDesign = cache(
+  (id: string): Promise<FluxDesign | null> =>
+    fetchItem<FluxDesign>(FLUX_ENDPOINTS.projectDesign(id))
+)
+
+export const getFluxScaffold = cache(
+  (id: string, target: FluxScaffoldTarget): Promise<FluxScaffold | null> =>
+    fetchItem<FluxScaffold>(`${FLUX_ENDPOINTS.projectScaffold(id)}?target=${encodeURIComponent(target)}`)
 )
 
 export const getFluxTimeline = cache(

@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { createDocument } from "@/app/actions/history"
+import { createDocument } from "./_actions/history"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { Button } from "@/app/components/ui/Button"
 import { useDrawerClose } from "@/app/components/ui/Drawer"

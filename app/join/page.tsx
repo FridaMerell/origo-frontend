@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getCurrentUser } from "@/app/lib/dal";
+import { getCurrentUser } from "@/app/lib/dal/auth";
 import { JoinView } from "./join-view";
 
 export const metadata: Metadata = {

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { EyeIcon, PencilIcon, PlusIcon } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
-import { setProjectIdentity } from "@/app/actions/flux/identities"
+import { setProjectIdentity } from "./_actions/identities"
 import { fieldInputClass } from "@/app/components/form/Field"
 import { useFluxProjectActions, useSelectedFluxProject } from "@/app/flux/_state/flux-context"
 import { ProjectFormDrawer } from "@/app/flux/projects/project-form-drawer"

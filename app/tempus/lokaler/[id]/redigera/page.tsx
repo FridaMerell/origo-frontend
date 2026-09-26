@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getTempusLocaleItem } from "@/app/lib/dal"
+import { getTempusLocaleItem } from "@/app/lib/dal/tempus/geo"
 import LocaleForm from "../../locale-form"
 
 type PageProps = { params: Promise<{ id: string }> }

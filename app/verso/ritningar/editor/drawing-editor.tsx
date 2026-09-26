@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Plus } from "lucide-react"
-import { addDrawingPage } from "@/app/actions/drawing"
+import { addDrawingPage } from "../_actions/drawing"
 import { Button } from "@/app/components/ui/Button"
 import type { Drawing, DrawingPage } from "@/app/lib/dal"
 import { PageEditor } from "./page-editor"

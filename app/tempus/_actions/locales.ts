@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
-import { getCurrentUser } from "@/app/lib/dal"
+import { getCurrentUser } from "@/app/lib/dal/auth"
 import type { TempusLocale } from "@/app/lib/dal"
 import { authedJsonHeaders, firstErrorMessage } from "./request"
 

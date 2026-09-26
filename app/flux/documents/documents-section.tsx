@@ -18,7 +18,7 @@ import type { FluxDocument, FluxMilestone, FluxTask } from "@/app/lib/dal"
 import { DocumentContent } from "./document-content"
 import { DocumentEditorOverlay } from "./document-editor-overlay"
 import { downloadMarkdown } from "./download"
-import { deleteDocument } from "@/app/actions/flux/documents"
+import { deleteDocument } from "./_actions/documents"
 import { DeleteButton } from "@/app/components/ui/DeleteButton"
 import { useFluxDocumentActions } from "@/app/flux/_state/flux-context"
 

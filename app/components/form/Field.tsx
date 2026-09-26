@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { ChangeEventHandler } from "react";
 import type { FieldError } from "react-hook-form";
 
 export const fieldInputClass =
-  "rounded border border-field-border bg-surface px-2.5 py-1.5 text-text";
+  "w-full rounded border border-field-border bg-surface px-2.5 py-1.5 text-text";
 
 export function Field({
   label,
@@ -42,5 +42,17 @@ export function Checkbox({
       />
       {label}
     </label>
+  );
+}
+
+export function TextArea({
+  className = "",
+  ...props
+}: ComponentProps<"textarea">) {
+  return (
+    <textarea
+      className={[fieldInputClass, "min-h-24 resize-y", className].join(" ")}
+      {...props}
+    />
   );
 }

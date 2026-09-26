@@ -3,13 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
+import { getCurrentUser } from "@/app/lib/dal/auth"
 import {
-  getCurrentUser,
   getTempusCategoryObservationsPage,
   getTempusObservationCategoryPage,
   type TempusCategoryObservationsPage,
   type TempusObservationCategoryPage,
-} from "@/app/lib/dal"
+} from "@/app/lib/dal/tempus/observations"
 import { observationFormSchema, type ObservationFormValues } from "@/app/lib/schemas"
 import { authedJsonHeaders, firstErrorMessage } from "./request"
 

@@ -12,7 +12,7 @@ import { PersonRelations, familyOf } from "@/app/verso/historia/person-relations
 import { FamilyTree } from "@/app/verso/historia/personer/family-tree"
 import { formatHistoricalDate } from "@/app/lib/history-date"
 import { fileProxyUrl } from "@/app/lib/files"
-import { setPersonPortrait } from "@/app/actions/history"
+import { setPersonPortrait } from "../_actions/history"
 import type { HistoryEvent, HouseDocument, Person, PersonRelation, Photo } from "@/app/lib/dal"
 
 type TabId = "overview" | "tree" | "family" | "photos" | "history"

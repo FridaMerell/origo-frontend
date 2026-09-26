@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
-import { getCurrentUser, getTempusObservations } from "@/app/lib/dal"
+import { getCurrentUser } from "@/app/lib/dal/auth"
+import { getTempusObservations } from "@/app/lib/dal/tempus/observations"
 import {
   getTempusChecklistRegisterPage,
   type TempusChecklistRegisterRow,

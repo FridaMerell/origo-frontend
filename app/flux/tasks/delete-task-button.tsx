@@ -1,6 +1,6 @@
 "use client";
 
-import { deleteTask } from "@/app/actions/flux/tasks";
+import { deleteTask } from "./_actions/tasks";
 import { DeleteButton } from "@/app/components/ui/DeleteButton";
 import { useFluxTaskActions, useFluxTasks } from "@/app/flux/_state/flux-context";
 

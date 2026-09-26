@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
-import { getCurrentUser } from "@/app/lib/dal"
+import { getCurrentUser } from "@/app/lib/dal/auth"
 import { authedJsonHeaders, firstErrorMessage } from "./request"
 
 export type GeoAreaKind = "country" | "county" | "province" | "nature_reserve" | "biological_area"

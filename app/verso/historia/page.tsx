@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { getAlbums, getDocuments, getHistoryEvents, getOnThisDay, getPeople, getPhotos, getPhotoTags, type Photo } from "@/app/lib/dal"
+import { getAlbums, getDocuments, getHistoryEvents, getOnThisDay, getPeople, getPhotos, getPhotoTags, type Photo } from "@/app/lib/dal/verso"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import HistoryView from "./history-view"
 

@@ -3,7 +3,7 @@
 import { ACCOUNTS_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
-import { getCurrentUser } from "@/app/lib/dal"
+import { getCurrentUser } from "@/app/lib/dal/auth"
 import { authedJsonHeaders } from "@/app/lib/auth-headers"
 
 export type SelfTokenResult = { token?: string; error?: string }

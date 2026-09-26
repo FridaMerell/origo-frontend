@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
-import { updateVentureFiles } from "@/app/actions/venture";
+import { updateVentureFiles } from "./_actions/venture";
 import { Button } from "@/app/components/ui/Button";
 import { FileUpload } from "@/app/components/ui/FileUpload";
 import { useDrawerClose } from "@/app/components/ui/Drawer";

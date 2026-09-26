@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import { ACCOUNTS_ENDPOINTS, AUTH_ENDPOINTS } from "@/app/lib/config"
 import { buildCookieHeader, extractSetCookie, fetchOrigoApi } from "@/app/lib/api-client"
 import { getSessionCookies, setSessionCookies } from "@/app/lib/session"
-import { getCurrentUser } from "@/app/lib/dal"
+import { getCurrentUser } from "@/app/lib/dal/auth"
 import { readErrorBody, type FieldErrors } from "@/app/lib/api-errors"
 import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import {

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@/app/components/form/zodResolver"
-import { deleteDocument, updateDocument } from "@/app/actions/history"
+import { deleteDocument, updateDocument } from "./_actions/history"
 import { documentFormSchema, type DocumentFormValues } from "@/app/lib/schemas"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { ChipSelect } from "@/app/components/form/ChipSelect"

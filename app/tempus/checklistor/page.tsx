@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { getTempusChecklists } from "@/app/lib/dal"
+import { getTempusChecklists } from "@/app/lib/dal/tempus/checklists"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
 import { LocaleLabel } from "@/app/tempus/locale-label"
 

@@ -1,6 +1,6 @@
 import { cookies } from "next/headers"
 import { FACILITY_COOKIE } from "@/app/lib/config"
-import { getFacilities } from "@/app/lib/dal"
+import { getFacilities } from "@/app/lib/dal/verso"
 
 /** Facility chosen via cookie, falling back to the first one. Server-only. */
 export async function getSelectedFacility() {

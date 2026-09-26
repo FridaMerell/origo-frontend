@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@/app/components/form/zodResolver"
-import { createVentureTask, updateVentureTask } from "@/app/actions/venture-task"
+import { createVentureTask, updateVentureTask } from "./_actions/venture-task"
 import { ventureTaskFormSchema, type VentureTaskFormValues } from "@/app/lib/schemas"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { useSubmitAction } from "@/app/components/form/useSubmitAction"

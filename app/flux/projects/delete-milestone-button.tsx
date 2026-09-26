@@ -1,6 +1,6 @@
 "use client"
 
-import { deleteMilestone } from "@/app/actions/flux/milestones"
+import { deleteMilestone } from "./_actions/milestones"
 import { DeleteButton } from "@/app/components/ui/DeleteButton"
 import { useFluxMilestoneActions, useFluxMilestones } from "@/app/flux/_state/flux-context"
 

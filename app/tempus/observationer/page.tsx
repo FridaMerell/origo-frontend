@@ -1,10 +1,8 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { Chip } from "@/app/components/ui/Chip"
-import {
-  getTempusObservations,
-  getTempusSpeciesItems,
-} from "@/app/lib/dal"
+import { getTempusObservations } from "@/app/lib/dal/tempus/observations"
+import { getTempusSpeciesItems } from "@/app/lib/dal/tempus/species"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
 import { LocaleLabel } from "@/app/tempus/locale-label"
 

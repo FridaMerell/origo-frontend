@@ -253,6 +253,7 @@ export default function Toolbar({ mode, onToggleMode }: { mode: "light" | "dark"
           <nav aria-label="Flux huvudnavigation" className="flex items-center justify-between gap-1 rounded-3xl border border-border bg-surface px-2 py-2 shadow-md">
             <Link href="/" className="flex shrink-0 items-center px-1 no-underline" aria-label="Flux startsida"><Logo width={38} className="text-accent" /></Link>
             <ProjectSelector dropUp compact />
+            <NavLink {...BUILD_NAV[0]} pathname={pathname} onClick={closeMobile} compact />
             <button type="button" aria-label="Öppna Flux navigation" aria-expanded={mobileMenuOpen} onClick={() => setOpenMenu(value => value === "mobile" ? null : "mobile")} className={`rounded-full p-2 ${mobileMenuOpen ? "bg-surface-2 text-text" : "text-text-muted"}`}><Ellipsis size={18} /></button>
           </nav>
         </div>

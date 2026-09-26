@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { createPersonRelation, deletePersonRelation } from "@/app/actions/history"
+import { createPersonRelation, deletePersonRelation } from "./_actions/history"
 import { fieldInputClass } from "@/app/components/form/Field"
 import { Button } from "@/app/components/ui/Button"
 import type { Person, PersonRelation, RelationKind } from "@/app/lib/dal"

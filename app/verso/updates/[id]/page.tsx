@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { getVersoUpdate } from "@/app/lib/dal"
+import { getVersoUpdate } from "@/app/lib/dal/verso"
 import UpdateView from "./update-view"
 
 export async function generateMetadata({

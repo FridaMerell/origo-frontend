@@ -1,5 +1,8 @@
 import type { Metadata } from "next"
-import { getBirdnetDeviceCollection, getCurrentUser, getFacilities, getUsers } from "@/app/lib/dal"
+import { getBirdnetDeviceCollection } from "@/app/lib/dal/birdnet"
+import { getCurrentUser } from "@/app/lib/dal/auth"
+import { getFacilities } from "@/app/lib/dal/verso"
+import { getUsers } from "@/app/lib/dal/flux"
 import BirdnetDeviceManager from "./birdnet-device-manager"
 import BirdnetLiveFeed from "./birdnet-live-feed"
 

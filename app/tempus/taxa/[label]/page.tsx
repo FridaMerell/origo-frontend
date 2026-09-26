@@ -1,4 +1,4 @@
-import { getTempusSpeciesCategoryByTaxonId, getTempusSpeciesPageByCategory } from "@/app/lib/dal"
+import { getTempusSpeciesCategoryByTaxonId, getTempusSpeciesPageByCategory } from "@/app/lib/dal/tempus/species"
 import Link from "next/link"
 import FollowButton from "./[id]/FollowButton"
 import TaxonSearch from "./taxon-search"

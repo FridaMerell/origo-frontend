@@ -3,12 +3,9 @@
 import { revalidatePath } from "next/cache"
 import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
-import {
-  getCurrentUser,
-  getTempusObservationItem,
-  getTempusSpeciesCategoriesAll,
-  type TempusObservation,
-} from "@/app/lib/dal"
+import { getCurrentUser } from "@/app/lib/dal/auth"
+import { getTempusObservationItem, type TempusObservation } from "@/app/lib/dal/tempus/observations"
+import { getTempusSpeciesCategoriesAll } from "@/app/lib/dal/tempus/species"
 import {
   getTempusSpeciesItems,
   getTempusSpeciesPage,

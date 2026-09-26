@@ -71,6 +71,7 @@ export const VERSO_ENDPOINTS = {
 
 export const FLUX_ENDPOINTS = {
   projects: "/api/flux/projects/",
+  projectDesign: (id: string) => `/api/flux/projects/${encodeURIComponent(id)}/design/`,
   timeline: "/api/flux/timeline/",
   projectBoard: (id: string) => `/api/flux/projects/${encodeURIComponent(id)}/board/`,
   milestones: "/api/flux/milestones/",
@@ -82,10 +83,15 @@ export const FLUX_ENDPOINTS = {
   relations: "/api/flux/relations/",
   stackProfiles: "/api/flux/stack-profiles/",
   resources: "/api/flux/resources/",
+  apiProjections: "/api/flux/api-projections/",
+  apiOperations: "/api/flux/api-operations/",
+  apiOperationResponses: "/api/flux/api-operation-responses/",
+  providers: "/api/flux/providers/",
   roles: "/api/flux/roles/",
   rolePermissions: "/api/flux/role-permissions/",
   screens: "/api/flux/screens/",
   integrations: "/api/flux/integrations/",
+  integrationOperations: "/api/flux/integration-operations/",
   seedRows: "/api/flux/seed-rows/",
   identities: "/api/flux/identities/",
   projectScaffold: (id: number | string) => `/api/flux/projects/${encodeURIComponent(String(id))}/scaffold/`,

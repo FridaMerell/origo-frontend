@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
-import { createDocument, updateDocument } from "@/app/actions/flux/documents"
+import { createDocument, updateDocument } from "./_actions/documents"
 import { Button } from "@/app/components/ui/Button"
 import { DownloadIcon, XIcon } from "lucide-react"
 import { Field, fieldInputClass } from "@/app/components/form/Field"

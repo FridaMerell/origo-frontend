@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
-import { getCurrentUser, getUsers } from "@/app/lib/dal";
+import { getCurrentUser } from "@/app/lib/dal/auth";
+import { getUsers } from "@/app/lib/dal/flux";
 import { UserProvider } from "@/app/lib/user-context";
 import { NavProgressProvider } from "@/app/lib/nav-progress";
 import { resolveTenant } from "@/app/lib/tenant";

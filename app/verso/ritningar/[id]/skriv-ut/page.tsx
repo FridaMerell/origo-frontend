@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { getDrawing, getDrawingPages, getFacilities } from "@/app/lib/dal"
+import { getDrawing, getDrawingPages, getFacilities } from "@/app/lib/dal/verso"
 import { BackLink, DetailNotFound } from "@/app/verso/ui/DetailPage"
 import { PrintView } from "@/app/verso/ritningar/print/print-view"
 

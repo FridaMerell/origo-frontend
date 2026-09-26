@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Drawer } from "@/app/components/ui/Drawer"
 import SpeciesCategoryForm from "./species-category-form"
-import { getTempusSpeciesCategoriesAll } from "@/app/lib/dal"
+import { getTempusSpeciesCategoriesAll } from "@/app/lib/dal/tempus/species"
 import { Card } from "@/app/components/ui/Card"
 
 const Page = async () => {

@@ -319,9 +319,6 @@ export type FluxStackFormValues = z.infer<typeof fluxStackFormSchema>
 export const fluxResourceFormSchema = z.object({
   entity: numericId,
   path: z.string().trim().min(1, "Sökväg krävs.").max(100, "Högst 100 tecken."),
-  operations: z.array(z.enum(FLUX_OPERATIONS)),
-  filters: z.array(z.string()),
-  ordering: z.string().trim().max(100, "Högst 100 tecken."),
 })
 export type FluxResourceFormValues = z.infer<typeof fluxResourceFormSchema>
 
@@ -346,6 +343,16 @@ export const fluxIntegrationFormSchema = z.object({
   description: z.string(),
   // One environment variable name per line; split into a list by the server action.
   env_vars: z.string(),
+  base_url: z.string(),
+  auth_type: z.enum(["none", "api_key_header", "api_key_query", "bearer", "basic", "oauth_client"]),
+  auth_name: z.string(),
+  auth_env_var: z.string(),
+  auth_secret_env_var: z.string(),
+  oauth_token_url: z.string(),
+  timeout_seconds: z.coerce.number().int().min(1).max(120),
+  retries: z.coerce.number().int().min(0).max(5),
+  rate_limit_per_minute: z.string(),
+  cache_ttl_seconds: z.coerce.number().int().min(0),
 })
 export type FluxIntegrationFormValues = z.infer<typeof fluxIntegrationFormSchema>
 

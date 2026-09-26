@@ -1,13 +1,9 @@
 import type { Metadata } from "next"
 import { cookies } from "next/headers"
 import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
-import {
-  getTempusGeoAreas,
-  getTempusRoutes,
-  getTempusRouteStops,
-  getTempusSeasonalOverviewPage,
-  getTempusSuggestedStopsRun,
-} from "@/app/lib/dal"
+import { getTempusGeoAreas } from "@/app/lib/dal/tempus/geo"
+import { getTempusSeasonalOverviewPage } from "@/app/lib/dal/tempus/species"
+import { getTempusRoutes, getTempusRouteStops, getTempusSuggestedStopsRun } from "@/app/lib/dal/tempus/routes"
 import { formatDateLong } from "@/app/lib/formatters"
 import HomeView from "./home-view"
 

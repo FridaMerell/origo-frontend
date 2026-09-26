@@ -1,9 +1,13 @@
 import { Metadata } from "next"
 import { readingProgressApi, workApi } from "../../_actions/actions"
 import "./page.css"
-import { Edition, EditionReadingStatus } from "@/app/lib/dal/opus"
+import { Edition, EditionReadingStatus, Work } from "@/app/lib/dal/opus"
 import React from "react"
 import Unit from "./Unit"
+import { OpusReadingProvider } from "../../_state/opus-context"
+import Indexes from "./Indexes"
+import { Button } from "@/app/components/ui/Button"
+import { redirect } from "next/navigation"
 
 export async function generateMetadata({
 	params,
@@ -20,22 +24,27 @@ export async function generateMetadata({
 	}
 }
 
-export const COLORS = ["primary", "secondary", "accent", "foreground"]
+const COLORS = ["primary", "secondary", "accent", "foreground"]
 
 function Headers({ editions }: { editions: EditionReadingStatus[] }) {
-	console.log(editions)
 	return (
-		<header
-			className={`col-span-5 grid grid-cols-[28px_44px_repeat(${editions.length},minmax(0,1fr))] rounded-tl-xl border-b border-border bg-secondary text-bg items-center`}>
+		<header className='col-span-5 grid grid-cols-[28px_44px_minmax(0,1fr)] items-center rounded-tl-xl border-b border-border bg-secondary text-bg'>
 			<div className={"rounded-tl-4xl  font-display  text-bg"}></div>
 			<div className={"py-4 px-2 pl-4 "}>#</div>
-			{editions.map((ed, index) => (
-				<div className={"  text-bg font-sm flex gap-2"} key={ed.id}>
-					<div
-						className={`w-1.5 border-l   border-surface bg-${COLORS[index]}`}></div>
-					<span className={"py-4 px-2 font-sm font-display"}>{ed.title}</span>
-				</div>
-			))}
+			<div className='grid min-w-0 grid-flow-col auto-cols-fr'>
+				{editions.map((ed, index) => (
+					<div className='flex gap-2 text-bg font-sm' key={ed.id}>
+						<div
+							className={[
+								"w-1.5 border-l border-surface",
+								["bg-primary", "bg-secondary", "bg-accent", "bg-foreground"][
+									index
+								] ?? "bg-foreground",
+							].join(" ")}></div>
+						<span className='px-2 py-4 font-display font-sm'>{ed.title}</span>
+					</div>
+				))}
+			</div>
 		</header>
 	)
 }
@@ -84,9 +93,23 @@ export default async function ({
 		work.editions.map(edition => [edition.id, edition]),
 	)
 
+	async function removeWork(work: Work) {
+		"use server"
+
+		await workApi.remove(work.id)
+		redirect("/")
+	}
+
 	return (
-		<>
+		<OpusReadingProvider readingProgress={reading}>
 			<hr className={"border-border my-5 "} />
+			<div className={"flex gap-3 justify-end"}>
+				<form action={removeWork.bind(null, work)}>
+					<Button variant={"secondary"} className={"text-bg"}>
+						Radera
+					</Button>
+				</form>
+			</div>
 			<div className={"mt-9"}>
 				<span
 					className={
@@ -99,19 +122,8 @@ export default async function ({
 			<div className={"flex justify-between flex-wrap"}>
 				<div></div>
 				<div className={"flex gap-2 flex-wrap"}>
-					{work.editions.map((edition, i) => {
-						return (
-							<span
-								key={edition.id}
-								className={
-									"text-sm border-border rounded-sm border py-1 px-2 bg-surface flex items-center gap-1.5"
-								}>
-								<svg width={10} height={10} viewBox={"0 0 15 15"}>
-									<circle cx='5' cy={7} r={5} fill={`var(--${COLORS[i]})`} />
-								</svg>
-								{edition.title}
-							</span>
-						)
+					{reading.editions.map((edition, i) => {
+						return <Indexes edition={edition} key={i} color={COLORS[i]} />
 					})}
 				</div>
 			</div>
@@ -125,8 +137,7 @@ export default async function ({
 					}>
 					<span>Marginalnotiser</span>
 				</div>
-				<section
-					className={`col-span-5 grid grid-cols-[28px_44px_repeat(${reading.editions.length},minmax(0,1fr))] border  border-border  items-center`}>
+				<section className='col-span-5 grid grid-cols-[28px_44px_minmax(0,1fr)] items-center border border-border'>
 					{positions.map((position, index) => {
 						const units = reading.editions.map(edition =>
 							unitsByEdition.get(edition.id)?.get(position),
@@ -141,7 +152,9 @@ export default async function ({
 							}))
 						})
 						return (
-							<div key={index} className="group/row col-span-full grid grid-cols-subgrid bg-surface hover:bg-primary/[0.05] duration-200">
+							<div
+								key={index}
+								className='group/row col-span-full grid grid-cols-subgrid bg-surface duration-200 hover:bg-primary/5'>
 								<div></div>
 								<div
 									className={
@@ -149,23 +162,23 @@ export default async function ({
 									}>
 									{label}
 								</div>
-								{units.map((u, y) => {
-									return (
+								<div className='grid min-w-0 grid-flow-col auto-cols-fr'>
+									{units.map((u, y) => (
 										<Unit
 											key={y}
 											span={`${index}:${y}`}
 											color={COLORS[y]}
 											unit={u}
 										/>
-									)
-								})}
+									))}
+								</div>
 							</div>
 						)
 					})}
 					<p></p>
 				</section>
 			</article>
-		</>
+		</OpusReadingProvider>
 	)
 }
 

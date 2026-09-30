@@ -11,6 +11,11 @@ vi.mock("./_actions/tasks", () => ({
   toggleTaskStatus: vi.fn(),
 }))
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/",
+  useRouter: () => ({ refresh: vi.fn() }),
+}))
+
 function makeTask(overrides: Partial<FluxTask> & { id: number }): FluxTask {
   return {
     project: 1,

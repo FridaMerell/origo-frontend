@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useDismissableOpen } from "./use-dismissable-open";
 import { ChevronDown } from "lucide-react"
+import { twMerge } from "tailwind-merge";
 
 export type SelectOption<T extends string> = {
   value: T;
@@ -29,7 +30,7 @@ export function Select<T extends string>({
   const selected = options.find((o) => o.value === value);
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={ref} className={twMerge("relative", className)}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

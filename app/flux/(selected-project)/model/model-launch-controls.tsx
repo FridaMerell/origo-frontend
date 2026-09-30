@@ -32,11 +32,11 @@ export function ModelLaunchControls({
 
   return (
     <div>
-      <div className="grid gap-2 sm:flex sm:flex-wrap">
-        <Link href={"/model/scaffold?target=" + scaffoldTarget} className="inline-flex min-h-10 items-center justify-center rounded-xl border border-accent/40 px-3 text-sm font-medium text-accent no-underline hover:bg-accent/10">
+      <div className="flex flex-wrap gap-2">
+        <Link href={"/model/scaffold?target=" + scaffoldTarget} className="inline-flex min-h-9 items-center justify-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-text no-underline transition-colors hover:border-accent/50 hover:text-accent">
           Hämta boilerplate
         </Link>
-        <Button type="button" variant="primary" size="sm" disabled={entityCount === 0 || pending} onClick={generatePlan} className="min-h-10 w-full justify-center rounded-xl sm:w-auto">
+        <Button type="button" variant="primary" size="sm" disabled={entityCount === 0 || pending} onClick={generatePlan} className="min-h-9 justify-center rounded-md">
           {pending ? "Skapar plan..." : "Skapa implementationplan"}
         </Button>
       </div>

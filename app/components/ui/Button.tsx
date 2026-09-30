@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { ButtonHTMLAttributes, LinkHTMLAttributes } from "react"
+import { twMerge } from "tailwind-merge"
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	variant?: "primary" | "secondary" | "ghost" | "paper" | "paper-bordered"
@@ -31,8 +32,9 @@ const SIZES = {
 }
 
 const VARIANTS = {
-	primary: "bg-accent text-accent-contrast",
-	secondary: "bg-surface-2 text-text border border-border",
+	primary: "bg-primary text-primary-contrast",
+	accent: "bg-accent text-accent-contrast",
+	secondary: "bg-secondary text-bg border border-border",
 	ghost: "bg-transparent text-text",
 	paper:
 		"bg-transparent font-display italic font-medium tracking-wide text-accent hover:text-accent-hover",
@@ -54,7 +56,14 @@ export function Button({
 	return (
 		<button
 			disabled={disabled}
-			className={`inline-flex items-center gap-2 font-body font-semibold transition-colors cursor-pointer ${SIZES[size]} ${VARIANTS[variant]} ${resolvedRounded} ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${className}`}
+			className={twMerge(
+				"inline-flex items-center gap-2 font-body font-semibold transition-colors cursor-pointer",
+				SIZES[size],
+				VARIANTS[variant],
+				resolvedRounded,
+				disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+				className,
+			)}
 			{...rest}
 		/>
 	)
@@ -71,8 +80,16 @@ export const LinkButton = ({
 	const resolvedRounded = variant === "paper" ? "rounded-none" : rounded
 
 	if (!href) return null
-	return <Link href={href}
-			className={`inline-flex items-center gap-2 font-body font-semibold transition-colors cursor-pointer ${SIZES[size]} ${VARIANTS[variant]} ${resolvedRounded}   ${className}`}
-  
-  ></Link>
+	return (
+		<Link
+			href={href}
+			className={twMerge(
+				"inline-flex items-center gap-2 font-body font-semibold transition-colors cursor-pointer",
+				SIZES[size],
+				VARIANTS[variant],
+				resolvedRounded,
+				className,
+			)}
+		></Link>
+	)
 }

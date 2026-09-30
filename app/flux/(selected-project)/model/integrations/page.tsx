@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { ArrowRight, Cable, FileJson2, RefreshCw } from "lucide-react"
+import { Cable, FileJson2, Plus, RefreshCw } from "lucide-react"
 import { loadApiWorkbenchData } from "../api/api-data"
+import { ActionLink, ModelPageHeader, ModelSection, RowLink } from "../model-ui"
 
 type ContractRow = { path: string; value: string }
 
@@ -24,17 +25,26 @@ function Contract({ label, value }: { label: string; value: unknown }) {
   if (!hasValue) return null
 
   return (
-    <details className="border-y border-border py-2">
-      <summary className="cursor-pointer text-xs font-medium text-text-muted">{label}</summary>
-      <dl className="mt-3 divide-y divide-border">
+    <details className="group/contract">
+      <summary className="cursor-pointer py-1 text-xs font-medium text-text-muted hover:text-text">{label}</summary>
+      <dl className="mb-2 mt-1 divide-y divide-border rounded-md border border-border bg-surface">
         {rows.map((row, index) => (
-          <div key={row.path + index} className="grid gap-1 py-2 sm:grid-cols-[minmax(7rem,.7fr)_minmax(0,1fr)]">
+          <div key={row.path + index} className="flex justify-between gap-4 px-3 py-1.5">
             <dt className="font-mono text-xs text-text-faint">{row.path}</dt>
-            <dd className="break-words font-mono text-xs text-text-muted">{row.value}</dd>
+            <dd className="min-w-0 break-words text-right font-mono text-xs text-text-muted">{row.value}</dd>
           </div>
         ))}
       </dl>
     </details>
+  )
+}
+
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 py-1.5 text-xs">
+      <dt className="text-text-faint">{label}</dt>
+      <dd className="min-w-0 break-words text-right text-text-muted">{children}</dd>
+    </div>
   )
 }
 
@@ -49,97 +59,88 @@ export default async function IntegrationsPage() {
   const entityById = new Map(entities.map((entity) => [entity.id, entity]))
 
   return (
-    <div className="flex flex-col gap-7 pb-12">
-      <header className="flex flex-wrap items-start justify-between gap-5 border-b border-border pb-5 sm:items-end">
-        <div>
-          <Link href="/model" className="text-sm text-text-muted hover:text-accent">Teknisk dokumentation</Link>
-          <p className="mt-4 text-xs font-semibold uppercase tracking-[.14em] text-text-faint">Externa system</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">Integrationer och synk</h1>
-          <p className="mt-2 text-sm leading-6 text-text-muted">Anslutning, auth och drift visas per system. Operationen leder till en visuell editor för parametrar, mappingar, pagination och sample response.</p>
-        </div>
-        <div className="grid w-full grid-cols-1 gap-2 text-sm sm:flex sm:w-auto sm:gap-4">
-          <Link href="/model/integrations/new" className="inline-flex min-h-10 items-center font-medium text-accent no-underline hover:underline">Ny integration</Link>
-          <Link href="/model/integrations/operations/new" className="inline-flex min-h-10 items-center font-medium text-accent no-underline hover:underline">Ny operation</Link>
-        </div>
-      </header>
+    <div className="flex flex-col gap-6 pb-12">
+      <ModelPageHeader
+        title="Integrationer"
+        description="Externa system projektet pratar med: anslutning, auth, drift och de anrop som görs."
+        actions={
+          <>
+            <ActionLink href="/model/integrations/new" variant="primary"><Plus size={15} aria-hidden /> Ny integration</ActionLink>
+            <ActionLink href="/model/integrations/operations/new">Nytt anrop</ActionLink>
+          </>
+        }
+      />
 
-      <section className="border-y border-border">
-        <div className="grid gap-x-8 py-3 sm:grid-cols-2">
-          <p className="flex items-center justify-between text-sm text-text-muted">Integrationer <span className="font-mono text-accent">{integrations.length}</span></p>
-          <p className="flex items-center justify-between text-sm text-text-muted">Operationer <span className="font-mono text-accent">{operations.length}</span></p>
-        </div>
-        <ul className="divide-y divide-border">
-          {integrations.map((integration) => {
-            const integrationOperations = operations.filter((operation) => operation.integration === integration.id)
-            return (
-              <li key={integration.id} id={"integration-" + integration.id} className="py-5">
-                <div className="grid gap-3 sm:grid-cols-[minmax(12rem,.7fr)_minmax(0,1.4fr)_minmax(11rem,.6fr)_auto] sm:items-center">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Cable size={17} className="text-accent" />
-                      <h2 className="font-semibold text-text">{integration.name}</h2>
+      {integrations.map((integration) => {
+        const integrationOperations = operations.filter((operation) => operation.integration === integration.id)
+        return (
+          <ModelSection
+            key={integration.id}
+            id={"integration-" + integration.id}
+            label={integration.name}
+            icon={<Cable size={17} className="text-accent" aria-hidden />}
+            title={<>{integration.name} <span className="ml-1.5 font-mono text-xs font-normal text-text-muted">{integration.kind} · {integration.auth_type}</span></>}
+            actions={<RowLink href={"/model/integrations/" + integration.id + "/edit"}>Redigera</RowLink>}
+          >
+            <div className="px-4 py-3 sm:px-5">
+              {integration.description && <p className="mb-2 text-sm text-text-muted">{integration.description}</p>}
+              <dl className="divide-y divide-border">
+                <Detail label="Bas-URL"><span className="font-mono">{integration.base_url || "—"}</span></Detail>
+                <Detail label="Miljövariabler"><span className="font-mono">{integration.env_vars.join(", ") || "inga"}</span></Detail>
+                <Detail label="Timeout och omförsök">{integration.timeout_seconds} s, {integration.retries} omförsök</Detail>
+                <Detail label="Rate limit och cache">{integration.rate_limit_per_minute ? integration.rate_limit_per_minute + " per minut" : "ingen gräns"}, cache {integration.cache_ttl_seconds} s</Detail>
+              </dl>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-border px-4 pt-3 sm:px-5">
+              <h3 className="text-xs font-semibold uppercase tracking-[.1em] text-text-faint">Anrop <span className="ml-1 font-normal normal-case tracking-normal">{integrationOperations.length}</span></h3>
+              <RowLink href={"/model/integrations/operations/new?integration=" + integration.id}><Plus size={13} aria-hidden /> Anrop</RowLink>
+            </div>
+            <ul className="divide-y divide-border px-4 pb-2 sm:px-5">
+              {integrationOperations.map((operation) => (
+                <li key={operation.id} className="py-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-text">{operation.name}</p>
+                      <p className="mt-0.5 truncate font-mono text-xs text-accent">{operation.method} {operation.path}</p>
+                      <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+                        {operation.entity
+                          ? <Link href={"/model/domain?entity=" + operation.entity + "#entity-" + operation.entity} className="text-text-muted no-underline hover:text-accent">Till {entityById.get(operation.entity)?.name ?? "#" + operation.entity}</Link>
+                          : <span>Ingen lokal entitet</span>}
+                        <span className="inline-flex items-center gap-1">
+                          <RefreshCw size={12} aria-hidden />
+                          {operation.sync ? "Synkas" + (operation.sync_interval_minutes ? " var " + operation.sync_interval_minutes + " min" : "") : "Ingen synk"}
+                        </span>
+                      </p>
                     </div>
-                    <p className="mt-1 font-mono text-xs text-text-muted">{integration.kind} · {integration.auth_type}</p>
+                    <RowLink href={"/model/integrations/operations/" + operation.id + "/edit"}>Redigera</RowLink>
                   </div>
-                  <p className="text-sm text-text-muted">{integration.description || "Ingen beskrivning."}</p>
-                  <p className="break-all font-mono text-xs text-text-muted">{integration.base_url}</p>
-                  <Link href={"/model/integrations/" + integration.id + "/edit"} className="inline-flex min-h-10 items-center text-sm text-accent no-underline hover:underline">Redigera</Link>
-                </div>
-                <dl className="mt-4 grid gap-3 border-y border-border py-3 text-xs sm:grid-cols-3">
-                  <div>
-                    <dt className="text-text-faint">Miljövariabler</dt>
-                    <dd className="mt-1 font-mono text-text-muted">{integration.env_vars.join(" · ") || "inga"}</dd>
+                  <div className="mt-2 flex flex-col">
+                    <Contract label="Parametrar" value={operation.params} />
+                    <Contract label="Filter" value={operation.filters} />
+                    <Contract label="Mappningar" value={operation.mappings} />
+                    <Contract label="Paginering" value={{ strategy: operation.pagination, config: operation.pagination_config }} />
+                    <Contract label="Exempelsvar" value={operation.sample_response} />
                   </div>
-                  <div>
-                    <dt className="text-text-faint">Timeout / retries</dt>
-                    <dd className="mt-1 text-text-muted">{integration.timeout_seconds}s / {integration.retries}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-text-faint">Rate limit / cache</dt>
-                    <dd className="mt-1 text-text-muted">{integration.rate_limit_per_minute ?? "—"} / {integration.cache_ttl_seconds}s</dd>
-                  </div>
-                </dl>
-                <ul className="mt-3 divide-y divide-border border-l border-border">
-                  {integrationOperations.map((operation) => (
-                    <li key={operation.id} className="pl-4">
-                      <div className="grid gap-2 py-3 sm:grid-cols-[minmax(12rem,.7fr)_minmax(0,1fr)_12rem_auto] sm:items-center">
-                        <div>
-                          <p className="font-mono text-xs text-accent">{operation.method} {operation.path}</p>
-                          <p className="mt-1 text-sm text-text">{operation.name}</p>
-                        </div>
-                        <p className="text-xs text-text-muted">
-                          {operation.entity
-                            ? <Link href={"/model/domain?entity=" + operation.entity + "#entity-" + operation.entity} className="text-accent no-underline hover:underline">→ {entityById.get(operation.entity)?.name ?? "#" + operation.entity}</Link>
-                            : "Ingen lokal entitet"}
-                        </p>
-                        <p className="flex items-center gap-1.5 text-xs text-text-muted">
-                          <RefreshCw size={13} className="text-accent" />
-                          {operation.sync ? "Synk" + (operation.sync_interval_minutes ? " / " + operation.sync_interval_minutes + " min" : "") : "Ingen synk"}
-                        </p>
-                        <Link href={"/model/integrations/operations/" + operation.id + "/edit"} className="inline-flex min-h-10 items-center gap-1 text-sm text-accent no-underline hover:underline">Redigera <ArrowRight size={14} /></Link>
-                      </div>
-                      <div className="grid gap-2 pb-3 xl:grid-cols-3">
-                        <Contract label="Parametrar" value={operation.params} />
-                        <Contract label="Filter" value={operation.filters} />
-                        <Contract label="Mappningar" value={operation.mappings} />
-                        <Contract label="Paginering" value={{ strategy: operation.pagination, config: operation.pagination_config }} />
-                        <Contract label="Sample response" value={operation.sample_response} />
-                      </div>
-                    </li>
-                  ))}
-                  {integrationOperations.length === 0 && <li className="py-3 pl-4 text-sm text-text-muted">Inga operationer. <Link href={"/model/integrations/operations/new?integration=" + integration.id} className="text-accent">Skapa en operation.</Link></li>}
-                </ul>
-              </li>
-            )
-          })}
-          {integrations.length === 0 && (
-            <li className="py-5 text-sm text-text-muted">
-              Inga integrationer är specificerade. <Link href="/model/integrations/new" className="text-accent">Skapa den första.</Link>
-              <Link href="/model/scaffold?target=integration" className="ml-2 inline-flex items-center gap-1 text-accent"><FileJson2 size={14} />Se generatorns krav</Link>
-            </li>
-          )}
-        </ul>
-      </section>
+                </li>
+              ))}
+              {integrationOperations.length === 0 && <li className="py-3 text-sm text-text-muted">Inga anrop än.</li>}
+            </ul>
+          </ModelSection>
+        )
+      })}
+
+      {integrations.length === 0 && (
+        <ModelSection id="integrations-empty" icon={<Cable size={17} className="text-accent" aria-hidden />} title="Inga integrationer än">
+          <div className="flex flex-col gap-2 px-4 py-4 text-sm text-text-muted sm:px-5">
+            <p>En integration beskriver ett externt system – till exempel ett betal-API eller ett CRM – och de anrop projektet gör mot det.</p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <RowLink href="/model/integrations/new">Skapa den första</RowLink>
+              <RowLink href="/model/scaffold?target=integration"><FileJson2 size={14} aria-hidden /> Se vad generatorn behöver</RowLink>
+            </div>
+          </div>
+        </ModelSection>
+      )}
     </div>
   )
 }

@@ -17,11 +17,12 @@ export default function FluxError({
   }, [error]);
 
   return (
-    <section className="relative isolate overflow-hidden rounded-card bg-[#25263B] px-6 py-16 text-center text-[#FFF9F0] shadow-lg sm:px-10 sm:py-24">
+    <section className="relative container my-15 isolate overflow-hidden rounded-card bg-[#25263B] px-6 py-16 text-center text-[#FFF9F0] shadow-lg sm:px-10 sm:py-24">
       <Image
         src="/flux/dragonfly.svg"
         alt=""
         aria-hidden
+        loading={'eager'}
         width={1774}
         height={887}
         className="pointer-events-none absolute -right-40 -top-16 z-0 h-72 w-auto rotate-[-22deg] scale-x-[-1] opacity-30"

@@ -140,7 +140,6 @@ export type Edition = {
   source: string;
   created_at: ISODateTime;
   updated_at: ISODateTime;
-  index: TextUnit[]
 };
 
 export type EditionCreate = {
@@ -152,6 +151,20 @@ export type EditionCreate = {
 };
 
 export type EditionUpdate = Partial<Omit<EditionCreate, "work">>;
+
+/** One entry per edition, derived on retrieve; see WorkSerializer.get_index. Not TextUnit[] — that
+ *  would flatten every edition's chapters into one list and lose which edition each belongs to. */
+export type WorkIndexChapter = {
+  id: Id;
+  position: number;
+  label: string;
+};
+
+export type WorkIndexEntry = {
+  edition_id: Id;
+  edition_title: string;
+  chapters: WorkIndexChapter[];
+};
 
 export type Work = {
   id: Id;
@@ -165,8 +178,7 @@ export type Work = {
   editions: Edition[];
   created_at: ISODateTime;
   updated_at: ISODateTime;
-  index: TextUnit[]
-
+  index: WorkIndexEntry[];
 };
 
 export type WorkCreate = {
@@ -261,6 +273,51 @@ export type SourceFileCreate = Omit<
 
 export type SourceFileUpdate = Partial<Omit<SourceFileCreate, "version">>;
 
+/** One reading unit per sentence (prose) or per line (verse, drama). */
+export type ImportSegmentation = "sentences" | "lines";
+
+/** Form fields sent with a file to preview-document, preview-import and import-document. */
+export type ImportOptions = {
+  segmentation: ImportSegmentation;
+  /** Text ahead of the first numbered chapter (foreword, colophon…). */
+  front_matter: "keep" | "skip";
+  /** The chapter's name when the file has no chapter headings (blank: the file name). */
+  label: string;
+};
+
+/** Matches opus/services/importing.py's document_preview(). Returned by EditionViewSet's
+ *  preview-document and preview-import actions, and nested under ImportResult.preview from
+ *  import-document. */
+export type ImportPreviewChapter = {
+  position: number;
+  label: string;
+  paragraph_count: number;
+  preview: string;
+  front_matter: boolean;
+};
+
+export type ImportPreview = {
+  /** Null from preview-document, where the edition doesn't exist yet. */
+  edition: Nullable<Pick<Edition, "id" | "title" | "language">>;
+  segmentation: ImportSegmentation;
+  paragraph_count: number;
+  chapter_count: number;
+  /** False when the file has no chapter headings and becomes one chapter named by `label`. */
+  has_headings: boolean;
+  /** Leading chapters ahead of the first numbered chapter; 0 when skipped or absent. */
+  front_matter_count: number;
+  preview_truncated: boolean;
+  chapters: ImportPreviewChapter[];
+};
+
+/** Returned by EditionViewSet's import-document action (POST .../editions/{id}/import-document/). */
+export type ImportResult = {
+  source_file: SourceFile;
+  paragraph_count: number;
+  chapter_count: number;
+  preview: ImportPreview;
+};
+
 /* ============================================================================
    Lexikon och annotationer
    ========================================================================== */
@@ -284,10 +341,13 @@ export type LexicalEntryCreate = {
 
 export type LexicalEntryUpdate = Partial<LexicalEntryCreate>;
 
+export type AnnotationTargetKind = "word" | "phrase" | "unit";
+
 export type Annotation = {
   id: Id;
   user: User["id"];
   unit: Id;
+  target_kind: AnnotationTargetKind;
   lexical_entry: Nullable<Id>;
   start_offset: Nullable<number>;
   end_offset: Nullable<number>;
@@ -299,6 +359,7 @@ export type Annotation = {
 
 export type AnnotationCreate = {
   unit: Id;
+  target_kind: AnnotationTargetKind;
   lexical_entry?: Nullable<Id>;
   start_offset?: Nullable<number>;
   end_offset?: Nullable<number>;
@@ -337,6 +398,12 @@ export type Bookmark = {
   title: string;
   note: string;
   created_at: ISODateTime;
+  /** Read-only context, so a list of bookmarks can be shown without fetching each unit. */
+  work: Pick<Work, "id" | "title">;
+  edition_title: string;
+  chapter: Nullable<{ id: Id; label: string }>;
+  /** The bookmarked text, cut at 280 characters. */
+  excerpt: string;
 };
 
 export type BookmarkCreate = {
@@ -428,8 +495,11 @@ export type AlignmentSetCreate = {
   name: string;
   is_public?: boolean;
   status?: AlignmentStatus;
-  source_version: Id;
-  target_version: Id;
+  /** Legacy-fält från den parvisa alignment-modellen. Flux "Origo Opus" REFERENCE —
+   *  Alignment-API: detaljkontrakt visar create utan dessa; skicka bara om du faktiskt
+   *  vill sätta dem. */
+  source_version?: Id;
+  target_version?: Id;
 };
 
 export type AlignmentSetUpdate = Partial<
@@ -491,6 +561,64 @@ export type AlignmentMemberCreate = {
 
 export type AlignmentMemberUpdate =
   Partial<Omit<AlignmentMemberCreate, "group" | "alignment_version">>;
+
+/**
+ * Flux "Origo Opus" — AlignmentMatrix: det parallella rutnätet. Varje edition är en kolumn
+ * av celler; en rad är en AlignmentGroup och en cell är editionens member i den raden.
+ * En lucka är en cell utan member (`member: null`, inga `units`).
+ */
+export type AlignmentCellKind = "text" | "gap" | "end";
+
+export type AlignmentCell = {
+  alignment_version: Id;
+  /** text: ett eller flera stycken. gap: tom cell inne i editionen. end: editionen har inga fler stycken. */
+  kind: AlignmentCellKind;
+  units: ReadingUnit[];
+};
+
+export type AlignmentRow = {
+  /** Radnummer (0-baserat). Cellen identifieras av edition + rad. */
+  row: number;
+  cells: AlignmentCell[];
+};
+
+export type AlignmentMatrix = {
+  set: AlignmentSet;
+  /** Kolumnordning; samma ordning som `cells` i varje rad. */
+  versions: AlignmentVersion[];
+  total_rows: number;
+  offset: number;
+  /** Bara vid `focus=reading`: raden som motsvarar sparad läsposition (fönstret börjar strax ovanför). */
+  focus_row?: number;
+  has_more: boolean;
+  rows: AlignmentRow[];
+  /** Bara efter auto-match-chapters. */
+  result?: AutoMatchChaptersResult;
+};
+
+export type AlignmentShiftAction = "insert_gap" | "remove_gap";
+
+/** En uppradad grupp i planen: slutlig rad (0-baserad) och antal luckor som läggs in per edition (versions-id). */
+export type AlignmentPlanGroup = {
+  /** Gruppens plats i det som skickades in. */
+  index: number;
+  row: number;
+  gaps: Record<string, number>;
+};
+
+/**
+ * `result` i rutnätssvar. Automatisk kapitelsynk ger aligned_chapters. Manuell uppradning ger
+ * planen (groups) och `dry_run`; vid torrkörning finns `first_row` i stället för `row`, och
+ * ingenting har sparats.
+ */
+export type AutoMatchChaptersResult = {
+  aligned_chapters?: number;
+  inserted_gaps: number;
+  row?: number;
+  first_row?: number;
+  dry_run?: boolean;
+  groups?: AlignmentPlanGroup[];
+};
 
 export type Alignment = {
   id: Id;

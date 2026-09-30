@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { loadApiWorkbenchData } from "../api/api-data"
+import { ModelPageHeader } from "../model-ui"
 import { DomainEditorForm } from "./domain-editor-form"
 import type { DomainContractKind } from "./_actions/contracts"
 
@@ -21,13 +22,11 @@ export async function DomainEditorPage({
   const label = kind === "entity" ? "entitet" : kind === "field" ? "fält" : "relation"
   return (
     <div className="flex flex-col gap-6 pb-12">
-      <header className="border-b border-border pb-5">
-        <p className="text-xs font-semibold uppercase tracking-[.14em] text-text-faint">Domänmodell</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
-          {recordId ? "Redigera " + label : "Ny " + label}
-        </h1>
-        <p className="mt-2 text-sm text-text-muted">Värdena sparas direkt på designobjektet och används av scaffold-generatorn.</p>
-      </header>
+      <ModelPageHeader
+        back={{ href: "/model/domain", label: "Domänmodell" }}
+        title={(recordId ? "Redigera " : kind === "field" ? "Nytt " : "Ny ") + label}
+        description="Ändringar sparas direkt och används när koden genereras."
+      />
       <DomainEditorForm
         kind={kind}
         projectId={data.projectId}

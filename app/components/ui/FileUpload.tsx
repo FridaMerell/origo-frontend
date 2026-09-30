@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 import { fileProxyUrl } from "@/app/lib/files"
 import { readImageInfo, type ThumbnailOptions } from "@/app/lib/image-thumbnail"
 import { Loader, Upload, X } from "lucide-react"
+import { twMerge } from "tailwind-merge"
 
 export type UploadFolder = "verso" | "flux" | "apsis"
 
@@ -77,7 +78,7 @@ export function FileUpload({
   }
 
   return (
-    <div className={`flex flex-col gap-2 ${className}`}>
+    <div className={twMerge("flex flex-col gap-2", className)}>
       <div
         role="button"
         tabIndex={0}

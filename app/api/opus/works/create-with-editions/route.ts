@@ -1,4 +1,5 @@
 import { workApi, type NewTextVersion, type NewWorkDetails } from "@/app/opus/_actions/actions"
+import { ensureAlignmentSet } from "@/app/opus/_actions/alignment-bootstrap"
 import { getSessionCookies } from "@/app/lib/session"
 
 type CreateRequest = {
@@ -13,5 +14,13 @@ export async function POST(request: Request) {
 
 	const payload = await request.json() as CreateRequest
 	const result = await workApi.createWithEditions(payload.work, payload.editions)
+	// Även en ensam utgåva behöver ett set: läsvyn är rutnätet, med en kolumn per utgåva.
+	if (!result.error && result.work) {
+		await ensureAlignmentSet(
+			result.work.id,
+			result.work.title,
+			result.work.editions.map(edition => ({ id: edition.id, title: edition.title })),
+		)
+	}
 	return Response.json(result, { status: result.error ? 400 : 201 })
 }

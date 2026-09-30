@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { LoginForm } from "@/app/login/login-form";
 import { TENANTS } from "@/app/lib/tenant";
-import opusIllustration from "../light.png";
+import opusIllustration from "../assets/dagsvarmare.png";
 
 export const metadata: Metadata = {
   title: `Logga in | ${TENANTS.opus.name}`,
@@ -23,17 +23,17 @@ export default async function OpusLoginPage({
         <div className="relative flex min-h-80 flex-col justify-between overflow-hidden bg-surface-2 p-7 text-bg sm:p-10">
           <div className="relative z-10">
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.24em] text-accent">
-              Origo · biblioteket
+              Origo · bibliotek
             </p>
             <h1 className="mt-5 font-display text-5xl font-semibold tracking-tight sm:text-6xl">
               Opus
             </h1>
             <p className="mt-4 max-w-md font-display text-xl leading-snug text-bg/80 sm:text-2xl">
-              Läs, jämför och följ böckernas många liv.
+              Läs copyrightfria böcker i flera parallella utgåvor
             </p>
           </div>
           <p className="relative z-10 mt-12 max-w-sm text-sm leading-6 text-bg/70">
-            Ditt personliga bibliotek för utgåvor, översättningar och anteckningar.
+            Opus har stöd för texter, ordböcker / definitioner med synonymer, bokmärken, och mycket mer
           </p>
           <Image
             src={opusIllustration}

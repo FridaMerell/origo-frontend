@@ -2,15 +2,20 @@ import { act, renderHook } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { FluxDataProvider, useFluxTasks, useSelectedFluxProject } from "./flux-context"
 import { FLUX_PROJECT_COOKIE } from "@/app/lib/config"
-import type { FluxBoard, FluxProject, FluxTask } from "@/app/lib/dal"
+import type { FluxProject, FluxTask } from "@/app/lib/dal"
 
 const mocks = vi.hoisted(() => ({
   pathname: "/",
-  pushState: vi.fn(),
+  refresh: vi.fn(),
+  push: vi.fn(),
+  setSelected: vi.fn(async () => {}),
 }))
+
+vi.mock("./select-project-action", () => ({ setSelectedFluxProject: mocks.setSelected }))
 
 vi.mock("next/navigation", () => ({
   usePathname: () => mocks.pathname,
+  useRouter: () => ({ refresh: mocks.refresh, push: mocks.push }),
 }))
 
 function makeProject(id: number, name: string): FluxProject {
@@ -42,30 +47,12 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe("useSelectedFluxProject", () => {
   beforeEach(() => {
     mocks.pathname = "/"
-    mocks.pushState.mockClear()
+    mocks.refresh.mockClear()
+    mocks.push.mockClear()
     document.cookie = `${FLUX_PROJECT_COOKIE}=; path=/; max-age=0`
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: window.location,
-    })
-    Object.defineProperty(window.history, "pushState", {
-      configurable: true,
-      value: mocks.pushState,
-    })
   })
 
-  it("writes the chosen project id before fetching the selected board", async () => {
-    const project = makeProject(2, "Projekt B")
-    const board: FluxBoard = {
-      project,
-      projects: [project],
-      tasks: [],
-      milestones: [],
-      updates: [],
-      documents: [],
-      users: [],
-    }
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => board }))
+  it("writes the chosen project id and refreshes the server-rendered page", async () => {
     const { result } = renderHook(() => useSelectedFluxProject(), { wrapper })
 
     await act(async () => {
@@ -73,23 +60,31 @@ describe("useSelectedFluxProject", () => {
     })
 
     expect(document.cookie).toContain(`${FLUX_PROJECT_COOKIE}=2`)
-    expect(fetch).toHaveBeenCalledWith(
-      new URL("/api/flux/projects/2/board/", "http://api.origo.test:8000"),
-      { credentials: "include" },
-    )
-    expect(result.current.selectedProject?.id).toBe(2)
+    expect(mocks.refresh).toHaveBeenCalled()
+    expect(mocks.push).not.toHaveBeenCalled()
   })
 
-  it("updates the URL when switching from a project detail page", async () => {
+  it("navigates when switching from a project detail page", async () => {
     mocks.pathname = "/projects/7"
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }))
     const { result } = renderHook(() => useSelectedFluxProject(), { wrapper })
 
     await act(async () => {
       await result.current.selectProject("3")
     })
 
-    expect(mocks.pushState).toHaveBeenCalledWith(null, "", "/projects/3")
+    expect(mocks.push).toHaveBeenCalledWith("/projects/3")
+  })
+
+  it("leaves an item page of the previous project for its section overview", async () => {
+    mocks.pathname = "/model/api/resources/12/edit"
+    const { result } = renderHook(() => useSelectedFluxProject(), { wrapper })
+
+    await act(async () => {
+      await result.current.selectProject("2")
+    })
+
+    expect(mocks.setSelected).toHaveBeenCalledWith("2")
+    expect(mocks.push).toHaveBeenCalledWith("/model/api")
   })
 
   it("keeps every project's timeline data when changing the active project", async () => {

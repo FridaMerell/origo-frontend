@@ -50,6 +50,7 @@
 	--color-border-strong: var(--border-strong);
 	--color-field-border: var(--field-border);
 	--color-primary: var(--primary);
+	--color-primary-contrast: var(--primary-contrast);
 	--color-text: var(--text);
 	--color-text-muted: var(--text-muted);
 	--color-text-faint: var(--text-faint);

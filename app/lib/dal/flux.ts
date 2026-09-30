@@ -419,8 +419,11 @@ export const getFluxDesign = cache(
 )
 
 export const getFluxScaffold = cache(
-  (id: string, target: FluxScaffoldTarget): Promise<FluxScaffold | null> =>
-    fetchItem<FluxScaffold>(`${FLUX_ENDPOINTS.projectScaffold(id)}?target=${encodeURIComponent(target)}`)
+  (id: string, target: FluxScaffoldTarget, files?: string[]): Promise<FluxScaffold | null> => {
+    let path = `${FLUX_ENDPOINTS.projectScaffold(id)}?target=${encodeURIComponent(target)}`
+    if (files?.length) path += `&files=${encodeURIComponent(files.join(","))}`
+    return fetchItem<FluxScaffold>(path)
+  }
 )
 
 export const getFluxTimeline = cache(

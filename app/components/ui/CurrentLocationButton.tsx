@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/app/components/ui/Button"
 import { CrosshairIcon, LoaderIcon } from "lucide-react"
+import { twMerge } from "tailwind-merge"
 
 export type GeolocationCoords = {
   latitude: number
@@ -80,7 +81,7 @@ export function CurrentLocationButton({
         type="button"
         variant="secondary"
         size={size}
-        className={`whitespace-nowrap ${className}`}
+        className={twMerge("whitespace-nowrap", className)}
         onClick={locate}
         disabled={disabled || pending}
       >

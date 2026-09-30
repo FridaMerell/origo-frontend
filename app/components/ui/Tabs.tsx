@@ -1,5 +1,7 @@
 "use client"
 
+import { twMerge } from "tailwind-merge"
+
 export type TabItem<T extends string> = {
   id: T
   label: React.ReactNode
@@ -22,7 +24,10 @@ export function Tabs<T extends string>({
   return (
     <div
       role="tablist"
-      className={`-mx-1 flex gap-1 overflow-x-auto border-b border-border px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
+      className={twMerge(
+        "-mx-1 flex gap-1 overflow-x-auto border-b border-border px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        className,
+      )}
     >
       {tabs.map((tab) => {
         const selected = tab.id === active

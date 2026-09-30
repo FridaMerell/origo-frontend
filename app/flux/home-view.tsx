@@ -93,7 +93,7 @@ const ProjectSummary = ({ project, tasks, users }: { project: FluxProject; tasks
 
   return (
     <section className="relative isolate overflow-hidden rounded-card bg-[#25263B] px-6 py-5 text-[#FFF9F0] shadow-lg sm:px-8 sm:py-6">
-      <Image src="/flux/dragonfly.svg" alt="" aria-hidden width={1774} height={887} className="pointer-events-none absolute -right-40 -top-16 z-0 h-72 w-auto rotate-[-22deg] scale-x-[-1] opacity-35" style={{ filter: "brightness(0) saturate(100%) invert(64%) sepia(45%) saturate(821%) hue-rotate(343deg) brightness(92%) contrast(89%)" }} />
+      <Image src="/flux/dragonfly.svg" alt="" aria-hidden width={1774} height={887} loading={'eager'} className="pointer-events-none absolute -right-40 -top-16 z-0 h-72 w-auto rotate-[-22deg] scale-x-[-1] opacity-35" style={{ filter: "brightness(0) saturate(100%) invert(64%) sepia(45%) saturate(821%) hue-rotate(343deg) brightness(92%) contrast(89%)" }} />
       <div className="relative z-10 grid gap-3 sm:grid-cols-[minmax(0,1fr)_10rem]">
         <div className="min-w-0">
           <div className="mb-1 flex items-center gap-2 [&_button]:text-[#EFA052] [&_button:hover]:text-[#FFF9F0]">

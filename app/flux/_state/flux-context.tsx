@@ -1,10 +1,22 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
-import { FLUX_ENDPOINTS, FLUX_PROJECT_COOKIE, browserApiUrl } from "@/app/lib/config";
-import type { FluxBoard, FluxDocument, FluxMilestone, FluxProject, FluxTask, FluxTaskStatus, FluxUpdate, FluxUser } from "@/app/lib/dal";
+import { usePathname, useRouter } from "next/navigation";
+import { FLUX_PROJECT_COOKIE } from "@/app/lib/config";
+import type { FluxDocument, FluxMilestone, FluxProject, FluxTask, FluxTaskStatus, FluxUpdate, FluxUser } from "@/app/lib/dal";
 import { formatUserName } from "@/app/lib/user-context";
+import { setSelectedFluxProject } from "./select-project-action";
+
+// Item routes (e.g. /model/api/resources/12/edit) point at rows owned by the
+// previous project, so switching falls back to the section overview.
+function projectDestination(pathname: string, id: string) {
+  if (/^\/projects\/\d+$/.test(pathname)) return `/projects/${id}`;
+  const segments = pathname.split("/").filter(Boolean);
+  const idIndex = segments.findIndex((segment) => /^\d+$/.test(segment));
+  if (idIndex === -1) return pathname;
+  const keep = segments[0] === "model" ? Math.min(2, idIndex) : Math.max(1, idIndex - 1);
+  return "/" + segments.slice(0, keep).join("/");
+}
 
 type FluxDataContextValue = {
   projects: FluxProject[];
@@ -78,6 +90,7 @@ export function FluxDataProvider({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [currentProjects, setCurrentProjects] = useState(projects);
   const [currentProject, setCurrentProject] = useState(selectedProject);
   const [currentTasks, setCurrentTasks] = useState(tasks);
@@ -93,21 +106,11 @@ export function FluxDataProvider({
       setCurrentProject((current) => currentProjects.find((project) => String(project.id) === id) ?? current);
       return;
     }
-    const destination = /^\/projects\/\d+$/.test(pathname) ? `/projects/${id}` : pathname;
-    window.history.pushState(null, "", destination);
-    const response = await fetch(browserApiUrl(FLUX_ENDPOINTS.projectBoard(id)), {
-      credentials: "include",
-    });
-    if (!response.ok) return;
-    const board = await response.json() as FluxBoard;
-    setCurrentProjects(board.projects);
-    setCurrentProject(board.project);
-    setCurrentTasks(board.tasks);
-    setCurrentMilestones(board.milestones);
-    setCurrentUpdates(board.updates);
-    setCurrentDocuments(board.documents);
-    setCurrentUsers(board.users);
-  }, [currentProjects, pathname, scope]);
+    await setSelectedFluxProject(id);
+    const destination = projectDestination(pathname, id);
+    if (destination === pathname) router.refresh();
+    else router.push(destination);
+  }, [currentProjects, pathname, router, scope]);
 
   const setTaskStatus = useCallback((id: number, status: FluxTaskStatus) => {
     setCurrentTasks((current) => current.map((task) => task.id === id ? { ...task, status } : task));

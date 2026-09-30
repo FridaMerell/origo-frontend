@@ -1,13 +1,19 @@
 import { Metadata } from "next"
-import { readingProgressApi, workApi } from "../../_actions/actions"
+import { alignmentSetApi, readingProgressApi, sourceFileApi, workApi } from "../../_actions/actions"
+import { listBookmarks, listWorkBookmarks } from "../../_actions/bookmark-actions"
 import "./page.css"
-import { Edition, EditionReadingStatus, Work } from "@/app/lib/dal/opus"
+import { Work } from "@/app/lib/dal/opus"
 import React from "react"
-import Unit from "./Unit"
+import AlignmentBootstrap from "./AlignmentBootstrap"
+import ParallelReader from "./ParallelReader"
 import { OpusReadingProvider } from "../../_state/opus-context"
 import Indexes from "./Indexes"
-import { Button } from "@/app/components/ui/Button"
-import { redirect } from "next/navigation"
+import BookmarksList from "./BookmarksList"
+import AddEdition from "./AddEdition"
+import DeleteWork from "./DeleteWork"
+import KeepPositionToggle from "./KeepPositionToggle"
+import { notFound } from "next/navigation"
+import { revalidatePath } from "next/cache"
 
 export async function generateMetadata({
 	params,
@@ -16,49 +22,64 @@ export async function generateMetadata({
 }): Promise<Metadata> {
 	const { id } = await params
 
-	const work = id ? await workApi.retrieve(id) : null
+	const work = id ? await workApi.retrieve(id).catch(() => null) : null
 
 	return {
-		title: `${work?.title} | Origo Opus`,
+		title: `${work?.title ?? "Verket finns inte"} | Origo Opus`,
 		description: work ? work.title : "Läs copyrightfria böcker i Opus",
 	}
 }
 
 const COLORS = ["primary", "secondary", "accent", "foreground"]
-
-function Headers({ editions }: { editions: EditionReadingStatus[] }) {
-	return (
-		<header className='col-span-5 grid grid-cols-[28px_44px_minmax(0,1fr)] items-center rounded-tl-xl border-b border-border bg-secondary text-bg'>
-			<div className={"rounded-tl-4xl  font-display  text-bg"}></div>
-			<div className={"py-4 px-2 pl-4 "}>#</div>
-			<div className='grid min-w-0 grid-flow-col auto-cols-fr'>
-				{editions.map((ed, index) => (
-					<div className='flex gap-2 text-bg font-sm' key={ed.id}>
-						<div
-							className={[
-								"w-1.5 border-l border-surface",
-								["bg-primary", "bg-secondary", "bg-accent", "bg-foreground"][
-									index
-								] ?? "bg-foreground",
-							].join(" ")}></div>
-						<span className='px-2 py-4 font-display font-sm'>{ed.title}</span>
-					</div>
-				))}
-			</div>
-		</header>
-	)
-}
+/** Rader per sida; måste vara samma som PAGE_SIZE i ParallelReader. */
+const FIRST_ROWS = 10
 
 export default async function ({
 	params,
+	searchParams,
 }: {
 	params: Promise<{ id: number }>
+	/** `enhet`: öppna vid den textenheten (t.ex. från bokmärkessidan) i stället för läspositionen. */
+	searchParams: Promise<{ enhet?: string }>
 }) {
 	const { id } = await params
-	const [work, reading] = await Promise.all([
+	const { enhet } = await searchParams
+	const focusUnit = enhet && /^\d+$/.test(enhet) ? Number(enhet) : undefined
+	// Ett verk som inte finns (eller inte är synligt) ger 404 från API:t: visa not-found, inte en kraschsida.
+	const [work, reading, alignmentSets] = await Promise.all([
 		workApi.retrieve(id),
 		readingProgressApi.retrieve(id),
-	])
+		alignmentSetApi.list({ work: String(id) }),
+	]).catch(error => {
+		if (error instanceof Error && error.message.startsWith("404")) notFound()
+		throw error
+	})
+
+	// Raderna i tabellen styrs av alignment-rutnätet (en cell eller lucka per edition och rad),
+	// inte av textenheternas position — annars hamnar editions med olika indelning fel mot varandra.
+	const alignmentSet = alignmentSets[0] ?? null
+	const matrix = alignmentSet
+		? await alignmentSetApi.matrix(alignmentSet.id, 0, FIRST_ROWS, focusUnit ? undefined : "reading", focusUnit)
+		: null
+	// Bokmärken hör till en edition (den första kolumnen, samma referens som läspositionen).
+	const referenceEditionId = matrix?.versions[0]?.text_version
+	const bookmarks = referenceEditionId ? await listBookmarks(referenceEditionId) : []
+	// Alla bokmärken i verket (alla editions), för listan i "Bokmärken"-chippen.
+	const workBookmarks = await listWorkBookmarks(reading.editions.map(edition => ({ id: edition.id, title: edition.title })))
+	// En utgåva utan källfil och utan kapitel/stycken har ingen text än; dess index erbjuder import.
+	// Servern avgör ändå (en utgåva med text avvisar en ny import).
+	const sourceFiles = await Promise.all(
+		reading.editions.map(edition => sourceFileApi.list({ version: String(edition.id) })),
+	)
+	const hasText = (index: number) =>
+		sourceFiles[index].length > 0 ||
+		reading.editions[index].chapters.length > 0 ||
+		reading.editions[index].units.length > 0
+	// Setet ska ha en kolumn per utgåva: saknas setet, eller en utgåva som lagts till senare
+	// (t.ex. av någon annan i ett offentligt verk), kompletteras det.
+	const needsBootstrap =
+		reading.editions.length > 0 &&
+		(!matrix || reading.editions.some(edition => !matrix.versions.some(version => version.text_version === edition.id)))
 
 	let meta = []
 
@@ -75,40 +96,21 @@ export default async function ({
 		meta.push(work.year)
 	}
 
-	const positions = [
-		...new Set(
-			reading.editions.flatMap(edition =>
-				edition.units.map(unit => unit.position),
-			),
-		),
-	].sort((a, b) => a - b)
-
-	const unitsByEdition = new Map(
-		reading.editions.map(edition => [
-			edition.id,
-			new Map(edition.units.map(unit => [unit.position, unit])),
-		]),
-	)
-	const workEditionsById = new Map(
-		work.editions.map(edition => [edition.id, edition]),
-	)
-
 	async function removeWork(work: Work) {
 		"use server"
 
 		await workApi.remove(work.id)
-		redirect("/")
+		// Startsidans verklista (tenantens interna rutt) ska inte visa det raderade verket.
+		revalidatePath("/opus")
 	}
 
 	return (
 		<OpusReadingProvider readingProgress={reading}>
+			<AlignmentBootstrap workId={id} needsBootstrap={needsBootstrap} />
 			<hr className={"border-border my-5 "} />
-			<div className={"flex gap-3 justify-end"}>
-				<form action={removeWork.bind(null, work)}>
-					<Button variant={"secondary"} className={"text-bg"}>
-						Radera
-					</Button>
-				</form>
+			<div className={"flex items-center gap-5 justify-end"}>
+				<KeepPositionToggle />
+				<DeleteWork onDelete={removeWork.bind(null, work)} />
 			</div>
 			<div className={"mt-9"}>
 				<span
@@ -123,131 +125,30 @@ export default async function ({
 				<div></div>
 				<div className={"flex gap-2 flex-wrap"}>
 					{reading.editions.map((edition, i) => {
-						return <Indexes edition={edition} key={i} color={COLORS[i]} />
+						return <Indexes workId={work.id} edition={edition} key={i} color={COLORS[i]} hasText={hasText(i)} />
 					})}
+					<BookmarksList bookmarks={workBookmarks} />
+					<AddEdition workId={work.id} />
 				</div>
 			</div>
 			<hr className={"border-border my-9 "} />
 
-			<article className={`lg:grid grid-cols-6 hidden `}>
-				<Headers editions={reading.editions} />
-				<div
-					className={
-						"px-2 flex items-center font-mono col-span-1 text-sm uppercase text-center justify-between"
-					}>
-					<span>Marginalnotiser</span>
-				</div>
-				<section className='col-span-5 grid grid-cols-[28px_44px_minmax(0,1fr)] items-center border border-border'>
-					{positions.map((position, index) => {
-						const units = reading.editions.map(edition =>
-							unitsByEdition.get(edition.id)?.get(position),
-						)
-						const label = units.find(Boolean)?.label || position
-						const annotations = reading.editions.flatMap(edition => {
-							const unit = unitsByEdition.get(edition.id)?.get(position)
-
-							return (unit?.annotations ?? []).map(annotation => ({
-								annotation,
-								editionTitle: edition.title,
-							}))
-						})
-						return (
-							<div
-								key={index}
-								className='group/row col-span-full grid grid-cols-subgrid bg-surface duration-200 hover:bg-primary/5'>
-								<div></div>
-								<div
-									className={
-										"font-mono text-text-muted text-sm border-r border-b border-border h-full items-center flex"
-									}>
-									{label}
-								</div>
-								<div className='grid min-w-0 grid-flow-col auto-cols-fr'>
-									{units.map((u, y) => (
-										<Unit
-											key={y}
-											span={`${index}:${y}`}
-											color={COLORS[y]}
-											unit={u}
-										/>
-									))}
-								</div>
-							</div>
-						)
-					})}
-					<p></p>
-				</section>
-			</article>
+			{matrix ? (
+				<ParallelReader
+					workId={work.id}
+					initial={matrix}
+					initialBookmarks={bookmarks}
+					editions={reading.editions.map(edition => ({
+						id: edition.id,
+						title: edition.title,
+						chapters: edition.chapters.map(chapter => ({ id: chapter.id, label: chapter.label })),
+					}))}
+				/>
+			) : reading.editions.length === 0 ? (
+				<p className={"py-10 text-text-muted"}>Verket har inga utgåvor än. Lägg till en utgåva för att börja läsa.</p>
+			) : (
+				<p className={"py-10 text-text-muted"}>Förbereder läsvyn…</p>
+			)}
 		</OpusReadingProvider>
 	)
-}
-
-{
-	/**
-	
-				<table className='reading-table'>
-					<thead>
-            <tr>
-              <th className='reading-gutter-heading'>
-                #
-              </th>
-              {reading.editions.map((ed, index)=>{
-                return <th
-                  key={ed.id}
-                  className={`reading-edition-heading edition-${COLORS[index]}`}
-                  style={{ borderLeftColor: `var(--${COLORS[index]})` }}>
-                  <span>{ed.title}</span>
-                  <small>{workEditionsById.get(ed.id)?.edition}</small>
-                </th>
-              })}
-              <th scope='col' className='reading-notes-heading'>Marginalnotiser</th>
-            </tr>
-          </thead>
-					<tbody>
-            {positions.map((position) => {
-             
-
-              return (
-                <tr
-                  key={position}
-                  className={position === reading.position ? 'reading-row is-current' : 'reading-row'}>
-                  <th scope='row' className='reading-row-label'>{label}</th>
-                  {reading.editions.map((edition) => {
-                    const unit = unitsByEdition.get(edition.id)?.get(position)
-
-                    return (
-                      <td key={edition.id} className='reading-cell' data-edition={edition.title}>
-                        <span className='reading-cell-content'>
-                          {unit?.label && <sup className='reading-reference'>{unit.label}</sup>}
-                          {unit?.content}
-                        </span>
-                      </td>
-                    )
-                  })}
-                  <td className='reading-notes-cell'>
-                    {annotations.map(({ annotation, editionTitle }) => (
-                      <article className='reading-note' key={annotation.id}>
-                        <p className='reading-note-meta'>
-                          Rad {label} · {editionTitle}
-                        </p>
-                        <p className='reading-note-body'>
-                          {annotation.body || annotation.lexical_entry?.lemma || annotation.kind}
-                        </p>
-                      </article>
-                    ))}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-					<tfoot>
-              <tr>
-                <td colSpan={reading.editions.length + 2} className='reading-toolbar'>
-                  <span>⋮⋮ &nbsp; Dra en rad för att justera</span>
-                  <span>◌ &nbsp; Slå ihop / dela rader</span>
-                  <button type='button'>Synka om från rad {reading.position}</button>
-                </td>
-              </tr>
-					</tfoot>
-				</table> */
 }

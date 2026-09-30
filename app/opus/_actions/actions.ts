@@ -4,6 +4,8 @@ import { cache } from "react"
 import type {
 	Alignment,
 	AlignmentCreate,
+	AlignmentMatrix,
+	AlignmentShiftAction,
 	AlignmentFilters,
 	AlignmentGroup,
 	AlignmentGroupCreate,
@@ -83,6 +85,9 @@ import { TENANTS } from "@/app/lib/tenant"
 
 const API_BASE = '/api/opus'
 
+/** Vilka rader av rutnätet ett svar ska innehålla. */
+type AlignmentWindow = { offset: number; limit: number }
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
 	try {
 
@@ -93,7 +98,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 		})
 
-		if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
+		if (!response.ok) {
+			const detail = await response.text().catch(() => "")
+			throw new Error(`${response.status} ${response.statusText}${detail ? `: ${detail}` : ""}`)
+		}
 		return response.status === 204
 			? (undefined as T)
 			: ((await response.json()) as T)
@@ -175,6 +183,64 @@ export const alignmentSetApi = {
 		}),
 	remove: (id: number) =>
 		request<void>(`/alignment-sets/${id}/`, { method: "DELETE" }),
+	/**
+	 * Det parallella rutnätet: rader med en cell per edition, fönstrat med `offset` och `limit`.
+	 * `unit` hoppar till raden för ett visst stycke eller kapitel (i vilken utgåva det än tillhör)
+	 * och tar då över `focus`.
+	 */
+	matrix: cache((id: number, offset: number, limit: number, focus?: "reading", unit?: number) =>
+		request<AlignmentMatrix>(
+			`/alignment-sets/${id}/matrix/?offset=${offset}&limit=${limit}${focus ? `&focus=${focus}` : ""}${unit ? `&unit=${unit}` : ""}`,
+		),
+	),
+	/** Kastar alla luckor och sammanslagningar (och rader från den äldre editorn). */
+	reset: (id: number, window: AlignmentWindow) =>
+		request<AlignmentMatrix>(`/alignment-sets/${id}/reset/`, {
+			method: "POST",
+			body: JSON.stringify(window),
+		}),
+	/** Lägger in en lucka vid raden (insert_gap) eller tar bort luckan där (remove_gap) i en edition. */
+	shift: (
+		id: number,
+		data: { alignment_version: number; row: number; action: AlignmentShiftAction } & AlignmentWindow,
+	) =>
+		request<AlignmentMatrix>(`/alignment-sets/${id}/shift/`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	/** Slår ihop radens cell med cellen under i en edition; cellerna under flyttas upp. */
+	join: (id: number, data: { alignment_version: number; row: number } & AlignmentWindow) =>
+		request<AlignmentMatrix>(`/alignment-sets/${id}/join/`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	/** Delar av sista stycket i en sammanslagen cell; cellerna under flyttas ned. */
+	split: (id: number, data: { alignment_version: number; row: number } & AlignmentWindow) =>
+		request<AlignmentMatrix>(`/alignment-sets/${id}/split/`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	/** Radar upp matchande kapitel genom att lägga in luckor; inget annat flyttas. */
+	autoMatchChapters: (id: number, window: AlignmentWindow) =>
+		request<AlignmentMatrix>(`/alignment-sets/${id}/auto-match-chapters/`, {
+			method: "POST",
+			body: JSON.stringify(window),
+		}),
+	/**
+	 * Radar upp grupper av kapitel/stycken (ett per edition och grupp) på delade rader genom att
+	 * skjuta ned de som ligger högre upp. Med `dryRun` sparas ingenting och svaret bär bara planen
+	 * i `result`. Annars börjar svaret strax ovanför första uppradningen.
+	 */
+	align: (
+		id: number,
+		groups: { alignment_version: number; unit: number }[][],
+		window: AlignmentWindow,
+		dryRun = false,
+	) =>
+		request<AlignmentMatrix>(`/alignment-sets/${id}/align/`, {
+			method: "POST",
+			body: JSON.stringify({ groups, dry_run: dryRun, ...window }),
+		}),
 }
 
 export const alignmentVersionApi = {
@@ -322,6 +388,21 @@ export const textUnitApi = {
 		}),
 	remove: (id: number) =>
 		request<void>(`/text-units/${id}/`, { method: "DELETE" }),
+	/**
+	 * Kombinerar stycket med de `count` stycken som följer i samma edition till ett enda
+	 * stycke (texten slås ihop permanent; annotationer, bokmärken och utdrag följer med).
+	 */
+	mergeNext: (id: number, count = 1) =>
+		request<TextUnit>(`/text-units/${id}/merge-next/`, {
+			method: "POST",
+			body: JSON.stringify({ count }),
+		}),
+	/** Delar ett stycke i två vid teckenpositionen `offset`. Kräver att stycket saknar annotationer. */
+	split: (id: number, offset: number) =>
+		request<{ units: TextUnit[] }>(`/text-units/${id}/split/`, {
+			method: "POST",
+			body: JSON.stringify({ offset }),
+		}),
 }
 
 export const editionApi = {

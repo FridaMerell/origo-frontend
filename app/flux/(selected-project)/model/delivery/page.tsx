@@ -1,6 +1,16 @@
 import Link from "next/link"
-import { ArrowRight, DatabaseZap, FileCode2, ServerCog } from "lucide-react"
+import { ChevronRight, DatabaseZap, FileCode2, Plus, ServerCog } from "lucide-react"
 import { loadApiWorkbenchData } from "../api/api-data"
+import { ActionLink, ModelPageHeader, ModelSection, RowLink } from "../model-ui"
+
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 py-2 text-sm">
+      <dt className="text-text-muted">{label}</dt>
+      <dd className="min-w-0 break-words text-right font-mono text-text">{children}</dd>
+    </div>
+  )
+}
 
 export default async function DeliveryPage() {
   const data = await loadApiWorkbenchData()
@@ -10,95 +20,68 @@ export default async function DeliveryPage() {
   const entities = design.entities ?? []
   const seedRows = design.seed_rows ?? []
   const stack = design.stack_profile
+  const seededEntities = entities.filter((entity) => seedRows.some((row) => row.entity === entity.id))
 
   return (
-    <div className="flex flex-col gap-7 pb-12">
-      <header className="flex flex-wrap items-start justify-between gap-5 border-b border-border pb-5 sm:items-end">
-        <div>
-          <Link href="/model" className="text-sm text-text-muted hover:text-accent">Teknisk dokumentation</Link>
-          <p className="mt-4 text-xs font-semibold uppercase tracking-[.14em] text-text-faint">Leveransunderlag</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">Stack, seeddata och generering</h1>
-          <p className="mt-2 text-sm leading-6 text-text-muted">Designvärdena här styr scaffold-motorn och de genererade filerna.</p>
-        </div>
-        <div className="grid w-full grid-cols-1 gap-2 text-sm sm:flex sm:w-auto sm:flex-wrap sm:gap-x-4 sm:gap-y-2">
-          <Link href="/model/delivery/stack" className="inline-flex min-h-10 items-center font-medium text-accent no-underline hover:underline">Stackprofil</Link>
-          <Link href="/model/delivery/seeds/new" className="inline-flex min-h-10 items-center font-medium text-accent no-underline hover:underline">Ny seedrad</Link>
-          <Link href="/model/scaffold" className="inline-flex min-h-10 items-center font-medium text-accent no-underline hover:underline">Öppna generatorn</Link>
-        </div>
-      </header>
+    <div className="flex flex-col gap-6 pb-12">
+      <ModelPageHeader
+        title="Leverans"
+        description="Teknikval, startdata och koden Flux genererar från specifikationen."
+        actions={
+          <>
+            <ActionLink href="/model/scaffold" variant="primary"><FileCode2 size={15} aria-hidden /> Öppna kodgeneratorn</ActionLink>
+            <ActionLink href="/model/delivery/seeds/new">Nytt startvärde</ActionLink>
+          </>
+        }
+      />
 
-      <section className="border-y border-border py-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <ServerCog size={18} className="text-accent" />
-            <h2 className="font-semibold text-text">Stackprofil</h2>
-          </div>
-          <Link href="/model/delivery/stack" className="text-sm text-accent no-underline hover:underline">{stack ? "Redigera stackprofil" : "Skapa stackprofil"}</Link>
-        </div>
+      <ModelSection
+        id="delivery-stack"
+        label="Stackprofil"
+        icon={<ServerCog size={17} className="text-accent" aria-hidden />}
+        title="Stackprofil"
+        actions={<RowLink href="/model/delivery/stack">{stack ? "Ändra" : "Skapa"}</RowLink>}
+      >
         {stack ? (
-          <dl className="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-            <div>
-              <dt className="text-text-faint">Targets</dt>
-              <dd className="mt-1 font-mono text-text">{stack.targets.join(" · ") || "inga"}</dd>
-            </div>
-            <div>
-              <dt className="text-text-faint">Databas / auth</dt>
-              <dd className="mt-1 font-mono text-text">{stack.database} · {stack.auth_method}</dd>
-            </div>
-            <div>
-              <dt className="text-text-faint">App / namespace</dt>
-              <dd className="mt-1 break-words font-mono text-text">{stack.app_label} · {stack.namespace}</dd>
-            </div>
-            <div>
-              <dt className="text-text-faint">API-namngivning</dt>
-              <dd className="mt-1 font-mono text-text">{stack.api_naming}</dd>
-            </div>
+          <dl className="divide-y divide-border px-4 py-1 sm:px-5">
+            <Detail label="Kodtargets">{stack.targets.join(", ") || "inga"}</Detail>
+            <Detail label="Databas">{stack.database}</Detail>
+            <Detail label="Inloggning">{stack.auth_method}</Detail>
+            <Detail label="App och namespace">{stack.app_label} · {stack.namespace}</Detail>
+            <Detail label="API-namngivning">{stack.api_naming}</Detail>
           </dl>
         ) : (
-          <p className="mt-3 text-sm text-text-muted">Ingen StackProfile är specificerad.</p>
+          <p className="px-4 py-4 text-sm text-text-muted sm:px-5">
+            Ingen stackprofil än. Den bestämmer vilka ramverk, vilken databas och vilken inloggning koden genereras för. <Link href="/model/delivery/stack" className="text-accent">Skapa stackprofil</Link>
+          </p>
         )}
-      </section>
+      </ModelSection>
 
-      <section className="border-y border-border py-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <FileCode2 size={18} className="text-accent" />
-            <h2 className="font-semibold text-text">Interaktiv kodgenerator</h2>
-          </div>
-          <Link href="/model/scaffold" className="inline-flex items-center gap-1.5 text-sm font-medium text-accent no-underline hover:underline">
-            Välj target och filer <ArrowRight size={15} />
-          </Link>
-        </div>
-        <p className="mt-3 text-sm leading-6 text-text-muted">Django, TypeScript, C#, design, integration och skeleton finns tillgängliga per fil. Spara ett scaffold-dokument från generatorn när underlaget ska bevaras.</p>
-      </section>
-
-      <section className="border-y border-border">
-        <header className="flex flex-wrap items-center justify-between gap-3 py-4">
-          <div className="flex items-center gap-2">
-            <DatabaseZap size={18} className="text-accent" />
-            <div>
-              <h2 className="font-semibold text-text">Seeddata</h2>
-              <p className="mt-1 text-sm text-text-muted">Varje rad hör till en Entity och kan bara innehålla dess kända fält och relationer.</p>
-            </div>
-          </div>
-          <span className="font-mono text-xs text-text-muted">{seedRows.length} rader</span>
-        </header>
+      <ModelSection
+        id="delivery-seeds"
+        label="Startvärden"
+        icon={<DatabaseZap size={17} className="text-accent" aria-hidden />}
+        title={<>Startvärden <span className="ml-1 text-sm font-normal text-text-muted">{seedRows.length}</span></>}
+        actions={<RowLink href="/model/delivery/seeds/new">Nytt startvärde</RowLink>}
+      >
         <ul className="divide-y divide-border">
-          {entities.filter((entity) => seedRows.some((row) => row.entity === entity.id)).map((entity) => {
+          {seededEntities.map((entity) => {
             const rows = seedRows.filter((row) => row.entity === entity.id).sort((a, b) => a.order - b.order)
             return (
-              <li key={entity.id} className="py-4">
+              <li key={entity.id} className="px-4 py-3 sm:px-5">
                 <div className="flex items-center justify-between gap-4">
                   <Link href={"/model/domain?entity=" + entity.id + "#entity-" + entity.id} className="font-mono text-sm font-semibold text-text no-underline hover:text-accent">{entity.name}</Link>
-                  <span className="text-xs text-text-faint">{rows.length} rader</span>
+                  <RowLink href={"/model/delivery/seeds/new?entity=" + entity.id}><Plus size={13} aria-hidden /> Rad</RowLink>
                 </div>
-                <ul className="mt-3 divide-y divide-border border-l border-border">
+                <ul className="mt-2 divide-y divide-border rounded-md border border-border bg-bg/40">
                   {rows.map((row) => (
                     <li key={row.id}>
-                  <Link href={"/model/delivery/seeds/" + row.id + "/edit"} className="group grid gap-2 py-3 pl-4 no-underline hover:bg-surface-2 sm:grid-cols-[6rem_minmax(0,1fr)_auto] sm:items-center">
-                        <span className="font-mono text-xs text-accent">rad {row.order}</span>
-                        <span className="break-words font-mono text-xs text-text-muted">{Object.entries(row.data).map(([key, value]) => key + ": " + String(value)).join(" · ")}</span>
-                        <ArrowRight size={15} className="hidden text-text-faint group-hover:text-accent sm:block" />
+                      <Link href={"/model/delivery/seeds/" + row.id + "/edit"} className="group flex items-center gap-3 px-3 py-2 no-underline hover:bg-surface-2">
+                        <span className="shrink-0 text-xs tabular-nums text-text-faint">{row.order}</span>
+                        <span className="min-w-0 flex-1 truncate font-mono text-xs text-text-muted group-hover:text-text">
+                          {Object.entries(row.data).map(([key, value]) => key + ": " + String(value)).join(" · ")}
+                        </span>
+                        <ChevronRight size={14} aria-hidden className="shrink-0 text-text-faint group-hover:text-accent" />
                       </Link>
                     </li>
                   ))}
@@ -106,24 +89,23 @@ export default async function DeliveryPage() {
               </li>
             )
           })}
-          {seedRows.length === 0 && <li className="py-4 text-sm text-text-muted">Ingen seeddata är specificerad. <Link href="/model/delivery/seeds/new" className="text-accent">Skapa första raden.</Link></li>}
+          {seedRows.length === 0 && (
+            <li className="px-4 py-4 text-sm text-text-muted sm:px-5">Inga startvärden än. Startvärden är data som ska finnas från start, till exempel statusar eller kategorier.</li>
+          )}
         </ul>
-      </section>
+      </ModelSection>
 
-      <section className="divide-y divide-border border-y border-border">
-        <div className="grid gap-2 py-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
-          <p className="font-mono text-xs text-text">GET scaffold/?target=</p>
-          <p className="text-sm text-text-muted">Returnerar faktiska filobjekt med path och content.</p>
+      <ModelSection
+        id="delivery-scaffold"
+        label="Kodgenerator"
+        icon={<FileCode2 size={17} className="text-accent" aria-hidden />}
+        title="Kodgenerator"
+        actions={<RowLink href="/model/scaffold">Öppna</RowLink>}
+      >
+        <div className="px-4 py-4 text-sm leading-6 text-text-muted sm:px-5">
+          <p>Genererar färdiga filer för Django, TypeScript, C#, design tokens, integrationer och ett projektskelett. Välj target, granska filerna och spara resultatet när du vill behålla det.</p>
         </div>
-        <div className="grid gap-2 py-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
-          <p className="font-mono text-xs text-text">POST scaffold-document/</p>
-          <p className="text-sm text-text-muted">Sparar target-resultatet först efter ditt uttryckliga val.</p>
-        </div>
-        <div className="grid gap-2 py-4 sm:grid-cols-[12rem_minmax(0,1fr)]">
-          <p className="font-mono text-xs text-text">POST generate-tasks/</p>
-          <p className="text-sm text-text-muted">Skapar en starter-backlog från befintlig design.</p>
-        </div>
-      </section>
+      </ModelSection>
     </div>
   )
 }

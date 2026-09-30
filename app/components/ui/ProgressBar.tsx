@@ -1,3 +1,5 @@
+import { twMerge } from "tailwind-merge"
+
 export function ProgressBar({
   pct,
   width = "100%",
@@ -9,7 +11,7 @@ export function ProgressBar({
 }) {
   return (
     <div
-      className={`h-1.5 shrink-0 overflow-hidden rounded-full bg-surface-2 ${className}`}
+      className={twMerge("h-1.5 shrink-0 overflow-hidden rounded-full bg-surface-2", className)}
       style={{ width }}
     >
       <div

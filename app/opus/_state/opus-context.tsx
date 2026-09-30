@@ -1,7 +1,8 @@
 "use client"
 
 import { Work, WorkReadingResponse } from "@/app/lib/dal/opus"
-import { createContext, useContext, type ReactNode } from "react"
+import { createContext, useContext, useState, type ReactNode } from "react"
+
 type OpusData = {
 	works: Work[]
 	selectedWork: Work | null
@@ -24,30 +25,48 @@ export function useWorks() {
 	return { works, selectedWork }
 }
 
-
 /**
  * Reading provider
- * 
+ *
+ * Alignment-rutnätet (rader, celler, luckor) ägs av `ParallelReader` och hämtas från
+ * `GET /alignment-sets/<id>/matrix/`; det ligger medvetet inte här.
  */
 
 type OpusReadingData = {
 	readingProgress: WorkReadingResponse | null
 }
-export const OpusReadingContext = createContext<OpusReadingData>({readingProgress:null})
+
+type OpusReadingState = OpusReadingData & {
+	/** Läs utan att spara läspositionen medan man scrollar (inställning på verksidan). */
+	keepPosition: boolean
+	setKeepPosition: (keepPosition: boolean) => void
+}
+
+export const OpusReadingContext = createContext<OpusReadingState>({
+	readingProgress: null,
+	keepPosition: false,
+	setKeepPosition: () => {},
+})
+
 export function OpusReadingProvider({
 	children,
 	readingProgress,
 }: OpusReadingData & { children: ReactNode }) {
+	const [keepPosition, setKeepPosition] = useState(false)
 	return (
-		<OpusReadingContext.Provider value={{ readingProgress }}>
+		<OpusReadingContext.Provider value={{ readingProgress, keepPosition, setKeepPosition }}>
 			{children}
 		</OpusReadingContext.Provider>
 	)
 }
 
-export function useReading(){
-	const {readingProgress} = useContext(OpusReadingContext)
+export function useReading() {
+	const { readingProgress } = useContext(OpusReadingContext)
+	return { readingProgress }
 }
 
-export function useAnnotations() {}
-export function useAlignment() {}
+/** Inställningen "läs utan att uppdatera position" för den öppna läsvyn. */
+export function useKeepPosition() {
+	const { keepPosition, setKeepPosition } = useContext(OpusReadingContext)
+	return [keepPosition, setKeepPosition] as const
+}

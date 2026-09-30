@@ -3,6 +3,7 @@
 import { useDeferredValue, useMemo, useState } from "react"
 import { useDismissableOpen } from "./use-dismissable-open"
 import { Check, ChevronDown, Search } from "lucide-react"
+import { twMerge } from "tailwind-merge"
 
 export type CategoryTreeSelectItem = {
   id: string
@@ -161,7 +162,7 @@ export function CategoryTreeSelect<T extends CategoryTreeSelectItem>({
   )
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={ref} className={twMerge("relative", className)}>
       <button
         type="button"
         aria-haspopup="listbox"

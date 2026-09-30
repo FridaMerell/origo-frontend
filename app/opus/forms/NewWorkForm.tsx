@@ -4,9 +4,10 @@ import { useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { Modal } from "@/app/components/ui/Modal"
 import { useToast } from "@/app/components/ui/ToastProvider"
-import type { Shelf } from "@/app/lib/dal/opus"
+import type { ImportOptions, Shelf } from "@/app/lib/dal/opus"
 import type { NewTextVersion } from "../_actions/actions"
 import { CheckboxField, FileField, SelectField, TextField, TitleField } from "./Fields/Fields"
+import ImportPreview, { DEFAULT_IMPORT_OPTIONS, importEditionFile } from "./ImportPreview"
 
 type NewWorkFormProps = {
 	open: boolean
@@ -14,7 +15,7 @@ type NewWorkFormProps = {
 }
 
 type WizardStep = 1 | 2
-type DraftEdition = NewTextVersion & { file: File | null }
+type DraftEdition = NewTextVersion & { file: File | null; importOptions: ImportOptions }
 
 const newEdition = (title = ""): DraftEdition => ({
 	title,
@@ -23,6 +24,7 @@ const newEdition = (title = ""): DraftEdition => ({
 	edition: "",
 	source: "",
 	file: null,
+	importOptions: DEFAULT_IMPORT_OPTIONS,
 })
 
 function titleFromFile(file: File) {
@@ -112,18 +114,15 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 		}
 	}
 
-	async function importEditionFile(editionId: number, file: File) {
-		const body = new FormData()
-		body.set("file", file)
-		const response = await fetch(`/api/opus/editions/${editionId}/import-document/`, { method: "POST", body })
-		if (!response.ok) throw new Error("Filen kunde inte importeras.")
-	}
-
+	// This calls the Next.js route at app/api/opus/works/create-with-editions/route.ts, not Django
+	// directly. That route expects { work: NewWorkDetails, editions } and forwards it to
+	// workApi.createWithEditions in ../_actions/actions.ts, which does the Django translation
+	// (flat/snake_case, is_private) itself. Keep this nested/camelCase to match that contract.
 	async function createWorkWithEditions() {
 		const response = await fetch("/api/opus/works/create-with-editions/", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ work, editions: editions.map(({ file, ...edition }) => edition) }),
+			body: JSON.stringify({ work, editions: editions.map(({ file, importOptions, ...edition }) => edition) }),
 		})
 		return (await response.json()) as { editions?: { id: number; title: string }[]; error?: string }
 	}
@@ -147,10 +146,13 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 				toast({ title: "Kunde inte skapa verket", description: result.error ?? "Försök igen.", variant: "error" })
 				return
 			}
-			await Promise.all(result.editions.map(async (createdEdition, index) => {
-				const edition = editions[index]
+			// Match by title, not position: Edition's default ordering is (work, title, id), not
+			// submission order, so result.editions is not guaranteed to line up with `editions`.
+			await Promise.all(editions.map(async edition => {
 				if (!edition.file) throw new Error("Varje utgåva behöver en fil.")
-				await importEditionFile(createdEdition.id, edition.file)
+				const createdEdition = result.editions?.find(candidate => candidate.title === edition.title)
+				if (!createdEdition) throw new Error(`Utgåvan "${edition.title}" kunde inte hittas efter skapandet.`)
+				await importEditionFile(createdEdition.id, edition.file, edition.importOptions)
 			}))
 
 			onOpenChange(false)
@@ -162,7 +164,7 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 			router.refresh()
 		} catch (importError) {
 			setError(importError instanceof Error ? importError.message : "Filerna kunde inte importeras.")
-			toast({ title: "Importen misslyckades", description: "Verket och dess utgåvor finns kvar, men minst en fil kunde inte importeras.", variant: "error" })
+			toast({ title: "Importen misslyckades", description: "Verket och dess utgåvor finns kvar, men minst en fil kunde inte importeras. Välj utgåvan i verkets index för att importera igen.", variant: "error" })
 		} finally {
 			setIsSubmitting(false)
 		}
@@ -252,6 +254,7 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 								</div>
 								<TextField label='Källa' name={`edition-${index}-source`} value={edition.source} onChange={event => updateEdition(index, { source: event.target.value })} placeholder='Till exempel: Projekt Gutenberg eller eget digitalisat' />
 								<FileField label='Fil' name={`edition-${index}-file`} accept='.txt,.md,.html,.htm,.pdf,.epub,.docx' onFilesChange={files => updateEdition(index, { file: files[0] ?? null })} />
+								{edition.file && <ImportPreview file={edition.file} options={edition.importOptions} onOptionsChange={importOptions => updateEdition(index, { importOptions })} />}
 							</div>
 						))}
 						<div className='flex items-center justify-between gap-3'>

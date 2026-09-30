@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import { loadApiWorkbenchData } from "../api/api-data"
+import { ModelPageHeader } from "../model-ui"
 import { FrontendEditorForm } from "./frontend-editor-form"
 import { RolePermissionMatrix } from "./role-permission-matrix"
 import type { FrontendContractKind } from "./_actions/contracts"
@@ -21,17 +22,17 @@ export async function FrontendEditorPage({
 
   const label = kind === "screen" ? "skärm" : kind === "role" ? "roll" : "behörighet"
   const description = kind === "role"
-    ? "En roll får åtkomst genom explicita API-operationer och deras scope."
-    : "Kopplingar mellan screen, entitet, roll och API-operation sparas som explicita designrelationer."
+    ? "Välj vilka API-operationer rollen får anropa och för vilka poster."
+    : kind === "screen"
+      ? "En skärm är en route i appen och den domändata den visar."
+      : "Koppla en roll till en API-operation och bestäm vilka poster den gäller."
   return (
     <div className="flex flex-col gap-6 pb-12">
-      <header className="border-b border-border pb-5">
-        <p className="text-xs font-semibold uppercase tracking-[.14em] text-text-faint">Klientgränser</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-text">
-          {recordId ? "Redigera " + label : "Ny " + label}
-        </h1>
-        <p className="mt-2 text-sm text-text-muted">{description}</p>
-      </header>
+      <ModelPageHeader
+        back={{ href: "/model/frontend", label: "Frontend och åtkomst" }}
+        title={(recordId ? "Redigera " : "Ny ") + label}
+        description={description}
+      />
       <FrontendEditorForm
         kind={kind}
         projectId={data.projectId}

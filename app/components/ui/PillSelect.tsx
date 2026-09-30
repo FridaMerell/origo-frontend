@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { twMerge } from "tailwind-merge";
 
 export type PillSelectOption<T extends string> = {
   value: T;
@@ -21,7 +22,7 @@ export function PillSelect<T extends string>({
   className = "",
 }: PillSelectProps<T>) {
   return (
-    <div className={`inline-flex flex-wrap gap-1.5 ${className}`}>
+    <div className={twMerge("inline-flex flex-wrap gap-1.5", className)}>
       {options.map((option) => {
         const active = option.value === value;
         return (

@@ -11,12 +11,15 @@ export type ApiWorkbenchData = {
 export async function loadApiWorkbenchData(): Promise<ApiWorkbenchData | null> {
   const selectedProject = (await cookies()).get(FLUX_PROJECT_COOKIE)?.value
 
+  const projects = await getFluxProjects()
+
   if (selectedProject && /^\d+$/.test(selectedProject)) {
     const design = await getFluxDesign(selectedProject)
-    return design ? { projectId: selectedProject, projectName: "Valt projekt", design } : null
+    const projectName = projects.find((project) => String(project.id) === selectedProject)?.name ?? "Valt projekt"
+    return design ? { projectId: selectedProject, projectName, design } : null
   }
 
-  const project = (await getFluxProjects())[0]
+  const project = projects[0]
   if (!project) return null
   const design = await getFluxDesign(String(project.id))
   return design ? { projectId: String(project.id), projectName: project.name, design } : null

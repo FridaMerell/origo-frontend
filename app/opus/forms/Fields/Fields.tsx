@@ -2,6 +2,8 @@ import { useId, useState, type ComponentPropsWithoutRef, type DragEvent, type Re
 
 export type TextFieldProps = Omit<ComponentPropsWithoutRef<"input">, "className"> & {
 	label: string
+	/** Göm etiketten visuellt (den finns kvar för skärmläsare), t.ex. i en sidnavigering. */
+	hideLabel?: boolean
 	helpText?: string
 	error?: string
 	className?: string
@@ -22,6 +24,7 @@ function FieldMessage({ id, helpText, error }: { id?: string; helpText?: string;
 /** Shared Opus field styling for the compact, rounded library forms. */
 export function TextField({
 	label,
+	hideLabel = false,
 	helpText,
 	error,
 	id,
@@ -33,8 +36,8 @@ export function TextField({
 	const helpId = helpText || error ? `${inputId}-help` : undefined
 
 	return (
-		<div className='flex flex-col gap-2'>
-			<label htmlFor={inputId} className='font-body text-sm leading-none text-text'>
+		<div className={`flex flex-col ${hideLabel ? "" : "gap-2"}`}>
+			<label htmlFor={inputId} className={`font-body text-sm leading-none text-text ${hideLabel ? "sr-only" : ""}`}>
 				{label}
 			</label>
 			<input
@@ -52,6 +55,42 @@ export function TextField({
 /** A title is visually the same as the other Opus form fields, with a reusable semantic name. */
 export function TitleField({ label = "Namn", ...props }: Omit<TextFieldProps, "label"> & { label?: string }) {
 	return <TextField label={label} {...props} />
+}
+
+export type TextAreaFieldProps = Omit<ComponentPropsWithoutRef<"textarea">, "className"> & {
+	label: string
+	helpText?: string
+	error?: string
+	className?: string
+}
+
+export function TextAreaField({
+	label,
+	helpText,
+	error,
+	id,
+	className = "",
+	...textareaProps
+}: TextAreaFieldProps) {
+	const generatedId = useId()
+	const textareaId = id ?? generatedId
+	const helpId = helpText || error ? `${textareaId}-help` : undefined
+
+	return (
+		<div className='flex flex-col gap-2'>
+			<label htmlFor={textareaId} className='font-body text-sm leading-none text-text'>
+				{label}
+			</label>
+			<textarea
+				id={textareaId}
+				aria-describedby={helpId}
+				aria-invalid={Boolean(error)}
+				className={`${fieldClass} resize-y ${error ? "border-danger" : ""} ${className}`}
+				{...textareaProps}
+			/>
+			<FieldMessage id={helpId} helpText={helpText} error={error} />
+		</div>
+	)
 }
 
 export type FileFieldProps = Omit<ComponentPropsWithoutRef<"input">, "className" | "type"> & {
@@ -113,6 +152,8 @@ export function CheckboxField({ label, helpText, id, ...inputProps }: CheckboxFi
 
 export type SelectFieldProps = Omit<ComponentPropsWithoutRef<"select">, "className"> & {
 	label: string
+	/** Göm etiketten visuellt (den finns kvar för skärmläsare), t.ex. när fältet står i en tabellrubrik. */
+	hideLabel?: boolean
 	helpText?: string
 	error?: string
 	className?: string
@@ -121,6 +162,7 @@ export type SelectFieldProps = Omit<ComponentPropsWithoutRef<"select">, "classNa
 
 export function SelectField({
 	label,
+	hideLabel = false,
 	helpText,
 	error,
 	id,
@@ -133,8 +175,8 @@ export function SelectField({
 	const helpId = helpText || error ? `${selectId}-help` : undefined
 
 	return (
-		<div className='flex flex-col gap-2'>
-			<label htmlFor={selectId} className='font-body text-sm leading-none text-text'>
+		<div className={`flex flex-col ${hideLabel ? "" : "gap-2"}`}>
+			<label htmlFor={selectId} className={`font-body text-sm leading-none text-text ${hideLabel ? "sr-only" : ""}`}>
 				{label}
 			</label>
 			<select

@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { useDismissableOpen } from "./use-dismissable-open";
+import { twMerge } from "tailwind-merge";
 
 const ModalCloseContext = createContext<(() => void) | null>(null);
 
@@ -172,7 +173,11 @@ export function Modal({
                 aria-labelledby={titleId}
                 aria-describedby={description ? descriptionId : undefined}
                 tabIndex={-1}
-                className={`flex max-h-[calc(100vh-2rem)] w-full flex-col !rounded-[14px] border border-border bg-surface font-body text-text shadow-lg outline-none transition-transform ${SIZES[size]} ${className}`}
+                className={twMerge(
+                  "flex max-h-[calc(100vh-2rem)] w-full flex-col !rounded-[14px] border border-border bg-surface font-body text-text shadow-lg outline-none transition-transform",
+                  SIZES[size],
+                  className,
+                )}
                 style={{
                   transitionDuration: "var(--duration-normal)",
                   transitionTimingFunction: "var(--ease-standard)",

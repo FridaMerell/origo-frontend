@@ -68,7 +68,7 @@ export function CrudGenerator({
 
   const onSubmit = handleSubmit(async (values) => {
     if (!selectedEntity) {
-      setError("root", { message: "Välj en Entity först." })
+      setError("root", { message: "Välj en entitet först." })
       return
     }
 
@@ -99,14 +99,14 @@ export function CrudGenerator({
       if ("error" in result) {
         const summary = "data" in result ? result.data : null
         const progress = summary && (summary.createdResources || summary.createdOperations)
-          ? " " + summary.createdResources + " Resources och " + summary.createdOperations + " operationer skapades före felet."
+          ? " " + summary.createdResources + " resurser och " + summary.createdOperations + " operationer skapades före felet."
           : ""
         setBatchMessage(result.error + progress)
         return
       }
 
       const summary = result.data
-      setBatchMessage(summary.createdResources + " Resources och " + summary.createdOperations + " operationer skapades för " + summary.completedEntities + " Entities.")
+      setBatchMessage(summary.createdResources + " resurser och " + summary.createdOperations + " operationer skapades för " + summary.completedEntities + " entiteter.")
       router.refresh()
     })
   }
@@ -114,26 +114,21 @@ export function CrudGenerator({
   const path = resource?.path ?? selectedPath
 
   return (
-    <section id="standard-crud" className="border-t border-border">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border bg-surface-2 px-4 py-4 sm:items-end sm:px-5">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[.12em] text-text-faint">API-grund</p>
-          <h2 className="mt-1 text-xl font-semibold text-text">Standard-CRUD</h2>
-          <p className="mt-2 text-sm leading-6 text-text-muted">Skapa eller komplettera Resource, list, retrieve, create, update och delete från domänmodellen.</p>
-        </div>
-        <span className="font-mono text-sm text-text-muted">{completeCount} / {entities.length} klara</span>
+    <section id="standard-crud" data-model-section="Standard-CRUD" className="scroll-mt-24 overflow-hidden rounded-card border border-border bg-surface shadow-card">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface-2 px-4 py-3.5 sm:px-5">
+        <h2 className="text-base font-semibold text-text">Standard-CRUD</h2>
+        <span className="text-sm tabular-nums text-text-muted">{completeCount} av {entities.length} entiteter klara</span>
       </header>
 
-      <div className="grid gap-4 px-4 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-5 sm:items-center">
-        <div>
-          <h3 className="font-medium text-text">Alla Entities</h3>
-          <p className="mt-1 text-sm text-text-muted">
-            {incompleteItems.length
-              ? newResourceCount + " Resources och " + newOperationCount + " operationer behöver skapas eller kompletteras."
-              : "Alla Entities har standard-CRUD."}
-          </p>
-        </div>
-        <Button type="button" variant="primary" size="sm" disabled={batchPending || incompleteItems.length === 0} onClick={generateAll} className="min-h-10 w-full justify-center rounded-xl sm:w-auto">
+      <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <p className="text-sm leading-6 text-text-muted">
+          {entities.length === 0
+            ? "Skapa entiteter i domänmodellen först, sedan kan list, retrieve, create, update och delete genereras här."
+            : incompleteItems.length
+              ? newResourceCount + " resurser och " + newOperationCount + " operationer saknas för att alla entiteter ska ha list, retrieve, create, update och delete."
+              : "Alla entiteter har list, retrieve, create, update och delete."}
+        </p>
+        <Button type="button" variant="primary" size="sm" disabled={batchPending || incompleteItems.length === 0} onClick={generateAll} className="min-h-9 shrink-0 justify-center rounded-md">
           {batchPending ? "Genererar all CRUD..." : "Generera all CRUD"}
         </Button>
       </div>
@@ -142,20 +137,20 @@ export function CrudGenerator({
 
       {entities.length > 0 && (
         <details className="border-t border-border px-4 py-4 sm:px-5">
-          <summary className="cursor-pointer font-medium text-text">Generera för en Entity</summary>
-          <form onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-[minmax(12rem,.8fr)_minmax(0,1fr)_auto] sm:items-end">
-            <Field label="Entity">
-              <select className={fieldInputClass} {...register("entity", { required: "Välj en Entity." })}>
+          <summary className="cursor-pointer text-sm font-medium text-text">Generera för en entitet</summary>
+          <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end [&>*]:min-w-0 [&>*:nth-child(-n+2)]:flex-1">
+            <Field label="Entitet">
+              <select className={fieldInputClass} {...register("entity", { required: "Välj en entitet." })}>
                 {entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}
               </select>
             </Field>
-            <Field label={resource ? "Resource-path" : "Föreslaget API-path"}>
+            <Field label={resource ? "Resursens sökväg" : "Föreslagen sökväg"}>
               <input className={fieldInputClass} disabled={Boolean(resource)} {...register("path", { required: "API-path krävs." })} />
             </Field>
             <div>
               <FormRootError error={errors.root} />
               {resource && missingKeys.length === 0 ? (
-                <Link href={"/model/api/resources/" + resource.id} className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-accent/40 px-3 text-sm font-medium text-accent no-underline hover:bg-accent/10 sm:w-auto">
+                <Link href={"/model/api/resources/" + resource.id} className="inline-flex min-h-9 items-center justify-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-text no-underline hover:border-accent/50 hover:text-accent">
                   CRUD är klart
                 </Link>
               ) : (
@@ -173,7 +168,7 @@ export function CrudGenerator({
           {selectedEntity && (
             <div className="mt-4 divide-y divide-border border-y border-border text-sm">
               <p className="py-2 text-text-muted">
-                {resource ? <>Resource: <span className="font-mono text-text">{resource.path}</span></> : <>Ny Resource: <span className="font-mono text-text">{path || "ange path ovan"}</span></>}
+                {resource ? <>Resurs: <span className="font-mono text-text">{resource.path}</span></> : <>Ny resurs: <span className="font-mono text-text">{path || "ange path ovan"}</span></>}
                 <span className="ml-2 font-mono text-xs text-accent">{missingKeys.length ? missingKeys.join(" · ") : "alla CRUD-operationer finns"}</span>
               </p>
               <p className="py-2 font-mono text-xs leading-5 text-text-muted">

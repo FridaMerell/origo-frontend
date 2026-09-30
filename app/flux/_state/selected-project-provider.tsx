@@ -24,6 +24,7 @@ export async function SelectedProjectProvider({ children, projectId }: { childre
 
   return (
     <FluxDataProvider
+      key={selectedProject?.id ?? "none"}
       projects={projects}
       selectedProject={selectedProject}
       tasks={tasks}

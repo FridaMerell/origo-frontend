@@ -389,6 +389,22 @@ export type ReadingProgressInput = {
   character_index?: Nullable<number>;
 };
 
+/** GET /reading-progress/ (list/retrieve): a reading position and where it points. */
+export type ReadingProgressOverview = {
+  id: Id;
+  user: User["id"];
+  work: Id;
+  work_title: string;
+  position: number;
+  character_index: Nullable<number>;
+  updated_at: ISODateTime;
+  /** The edition whose numbering the position uses (the first column of the reader's grid). */
+  edition: Nullable<{ id: Id; title: string }>;
+  /** The unit at the position; null when the position is past the end of the edition. */
+  unit: Nullable<{ id: Id; excerpt: string; chapter: Nullable<{ id: Id; label: string }> }>;
+  percent: number;
+};
+
 export type Bookmark = {
   id: Id;
   user: User["id"];

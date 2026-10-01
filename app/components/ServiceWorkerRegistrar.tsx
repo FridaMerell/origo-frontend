@@ -24,8 +24,11 @@ export function ServiceWorkerRegistrar() {
     let cancelled = false;
 
     void (async () => {
-      await registerServiceWorker();
-      if (cancelled || !signedIn) return;
+      // register() rejects wherever service workers are unavailable (private windows,
+      // disabled or blocked storage, embedded browsers). Push is optional, so carry on
+      // without it instead of leaving the rejection unhandled.
+      const registration = await registerServiceWorker().catch(() => null);
+      if (!registration || cancelled || !signedIn) return;
 
       const subscription = await getExistingSubscription();
       if (subscription) {

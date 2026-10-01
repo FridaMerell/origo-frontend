@@ -17,7 +17,7 @@ function Logo({ mode }: { mode: "light" | "dark" }) {
 				src={mode == "dark" ? logoLight.src : logoLight.src}
 				alt='Till startsidan'
 			/>
-			<span className={"font-display font-bold text-xl"}>Opus</span>
+			<span className={"hidden font-display font-bold text-xl sm:inline"}>Opus</span>
 		</Link>
 	)
 }
@@ -37,25 +37,28 @@ export default function ({ mode, onToggleMode }: TopBarProps) {
 	const pathname = usePathname()
 
 	const navLink =
-		"rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:bg-foreground/5"
-	const navLinkActive = "bg-foreground/8 font-medium text-foreground"
+		"rounded-md px-2.5 py-1.5 transition-colors hover:bg-foreground/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+	// Färgen väljs per läge; båda klasserna samtidigt avgörs av CSS-ordningen, inte klassordningen.
+	const navLinkIdle = "text-text-muted hover:text-text"
+	const navLinkActive = "bg-foreground/8 font-medium text-text"
 
 	return (
 		<div
 			className={
 				" sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-sm"
 			}>
-			<header className={"container flex items-center gap-5 py-3"}>
-				<div className={"pe-5"}>
+			<header className={"container flex items-center gap-3 py-3 sm:gap-5"}>
+				<div className={"shrink-0 sm:pe-5"}>
 					<Logo mode={mode} />
 				</div>
 				<span className='hidden h-7 w-px bg-border sm:block' />
-				<nav className={"gap-1 pl-5 hidden items-center md:flex"}>
+				<nav className={"flex items-center gap-1 sm:pl-5"}>
 					{TABS.map((tab, i) => (
 						<Link
 						key={i}
 							href={tab.href}
-							className={`${navLink} ${pathname == tab.href ? navLinkActive : ""}`}>
+							aria-current={pathname == tab.href ? "page" : undefined}
+							className={`${navLink} ${pathname == tab.href ? navLinkActive : navLinkIdle}`}>
 							{tab.label}
 						</Link>
 					))}
@@ -68,7 +71,7 @@ export default function ({ mode, onToggleMode }: TopBarProps) {
 							mode == "dark" ? "Byt till ljust läge" : "Byt till mörkt läge"
 						}
 						title={mode == "dark" ? "Ljust läge" : "Mörkt läge"}
-						className='grid size-8 place-items-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground'>
+						className='grid size-8 place-items-center rounded-md border border-border text-text-muted transition-colors hover:bg-foreground/5 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'>
 						{mode === "dark" ? (
 							<svg
 								viewBox='0 0 24 24'

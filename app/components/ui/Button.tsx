@@ -1,5 +1,5 @@
 import Link from "next/link"
-import type { ButtonHTMLAttributes, LinkHTMLAttributes } from "react"
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from "react"
 import { twMerge } from "tailwind-merge"
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -14,7 +14,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 		| "rounded-none"
 }
 
-type LinkProps = LinkHTMLAttributes<HTMLAnchorElement> & {
+type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
 	variant?: "primary" | "secondary" | "ghost" | "paper" | "paper-bordered"
 	size?: "sm" | "md"
 	rounded?:
@@ -90,6 +90,7 @@ export const LinkButton = ({
 				resolvedRounded,
 				className,
 			)}
-		></Link>
+			{...rest}
+		/>
 	)
 }

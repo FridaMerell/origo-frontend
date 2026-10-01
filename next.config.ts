@@ -2,7 +2,9 @@ import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   /* config options here */
-  allowedDevOrigins: ["verso.origo.test","flux.origo.test","tempus.origo.test","apsis.origo.test","origo.test", "opus.origo.test"],
+  // *.localhost: the in-app browser pane treats loopback hosts as the project's own dev
+  // server, while *.origo.test (a private-network host) gets a permission prompt per action.
+  allowedDevOrigins: ["verso.origo.test","flux.origo.test","tempus.origo.test","apsis.origo.test","origo.test", "opus.origo.test", "*.localhost"],
   experimental: {
     // Turbopack's persistent FS cache does not prune (Next upstream). It grew to
     // ~2.4GB of .sst here and reloaded into the Node process until .next was wiped.

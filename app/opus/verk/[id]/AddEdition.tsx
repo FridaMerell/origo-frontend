@@ -49,13 +49,13 @@ function AddEditionForm({ workId }: { workId: number }) {
 			<TitleField
 				label={"Titel på utgåvan"}
 				name={"title"}
-				placeholder={"Till exempel: Första utgåvan"}
+				placeholder={"Till exempel: Nysvensk översättning"}
 				required
 			/>
 			<TextField
 				label={"Utgåvebeteckning"}
 				name={"edition"}
-				placeholder={"Till exempel: 2:a upplagan"}
+				placeholder={"Till exempel: Pipping 1921"}
 			/>
 			<div className={"grid grid-cols-2 gap-4"}>
 				<SelectField label={"Språk"} name={"language"} defaultValue={"sv"} required>
@@ -69,7 +69,7 @@ function AddEditionForm({ workId }: { workId: number }) {
 			<TextField
 				label={"Källa"}
 				name={"source"}
-				placeholder={"Till exempel: Projekt Gutenberg eller eget digitalisat"}
+				placeholder={"Till exempel: Projekt Runeberg eller eget digitalisat"}
 			/>
 			<FileField
 				label={"Fil att importera (valfritt)"}

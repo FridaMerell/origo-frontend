@@ -2,7 +2,6 @@
 
 import { useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
-import { BookmarkIcon, ChevronRightIcon } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
 import type { Bookmark, Id } from "@/app/lib/dal/opus"
 import { removeBookmark, updateBookmark } from "../_actions/bookmark-actions"
@@ -10,6 +9,9 @@ import { TextAreaField, TextField } from "../forms/Fields/Fields"
 import Divider from "../ui/Divider"
 
 const DATE_FORMAT = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short", year: "numeric" })
+
+/** Synlig fokusmarkering för tangentbordsnavigering, samma som Opus formulärfält. */
+const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
 
 /** Läsvyn öppnad vid den bokmärkta enheten (se `enhet` i app/opus/verk/[id]/page.tsx). */
 function readingHref(bookmark: Bookmark) {
@@ -111,19 +113,28 @@ function BookmarkCard({
 	}
 
 	return (
-		<li className='rounded-xl border border-border border-l-4 border-l-primary bg-surface p-5'>
-			<div className='flex items-baseline justify-between gap-4'>
-				<span className='min-w-0 truncate font-mono text-xs uppercase tracking-widest text-text-muted'>{place}</span>
-				<time dateTime={bookmark.created_at} className='shrink-0 font-mono text-xs text-text-muted'>
+		<li className='relative flex flex-col rounded-lg border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md'>
+			{/* Bokmärkesbandet: ett sidenband som hänger ned över kortets överkant, som i en bok. */}
+			<svg aria-hidden viewBox='0 0 16 40' className='absolute -top-px right-5 h-7 w-3 text-primary'>
+				<path d='M0 0h16v40l-8-7-8 7z' fill='currentColor' />
+			</svg>
+			<div className='flex items-baseline justify-between gap-4 pr-8'>
+				<span className='min-w-0 truncate font-display text-sm italic text-text-muted'>{place}</span>
+				<time dateTime={bookmark.created_at} className='shrink-0 font-display text-sm text-text-muted oldstyle-nums'>
 					{DATE_FORMAT.format(new Date(bookmark.created_at))}
 				</time>
 			</div>
 			{bookmark.title && <h3 className='mt-2 font-display text-xl text-text'>{bookmark.title}</h3>}
-			<blockquote className='mt-3 border-l-2 border-border pl-4 font-display text-lg leading-relaxed text-text'>
+			<blockquote className='mt-2 font-display text-lg italic leading-relaxed text-text'>
+				<span aria-hidden className='text-primary'>”</span>
 				{bookmark.excerpt}
+				<span aria-hidden className='text-primary'>”</span>
 			</blockquote>
 			{bookmark.note && !editing && (
-				<p className='mt-3 whitespace-pre-line text-sm leading-relaxed text-text-muted'>{bookmark.note}</p>
+				// Anteckningen är ens egen text: infälld i kortet, skild från bokens.
+				<p className='mt-3 whitespace-pre-line rounded-md bg-bg px-3 py-2 font-display text-sm italic leading-relaxed text-text-muted'>
+					{bookmark.note}
+				</p>
 			)}
 			{editing ? (
 				<EditForm
@@ -135,24 +146,23 @@ function BookmarkCard({
 					onCancel={() => setEditing(false)}
 				/>
 			) : (
-				<div className='mt-4 flex flex-wrap items-center gap-4 text-sm'>
+				<div className='mt-auto flex flex-wrap items-center gap-x-5 gap-y-2 pt-4 text-sm'>
 					<Link
 						href={readingHref(bookmark)}
-						className='inline-flex items-center gap-1 font-semibold text-primary hover:text-text'>
+						className={`rounded-sm font-semibold text-primary underline underline-offset-4 hover:text-text ${FOCUS}`}>
 						Läs härifrån
-						<ChevronRightIcon size={14} aria-hidden />
 					</Link>
 					<button
 						type='button'
 						onClick={() => setEditing(true)}
-						className='text-text-muted underline underline-offset-4 hover:text-text cursor-pointer'>
+						className={`rounded-sm text-text-muted underline underline-offset-4 hover:text-text cursor-pointer ${FOCUS}`}>
 						{bookmark.title || bookmark.note ? "Redigera" : "Lägg till rubrik eller anteckning"}
 					</button>
 					<button
 						type='button'
 						disabled={removing}
 						onClick={handleRemove}
-						className='ml-auto text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-40 cursor-pointer'>
+						className={`ml-auto rounded-sm text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-40 cursor-pointer ${FOCUS}`}>
 						{removing ? "Tar bort…" : "Ta bort"}
 					</button>
 				</div>
@@ -188,11 +198,7 @@ export default function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) 
 	return (
 		<>
 			<section className='flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between'>
-				<div className='flex max-w-100 flex-col'>
-					<span className='font-mono uppercase tracking-widest text-primary'>Läsning</span>
-					<h1 className='font-display text-3xl font-bold'>Bokmärken</h1>
-					<p className='text-md'>Ställen du har sparat i dina böcker, med egna rubriker och anteckningar.</p>
-				</div>
+				<h1 className='font-display text-3xl font-bold text-text'>Bokmärken</h1>
 				{items.length > 0 && (
 					<div className='w-full sm:w-72'>
 						<TextField
@@ -207,7 +213,7 @@ export default function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) 
 				)}
 			</section>
 			<Divider>
-				<span className='font-mono text-sm uppercase tracking-wide'>
+				<span className='font-display italic oldstyle-nums'>
 					{items.length === 0
 						? "Inga bokmärken"
 						: query.trim()
@@ -217,32 +223,32 @@ export default function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) 
 			</Divider>
 
 			{items.length === 0 ? (
-				<div className='my-10 flex flex-col items-center gap-3 text-center text-text-muted'>
-					<BookmarkIcon size={28} className='text-primary/60' aria-hidden />
-					<p className='max-w-[42ch] text-sm'>
-						Inga bokmärken än. Öppna en bok och klicka på bokmärkesikonen i en rads vänsterkant.
-					</p>
-					<Link href={"/"} className='text-sm font-semibold text-primary hover:text-text'>
+				<p className='my-10 text-center font-display text-lg text-text-muted'>
+					Inga bokmärken än. Öppna en bok och klicka på bokmärket vid en rad.{" "}
+					<Link href={"/"} className={`rounded-sm text-primary underline underline-offset-4 hover:text-text ${FOCUS}`}>
 						Till bokhyllan
 					</Link>
-				</div>
+				</p>
 			) : shown === 0 ? (
-				<p className='my-10 text-center text-sm text-text-muted'>Inga bokmärken matchar sökningen.</p>
+				<p className='my-10 text-center font-display text-lg italic text-text-muted'>Inga bokmärken matchar sökningen.</p>
 			) : (
-				<div className='my-5 flex flex-col gap-10'>
+				<div className='my-6 flex flex-col gap-10'>
 					{groups.map(group => (
 						<section key={group.workId} aria-labelledby={`work-${group.workId}`}>
-							<div className='mb-4 flex items-baseline justify-between gap-4'>
-								<h2 id={`work-${group.workId}`} className='font-display text-2xl text-text'>
+							<div className='mb-3 flex items-baseline justify-between gap-4'>
+								{/* Anfang: begynnelsebokstaven i rött, dubbelt så stor som resten av titeln. */}
+								<h2
+									id={`work-${group.workId}`}
+									className='font-display text-2xl text-text first-letter:mr-0.5 first-letter:text-5xl first-letter:leading-none first-letter:text-primary'>
 									{group.title}
 								</h2>
 								<Link
 									href={`/verk/${group.workId}`}
-									className='shrink-0 font-mono text-xs uppercase tracking-widest text-text-muted hover:text-text'>
+									className={`shrink-0 rounded-sm font-display italic text-text-muted underline underline-offset-4 hover:text-text ${FOCUS}`}>
 									Öppna verket
 								</Link>
 							</div>
-							<ol className='flex flex-col gap-4'>
+							<ol className='grid gap-4 md:grid-cols-2'>
 								{group.bookmarks.map(bookmark => (
 									<BookmarkCard
 										key={bookmark.id}

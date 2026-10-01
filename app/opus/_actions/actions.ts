@@ -79,6 +79,7 @@ import type {
 	WorkContributorFilters,
 	WorkContributorUpdate,
 	ReadingProgressInput,
+	ReadingProgressOverview,
 	WorkReadingResponse,
 } from "@/app/lib/dal/opus"
 import { TENANTS } from "@/app/lib/tenant"
@@ -346,6 +347,8 @@ export const lexicalEntryApi = {
 }
 
 export const readingProgressApi = {
+	/** Användarens läspositioner i alla verk, senast läst först, med var de pekar. */
+	list: cachedList<ReadingProgressOverview>("/reading-progress/"),
 	retrieve: cache((workId: number) =>
 		request<WorkReadingResponse>(`/read/${workId}/`),
 	),

@@ -2,7 +2,7 @@ import { ReactNode } from "react"
 
 export default function ({ children }: { children?: ReactNode }) {
 	return (
-		<div className='mt-8 flex items-center text-foreground/40'>
+		<div className='mt-8 flex items-center text-text-muted'>
 			<div className='h-px flex-1 bg-foreground/20' />
 
 			{children && (

@@ -200,14 +200,14 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 							name='title'
 							value={work.title}
 							onChange={event => setWork(current => ({ ...current, title: event.target.value }))}
-							placeholder='Till exempel: Stolthet och fördom'
+							placeholder='Till exempel: Erikskrönikan'
 							error={error === "Ange verkets titel." ? error : undefined}
 							autoFocus
 							required
 						/>
 						<div className='grid gap-5 sm:grid-cols-2'>
-							<TextField label='Författare' name='author' value={work.author} onChange={event => setWork(current => ({ ...current, author: event.target.value }))} placeholder='Till exempel: Jane Austen' />
-							<TextField label='Originalår eller tidsperiod' name='year' value={work.year} onChange={event => setWork(current => ({ ...current, year: event.target.value }))} maxLength={100} placeholder='Till exempel: 1813 eller 1400-tal' />
+							<TextField label='Författare' name='author' value={work.author} onChange={event => setWork(current => ({ ...current, author: event.target.value }))} placeholder='Till exempel: Anonym' />
+							<TextField label='Originalår eller tidsperiod' name='year' value={work.year} onChange={event => setWork(current => ({ ...current, year: event.target.value }))} maxLength={100} placeholder='Till exempel: 1320-tal' />
 						</div>
 						<div className='border-y border-border py-4'>
 							<div className='flex items-baseline justify-between gap-4'>
@@ -217,7 +217,7 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 							{isLoadingShelves ? <p className='mt-3 mb-0 text-sm text-text-muted'>Hämtar hyllor…</p> : shelves.length > 0 && <div className='mt-3 flex flex-wrap gap-x-5 gap-y-3'>{shelves.map(shelf => <CheckboxField key={shelf.id} label={shelf.name} checked={work.shelves.includes(shelf.id)} onChange={() => toggleShelf(shelf.id)} />)}</div>}
 							{shelvesError && <p role='alert' className='mt-3 mb-0 text-xs text-danger'>{shelvesError}</p>}
 							<div className='mt-3 flex flex-wrap items-end gap-3'>
-								<div className='min-w-52 flex-1'><TextField label='Ny hylla' name='new-shelf' value={newShelfName} onChange={event => setNewShelfName(event.target.value)} placeholder='Till exempel: Klassiker' /></div>
+								<div className='min-w-52 flex-1'><TextField label='Ny hylla' name='new-shelf' value={newShelfName} onChange={event => setNewShelfName(event.target.value)} placeholder='Till exempel: Medeltid' /></div>
 								<button type='button' disabled={isCreatingShelf || !newShelfName.trim()} onClick={createShelf} className={`${buttonClass} border border-primary text-primary hover:bg-primary hover:text-bg disabled:cursor-not-allowed disabled:opacity-50`}>{isCreatingShelf ? "Skapar…" : "Skapa hylla"}</button>
 							</div>
 						</div>
@@ -240,8 +240,8 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 									)}
 								</div>
 								<div className='grid gap-4 sm:grid-cols-2'>
-									<TextField label='Titel på utgåvan' name={`edition-${index}-title`} value={edition.title} onChange={event => updateEdition(index, { title: event.target.value })} placeholder='Till exempel: Första utgåvan' required />
-									<TextField label='Utgåvebeteckning' name={`edition-${index}-edition`} value={edition.edition} onChange={event => updateEdition(index, { edition: event.target.value })} placeholder='Till exempel: 2:a upplagan' />
+									<TextField label='Titel på utgåvan' name={`edition-${index}-title`} value={edition.title} onChange={event => updateEdition(index, { title: event.target.value })} placeholder='Till exempel: Fornsvensk originaltext' required />
+									<TextField label='Utgåvebeteckning' name={`edition-${index}-edition`} value={edition.edition} onChange={event => updateEdition(index, { edition: event.target.value })} placeholder='Till exempel: Pipping 1921' />
 									<div className='grid gap-4 sm:col-span-2 sm:grid-cols-2'>
 										<SelectField label='Språk' name={`edition-${index}-language`} value={edition.language} onChange={event => updateEdition(index, { language: event.target.value })} required>
 									<option value='sv'>Svenska</option>
@@ -252,7 +252,7 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 										<TextField label='Annat språk' name={`edition-${index}-custom-language`} value={edition.customLanguage} onChange={event => updateEdition(index, { customLanguage: event.target.value })} placeholder='Om relevant' />
 									</div>
 								</div>
-								<TextField label='Källa' name={`edition-${index}-source`} value={edition.source} onChange={event => updateEdition(index, { source: event.target.value })} placeholder='Till exempel: Projekt Gutenberg eller eget digitalisat' />
+								<TextField label='Källa' name={`edition-${index}-source`} value={edition.source} onChange={event => updateEdition(index, { source: event.target.value })} placeholder='Till exempel: Projekt Runeberg eller eget digitalisat' />
 								<FileField label='Fil' name={`edition-${index}-file`} accept='.txt,.md,.html,.htm,.pdf,.epub,.docx' onFilesChange={files => updateEdition(index, { file: files[0] ?? null })} />
 								{edition.file && <ImportPreview file={edition.file} options={edition.importOptions} onOptionsChange={importOptions => updateEdition(index, { importOptions })} />}
 							</div>

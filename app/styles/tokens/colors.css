@@ -420,8 +420,10 @@
   --border-strong: #201914;
   --field-border: var(--border);
   --text: #201914;
-  --text-muted: color-mix(in oklab, var(--foreground) 35%, transparent);
-  --text-faint: color-mix(in oklab, var(--foreground) 35%, transparent);
+  /* Varumärkets dämpade text: 6.9:1 mot bg, 6.3:1 mot surface. */
+  --text-muted: #5c4d3f;
+  /* Ett steg ljusare men fortfarande AA: 5.5:1 mot bg, 5.0:1 mot surface. */
+  --text-faint: #6b5c4d;
   --accent: #cb882e;
   --accent-hover: #cb882e;
   --accent-active: #cb882e;

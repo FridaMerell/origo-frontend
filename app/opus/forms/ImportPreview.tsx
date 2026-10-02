@@ -25,12 +25,14 @@ async function postDocument<T>(
 	file: File,
 	options: ImportOptions,
 	failure: string,
+	before: number | null = null,
 ): Promise<T> {
 	const body = new FormData()
 	body.set("file", file, file.name)
 	body.set("segmentation", options.segmentation)
 	body.set("front_matter", options.front_matter)
 	body.set("label", options.label.trim())
+	if (before !== null) body.set("before", String(before))
 	const response = await fetch(url, { method: "POST", body })
 	const payload = (await response.json().catch(() => null)) as (T & ErrorPayload) | null
 	if (!response.ok || payload === null) {
@@ -51,12 +53,13 @@ export function importEditionFile(editionId: number, file: File, options: Import
 }
 
 /** Lägger en fil efter utgåvans befintliga text, t.ex. ett kapitel till. */
-export function appendEditionFile(editionId: number, file: File, options: ImportOptions) {
+export function appendEditionFile(editionId: number, file: File, options: ImportOptions, before: number | null = null) {
 	return postDocument<ImportResult>(
 		`/api/opus/editions/${editionId}/append-document/`,
 		file,
 		options,
 		"Filen kunde inte läggas till",
+		before,
 	)
 }
 

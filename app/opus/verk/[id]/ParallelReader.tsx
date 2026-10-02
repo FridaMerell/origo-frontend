@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Bookmark as BookmarkIcon, WandSparklesIcon } from "lucide-react"
-import type { AlignmentCell, AlignmentMatrix, AlignmentRow, Bookmark, Id } from "@/app/lib/dal/opus"
+import type { AlignmentCell, AlignmentMatrix, AlignmentRow, Bookmark, Id, ReadingUnit } from "@/app/lib/dal/opus"
 import {
 	autoMatchAlignmentChapters,
 	combineUnits,
@@ -18,8 +18,8 @@ import { useUnitNavigationListener } from "../../_state/unit-navigation"
 import { useKeepPosition } from "../../_state/opus-context"
 import { addBookmark, removeBookmark } from "../../_actions/bookmark-actions"
 import AnnotationColumn from "./AnnotationColumn"
-import { TextField } from "../../forms/Fields/Fields"
-import { deleteAnnotation } from "../../_actions/annotation-actions"
+import { TextAreaField, TextField } from "../../forms/Fields/Fields"
+import { deleteAnnotation, updateAnnotation } from "../../_actions/annotation-actions"
 import ChapterSync, { type EditionInfo } from "./ChapterSync"
 import Menu from "./Menu"
 import UnitText from "./UnitText"
@@ -40,14 +40,136 @@ const BORDER_CLASS: Record<string, string> = {
 	foreground: "border-l-foreground/50 group-hover/row:border-l-foreground",
 }
 
-const LEFT_BORDER: Record<string, string> = {
-	primary: "border-l-primary",
-	secondary: "border-l-secondary",
-	accent: "border-l-accent",
-	foreground: "border-l-foreground",
+type Column = { versionId: Id; editionId: Id; title: string; color: string }
+
+/** Utgåvans namn med dess färg, som i utgåvelistan ovanför läsvyn. */
+function EditionLabel({ column }: { column: Column }) {
+	return (
+		<span className='inline-flex min-w-0 items-center gap-2 font-display text-sm italic text-text-muted'>
+			<span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${BAR_CLASS[column.color] ?? BAR_CLASS.foreground}`} />
+			<span className='truncate'>{column.title}</span>
+		</span>
+	)
 }
 
-type Column = { versionId: Id; editionId: Id; title: string; color: string }
+type RowNote = { annotation: ReadingUnit["annotations"][number]; unit: ReadingUnit; column: Column }
+
+/** Mobil: radens noter och hänvisningar under texten (tabellen har dem i marginalen). */
+function RowNotes({
+	notes,
+	onDelete,
+	onEdit,
+}: {
+	notes: RowNote[]
+	onDelete: (annotationId: Id) => void
+	onEdit: (annotationId: Id, body: string) => Promise<void>
+}) {
+	const [editing, setEditing] = useState<Id | null>(null)
+	const [draft, setDraft] = useState("")
+	const [saving, setSaving] = useState(false)
+	// Långa noter visas avkortade tills man öppnar dem.
+	const [expanded, setExpanded] = useState<Id[]>([])
+	const link = "rounded-sm text-text-muted underline underline-offset-4 hover:text-text disabled:opacity-40 cursor-pointer"
+
+	async function save(annotationId: Id) {
+		if (!draft.trim()) return
+		setSaving(true)
+		try {
+			await onEdit(annotationId, draft.trim())
+			setEditing(null)
+		} finally {
+			setSaving(false)
+		}
+	}
+
+	return (
+		<ul className='flex flex-col gap-4'>
+			{notes.map(({ annotation, unit, column }) => {
+				const target =
+					annotation.start_offset != null && annotation.end_offset != null
+						? unit.content.slice(annotation.start_offset, annotation.end_offset)
+						: null
+				return (
+					<li key={annotation.id} className='flex flex-col gap-1'>
+						<div className='flex items-baseline justify-between gap-3'>
+							<EditionLabel column={column} />
+							<span className='shrink-0 font-body text-xs uppercase tracking-widest text-text-muted'>
+								{annotation.kind === "reference" ? "Hänvisning" : "Anteckning"}
+							</span>
+						</div>
+						{target && <p className='font-display italic text-text-muted'>»{target}»</p>}
+						{editing === annotation.id ? (
+							<div className='mt-1 flex flex-col gap-2'>
+								<TextAreaField
+									label='Anteckning'
+									value={draft}
+									onChange={event => setDraft(event.target.value)}
+									rows={3}
+									autoFocus
+								/>
+								<div className='flex items-center justify-end gap-4 text-sm'>
+									<button type='button' onClick={() => setEditing(null)} className={link}>
+										Avbryt
+									</button>
+									<button
+										type='button'
+										disabled={saving || !draft.trim()}
+										onClick={() => save(annotation.id)}
+										className='rounded-md bg-primary px-3 py-1.5 font-semibold text-bg hover:bg-primary/90 disabled:opacity-50 cursor-pointer'>
+										{saving ? "Sparar…" : "Spara"}
+									</button>
+								</div>
+							</div>
+						) : (
+							<>
+								<p
+									className={`whitespace-pre-line font-display text-sm leading-relaxed text-text ${
+										expanded.includes(annotation.id) ? "" : "line-clamp-4"
+									}`}>
+									{annotation.body}
+								</p>
+								<div className='flex gap-5 text-sm'>
+									{annotation.body.length > 200 && (
+										<button
+											type='button'
+											aria-expanded={expanded.includes(annotation.id)}
+											onClick={() =>
+												setExpanded(current =>
+													current.includes(annotation.id)
+														? current.filter(id => id !== annotation.id)
+														: [...current, annotation.id],
+												)
+											}
+											className={link}>
+											{expanded.includes(annotation.id) ? "Visa mindre" : "Visa hela"}
+										</button>
+									)}
+									<button
+										type='button'
+										onClick={() => {
+											setDraft(annotation.body)
+											setEditing(annotation.id)
+										}}
+										className={link}>
+										Redigera
+									</button>
+									<button
+										type='button'
+										onClick={() => {
+											if (window.confirm("Ta bort noten? Det går inte att ångra.")) onDelete(annotation.id)
+										}}
+										className={`${link} hover:text-danger`}>
+										Ta bort
+									</button>
+								</div>
+							</>
+						)}
+					</li>
+				)
+			})}
+		</ul>
+	)
+}
 
 type CellAction = "insert_gap" | "remove_gap" | "join" | "split" | "combine"
 /** Bara för "combine": första stycket i cellen och hur många som ska slås ihop med det. */
@@ -145,12 +267,55 @@ function Cell({
 			) : (
 				<div className='flex flex-col gap-3'>
 					{cell.units.map(unit => (
-						<UnitText key={unit.id} unit={unit} label={unit.label || unit.position} onChanged={onChanged} />
+						<div key={unit.id}>
+							<ChapterHeading unit={unit} />
+							<UnitText unit={unit} label={unit.label || unit.position} onChanged={onChanged} />
+						</div>
 					))}
 				</div>
 			)}
 		</div>
 	)
+}
+
+/**
+ * Kapitlets namn ovanför stycket som inleder det. Kapitel utan text (platshållare för kapitel
+ * som utgåvan saknar) och som står direkt före visas ovanför, dämpade.
+ */
+function ChapterHeading({ unit }: { unit: ReadingUnit }) {
+	if (!unit.starts_chapter || !unit.chapter) return null
+	return (
+		<div className='mb-2 flex flex-col gap-1 border-b border-border pb-2'>
+			{unit.empty_chapters_before?.map((label, index) => (
+				<p key={index} className='font-display text-sm italic text-text-muted'>
+					{label} <span className='not-italic'>— saknas i den här utgåvan</span>
+				</p>
+			))}
+			<h3 className='font-display text-lg font-semibold leading-snug text-text first-letter:mr-0.5 first-letter:text-3xl first-letter:leading-none first-letter:text-primary'>
+				{unit.chapter.label}
+			</h3>
+		</div>
+	)
+}
+
+/** Kapitlet som en kolumn är i vid raden `row`: närmast ovanför i de laddade raderna, annars nedanför. */
+function chapterAt(rows: AlignmentRow[], row: number | null, columnIndex: number): string | null {
+	const labelOf = (index: number) => rows[index]?.cells[columnIndex]?.units[0]?.chapter?.label ?? null
+	const start = Math.max(0, row === null ? 0 : rows.findIndex(item => item.row === row))
+	for (let index = start; index >= 0; index -= 1) {
+		const label = labelOf(index)
+		if (label) return label
+	}
+	for (let index = start + 1; index < rows.length; index += 1) {
+		const label = labelOf(index)
+		if (label) return label
+	}
+	return null
+}
+
+/** Det synliga av en rads element: mobilvyn och tabellen har var sitt, och bara den ena visas. */
+function visibleElement(selector: string) {
+	return [...document.querySelectorAll<HTMLElement>(selector)].find(element => element.offsetParent !== null) ?? null
 }
 
 /** Sidnavigering: första/föregående/nästa/sista och hopp till en viss sida. */
@@ -177,11 +342,17 @@ function Pager({
 		'rounded border border-border px-3 py-1.5 text-sm text-text hover:border-text/40 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer'
 	return (
 		<nav aria-label='Sidor' className='flex flex-wrap items-center justify-center gap-2 py-3 text-sm text-text'>
-			<button type='button' className={button} disabled={busy || page <= 1} onClick={() => onGo(1)}>
-				« Första
+			{/* På smal skärm bara pilarna, så att hela navigeringen ryms på en rad. */}
+			<button type='button' aria-label='Första sidan' className={button} disabled={busy || page <= 1} onClick={() => onGo(1)}>
+				«<span className='hidden sm:inline'> Första</span>
 			</button>
-			<button type='button' className={button} disabled={busy || page <= 1} onClick={() => onGo(page - 1)}>
-				‹ Föregående
+			<button
+				type='button'
+				aria-label='Föregående sida'
+				className={button}
+				disabled={busy || page <= 1}
+				onClick={() => onGo(page - 1)}>
+				‹<span className='hidden sm:inline'> Föregående</span>
 			</button>
 			<form
 				className='flex items-center gap-2'
@@ -190,7 +361,7 @@ function Pager({
 					const target = Number.parseInt(draft, 10)
 					if (Number.isFinite(target)) onGo(target)
 				}}>
-				<span>Sida</span>
+				<span className='hidden sm:inline'>Sida</span>
 				<TextField
 					label='Sidnummer'
 					hideLabel
@@ -203,11 +374,21 @@ function Pager({
 				/>
 				<span>av {totalPages}</span>
 			</form>
-			<button type='button' className={button} disabled={busy || page >= totalPages} onClick={() => onGo(page + 1)}>
-				Nästa ›
+			<button
+				type='button'
+				aria-label='Nästa sida'
+				className={button}
+				disabled={busy || page >= totalPages}
+				onClick={() => onGo(page + 1)}>
+				<span className='hidden sm:inline'>Nästa </span>›
 			</button>
-			<button type='button' className={button} disabled={busy || page >= totalPages} onClick={() => onGo(totalPages)}>
-				Sista »
+			<button
+				type='button'
+				aria-label='Sista sidan'
+				className={button}
+				disabled={busy || page >= totalPages}
+				onClick={() => onGo(totalPages)}>
+				<span className='hidden sm:inline'>Sista </span>»
 			</button>
 			<span className='basis-full text-center text-xs text-text/80'>
 				Rad {offset + 1}–{offset + rowCount} av {totalRows}
@@ -267,10 +448,31 @@ export default function ParallelReader({
 
 	// Kapitelsynk jämför utgåvor mot varandra; med en enda kolumn finns inget att synka.
 	const canSync = columns.length >= 2
+	// Mobil: synkverktygen ligger hopfällda så att texten börjar högre upp.
+	const [toolsOpen, setToolsOpen] = useState(false)
 
 	// Fönstret som redigeringar ska returnera: samma rader som visas nu.
 	const limit = PAGE_SIZE
 	const view = { offset: matrix.offset, limit }
+
+	// Raden överst i läsbandet, för att visa vilket kapitel varje utgåva är i.
+	const [topRow, setTopRow] = useState<number | null>(null)
+	useEffect(() => {
+		const visible = new Set<number>()
+		const observer = new IntersectionObserver(
+			entries => {
+				for (const entry of entries) {
+					const row = Number((entry.target as HTMLElement).dataset.position)
+					if (entry.isIntersecting) visible.add(row)
+					else visible.delete(row)
+				}
+				if (visible.size > 0) setTopRow(Math.min(...visible))
+			},
+			{ rootMargin: "-15% 0px -75% 0px", threshold: 0 },
+		)
+		document.querySelectorAll<HTMLElement>("[data-position]").forEach(element => observer.observe(element))
+		return () => observer.disconnect()
+	}, [matrix.rows])
 
 	// Sparar läspositionen medan man scrollar, minst var 3:e rad, så "Fortsätt" pekar rätt.
 	const lastSentRowRef = useRef<number | null>(null)
@@ -278,12 +480,10 @@ export default function ParallelReader({
 		if (!workId || keepPosition) return
 		lastSentRowRef.current = null
 		const referenceVersionId = columns[0]?.versionId
-		const elements = matrix.rows
-			.map(row => {
-				const element = document.querySelector<HTMLElement>(`[data-position="${row.row}"]`)
-				return element ? { row, element } : null
-			})
-			.filter((entry): entry is { row: AlignmentRow; element: HTMLElement } => entry !== null)
+		// Både mobilvyn och tabellen har ett element per rad; det dolda skär aldrig läsbandet.
+		const elements = matrix.rows.flatMap(row =>
+			[...document.querySelectorAll<HTMLElement>(`[data-position="${row.row}"]`)].map(element => ({ row, element })),
+		)
 		if (referenceVersionId == null || elements.length === 0) return
 
 		// "Läsraden" är den rad som ligger i ett smalt band nära toppen av skärmen.
@@ -325,11 +525,11 @@ export default function ParallelReader({
 
 	useEffect(() => {
 		if (focusRow == null) return
-		const element = document.querySelector<HTMLElement>(`[data-position="${focusRow}"]`)
+		const element = visibleElement(`[data-position="${focusRow}"]`)
 		if (!element) return
-		// scrollIntoView("start") skjuter raden bakom både TopBar (sticky top-0) och tabellens
-		// egen kolumnrubrik (sticky top-[61px]); dra bort deras sammanlagda höjd ur målet.
-		const header = document.querySelector<HTMLElement>("article header")
+		// scrollIntoView("start") skjuter raden bakom både TopBar (sticky top-0) och läsvyns
+		// egen rubrik (sticky top-[61px]); dra bort deras sammanlagda höjd ur målet.
+		const header = visibleElement("[data-reader-header]")
 		const stickyOffset = 61 + (header?.getBoundingClientRect().height ?? 0)
 		const top = window.scrollY + element.getBoundingClientRect().top - stickyOffset
 		window.scrollTo({ top, behavior: "smooth" })
@@ -395,6 +595,31 @@ export default function ParallelReader({
 		}
 	}
 
+	/** Bokmärkesknappen för en rad. I tabellen syns den vid hovring; på mobil (ingen hovring) alltid. */
+	function bookmarkButton(row: AlignmentRow, alwaysVisible: boolean) {
+		const unit = referenceUnit(row)
+		if (!unit) return null
+		const bookmarkId = bookmarks[unit.id]
+		return (
+			<button
+				type='button'
+				title={bookmarkId ? "Ta bort bokmärke" : "Lägg till bokmärke"}
+				aria-label={bookmarkId ? "Ta bort bokmärke" : "Lägg till bokmärke"}
+				aria-pressed={Boolean(bookmarkId)}
+				disabled={bookmarkBusy === unit.id}
+				onClick={() => toggleBookmark(row)}
+				className={`rounded p-1 hover:bg-text/10 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer ${
+					bookmarkId
+						? "text-primary"
+						: alwaysVisible
+							? "text-text/30"
+							: "text-text/30 opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100"
+				}`}>
+				<BookmarkIcon size={alwaysVisible ? 16 : 14} fill={bookmarkId ? "currentColor" : "none"} />
+			</button>
+		)
+	}
+
 	// Redigeringar är atomära på servern och returnerar de rader som visas; vid fel är
 	// servern oförändrad och vi visar bara felet.
 	const run = useCallback(async (call: () => Promise<AlignmentMatrix>) => {
@@ -422,7 +647,8 @@ export default function ParallelReader({
 		setNotice(null)
 		if (action === "combine" && target) {
 			run(async () => {
-				await combineUnits(target.unitId, target.count)
+				const result = await combineUnits(target.unitId, target.count)
+				if (result.error) throw new Error(result.error)
 				return loadAlignmentRows(setId, matrix.offset, limit)
 			})
 		} else if (action === "insert_gap" || action === "remove_gap") {
@@ -434,17 +660,22 @@ export default function ParallelReader({
 		}
 	}
 
-	// Paginering: en sida i taget (PAGE_SIZE rader), hämtad från servern.
-	const totalPages = Math.max(1, Math.ceil(matrix.total_rows / PAGE_SIZE))
-	const page = Math.floor(matrix.offset / PAGE_SIZE) + 1
+	// Paginering som i en bok: servern delar in raderna i sidor där varje kapitel börjar på en
+	// ny sida (`pages` = varje sidas första rad). Utan `pages` blir det jämna sidor om PAGE_SIZE.
+	const pageStarts =
+		matrix.pages && matrix.pages.length > 0
+			? matrix.pages
+			: Array.from({ length: Math.max(1, Math.ceil(matrix.total_rows / PAGE_SIZE)) }, (_, index) => index * PAGE_SIZE)
+	const totalPages = pageStarts.length
+	const page = Math.max(1, pageStarts.findLastIndex(start => start <= matrix.offset) + 1)
 
 	async function goToPage(target: number) {
 		const next = Math.min(Math.max(1, target), totalPages)
 		if (busy || next === page) return
 		setNotice(null)
 		setFocusRow(null)
-		await run(() => loadAlignmentRows(setId, (next - 1) * PAGE_SIZE, PAGE_SIZE))
-		document.querySelector("article")?.scrollIntoView({ block: "start", behavior: "smooth" })
+		await run(() => loadAlignmentRows(setId, pageStarts[next - 1], PAGE_SIZE))
+		visibleElement("[data-reader-start]")?.scrollIntoView({ block: "start", behavior: "smooth" })
 	}
 
 	async function syncChapters() {
@@ -495,6 +726,15 @@ export default function ParallelReader({
 		}
 	}
 
+	async function handleEditAnnotation(annotationId: Id, body: string) {
+		try {
+			await updateAnnotation(annotationId, { body })
+			await reload()
+		} catch {
+			setError("Noten kunde inte sparas.")
+		}
+	}
+
 	const editionTitle = (versionId: Id) => columns.find(column => column.versionId === versionId)?.title ?? ""
 
 	const annotationRows = matrix.rows.flatMap((row: AlignmentRow) => {
@@ -520,75 +760,120 @@ export default function ParallelReader({
 				{busy && <span className='font-mono text-xs text-text'>Sparar…</span>}
 				<button
 					type='button'
-					disabled={busy || matrix.total_rows === 0 || !canSync}
-					onClick={syncChapters}
-					className='inline-flex items-center gap-2 rounded border border-border px-3 py-1.5 text-sm hover:border-text/40 disabled:opacity-40 cursor-pointer'>
-					<WandSparklesIcon size={14} />
-					Synka kapitel automatiskt
+					aria-expanded={toolsOpen}
+					onClick={() => setToolsOpen(open => !open)}
+					className='rounded border border-border px-3 py-1.5 text-sm text-text hover:border-text/40 cursor-pointer lg:hidden'>
+					Synkning {toolsOpen ? "▴" : "▾"}
 				</button>
-				{/* Kapitelsynk i en popup: välj, granska planen och applicera (sparar). */}
-				<ChapterSync
-					setId={setId}
-					columns={columns}
-					editions={editions}
-					limit={limit}
-					disabled={busy || matrix.total_rows === 0 || !canSync}
-					onApplied={handleSynced}
-				/>
-				<button
-					type='button'
-					disabled={busy}
-					onClick={resetRows}
-					className='rounded border border-border px-3 py-1.5 text-sm text-text hover:border-text/40 disabled:opacity-40 cursor-pointer'>
-					Börja om
-				</button>
+				<div className={`${toolsOpen ? "flex" : "hidden"} w-full flex-wrap items-center justify-end gap-3 lg:flex lg:w-auto`}>
+					<button
+						type='button'
+						disabled={busy || matrix.total_rows === 0 || !canSync}
+						onClick={syncChapters}
+						className='inline-flex items-center gap-2 rounded border border-border px-3 py-1.5 text-sm hover:border-text/40 disabled:opacity-40 cursor-pointer'>
+						<WandSparklesIcon size={14} />
+						Synka kapitel automatiskt
+					</button>
+					{/* Kapitelsynk i en popup: välj, granska planen och applicera (sparar). */}
+					<ChapterSync
+						setId={setId}
+						columns={columns}
+						editions={editions}
+						limit={limit}
+						disabled={busy || matrix.total_rows === 0 || !canSync}
+						onApplied={handleSynced}
+					/>
+					<button
+						type='button'
+						disabled={busy}
+						onClick={resetRows}
+						className='rounded border border-border px-3 py-1.5 text-sm text-text hover:border-text/40 disabled:opacity-40 cursor-pointer'>
+						Börja om
+					</button>
+				</div>
 			</div>
 
 			{matrix.total_rows > 0 && pager}
 
-			{/* Mobil: tabellen får inte plats, så varje rad visas som ett kort med en block per utgåva (endast läsning). */}
+			{/*
+			 * Mobil: tabellen får inte plats, så varje rad blir ett kort med utgåvorna under varandra.
+			 * Texten går att annotera som i tabellen; radens noter står under texten.
+			 */}
 			{matrix.total_rows > 0 && (
-				<div className='lg:hidden flex flex-col gap-4'>
-					{matrix.rows.map(row => (
-						<section key={row.row} className='rounded border border-border bg-surface'>
-							<h3 className='border-b border-border px-3 py-2 font-mono text-xs uppercase tracking-widest text-text/80'>
-								Rad {row.row + 1}
-							</h3>
-							{row.cells.map((cell, columnIndex) =>
-								cell.kind === "text" ? (
+				<div data-reader-start className='lg:hidden flex flex-col gap-5'>
+					{matrix.rows.map(row => {
+						const cells = row.cells
+							.map((cell, columnIndex) => ({ cell, column: columns[columnIndex] }))
+							.filter(({ cell, column }) => column && cell.kind === "text")
+						const notes: RowNote[] = cells.flatMap(({ cell, column }) =>
+							cell.units.flatMap(unit =>
+								unit.annotations
+									.filter(annotation => annotation.kind !== "definition")
+									.map(annotation => ({ annotation, unit, column })),
+							),
+						)
+						return (
+							<section
+								key={row.row}
+								data-position={row.row}
+								className='overflow-hidden rounded-xl border border-border bg-surface shadow-md'>
+								<div className='flex items-center justify-between gap-3 border-b border-border px-5 py-1.5'>
+									<span className='font-display text-sm italic text-text-muted oldstyle-nums'>Rad {row.row + 1}</span>
+									<div className='-mr-1'>{bookmarkButton(row, true)}</div>
+								</div>
+								{cells.map(({ cell, column }) => (
 									<div
 										key={cell.alignment_version}
-										className={`border-l-4 px-3 py-3 ${LEFT_BORDER[columns[columnIndex]?.color] ?? LEFT_BORDER.foreground}`}>
-										<p className='mb-1 font-mono text-xs text-text/80'>{columns[columnIndex]?.title}</p>
-										{cell.units.map(unit => (
-											<p key={unit.id} className='mb-2 text-base leading-relaxed last:mb-0'>
-												{unit.content}
-											</p>
+										className='flex flex-col gap-4 border-b border-dashed border-border px-5 py-4 last:border-b-0'>
+										{cell.units.map((unit, unitIndex) => (
+											<div key={unit.id}>
+												<ChapterHeading unit={unit} />
+												<UnitText
+													unit={unit}
+													label={unit.label || unit.position}
+													heading={unitIndex === 0 ? <EditionLabel column={column} /> : null}
+													onChanged={reload}
+												/>
+											</div>
 										))}
 									</div>
-								) : null,
-							)}
-						</section>
-					))}
+								))}
+								{notes.length > 0 && (
+									<div className='border-t border-border bg-bg/60 px-5 py-4'>
+										<RowNotes notes={notes} onDelete={handleDeleteAnnotation} onEdit={handleEditAnnotation} />
+									</div>
+								)}
+							</section>
+						)
+					})}
 				</div>
 			)}
 
 			{matrix.total_rows === 0 ? (
 				<p className='py-10 text-text'>Inga stycken att visa.</p>
 			) : (
-				<article className='lg:flex hidden gap-0'>
+				<article data-reader-start className='lg:flex hidden gap-0'>
 					<div className='min-w-0 flex-1 grid grid-cols-[28px_44px_minmax(0,1fr)] border border-border'>
 						{/* Fast under toppmenyn (61 px) så att kolumnnamnen syns när man scrollar långa rader. */}
-						<header className='sticky top-[61px] z-30 col-span-full grid grid-cols-subgrid items-center rounded-tl-xl border-b border-border bg-secondary text-bg'>
+						<header
+							data-reader-header
+							className='sticky top-[61px] z-30 col-span-full grid grid-cols-subgrid items-center rounded-tl-xl border-b border-border bg-secondary text-bg'>
 							<div className='rounded-tl-4xl font-display text-bg'></div>
 							<div className='py-4 px-2 pl-4'>#</div>
 							<div className='grid min-w-0 grid-flow-col auto-cols-fr'>
-								{columns.map(column => (
-									<div className='flex gap-2 text-bg font-sm' key={column.versionId}>
-										<div className={`w-1.5 border-l border-surface ${BAR_CLASS[column.color]}`}></div>
-										<span className='px-2 py-4 font-display font-sm'>{column.title}</span>
-									</div>
-								))}
+								{columns.map((column, columnIndex) => {
+									const chapter = chapterAt(matrix.rows, topRow, columnIndex)
+									return (
+										<div className='flex min-w-0 gap-2 text-bg font-sm' key={column.versionId}>
+											<div className={`w-1.5 border-l border-surface ${BAR_CLASS[column.color]}`}></div>
+											{/* Utgåvan och kapitlet man läser i just nu. */}
+											<div className='flex min-w-0 flex-col justify-center px-2 py-2.5'>
+												<span className='truncate font-display font-sm'>{column.title}</span>
+												<span className='truncate font-display text-xs italic text-bg/70'>{chapter ?? " "}</span>
+											</div>
+										</div>
+									)
+								})}
 							</div>
 						</header>
 						{matrix.rows.map((row, index) => (
@@ -596,29 +881,7 @@ export default function ParallelReader({
 								key={row.row}
 								data-position={row.row}
 								className='group/row col-span-full grid grid-cols-subgrid bg-surface duration-200 hover:bg-primary/5'>
-								<div className='flex items-center justify-center'>
-									{(() => {
-										const unit = referenceUnit(row)
-										if (!unit) return null
-										const bookmarkId = bookmarks[unit.id]
-										return (
-											<button
-												type='button'
-												title={bookmarkId ? "Ta bort bokmärke" : "Lägg till bokmärke"}
-												aria-label={bookmarkId ? "Ta bort bokmärke" : "Lägg till bokmärke"}
-												aria-pressed={Boolean(bookmarkId)}
-												disabled={bookmarkBusy === unit.id}
-												onClick={() => toggleBookmark(row)}
-												className={`rounded p-1 hover:bg-text/10 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer ${
-													bookmarkId
-														? "text-primary"
-														: "text-text/30 opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100"
-												}`}>
-												<BookmarkIcon size={14} fill={bookmarkId ? "currentColor" : "none"} />
-											</button>
-										)
-									})()}
-								</div>
+								<div className='flex items-center justify-center'>{bookmarkButton(row, false)}</div>
 								<div className='font-mono text-text-muted text-sm border-r border-b border-border h-full items-center flex'>
 									{row.row + 1}
 								</div>
@@ -642,7 +905,7 @@ export default function ParallelReader({
 					</div>
 					<div className='w-65 shrink-0'>
 						<div className='px-4 py-4 font-mono text-xs tracking-widest uppercase'>Marginalnotiser</div>
-						<AnnotationColumn rows={annotationRows} onDelete={handleDeleteAnnotation} />
+						<AnnotationColumn rows={annotationRows} onDelete={handleDeleteAnnotation} onEdit={handleEditAnnotation} />
 					</div>
 				</article>
 			)}

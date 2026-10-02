@@ -52,6 +52,12 @@ import type {
 	ExcerptCreate,
 	ExcerptFilters,
 	ExcerptUpdate,
+	Glossary,
+	GlossaryCreate,
+	GlossaryDetail,
+	GlossaryFilters,
+	GlossaryUpdate,
+	Id,
 	LexicalEntry,
 	LexicalEntryCreate,
 	LexicalEntryFilters,
@@ -67,6 +73,7 @@ import type {
 	TextUnitCreate,
 	TextUnitUpdate,
 	Edition,
+	EditionChapter,
 	EditionCreate,
 	EditionFilters,
 	EditionUpdate,
@@ -346,6 +353,32 @@ export const lexicalEntryApi = {
 		request<void>(`/lexical-entries/${id}/`, { method: "DELETE" }),
 }
 
+export const glossaryApi = {
+	list: cachedList<Glossary, GlossaryFilters>("/glossaries/"),
+	retrieve: cachedRetrieve<GlossaryDetail>("/glossaries/"),
+	create: (data: GlossaryCreate) =>
+		request<GlossaryDetail>("/glossaries/", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (id: number, data: GlossaryUpdate) =>
+		request<GlossaryDetail>(`/glossaries/${id}/`, {
+			method: "PATCH",
+			body: JSON.stringify(data),
+		}),
+	remove: (id: number) =>
+		request<void>(`/glossaries/${id}/`, { method: "DELETE" }),
+	/** Lägger till ett befintligt ord i ordlistan (bara ägaren). */
+	addEntry: (id: number, entryId: Id) =>
+		request<void>(`/glossaries/${id}/entries/`, {
+			method: "POST",
+			body: JSON.stringify({ lexical_entry: entryId }),
+		}),
+	/** Tar bort ordet ur ordlistan; själva ordet finns kvar. */
+	removeEntry: (id: number, entryId: Id) =>
+		request<void>(`/glossaries/${id}/entries/${entryId}/`, { method: "DELETE" }),
+}
+
 export const readingProgressApi = {
 	/** Användarens läspositioner i alla verk, senast läst först, med var de pekar. */
 	list: cachedList<ReadingProgressOverview>("/reading-progress/"),
@@ -423,6 +456,18 @@ export const editionApi = {
 		}),
 	remove: (id: number) =>
 		request<void>(`/editions/${id}/`, { method: "DELETE" }),
+	/** Lägger till ett kapitel utan text (platshållare), sist eller före kapitlet `before`. */
+	addChapter: (id: number, data: { label: string; before?: number }) =>
+		request<{ chapters: EditionChapter[] }>(`/editions/${id}/chapters/`, {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	/** Ordnar om utgåvans kapitel; texten följer med. */
+	reorderChapters: (id: number, chapterIds: number[]) =>
+		request<{ chapters: EditionChapter[] }>(`/editions/${id}/reorder-chapters/`, {
+			method: "POST",
+			body: JSON.stringify({ chapter_ids: chapterIds }),
+		}),
 }
 
 

@@ -17,9 +17,11 @@ type RowData = {
 export default function AnnotationColumn({
 	rows,
 	onDelete,
+	onEdit,
 }: {
 	rows: RowData[]
 	onDelete?: (annotationId: number) => void
+	onEdit?: (annotationId: number, body: string) => Promise<void>
 }) {
 	const containerRef = useRef<HTMLDivElement>(null)
 	const [tops, setTops] = useState<Record<number, number>>({})
@@ -80,6 +82,7 @@ export default function AnnotationColumn({
 						annotations={row.annotations}
 						highlighted={hovered === row.position}
 						onDelete={onDelete}
+						onEdit={onEdit}
 					/>
 				</div>
 			))}

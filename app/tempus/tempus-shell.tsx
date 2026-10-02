@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import Nav from "./nav"
 import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
+import { ThemeScope } from "@/app/components/ui/ThemeScope"
 
 const STORAGE_KEY = "tempus-mode"
 
@@ -37,20 +38,20 @@ export default function TempusShell({ children }: { children: ReactNode }) {
 
   if (isLoginRoute) {
     return (
-      <div
-        data-theme="tempus"
-        data-mode={mode ?? undefined}
+      <ThemeScope
+        theme="tempus"
+        mode={mode ?? undefined}
         className="flex min-h-screen flex-1 flex-col bg-bg font-body text-text"
       >
         <main className="min-w-0 flex-1">{children}</main>
-      </div>
+      </ThemeScope>
     )
   }
 
   return (
-    <div
-      data-theme="tempus"
-      data-mode={mode ?? undefined}
+    <ThemeScope
+      theme="tempus"
+      mode={mode ?? undefined}
       className="flex min-h-screen flex-1 flex-col bg-bg font-body text-text"
     >
       <header className="bg-bg">
@@ -75,6 +76,6 @@ export default function TempusShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </footer>
-    </div>
+    </ThemeScope>
   )
 }

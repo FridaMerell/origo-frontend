@@ -107,31 +107,29 @@ export default async function ({
 	return (
 		<OpusReadingProvider readingProgress={reading}>
 			<AlignmentBootstrap workId={id} needsBootstrap={needsBootstrap} />
-			<hr className={"border-border my-5 "} />
-			<div className={"flex items-center gap-5 justify-end"}>
-				<KeepPositionToggle />
-				<DeleteWork onDelete={removeWork.bind(null, work)} />
-			</div>
-			<div className={"mt-9"}>
-				<span
+			{/* Verkets titelblad: författare och år, titeln med anfang, utgåvorna, och inställningar längst ned. */}
+			<section className={"mb-8 rounded-xl border border-border bg-surface px-5 pt-6 pb-4 shadow-md sm:px-8 sm:pt-8"}>
+				<p className={"font-body text-xs uppercase tracking-widest text-text-muted"}>{meta.join(" · ") || " "}</p>
+				<h1
 					className={
-						"font-mono tracking-widest  text-sm uppercase text-primary"
+						"mt-2 break-words font-display text-4xl font-semibold leading-tight tracking-tight text-text first-letter:mr-1 first-letter:text-6xl first-letter:font-bold first-letter:leading-none first-letter:text-primary sm:text-6xl sm:first-letter:text-8xl"
 					}>
-					{meta.join(" · ")}
-				</span>
-				<h1 className={"font-display text-6xl"}>{work.title}</h1>
-			</div>
-			<div className={"flex justify-between flex-wrap"}>
-				<div></div>
-				<div className={"flex gap-2 flex-wrap"}>
+					{work.title}
+				</h1>
+				<div className={"mt-6 flex flex-wrap items-center gap-2"}>
 					{reading.editions.map((edition, i) => {
 						return <Indexes workId={work.id} edition={edition} key={i} color={COLORS[i]} hasText={hasText(i)} />
 					})}
 					<BookmarksList bookmarks={workBookmarks} />
 					<AddEdition workId={work.id} />
 				</div>
-			</div>
-			<hr className={"border-border my-9 "} />
+				<div className={"mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-dashed border-border pt-4"}>
+					<KeepPositionToggle />
+					<div className={"ml-auto"}>
+						<DeleteWork onDelete={removeWork.bind(null, work)} />
+					</div>
+				</div>
+			</section>
 
 			{matrix ? (
 				<ParallelReader

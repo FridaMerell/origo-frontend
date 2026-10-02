@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "./Button";
+import { usePortalContainer } from "./ThemeScope";
 
 export type ConfirmDialogProps = {
   open: boolean;
@@ -40,16 +41,8 @@ export function ConfirmDialog({
     return () => cancelAnimationFrame(id);
   }, [open, entered]);
 
-  // The dialog is portaled to <body>, outside the [data-theme]/[data-mode] scope
-  // the tenant shells set on a nested div — mirror the nearest ambient theme onto
-  // the portal root (see Drawer.tsx, which has the same problem).
-  const anchorRef = useRef<HTMLSpanElement>(null);
-  const [theme, setTheme] = useState<{ theme?: string; mode?: string }>({});
-  useEffect(() => {
-    if (!open) return;
-    const scope = anchorRef.current?.closest<HTMLElement>("[data-theme]");
-    if (scope) setTheme({ theme: scope.dataset.theme, mode: scope.dataset.mode });
-  }, [open]);
+  // The dialog is portaled into the tenant's ThemeScope, so it inherits its theme, mode and fonts.
+  const portalContainer = usePortalContainer();
 
   useEffect(() => {
     if (!open) return;
@@ -62,11 +55,8 @@ export function ConfirmDialog({
 
   return (
     <>
-      <span ref={anchorRef} aria-hidden className="hidden" />
-      {open && typeof document !== "undefined" ? createPortal(
+      {open && portalContainer ? createPortal(
         <div
-          data-theme={theme.theme}
-          data-mode={theme.mode}
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 transition-opacity"
           style={{
             transitionDuration: "var(--duration-normal)",
@@ -117,7 +107,7 @@ export function ConfirmDialog({
             </div>
           </div>
         </div>,
-        document.body,
+        portalContainer,
       ) : null}
     </>
   );

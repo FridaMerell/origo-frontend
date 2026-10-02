@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { useDismissableOpen } from "./use-dismissable-open";
+import { usePortalContainer } from "./ThemeScope";
 import { twMerge } from "tailwind-merge";
 
 const ModalCloseContext = createContext<(() => void) | null>(null);
@@ -56,12 +57,11 @@ export function Modal({
   confirmExit = false,
 }: ModalProps) {
   const [entered, setEntered] = useState(false);
-  const anchorRef = useRef<HTMLSpanElement>(null);
   const [confirmExitOpen, setConfirmExitOpen] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
-  const [theme, setTheme] = useState<{ theme?: string; mode?: string }>({});
-  const [fontVariableClasses, setFontVariableClasses] = useState("");
+  // The modal is portaled into the tenant's ThemeScope, so it inherits its theme, mode and fonts.
+  const portalContainer = usePortalContainer();
   const titleId = useId();
   const descriptionId = useId();
   const confirmExitOptions = typeof confirmExit === "object" ? confirmExit : {};
@@ -88,22 +88,6 @@ export function Modal({
     previouslyFocusedRef.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null;
-    const scope = anchorRef.current?.closest<HTMLElement>("[data-theme]");
-    if (scope) {
-      setTheme({ theme: scope.dataset.theme, mode: scope.dataset.mode });
-      // A portal sits outside the tenant layout, where next/font attaches its
-      // CSS variable classes. Carry just those classes over so modal content
-      // uses the active tenant's loaded typefaces rather than fallback fonts.
-      let fontScope: HTMLElement | null = scope;
-      while (fontScope && !Array.from(fontScope.classList).some((className) => className.includes("__variable"))) {
-        fontScope = fontScope.parentElement;
-      }
-      setFontVariableClasses(
-        Array.from(fontScope?.classList ?? [])
-          .filter((className) => className.includes("__variable"))
-          .join(" "),
-      );
-    }
 
     const frame = requestAnimationFrame(() => {
       setEntered(true);
@@ -147,13 +131,10 @@ export function Modal({
 
   return (
     <>
-      <span ref={anchorRef} aria-hidden className="hidden" />
-      {open && typeof document !== "undefined"
+      {open && portalContainer
         ? createPortal(
             <div
-              data-theme={theme.theme}
-              data-mode={theme.mode}
-              className={`${fontVariableClasses} fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 transition-opacity`}
+              className={`fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 transition-opacity`}
               onPointerDown={(event) => {
                 if (event.target === event.currentTarget) requestClose();
               }}
@@ -212,7 +193,7 @@ export function Modal({
                 {footer && <div className="border-t border-border px-5 py-4">{footer}</div>}
               </div>
             </div>,
-            document.body,
+            portalContainer,
           )
         : null}
       <ConfirmDialog

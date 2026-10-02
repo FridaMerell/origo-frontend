@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { VERSO_MODE_COOKIE } from "@/app/lib/config";
 import Sidebar from "./sidebar";
 import MobileNav from "./mobile-nav";
+import { ThemeScope } from "@/app/components/ui/ThemeScope";
 
 export type VersoMode = "light" | "dark";
 
@@ -24,21 +25,21 @@ export default function VersoShell({ children, initialMode }: { children: ReactN
 
   if (isLoginRoute) {
     return (
-      <div data-theme="verso" data-mode={mode} className="flex h-full min-h-screen flex-1 flex-col bg-bg text-text font-body">
+      <ThemeScope theme="verso" mode={mode} className="flex h-full min-h-screen flex-1 flex-col bg-bg text-text font-body">
         <main className="min-w-0 flex-1">{children}</main>
-      </div>
+      </ThemeScope>
     );
   }
 
   return (
-    <div
-      data-theme="verso"
-      data-mode={mode}
+    <ThemeScope
+      theme="verso"
+      mode={mode}
       className="flex h-full min-h-screen flex-1 flex-col bg-bg text-text font-body md:flex-row"
     >
       <Sidebar mode={mode} onToggleMode={toggleMode} />
       <MobileNav mode={mode} onToggleMode={toggleMode} />
       <main className="min-w-0 flex-1">{children}</main>
-    </div>
+    </ThemeScope>
   );
 }

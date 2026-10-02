@@ -329,6 +329,11 @@ export type LexicalEntry = {
   part_of_speech: string;
   gender: string;
   inflection_data: Record<string, unknown>;
+  definition: string;
+  /** Null för poster från innan poster hade ägare. */
+  owner: Nullable<User["id"]>;
+  /** Den inloggade användarens egna ordlistor som innehåller ordet. */
+  glossaries: Id[];
 };
 
 export type LexicalEntryCreate = {
@@ -337,9 +342,33 @@ export type LexicalEntryCreate = {
   part_of_speech?: string;
   gender?: string;
   inflection_data?: Record<string, unknown>;
+  definition?: string;
 };
 
 export type LexicalEntryUpdate = Partial<LexicalEntryCreate>;
+
+/** En ordlista: offentlig, eller privat för ägaren, som ett verk. */
+export type Glossary = {
+  id: Id;
+  title: string;
+  description: string;
+  owner: User["id"];
+  is_private: boolean;
+  entry_count: number;
+  created_at: ISODateTime;
+  updated_at: ISODateTime;
+};
+
+/** GET /glossaries/{id}/ (och svaret på create/update): ordlistan med alla ord. */
+export type GlossaryDetail = Glossary & { entries: LexicalEntry[] };
+
+export type GlossaryCreate = {
+  title: string;
+  description?: string;
+  is_private?: boolean;
+};
+
+export type GlossaryUpdate = Partial<GlossaryCreate>;
 
 export type AnnotationTargetKind = "word" | "phrase" | "unit";
 
@@ -355,6 +384,16 @@ export type Annotation = {
   body: string;
   created_at: ISODateTime;
   updated_at: ISODateTime;
+  /** Read-only context, so a list of annotations can be shown without fetching each unit. */
+  work: Pick<Work, "id" | "title">;
+  edition_title: string;
+  chapter: Nullable<{ id: Id; label: string }>;
+  /** The annotated word or phrase; empty for a whole-unit annotation. */
+  target_text: string;
+  /** The unit's text, cut at 280 characters. */
+  excerpt: string;
+  /** The linked lexical entry's data. */
+  entry: Nullable<Omit<LexicalEntry, "gender" | "glossaries">>;
 };
 
 export type AnnotationCreate = {
@@ -377,7 +416,7 @@ export type ReadingAnnotation = {
   start_offset: Nullable<number>;
   end_offset: Nullable<number>;
   body: string;
-  lexical_entry: Nullable<LexicalEntry>;
+  lexical_entry: Nullable<Omit<LexicalEntry, "owner" | "glossaries">>;
 };
 
 /* ============================================================================
@@ -468,7 +507,16 @@ export type ReadingUnit = {
   label: string;
   content: string;
   annotations: ReadingAnnotation[];
+  /** The chapter the unit belongs to, when it is in one. */
+  chapter?: Nullable<{ id: Id; position: number; label: string }>;
+  /** Alignment matrix only: the unit opens its chapter (show the chapter heading above it). */
+  starts_chapter?: boolean;
+  /** Alignment matrix only: labels of chapters without text placed directly ahead of this one. */
+  empty_chapters_before?: string[];
 };
+
+/** A top-level chapter of an edition, as returned by the chapter endpoints. */
+export type EditionChapter = { id: Id; position: number; label: string };
 
 export type EditionReadingStatus = {
   id: Id;
@@ -607,6 +655,8 @@ export type AlignmentMatrix = {
   /** Bara vid `focus=reading`: raden som motsvarar sparad läsposition (fönstret börjar strax ovanför). */
   focus_row?: number;
   has_more: boolean;
+  /** First row of every page; a chapter of the reference edition always starts a new page. */
+  pages?: number[];
   rows: AlignmentRow[];
   /** Bara efter auto-match-chapters. */
   result?: AutoMatchChaptersResult;
@@ -731,6 +781,15 @@ export type LexicalEntryFilters = {
   gender?: string;
   lemma?: string;
   lemma__icontains?: string;
+  owner?: string;
+  glossaries?: string;
+};
+
+export type GlossaryFilters = {
+  owner?: string;
+  is_private?: string;
+  title?: string;
+  title__icontains?: string;
 };
 
 export type BookmarkFilters = {

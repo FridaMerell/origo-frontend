@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState } from "react"
 import TopBar from "./TopBar"
 import { APP_LINKS, appHref } from "../lib/tenant-links"
 import { ORIGO_VERSION } from "../lib/config"
+import { ThemeScope } from "../components/ui/ThemeScope"
 
 const STORAGE_KEY = "opus-mode"
 
@@ -36,19 +37,19 @@ const OpusShell = ({ children }: { children: ReactNode }) => {
 	}
 	if (isLoginRoute) {
 		return (
-			<div
-				data-theme='opus'
-				data-mode={mode ?? "light"}
+			<ThemeScope
+				theme='opus'
+				mode={mode ?? "light"}
 				className='flex min-h-screen flex-1 flex-col bg-bg font-body text-text'>
 				{children}
-			</div>
+			</ThemeScope>
 		)
 	}
 
 	return (
-		<div
-			data-theme='opus'
-			data-mode={mode ?? "light"}
+		<ThemeScope
+			theme='opus'
+			mode={mode ?? "light"}
 			className='flex grain h-full min-h-screen flex-1 flex-col bg-bg text-text font-body'>
 			<TopBar mode={mode ?? 'light'} onToggleMode={toggleMode} />
 			<main className='container py-10 flex-1'>{children}</main>
@@ -59,7 +60,7 @@ const OpusShell = ({ children }: { children: ReactNode }) => {
 						{ORIGO_VERSION}
 					</p>
 					<nav aria-label='Systerplatser' className='flex items-center gap-4'>
-						{APP_LINKS.filter(site => site.id !== "tempus").map(site => (
+						{APP_LINKS.filter(site => site.id !== "opus").map(site => (
 							<a
 								key={site.id}
 								href={siteHrefs[site.id] ?? "#"}
@@ -70,7 +71,7 @@ const OpusShell = ({ children }: { children: ReactNode }) => {
 					</nav>
 				</div>
 			</footer>
-		</div>
+		</ThemeScope>
 	)
 }
 export default OpusShell

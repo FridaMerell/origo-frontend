@@ -1,9 +1,10 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { createContext, useContext, useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "./Button"
+import { usePortalContainer } from "./ThemeScope"
 import { X } from "lucide-react"
 
 const DrawerCloseContext = createContext<(() => void) | null>(null)
@@ -56,17 +57,8 @@ export function Drawer({
 		return () => cancelAnimationFrame(id)
 	}, [open, entered])
 
-	// The panel is portaled to <body>, outside the [data-theme]/[data-mode] scope
-	// the tenant shells set on a nested div — so bg-surface & friends would resolve
-	// to nothing. Mirror the nearest ambient theme onto the portal root.
-	const anchorRef = useRef<HTMLSpanElement>(null)
-	const [theme, setTheme] = useState<{ theme?: string; mode?: string }>({})
-	useEffect(() => {
-		if (!open) return
-		const scope = anchorRef.current?.closest<HTMLElement>("[data-theme]")
-		if (scope)
-			setTheme({ theme: scope.dataset.theme, mode: scope.dataset.mode })
-	}, [open])
+	// The panel is portaled into the tenant's ThemeScope, so it inherits its theme, mode and fonts.
+	const portalContainer = usePortalContainer()
 
 	function setOpen(value: boolean) {
 		if (!value) setEntered(false)
@@ -76,7 +68,6 @@ export function Drawer({
 
 	return (
 		<>
-			<span ref={anchorRef} aria-hidden className='hidden' />
 			{trigger !== undefined &&
 				(triggerVariant == "unstyled" ? (
 					<button
@@ -98,11 +89,9 @@ export function Drawer({
 				))}
 
 			{open &&
-				(typeof document !== "undefined"
+				(portalContainer
 					? createPortal(
 							<div
-								data-theme={theme.theme}
-								data-mode={theme.mode}
 								className='fixed inset-0 z-[100] flex bg-black/60 transition-opacity'
 								style={{
 									transitionDuration: "var(--duration-normal)",
@@ -149,7 +138,7 @@ export function Drawer({
 									</div>
 								</div>
 							</div>,
-							document.body,
+							portalContainer,
 						)
 					: null)}
 		</>

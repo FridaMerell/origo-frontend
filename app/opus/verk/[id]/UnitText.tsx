@@ -1,12 +1,25 @@
 "use client"
-import { AnnotationKind, ReadingAnnotation, ReadingUnit } from "@/app/lib/dal/opus"
+import { AnnotationKind, Glossary, Id, ReadingAnnotation, ReadingUnit } from "@/app/lib/dal/opus"
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react"
-import { ArrowRightIcon, MoreHorizontalIcon, XIcon } from "lucide-react"
+import { ArrowRightIcon, MoreHorizontalIcon, PencilIcon, XIcon } from "lucide-react"
 import Menu from "./Menu"
-import { combineUnits, deleteUnit, splitUnit, updateUnitContent } from "../../_actions/alignment-actions"
-import { createAnnotation, deleteAnnotation } from "../../_actions/annotation-actions"
-import { createLexicalEntry } from "../../_actions/lexical-entry-actions"
-import { TextField, TextAreaField } from "../../forms/Fields/Fields"
+import {
+	combineUnits,
+	deleteUnit,
+	splitUnit,
+	updateUnitContent,
+	type UnitEditResult,
+} from "../../_actions/alignment-actions"
+import { createAnnotation, deleteAnnotation, updateAnnotation } from "../../_actions/annotation-actions"
+import {
+	createLexicalEntry,
+	getLexicalEntry,
+	setEntryGlossaries,
+	updateLexicalEntry,
+} from "../../_actions/lexical-entry-actions"
+import { listGlossaries } from "../../_actions/glossary-actions"
+import { useUser } from "@/app/lib/user-context"
+import { CheckboxField, TextField, TextAreaField } from "../../forms/Fields/Fields"
 
 const ANNOTATION_KINDS: { value: AnnotationKind; label: string }[] = [
 	{ value: "definition", label: "Definition" },
@@ -42,10 +55,16 @@ function getTextOffset(container: Node, targetNode: Node, targetOffset: number):
 /** Markeringsstilen som delas av "ny annotation väljs" och "ord valt för delning" (utan pil, utan tooltip). */
 const PENDING_MARK_CLASS = "bg-primary/20 underline decoration-primary decoration-2 underline-offset-4 rounded-[2px]"
 
+/** Definitionens förklaring ligger på ordet; äldre definitioner har den i annotationens text. */
+function explanationOf(annotation: ReadingAnnotation) {
+	return annotation.lexical_entry?.definition || annotation.body
+}
+
 function highlightContent(
 	content: string,
 	annotations: ReadingAnnotation[],
-	pending?: { start: number; end: number } | null,
+	pending: { start: number; end: number } | null | undefined,
+	onEdit: (annotation: ReadingAnnotation, anchor: HTMLElement) => void,
 ): React.ReactNode {
 	const spans = annotations
 		.filter(a => a.start_offset != null && a.end_offset != null)
@@ -87,11 +106,13 @@ function highlightContent(
 		const mark = (
 			<mark
 				key={`${span.start}-${span.end}`}
-				tabIndex={isDefinition ? 0 : undefined}
-				className={[
-					"bg-transparent text-primary underline decoration-dotted decoration-primary/60 underline-offset-4",
-					isDefinition ? "cursor-pointer" : "",
-				].join(" ")}>
+				tabIndex={0}
+				title={isDefinition ? undefined : "Redigera annotationen"}
+				onClick={event => onEdit(span.annotation, event.currentTarget)}
+				onKeyDown={event => {
+					if (event.key === "Enter") onEdit(span.annotation, event.currentTarget)
+				}}
+				className='cursor-pointer bg-transparent text-primary underline decoration-dotted decoration-primary/60 underline-offset-4'>
 				{text}
 			</mark>
 		)
@@ -126,9 +147,10 @@ function highlightContent(
 								</>
 							)
 						})()}
-						{span.annotation.body && (
-							<span className="mt-1 block text-text">{span.annotation.body}</span>
+						{explanationOf(span.annotation) && (
+							<span className="mt-1 block text-text">{explanationOf(span.annotation)}</span>
 						)}
+						<span className="mt-2 block text-[11px] text-text-muted">Klicka för att redigera</span>
 					</span>
 				</span>
 			) : (
@@ -165,7 +187,12 @@ type SelectionState = {
 	top: number
 	bottom: number
 	centerX: number
+	/** Satt när panelen redigerar en befintlig annotation i stället för att skapa en ny. */
+	annotation?: ReadingAnnotation
 }
+
+/** Det panelen placeras vid: markeringen (ny annotation) eller det markerade ordet (redigering). */
+type Anchor = { getBoundingClientRect(): DOMRect }
 
 /**
  * Ett stycke text där man kan markera ord/fraser och skapa annotationer, och redigera,
@@ -174,11 +201,14 @@ type SelectionState = {
 export default function UnitText({
 	unit,
 	label,
+	heading,
 	onChanged,
 }: {
 	unit: ReadingUnit
 	/** Styckets nummer/etikett, visas dämpat ovanför texten. */
 	label: string | number
+	/** Visas i rubrikraden i stället för `label` (t.ex. utgåvans namn i mobilvyn); `null` visar ingenting. */
+	heading?: React.ReactNode
 	onChanged: () => void
 }) {
 	const onAnnotated = onChanged
@@ -195,25 +225,26 @@ export default function UnitText({
 	const [partOfSpeech, setPartOfSpeech] = useState("")
 	const [modernForm, setModernForm] = useState("")
 	const [synonyms, setSynonyms] = useState("")
+	const [glossaryIds, setGlossaryIds] = useState<Id[]>([])
+	// Ordlistorna ordet låg i när panelen öppnades, för att veta vad som ska läggas till och tas bort.
+	const [savedGlossaryIds, setSavedGlossaryIds] = useState<Id[]>([])
+	const [ownGlossaries, setOwnGlossaries] = useState<Glossary[] | null>(null)
+	const [formError, setFormError] = useState<string | null>(null)
 	const [submitting, setSubmitting] = useState(false)
 	const [placement, setPlacement] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
 	const contentRef = useRef<HTMLDivElement>(null)
 	const panelRef = useRef<HTMLDivElement>(null)
-	const rangeRef = useRef<Range | null>(null)
+	const rangeRef = useRef<Anchor | null>(null)
+	const user = useUser()
 
-	const handleMouseUp = useCallback(() => {
-		if (!contentRef.current) return
-		const sel = window.getSelection()
-		if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-			setPending(null)
-			return
-		}
-		const range = sel.getRangeAt(0)
+	const pendingRef = useRef(pending)
+	pendingRef.current = pending
+
+	/** Öppnar panelen för en ny annotation på markeringen `range` (inom styckets text). */
+	const selectRange = useCallback((range: Range) => {
 		const container = contentRef.current
-		if (!container.contains(range.commonAncestorContainer)) {
-			setPending(null)
-			return
-		}
+		if (!container) return
+		const sel = window.getSelection()
 		const rawStart = getTextOffset(container, range.startContainer, range.startOffset)
 		const rawEnd = getTextOffset(container, range.endContainer, range.endOffset)
 		const [start, end] = trimToTokenBounds(
@@ -230,7 +261,7 @@ export default function UnitText({
 		rangeRef.current = range.cloneRange()
 		// Vår egen markering (samma stil som "ord valt för delning") ersätter webbläsarens
 		// blå markering, så bara en markering syns.
-		sel.removeAllRanges()
+		sel?.removeAllRanges()
 		setPending({
 			startOffset: start,
 			endOffset: end,
@@ -244,7 +275,94 @@ export default function UnitText({
 		setPartOfSpeech("")
 		setModernForm("")
 		setSynonyms("")
+		setGlossaryIds([])
+		setSavedGlossaryIds([])
+		setFormError(null)
 	}, [unit])
+
+	const handleMouseUp = useCallback(() => {
+		if (!contentRef.current) return
+		const sel = window.getSelection()
+		if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+			setPending(null)
+			return
+		}
+		const range = sel.getRangeAt(0)
+		if (!contentRef.current.contains(range.commonAncestorContainer)) {
+			setPending(null)
+			return
+		}
+		selectRange(range)
+	}, [selectRange])
+
+	// Pekskärm: markeringen görs med handtag och ger inget mouseup. Läs den när den har slutat
+	// ändras, och bara när ingen panel redan är öppen (då flyttas markeringen in i formuläret).
+	useEffect(() => {
+		if (!window.matchMedia("(pointer: coarse)").matches) return
+		let timer: number | undefined
+		const onChange = () => {
+			window.clearTimeout(timer)
+			timer = window.setTimeout(() => {
+				const container = contentRef.current
+				const sel = window.getSelection()
+				if (!container || pendingRef.current || !sel || sel.isCollapsed || sel.rangeCount === 0) return
+				const range = sel.getRangeAt(0)
+				if (container.contains(range.commonAncestorContainer)) selectRange(range)
+			}, 600)
+		}
+		document.addEventListener("selectionchange", onChange)
+		return () => {
+			window.clearTimeout(timer)
+			document.removeEventListener("selectionchange", onChange)
+		}
+	}, [selectRange])
+
+	/** Öppnar panelen för en befintlig annotation, ifylld med dess (och ordets) uppgifter. */
+	const startEditingAnnotation = useCallback(
+		(annotation: ReadingAnnotation, anchor: HTMLElement) => {
+			if (annotation.start_offset == null || annotation.end_offset == null) return
+			const rect = anchor.getBoundingClientRect()
+			const entry = annotation.lexical_entry
+			const synonymList = entry?.inflection_data?.synonyms
+			const modern = entry?.inflection_data?.modern_form
+			rangeRef.current = anchor
+			setPending({
+				startOffset: annotation.start_offset,
+				endOffset: annotation.end_offset,
+				text: unit.content.slice(annotation.start_offset, annotation.end_offset),
+				top: rect.top,
+				bottom: rect.bottom,
+				centerX: rect.left + rect.width / 2,
+				annotation,
+			})
+			setKind(annotation.kind)
+			setBody(annotation.kind === "definition" ? explanationOf(annotation) : annotation.body)
+			setPartOfSpeech(entry?.part_of_speech ?? "")
+			setModernForm(typeof modern === "string" ? modern : "")
+			setSynonyms(Array.isArray(synonymList) ? synonymList.join(", ") : "")
+			setGlossaryIds([])
+			setSavedGlossaryIds([])
+			setFormError(null)
+			// Vilka av ens ordlistor ordet ligger i finns inte i läsvyns data; hämta ordet.
+			if (entry) {
+				getLexicalEntry(entry.id)
+					.then(full => {
+						setGlossaryIds(full.glossaries)
+						setSavedGlossaryIds(full.glossaries)
+					})
+					.catch(() => {})
+			}
+		},
+		[unit],
+	)
+
+	// Ens egna ordlistor, som en definition kan läggas i. Hämtas första gången panelen öppnas.
+	useEffect(() => {
+		if (!pending || ownGlossaries !== null || !user) return
+		listGlossaries()
+			.then(list => setOwnGlossaries(list.filter(glossary => glossary.owner === user.id)))
+			.catch(() => setOwnGlossaries([]))
+	}, [pending, ownGlossaries, user])
 
 	useEffect(() => {
 		if (!pending) return
@@ -296,50 +414,89 @@ export default function UnitText({
 		e.preventDefault()
 		if (!pending || !body.trim()) return
 		setSubmitting(true)
+		setFormError(null)
+		const existing = pending.annotation
 		try {
-			const lexicalEntry =
-				kind === "definition"
-					? await createLexicalEntry({
-							lemma: pending.text.trim(),
-							language: "sv",
-							part_of_speech: partOfSpeech.trim() || undefined,
-							inflection_data: {
-								...(modernForm.trim() ? { modern_form: modernForm.trim() } : {}),
-								...(synonyms.trim()
-									? { synonyms: synonyms.split(",").map(s => s.trim()).filter(Boolean) }
-									: {}),
-							},
-						})
-					: null
-			await createAnnotation({
-				unit: unit.id,
-				target_kind: /\s/.test(pending.text.trim()) ? "phrase" : "word",
-				start_offset: pending.startOffset,
-				end_offset: pending.endOffset,
-				kind,
-				body: body.trim(),
-				lexical_entry: lexicalEntry?.id ?? null,
-			})
+			let lexicalEntryId: Id | null = null
+			if (kind === "definition") {
+				// Ordets uppgifter, inklusive förklaringen, sparas på ordet så att ordlistor kan visa dem.
+				const entryData = {
+					part_of_speech: partOfSpeech.trim(),
+					definition: body.trim(),
+					inflection_data: {
+						...(modernForm.trim() ? { modern_form: modernForm.trim() } : {}),
+						...(synonyms.trim()
+							? { synonyms: synonyms.split(",").map(s => s.trim()).filter(Boolean) }
+							: {}),
+					},
+				}
+				const entry = existing?.lexical_entry
+					? await updateLexicalEntry(existing.lexical_entry.id, entryData)
+					: await createLexicalEntry({ lemma: pending.text.trim(), language: "sv", ...entryData })
+				lexicalEntryId = entry.id
+				await setEntryGlossaries(entry.id, existing?.lexical_entry ? savedGlossaryIds : [], glossaryIds)
+			}
+			// En definitions förklaring ligger på ordet; annotationen bär bara förankringen i texten.
+			const annotationBody = kind === "definition" ? "" : body.trim()
+			if (existing) {
+				await updateAnnotation(existing.id, { kind, body: annotationBody, lexical_entry: lexicalEntryId })
+			} else {
+				await createAnnotation({
+					unit: unit.id,
+					target_kind: /\s/.test(pending.text.trim()) ? "phrase" : "word",
+					start_offset: pending.startOffset,
+					end_offset: pending.endOffset,
+					kind,
+					body: annotationBody,
+					lexical_entry: lexicalEntryId,
+				})
+			}
 			setPending(null)
 			window.getSelection()?.removeAllRanges()
 			onAnnotated()
+		} catch {
+			setFormError(
+				existing?.lexical_entry
+					? "Kunde inte spara. Ordet kan tillhöra någon annan och då bara redigeras av den."
+					: "Kunde inte spara.",
+			)
 		} finally {
 			setSubmitting(false)
 		}
 	}
 
-	async function runUnitEdit(action: () => Promise<void>, after?: () => void) {
+	async function handleDeleteEditing() {
+		const existing = pending?.annotation
+		if (!existing || !window.confirm("Ta bort annotationen? Det går inte att ångra.")) return
+		setSubmitting(true)
+		setFormError(null)
+		try {
+			await deleteAnnotation(existing.id)
+			setPending(null)
+			onAnnotated()
+		} catch {
+			setFormError("Annotationen kunde inte tas bort.")
+		} finally {
+			setSubmitting(false)
+		}
+	}
+
+	async function runUnitEdit(action: () => Promise<UnitEditResult | void>, after?: () => void) {
 		if (unitBusy) return
 		setUnitBusy(true)
 		setUnitError(null)
 		try {
-			await action()
+			// Redigeringarna returnerar serverns förklaring (t.ex. att stycket har annotationer),
+			// eftersom ett kastat fel tappar sitt meddelande i produktion.
+			const result = await action()
+			if (result?.error) {
+				setUnitError(result.error)
+				return
+			}
 			after?.()
 			onChanged()
-		} catch (e) {
-			// 400 från servern (t.ex. stycket har annotationer) kommer med i felet i dev.
-			const detail = e instanceof Error ? e.message.replace(/^\d+\s[^:]*:\s*/, "").slice(0, 200) : ""
-			setUnitError(detail || "Ändringen kunde inte sparas.")
+		} catch {
+			setUnitError("Ändringen kunde inte sparas.")
 		} finally {
 			setUnitBusy(false)
 		}
@@ -422,10 +579,10 @@ export default function UnitText({
 				<>
 					{/* Rubrikrad: styckets nummer till vänster, en meny med alla åtgärder till höger. */}
 					<div className='mb-1 flex items-center justify-between gap-2'>
-						<span className='font-mono text-xs text-text/50'>{label}</span>
+						{heading !== undefined ? heading : <span className='font-mono text-xs text-text/50'>{label}</span>}
 						<Menu
 							ariaLabel={`Åtgärder för stycke ${label}`}
-							triggerClassName='rounded p-0.5 text-text opacity-0 transition-opacity hover:bg-text/10 focus-visible:opacity-100 group-hover/unit:opacity-100 group-focus-within/unit:opacity-100 aria-expanded:opacity-100 cursor-pointer'
+							triggerClassName='rounded p-0.5 text-text opacity-0 transition-opacity hover:bg-text/10 pointer-coarse:opacity-100 focus-visible:opacity-100 group-hover/unit:opacity-100 group-focus-within/unit:opacity-100 aria-expanded:opacity-100 cursor-pointer'
 							trigger={<MoreHorizontalIcon size={14} />}
 							disabled={unitBusy || splitMode}
 							items={[
@@ -461,7 +618,8 @@ export default function UnitText({
 						<div>
 							<p className='leading-relaxed'>
 								{tokenizeWords(unit.content).map((token, index) =>
-									token.isWord ? (
+									// Efter sista ordet finns ingen text kvar att dela av; det ordet är ingen delningspunkt.
+									token.isWord && unit.content.slice(token.end).trim() !== "" ? (
 										<span key={index}>
 											<button
 												type='button'
@@ -510,7 +668,8 @@ export default function UnitText({
 							{highlightContent(
 							unit.content,
 							unit.annotations,
-							pending && { start: pending.startOffset, end: pending.endOffset },
+							pending && !pending.annotation ? { start: pending.startOffset, end: pending.endOffset } : null,
+							startEditingAnnotation,
 						)}
 						</div>
 					)}
@@ -527,8 +686,19 @@ export default function UnitText({
 											{annotation.start_offset != null && annotation.end_offset != null
 												? `»${unit.content.slice(annotation.start_offset, annotation.end_offset)}» `
 												: "(hela stycket) "}
-											<span className='text-text-muted'>{annotation.body.slice(0, 60)}</span>
+											<span className='text-text-muted'>{explanationOf(annotation).slice(0, 60)}</span>
 										</span>
+										{annotation.start_offset != null && (
+											<button
+												type='button'
+												title='Redigera annotationen'
+												aria-label='Redigera annotationen'
+												disabled={unitBusy}
+												onClick={event => startEditingAnnotation(annotation, event.currentTarget)}
+												className='ml-auto shrink-0 text-text-muted hover:text-text disabled:opacity-30 cursor-pointer'>
+												<PencilIcon size={12} />
+											</button>
+										)}
 										<button
 											type='button'
 											title='Ta bort annotationen'
@@ -566,12 +736,14 @@ export default function UnitText({
 					}}>
 					<form
 						onSubmit={handleSubmit}
-						className="bg-surface border border-border rounded-md w-96"
+						className="bg-surface border border-border rounded-md w-96 max-w-[80vw]"
 						onKeyDown={e => {
 							if (e.key === "Escape") setPending(null)
 						}}>
 						<div className="flex items-baseline justify-between gap-3 px-4 pt-3 pb-2 border-b border-border">
-							<p className="font-body text-xs font-semibold text-text shrink-0">Ny annotation</p>
+							<p className="font-body text-xs font-semibold text-text shrink-0">
+								{pending.annotation ? "Redigera annotation" : "Ny annotation"}
+							</p>
 							<p className="font-display italic text-sm text-text-muted truncate">
 								»{pending.text}»
 							</p>
@@ -630,7 +802,40 @@ export default function UnitText({
 								required
 								autoFocus
 							/>
+							{kind === "definition" && ownGlossaries && ownGlossaries.length > 0 && (
+								<fieldset className="flex flex-col gap-1.5">
+									<legend className="mb-1.5 font-body text-sm text-text">Ordlistor</legend>
+									{ownGlossaries.map(glossary => (
+										<CheckboxField
+											key={glossary.id}
+											label={glossary.title}
+											checked={glossaryIds.includes(glossary.id)}
+											onChange={event =>
+												setGlossaryIds(current =>
+													event.target.checked
+														? [...current, glossary.id]
+														: current.filter(id => id !== glossary.id),
+												)
+											}
+										/>
+									))}
+								</fieldset>
+							)}
+							{formError && (
+								<p role="alert" className="text-xs text-danger">
+									{formError}
+								</p>
+							)}
 							<div className="flex items-center justify-end gap-3">
+								{pending.annotation && (
+									<button
+										type="button"
+										disabled={submitting}
+										onClick={handleDeleteEditing}
+										className="mr-auto font-body text-sm text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-40 cursor-pointer">
+										Ta bort
+									</button>
+								)}
 								<button
 									type="button"
 									onClick={() => setPending(null)}

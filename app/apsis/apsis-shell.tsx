@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import TopBar from "./top-bar";
 import { APP_LINKS, appHref } from "@/app/lib/tenant-links";
 import { ORIGO_VERSION } from "@/app/lib/config";
+import { ThemeScope } from "@/app/components/ui/ThemeScope";
 
 const STORAGE_KEY = "apsis-mode";
 
@@ -38,20 +39,20 @@ export default function ApsisShell({ children }: { children: ReactNode }) {
 
   if (isLoginRoute) {
     return (
-      <div
-        data-theme="apsis"
-        data-mode={mode ?? undefined}
+      <ThemeScope
+        theme="apsis"
+        mode={mode ?? undefined}
         className="flex min-h-screen flex-1 flex-col bg-bg font-body text-text"
       >
         <main className="min-w-0 flex-1">{children}</main>
-      </div>
+      </ThemeScope>
     );
   }
 
   return (
-    <div
-      data-theme="apsis"
-      data-mode={mode ?? undefined}
+    <ThemeScope
+      theme="apsis"
+      mode={mode ?? undefined}
       className="flex min-h-screen flex-1 flex-col bg-bg font-body text-text"
     >
       <TopBar mode={mode} onToggleMode={toggleMode} />
@@ -74,6 +75,6 @@ export default function ApsisShell({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </footer>
-    </div>
+    </ThemeScope>
   );
 }

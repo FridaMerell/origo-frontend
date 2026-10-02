@@ -23,6 +23,38 @@ export async function deleteEdition(workId: number, editionId: number): Promise<
 	return {}
 }
 
+/** Lägger till ett kapitel utan text, sist eller före kapitlet `before`. */
+export async function addEmptyChapter(
+	workId: number,
+	editionId: number,
+	label: string,
+	before: number | null,
+): Promise<{ error?: string }> {
+	if (!label.trim()) return { error: "Ange kapitlets namn." }
+	try {
+		await editionApi.addChapter(editionId, before === null ? { label } : { label, before })
+	} catch {
+		return { error: "Kapitlet kunde inte läggas till." }
+	}
+	revalidatePath(`/opus/verk/${workId}`)
+	return {}
+}
+
+/** Ordnar om utgåvans kapitel enligt `chapterIds`; styckena följer med sina kapitel. */
+export async function reorderEditionChapters(
+	workId: number,
+	editionId: number,
+	chapterIds: number[],
+): Promise<{ error?: string }> {
+	try {
+		await editionApi.reorderChapters(editionId, chapterIds)
+	} catch {
+		return { error: "Kapitlen kunde inte ordnas om." }
+	}
+	revalidatePath(`/opus/verk/${workId}`)
+	return {}
+}
+
 export async function createEdition(
 	workId: number,
 	_previousState: CreateEditionState,

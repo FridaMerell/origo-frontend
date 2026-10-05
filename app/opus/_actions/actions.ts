@@ -43,6 +43,7 @@ import type {
 	Annotation,
 	AnnotationCreate,
 	AnnotationFilters,
+	AnnotationPage,
 	AnnotationUpdate,
 	Bookmark,
 	BookmarkCreate,
@@ -62,6 +63,11 @@ import type {
 	LexicalEntryCreate,
 	LexicalEntryFilters,
 	LexicalEntryUpdate,
+	LexicalLanguage,
+	LexicalForm,
+	LexicalFormCreate,
+	LexicalFormFilters,
+	LexicalFormUpdate,
 	SourceFile,
 	SourceFileCreate,
 	SourceFileUpdate,
@@ -286,7 +292,8 @@ export const alignmentApi = {
 }
 
 export const annotationApi = {
-	list: cachedList<Annotation, AnnotationFilters>("/annotations/"),
+	/** En sida av användarens annotationer; filter, sökning och sortering sker i API:t. */
+	list: (filters: AnnotationFilters = {}) => request<AnnotationPage>(withQuery("/annotations/", filters)),
 	retrieve: cachedRetrieve<Annotation>("/annotations/"),
 	create: (data: AnnotationCreate) =>
 		request<Annotation>("/annotations/", {
@@ -351,6 +358,28 @@ export const lexicalEntryApi = {
 		}),
 	remove: (id: number) =>
 		request<void>(`/lexical-entries/${id}/`, { method: "DELETE" }),
+	/** Språken bland användarens egna ord, med antal ord per språk. */
+	languages: () => request<LexicalLanguage[]>("/lexical-entries/languages/"),
+	/** Ett slumpat urval av användarens egna ord på ett språk, för ett glosförhör (1–200 ord). */
+	quiz: (language: string, count: number) =>
+		request<LexicalEntry[]>(withQuery("/lexical-entries/quiz/", { language, count: String(count) })),
+}
+
+export const lexicalFormApi = {
+	list: cachedList<LexicalForm, LexicalFormFilters>("/lexical-forms/"),
+	retrieve: cachedRetrieve<LexicalForm>("/lexical-forms/"),
+	create: (data: LexicalFormCreate) =>
+		request<LexicalForm>("/lexical-forms/", {
+			method: "POST",
+			body: JSON.stringify(data),
+		}),
+	update: (id: number, data: LexicalFormUpdate) =>
+		request<LexicalForm>(`/lexical-forms/${id}/`, {
+			method: "PATCH",
+			body: JSON.stringify(data),
+		}),
+	remove: (id: number) =>
+		request<void>(`/lexical-forms/${id}/`, { method: "DELETE" }),
 }
 
 export const glossaryApi = {
@@ -377,6 +406,9 @@ export const glossaryApi = {
 	/** Tar bort ordet ur ordlistan; själva ordet finns kvar. */
 	removeEntry: (id: number, entryId: Id) =>
 		request<void>(`/glossaries/${id}/entries/${entryId}/`, { method: "DELETE" }),
+	/** Ett slumpat urval av ordlistans ord för ett glosförhör (1–200 ord). */
+	quiz: (id: number, count: number) =>
+		request<LexicalEntry[]>(`/glossaries/${id}/quiz/?count=${count}`),
 }
 
 export const readingProgressApi = {

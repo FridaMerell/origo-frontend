@@ -1,6 +1,28 @@
 "use server"
 import { glossaryApi, lexicalEntryApi } from "./actions"
-import type { Id, LexicalEntryCreate, LexicalEntryUpdate, LexicalEntry } from "@/app/lib/dal/opus"
+import type {
+	Id,
+	LexicalEntryCreate,
+	LexicalEntryFilters,
+	LexicalEntryUpdate,
+	LexicalEntry,
+	LexicalLanguage,
+} from "@/app/lib/dal/opus"
+
+/** Språken bland användarens egna ord. */
+export async function listEntryLanguages(): Promise<LexicalLanguage[]> {
+	return lexicalEntryApi.languages()
+}
+
+/** Ett nytt slumpat urval av användarens egna ord på ett språk för ett glosförhör. */
+export async function getLanguageQuiz(language: string, count: number): Promise<LexicalEntry[]> {
+	return lexicalEntryApi.quiz(language, count)
+}
+
+/** Ord användaren ser, t.ex. `{ lemma }` eller `{ forms__form__iexact }` för att hitta en grundform. */
+export async function listLexicalEntries(filters: LexicalEntryFilters): Promise<LexicalEntry[]> {
+	return lexicalEntryApi.list(filters)
+}
 
 export async function createLexicalEntry(data: LexicalEntryCreate): Promise<LexicalEntry> {
 	return lexicalEntryApi.create(data)

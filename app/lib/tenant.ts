@@ -15,7 +15,7 @@ export const TENANTS: Record<TenantId, TenantConfig> = {
   flux: { name: "Flux" },
   tempus: { name: "Tempus", publicPaths: ["/"] },
   opus: {name: "Opus", publicPaths: ["/"]},
-  apsis: { name: "Apsis", publicPaths: ["/"] },
+  apsis: { name: "Apsis", publicPaths: ["/", "/kyrka",'/wall-of-shame'] },
 }
 
 export function isPublicPath(tenant: TenantId, pathname: string): boolean {

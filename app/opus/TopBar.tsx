@@ -38,6 +38,10 @@ const TABS = [
 		label: "Ordlistor",
 	},
 	{
+		href: "/forhor",
+		label: "Glosförhör",
+	},
+	{
 		href: '/fortsatt',
 		label:'Fortsätt'
 	}

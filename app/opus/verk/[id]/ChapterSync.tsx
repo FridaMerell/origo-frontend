@@ -7,7 +7,7 @@ import type { AlignmentMatrix, AutoMatchChaptersResult, Id } from "@/app/lib/dal
 import { alignTexts } from "../../_actions/alignment-actions"
 import { SelectField } from "../../forms/Fields/Fields"
 
-export type EditionInfo = { id: Id; title: string; chapters: { id: Id; label: string }[] }
+export type EditionInfo = { id: Id; title: string; language: string; chapters: { id: Id; label: string }[] }
 export type SyncColumn = { versionId: Id; editionId: Id; title: string }
 
 type Item = { alignment_version: Id; unit: Id }

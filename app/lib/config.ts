@@ -115,6 +115,9 @@ export const BIRDNET_STREAM_URL = new URL(
 
 export const APSIS_ENDPOINTS = {
   posts: "/api/apsis/posts/",
+  places: "/api/apsis/places/",
+  placeSummaries: "/api/apsis/places/summaries/",
+  place: (id: string) => `/api/apsis/places/${encodeURIComponent(id)}/`,
 } as const;
 
 export const TEMPUS_ENDPOINTS = {

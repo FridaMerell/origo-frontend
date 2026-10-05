@@ -139,6 +139,7 @@ export default async function ({
 					editions={reading.editions.map(edition => ({
 						id: edition.id,
 						title: edition.title,
+						language: edition.language,
 						chapters: edition.chapters.map(chapter => ({ id: chapter.id, label: chapter.label })),
 					}))}
 				/>

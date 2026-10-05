@@ -271,6 +271,139 @@ svg {
 	}
 }
 
+/* Apsis — the sign's motion, kept quiet. What a draw changes fades in where
+   it stands, without moving; a drawing's lines are drawn once; the button
+   gives under the finger. */
+@keyframes apsis-arrive {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+/* A drawing's lines are drawn, then its hatching is filled in. The paths
+   carry pathLength="1", so one dash is the whole line. */
+@keyframes apsis-ink {
+	/* The line is hidden until it has some length: with round ends, a line of
+	   no length would show as a dot where it starts. */
+	0% { stroke-dashoffset: 1; stroke-opacity: 0; fill-opacity: 0; }
+	6% { stroke-opacity: 1; }
+	70% { fill-opacity: 0; }
+	100% { stroke-dashoffset: 0; stroke-opacity: 1; fill-opacity: 1; }
+}
+[data-theme="apsis"] .apsis-ink {
+	stroke-dasharray: 1;
+	animation: apsis-ink 1.1s var(--ease-standard) both;
+}
+[data-theme="apsis"] .apsis-nav {
+	transition: color var(--duration-normal) var(--ease-standard), border-color var(--duration-normal) var(--ease-standard);
+}
+[data-theme="apsis"] .apsis-nav:hover {
+	border-color: var(--border-strong);
+}
+@keyframes apsis-wait {
+	0%, 100% { opacity: .45; }
+	50% { opacity: 1; }
+}
+[data-theme="apsis"] .apsis-arrive {
+	animation: apsis-arrive 220ms var(--ease-standard) both;
+	animation-delay: calc(var(--i, 0) * 35ms);
+}
+[data-theme="apsis"] .apsis-develop {
+	animation: apsis-arrive 320ms ease-out both;
+}
+[data-theme="apsis"] .apsis-wait {
+	animation: apsis-wait 1.6s ease-in-out infinite;
+}
+[data-theme="apsis"] .apsis-press {
+	transition: transform var(--duration-fast) var(--ease-standard), filter var(--duration-normal) var(--ease-standard);
+}
+/* A photograph that leads somewhere comes a little closer when pointed at. */
+[data-theme="apsis"] .apsis-photo img {
+	transition: transform 600ms var(--ease-standard);
+}
+[data-theme="apsis"] .apsis-photo:hover img,
+[data-theme="apsis"] .apsis-photo:focus-visible img {
+	transform: scale(1.03);
+}
+/* Darkened rather than recoloured, so it holds for a button of any colour. */
+[data-theme="apsis"] .apsis-press:hover {
+	filter: brightness(.9);
+}
+[data-theme="apsis"] .apsis-press:active {
+	transform: translateY(1px) scale(.98);
+	filter: brightness(.8);
+}
+[data-theme="apsis"] .apsis-press:focus-visible {
+	outline: 2px solid var(--focus-ring);
+	outline-offset: 3px;
+}
+/* A source number: small, raised and quiet, as in a printed note. It does not
+   open up the line it stands in. */
+[data-theme="apsis"] .apsis-ref {
+	position: relative;
+	top: -.42em;
+	margin-left: .08em;
+	font-family: var(--font-body);
+	font-size: .7em;
+	font-style: normal;
+	font-weight: 400;
+	line-height: 0;
+	vertical-align: baseline;
+	white-space: nowrap;
+}
+[data-theme="apsis"] .apsis-ref a {
+	color: var(--text-faint);
+	text-decoration: none;
+	transition: color var(--duration-normal) var(--ease-standard);
+}
+[data-theme="apsis"] .apsis-ref a:hover,
+[data-theme="apsis"] .apsis-ref a:focus-visible {
+	color: var(--text);
+	text-decoration: underline;
+}
+/* The source a number has just led to is marked while it is the target. */
+[data-theme="apsis"] .apsis-source:target > span {
+	color: var(--text);
+	background: var(--surface-2);
+}
+/* The dotted leader between a label and its value in a fact table. */
+[data-theme="apsis"] .apsis-leader {
+	flex: 1;
+	min-width: 1.5rem;
+	margin: 0 .5rem;
+	border-bottom: 1px dotted var(--text-faint);
+	transform: translateY(-.3em);
+}
+/* The photo of the draw before, dimmed while the next one is on its way. */
+[data-theme="apsis"] .apsis-dim {
+	transition: opacity var(--duration-normal) var(--ease-standard), filter var(--duration-normal) var(--ease-standard);
+}
+[data-theme="apsis"] .apsis-dim[data-waiting] {
+	opacity: .45;
+	filter: grayscale(1);
+}
+/* A link's rule is drawn in from the left when it is pointed at. */
+[data-theme="apsis"] .apsis-link {
+	background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat;
+	transition: background-size var(--duration-normal) var(--ease-standard);
+}
+[data-theme="apsis"] .apsis-link:hover,
+[data-theme="apsis"] .apsis-link:focus-visible {
+	background-size: 100% 1px;
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-theme="apsis"] .apsis-arrive,
+	[data-theme="apsis"] .apsis-develop,
+	[data-theme="apsis"] .apsis-ink,
+	[data-theme="apsis"] .apsis-wait {
+		animation: none;
+	}
+	[data-theme="apsis"] .apsis-press,
+	[data-theme="apsis"] .apsis-photo img,
+	[data-theme="apsis"] .apsis-nav,
+	[data-theme="apsis"] .apsis-link {
+		transition: none;
+	}
+}
+
 @utility grain {
   position: relative;
   &::before {

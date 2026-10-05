@@ -53,13 +53,14 @@ export default function ApsisShell({ children }: { children: ReactNode }) {
     <ThemeScope
       theme="apsis"
       mode={mode ?? undefined}
-      className="flex min-h-screen flex-1 flex-col bg-bg font-body text-text"
+      className="grain flex min-h-screen flex-1 flex-col bg-bg font-body text-text"
     >
       <TopBar mode={mode} onToggleMode={toggleMode} />
       <main className="min-w-0 flex-1">{children}</main>
-      <footer className="mt-12 border-t border-border bg-surface text-text-muted">
-        <div className="mx-auto flex flex-col items-center justify-between gap-3 px-6 py-5 text-sm sm:flex-row sm:px-12">
-          <p className="font-mono">
+      {/* The sign's bottom row, in the same column as the menu and the content. */}
+      <footer className="container mt-12 text-text-muted">
+        <div className="flex flex-col items-center justify-between gap-3 border-t-4 border-double border-text py-5 text-sm max-md:mx-6 sm:flex-row">
+          <p>
             Apsis <span className="text-text-faint">·</span> ORIGO {ORIGO_VERSION}
           </p>
           <nav aria-label="Systerplatser" className="flex items-center gap-4">

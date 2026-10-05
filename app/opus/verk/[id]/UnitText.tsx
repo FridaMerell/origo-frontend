@@ -1,5 +1,13 @@
 "use client"
-import { AnnotationKind, Glossary, Id, ReadingAnnotation, ReadingUnit } from "@/app/lib/dal/opus"
+import {
+	AnnotationKind,
+	Glossary,
+	Id,
+	LexicalEntry,
+	LexicalFormKind,
+	ReadingAnnotation,
+	ReadingUnit,
+} from "@/app/lib/dal/opus"
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react"
 import { ArrowRightIcon, MoreHorizontalIcon, PencilIcon, XIcon } from "lucide-react"
 import Menu from "./Menu"
@@ -14,12 +22,15 @@ import { createAnnotation, deleteAnnotation, updateAnnotation } from "../../_act
 import {
 	createLexicalEntry,
 	getLexicalEntry,
+	listLexicalEntries,
 	setEntryGlossaries,
 	updateLexicalEntry,
 } from "../../_actions/lexical-entry-actions"
+import { createLexicalForm, updateLexicalForm } from "../../_actions/lexical-form-actions"
 import { listGlossaries } from "../../_actions/glossary-actions"
 import { useUser } from "@/app/lib/user-context"
-import { CheckboxField, TextField, TextAreaField } from "../../forms/Fields/Fields"
+import { CheckboxField, SelectField, TextField, TextAreaField } from "../../forms/Fields/Fields"
+import { FORM_KIND_LABELS, sameWord } from "../../ordlistor/lexical-forms"
 
 const ANNOTATION_KINDS: { value: AnnotationKind; label: string }[] = [
 	{ value: "definition", label: "Definition" },
@@ -133,10 +144,20 @@ function highlightContent(
 							const synonyms = entry?.inflection_data?.synonyms
 							return (
 								<>
+									{entry && !sameWord(entry.lemma, text) && (
+										<span className="mt-1 block text-text">
+											Grundform: <span className="font-medium text-text">{entry.lemma}</span>
+										</span>
+									)}
 									{typeof modernForm === "string" && modernForm && (
 										<span className="mt-1 block text-text">
 											Modernt: <span className="font-medium text-text">{modernForm}</span>
 											{entry?.part_of_speech && <> · {entry.part_of_speech}</>}
+										</span>
+									)}
+									{entry?.translation && (
+										<span className="mt-0.5 block text-text">
+											Översättning: <span className="font-medium text-text">{entry.translation}</span>
 										</span>
 									)}
 									{Array.isArray(synonyms) && synonyms.length > 0 && (
@@ -201,10 +222,13 @@ type Anchor = { getBoundingClientRect(): DOMRect }
 export default function UnitText({
 	unit,
 	label,
+	language,
 	heading,
 	onChanged,
 }: {
 	unit: ReadingUnit
+	/** Utgåvans språk; nya ord som skapas från texten får det språket. */
+	language: string
 	/** Styckets nummer/etikett, visas dämpat ovanför texten. */
 	label: string | number
 	/** Visas i rubrikraden i stället för `label` (t.ex. utgåvans namn i mobilvyn); `null` visar ingenting. */
@@ -225,9 +249,16 @@ export default function UnitText({
 	const [partOfSpeech, setPartOfSpeech] = useState("")
 	const [modernForm, setModernForm] = useState("")
 	const [synonyms, setSynonyms] = useState("")
+	const [translation, setTranslation] = useState("")
+	// Grundformen när det markerade ordet är en böjd form eller stavningsvariant; tom när ordet själv är grundformen.
+	const [baseForm, setBaseForm] = useState("")
+	// Ett befintligt eget ord som det markerade ordet knyts till, i stället för att ett nytt skapas.
+	const [baseEntry, setBaseEntry] = useState<LexicalEntry | null>(null)
+	const [baseMatches, setBaseMatches] = useState<LexicalEntry[]>([])
+	const [formKind, setFormKind] = useState<LexicalFormKind>("inflection")
+	const [formInflection, setFormInflection] = useState("")
+	const [formUncertain, setFormUncertain] = useState(false)
 	const [glossaryIds, setGlossaryIds] = useState<Id[]>([])
-	// Ordlistorna ordet låg i när panelen öppnades, för att veta vad som ska läggas till och tas bort.
-	const [savedGlossaryIds, setSavedGlossaryIds] = useState<Id[]>([])
 	const [ownGlossaries, setOwnGlossaries] = useState<Glossary[] | null>(null)
 	const [formError, setFormError] = useState<string | null>(null)
 	const [submitting, setSubmitting] = useState(false)
@@ -239,6 +270,46 @@ export default function UnitText({
 
 	const pendingRef = useRef(pending)
 	pendingRef.current = pending
+
+	const resetBase = useCallback(() => {
+		setBaseForm("")
+		setBaseEntry(null)
+		setBaseMatches([])
+		setFormKind("inflection")
+		setFormInflection("")
+		setFormUncertain(false)
+	}, [])
+
+	/**
+	 * Knyter det markerade ordet till ett befintligt ord, med den sparade formen ifylld. `fill` fyller
+	 * också i ordets uppgifter; det behövs inte när panelen redan visar just det ordet.
+	 */
+	const chooseBaseEntry = useCallback((entry: LexicalEntry, text: string, fill = true) => {
+		setBaseEntry(entry)
+		setBaseForm(entry.lemma)
+		if (fill) {
+			const modern = entry.inflection_data?.modern_form
+			const synonymList = entry.inflection_data?.synonyms
+			setPartOfSpeech(entry.part_of_speech ?? "")
+			setTranslation(entry.translation ?? "")
+			setBody(entry.definition ?? "")
+			setModernForm(typeof modern === "string" ? modern : "")
+			setSynonyms(Array.isArray(synonymList) ? synonymList.join(", ") : "")
+			setGlossaryIds(entry.glossaries)
+		}
+		const form = entry.forms?.find(item => sameWord(item.form, text))
+		if (form) {
+			setFormKind(form.kind)
+			setFormInflection(form.inflection)
+			setFormUncertain(form.is_uncertain)
+		}
+	}, [])
+
+	function changeBaseForm(value: string) {
+		setBaseForm(value)
+		// Ett valt ord gäller bara så länge grundformen är dess lemma.
+		if (baseEntry && value.trim() !== baseEntry.lemma) setBaseEntry(null)
+	}
 
 	/** Öppnar panelen för en ny annotation på markeringen `range` (inom styckets text). */
 	const selectRange = useCallback((range: Range) => {
@@ -275,10 +346,20 @@ export default function UnitText({
 		setPartOfSpeech("")
 		setModernForm("")
 		setSynonyms("")
+		setTranslation("")
+		resetBase()
 		setGlossaryIds([])
-		setSavedGlossaryIds([])
 		setFormError(null)
-	}, [unit])
+		// Är ordet redan sparat som en form av ett eget ord, knyts det dit direkt.
+		const text = selectedText.trim()
+		listLexicalEntries({ forms__form__iexact: text })
+			.then(list => {
+				const own = list.find(entry => entry.owner === user?.id)
+				const current = pendingRef.current
+				if (own && current && !current.annotation && current.startOffset === start) chooseBaseEntry(own, text)
+			})
+			.catch(() => {})
+	}, [unit, user, resetBase, chooseBaseEntry])
 
 	const handleMouseUp = useCallback(() => {
 		if (!contentRef.current) return
@@ -325,11 +406,12 @@ export default function UnitText({
 			const entry = annotation.lexical_entry
 			const synonymList = entry?.inflection_data?.synonyms
 			const modern = entry?.inflection_data?.modern_form
+			const text = unit.content.slice(annotation.start_offset, annotation.end_offset)
 			rangeRef.current = anchor
 			setPending({
 				startOffset: annotation.start_offset,
 				endOffset: annotation.end_offset,
-				text: unit.content.slice(annotation.start_offset, annotation.end_offset),
+				text,
 				top: rect.top,
 				bottom: rect.bottom,
 				centerX: rect.left + rect.width / 2,
@@ -340,20 +422,23 @@ export default function UnitText({
 			setPartOfSpeech(entry?.part_of_speech ?? "")
 			setModernForm(typeof modern === "string" ? modern : "")
 			setSynonyms(Array.isArray(synonymList) ? synonymList.join(", ") : "")
+			setTranslation(entry?.translation ?? "")
+			resetBase()
+			// Ett ord vars lemma inte är det markerade ordet är knutet till en grundform.
+			if (entry && !sameWord(entry.lemma, text)) setBaseForm(entry.lemma)
 			setGlossaryIds([])
-			setSavedGlossaryIds([])
 			setFormError(null)
-			// Vilka av ens ordlistor ordet ligger i finns inte i läsvyns data; hämta ordet.
+			// Vilka av ens ordlistor ordet ligger i, och dess former, finns inte i läsvyns data; hämta ordet.
 			if (entry) {
 				getLexicalEntry(entry.id)
 					.then(full => {
+						if (!sameWord(full.lemma, text)) chooseBaseEntry(full, text, false)
 						setGlossaryIds(full.glossaries)
-						setSavedGlossaryIds(full.glossaries)
 					})
 					.catch(() => {})
 			}
 		},
-		[unit],
+		[unit, resetBase, chooseBaseEntry],
 	)
 
 	// Ens egna ordlistor, som en definition kan läggas i. Hämtas första gången panelen öppnas.
@@ -363,6 +448,21 @@ export default function UnitText({
 			.then(list => setOwnGlossaries(list.filter(glossary => glossary.owner === user.id)))
 			.catch(() => setOwnGlossaries([]))
 	}, [pending, ownGlossaries, user])
+
+	// Egna ord med den skrivna grundformen som lemma, att knyta det markerade ordet till.
+	// Svaren för en tidigare skriven grundform visas inte.
+	const pendingText = pending?.text
+	const shownBaseMatches = baseMatches.filter(match => match.lemma === baseForm.trim())
+	useEffect(() => {
+		const value = baseForm.trim()
+		if (!pendingText || kind !== "definition" || !value || sameWord(value, pendingText)) return
+		const timer = window.setTimeout(() => {
+			listLexicalEntries({ lemma: value })
+				.then(list => setBaseMatches(list.filter(entry => entry.owner === user?.id)))
+				.catch(() => setBaseMatches([]))
+		}, 300)
+		return () => window.clearTimeout(timer)
+	}, [baseForm, pendingText, kind, user])
 
 	useEffect(() => {
 		if (!pending) return
@@ -422,6 +522,7 @@ export default function UnitText({
 				// Ordets uppgifter, inklusive förklaringen, sparas på ordet så att ordlistor kan visa dem.
 				const entryData = {
 					part_of_speech: partOfSpeech.trim(),
+					translation: translation.trim(),
 					definition: body.trim(),
 					inflection_data: {
 						...(modernForm.trim() ? { modern_form: modernForm.trim() } : {}),
@@ -430,11 +531,34 @@ export default function UnitText({
 							: {}),
 					},
 				}
-				const entry = existing?.lexical_entry
-					? await updateLexicalEntry(existing.lexical_entry.id, entryData)
-					: await createLexicalEntry({ lemma: pending.text.trim(), language: "sv", ...entryData })
+				const text = pending.text.trim()
+				const base = baseForm.trim()
+				// Det markerade ordet är en böjd form eller variant av en annan grundform.
+				const linked = base !== "" && !sameWord(base, text)
+				const lemma = linked ? base : text
+				const existingEntry = existing?.lexical_entry ?? null
+				let entry: LexicalEntry
+				if (linked && baseEntry) {
+					entry = await updateLexicalEntry(baseEntry.id, entryData)
+				} else if (existingEntry && (sameWord(existingEntry.lemma, lemma) || sameWord(existingEntry.lemma, text))) {
+					// Ordet annotationen redan pekar på. Skapades det från det markerade ordet blir det nu grundformen.
+					entry = await updateLexicalEntry(existingEntry.id, { lemma, ...entryData })
+				} else {
+					entry = await createLexicalEntry({ lemma, language, ...entryData })
+				}
 				lexicalEntryId = entry.id
-				await setEntryGlossaries(entry.id, existing?.lexical_entry ? savedGlossaryIds : [], glossaryIds)
+				// Svaret anger vilka av ens ordlistor ordet ligger i nu, oavsett vilket ord det blev.
+				await setEntryGlossaries(entry.id, entry.glossaries, glossaryIds)
+				if (linked) {
+					const formData = {
+						kind: formKind,
+						inflection: formKind === "inflection" ? formInflection.trim() : "",
+						is_uncertain: formUncertain,
+					}
+					const known = entry.forms?.find(form => sameWord(form.form, text))
+					if (known) await updateLexicalForm(known.id, formData)
+					else await createLexicalForm({ entry: entry.id, form: text, unit: unit.id, ...formData })
+				}
 			}
 			// En definitions förklaring ligger på ordet; annotationen bär bara förankringen i texten.
 			const annotationBody = kind === "definition" ? "" : body.trim()
@@ -736,7 +860,7 @@ export default function UnitText({
 					}}>
 					<form
 						onSubmit={handleSubmit}
-						className="bg-surface border border-border rounded-md w-96 max-w-[80vw]"
+						className="bg-surface border border-border rounded-md w-96 max-w-[80vw] max-h-[85vh] overflow-y-auto"
 						onKeyDown={e => {
 							if (e.key === "Escape") setPending(null)
 						}}>
@@ -771,6 +895,79 @@ export default function UnitText({
 							</div>
 							{kind === "definition" && (
 								<>
+									<TextField
+										label="Grundform"
+										value={baseForm}
+										onChange={e => changeBaseForm(e.target.value)}
+										maxLength={255}
+										placeholder="Om ordet är böjt eller annorlunda stavat"
+									/>
+									{baseForm.trim() !== "" && !sameWord(baseForm, pending.text) && (
+										<>
+											{shownBaseMatches.length > 0 && (
+												<div className="flex flex-col gap-1.5">
+													<p className="font-body text-sm text-text">Knyt till ett av dina ord</p>
+													{shownBaseMatches.map(match => {
+														const active = baseEntry?.id === match.id
+														return (
+															<button
+																key={match.id}
+																type="button"
+																aria-pressed={active}
+																onClick={() =>
+																	active ? setBaseEntry(null) : chooseBaseEntry(match, pending.text)
+																}
+																className={[
+																	"rounded-md border px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer",
+																	active
+																		? "border-primary bg-primary text-bg"
+																		: "border-text/30 text-text hover:border-primary",
+																].join(" ")}>
+																<span className="font-semibold">{match.lemma}</span>
+																{(match.translation || match.definition) && (
+																	<span className={active ? "" : "text-text-muted"}>
+																		{" "}
+																		· {(match.translation || match.definition).slice(0, 60)}
+																	</span>
+																)}
+															</button>
+														)
+													})}
+												</div>
+											)}
+											<p className="text-xs text-text-muted">
+												{baseEntry
+													? `»${pending.text.trim()}» sparas som en form av ${baseEntry.lemma}.`
+													: `»${pending.text.trim()}» sparas som en form av ett nytt ord, ${baseForm.trim()}.`}
+											</p>
+											<div className="grid grid-cols-2 gap-2">
+												<SelectField
+													label="Typ"
+													value={formKind}
+													onChange={e => setFormKind(e.target.value as LexicalFormKind)}>
+													{(Object.keys(FORM_KIND_LABELS) as LexicalFormKind[]).map(value => (
+														<option key={value} value={value}>
+															{FORM_KIND_LABELS[value]}
+														</option>
+													))}
+												</SelectField>
+												{formKind === "inflection" && (
+													<TextField
+														label="Böjning"
+														value={formInflection}
+														onChange={e => setFormInflection(e.target.value)}
+														maxLength={255}
+														placeholder="pres. ind. 3 sg."
+													/>
+												)}
+											</div>
+											<CheckboxField
+												label="Osäker grundform"
+												checked={formUncertain}
+												onChange={e => setFormUncertain(e.target.checked)}
+											/>
+										</>
+									)}
 									<div className="grid grid-cols-2 gap-2">
 										<TextField
 											label="Modernt"
@@ -785,12 +982,21 @@ export default function UnitText({
 											placeholder="verb, substantiv…"
 										/>
 									</div>
-									<TextField
-										label="Synonymer"
-										value={synonyms}
-										onChange={e => setSynonyms(e.target.value)}
-										placeholder="Kommaseparerade"
-									/>
+									<div className="grid grid-cols-2 gap-2">
+										<TextField
+											label="Översättning"
+											value={translation}
+											onChange={e => setTranslation(e.target.value)}
+											maxLength={255}
+											placeholder="Kort glosa"
+										/>
+										<TextField
+											label="Synonymer"
+											value={synonyms}
+											onChange={e => setSynonyms(e.target.value)}
+											placeholder="Kommaseparerade"
+										/>
+									</div>
 								</>
 							)}
 							<TextAreaField

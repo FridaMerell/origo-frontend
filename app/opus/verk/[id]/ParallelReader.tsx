@@ -40,7 +40,7 @@ const BORDER_CLASS: Record<string, string> = {
 	foreground: "border-l-foreground/50 group-hover/row:border-l-foreground",
 }
 
-type Column = { versionId: Id; editionId: Id; title: string; color: string }
+type Column = { versionId: Id; editionId: Id; title: string; color: string; language: string }
 
 /** Utgåvans namn med dess färg, som i utgåvelistan ovanför läsvyn. */
 function EditionLabel({ column }: { column: Column }) {
@@ -269,7 +269,7 @@ function Cell({
 					{cell.units.map(unit => (
 						<div key={unit.id}>
 							<ChapterHeading unit={unit} />
-							<UnitText unit={unit} label={unit.label || unit.position} onChanged={onChanged} />
+							<UnitText unit={unit} label={unit.label || unit.position} language={column.language} onChanged={onChanged} />
 						</div>
 					))}
 				</div>
@@ -437,12 +437,16 @@ export default function ParallelReader({
 
 	const columns: Column[] = useMemo(
 		() =>
-			matrix.versions.map((version, index) => ({
-				versionId: version.id,
-				editionId: version.text_version,
-				title: editions.find(edition => edition.id === version.text_version)?.title ?? version.label,
-				color: COLUMN_COLORS[index] ?? "foreground",
-			})),
+			matrix.versions.map((version, index) => {
+				const edition = editions.find(edition => edition.id === version.text_version)
+				return {
+					versionId: version.id,
+					editionId: version.text_version,
+					title: edition?.title ?? version.label,
+					color: COLUMN_COLORS[index] ?? "foreground",
+					language: edition?.language ?? "sv",
+				}
+			}),
 		[matrix.versions, editions],
 	)
 
@@ -831,6 +835,7 @@ export default function ParallelReader({
 												<UnitText
 													unit={unit}
 													label={unit.label || unit.position}
+													language={column.language}
 													heading={unitIndex === 0 ? <EditionLabel column={column} /> : null}
 													onChanged={reload}
 												/>

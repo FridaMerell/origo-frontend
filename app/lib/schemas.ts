@@ -410,6 +410,7 @@ export type FluxDocumentFormValues = z.infer<typeof fluxDocumentFormSchema>
 export const apsisPostFormSchema = z.object({
   name: z.string().optional(),
   geolocation: z.string().optional(),
+  svenska_kyrkan_place_id: z.string().optional(),
   has_apsis: z.boolean(),
 })
 export type ApsisPostFormValues = z.infer<typeof apsisPostFormSchema>

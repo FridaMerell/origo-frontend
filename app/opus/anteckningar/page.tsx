@@ -1,6 +1,9 @@
 import { Metadata } from "next"
-import { listAllAnnotations } from "../_actions/annotation-actions"
+import type { AnnotationPage } from "@/app/lib/dal/opus"
+import { listAnnotations } from "../_actions/annotation-actions"
 import AnnotationsView from "./AnnotationsView"
+
+const EMPTY: AnnotationPage = { results: [], count: 0, next: null, previous: null, page_size: 50, total: 0, works: [], kinds: {} }
 
 export const metadata: Metadata = {
 	title: "Anteckningar | Origo Opus",
@@ -8,6 +11,6 @@ export const metadata: Metadata = {
 }
 
 export default async function AnnotationsPage() {
-	const annotations = await listAllAnnotations().catch(() => [])
-	return <AnnotationsView annotations={annotations} />
+	const firstPage = await listAnnotations().catch(() => EMPTY)
+	return <AnnotationsView firstPage={firstPage} />
 }

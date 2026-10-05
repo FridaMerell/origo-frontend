@@ -1,12 +1,12 @@
 "use client"
 
-import { useMemo, useState, type FormEvent } from "react"
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { BookOpenIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
-import type { Annotation, AnnotationKind, Id } from "@/app/lib/dal/opus"
+import type { Annotation, AnnotationKind, AnnotationOrdering, AnnotationPage, Id } from "@/app/lib/dal/opus"
 import { useUser } from "@/app/lib/user-context"
-import { deleteAnnotation, updateAnnotation } from "../_actions/annotation-actions"
+import { deleteAnnotation, listAnnotations, updateAnnotation } from "../_actions/annotation-actions"
 import { updateLexicalEntry } from "../_actions/lexical-entry-actions"
 import { SelectField, TextAreaField, TextField } from "../forms/Fields/Fields"
 import Divider from "../ui/Divider"
@@ -29,23 +29,14 @@ const FILTERS: { value: AnnotationKind | null; label: string }[] = [
 	{ value: "reference", label: "Hänvisningar" },
 ]
 
-type SortOrder = "text" | "updated" | "alphabetical"
-
-const SORTS: { value: SortOrder; label: string }[] = [
+/** Sorteringen gäller inom ett verk och görs, liksom filtren och sökningen, i API:t. */
+const SORTS: { value: AnnotationOrdering; label: string }[] = [
 	{ value: "text", label: "Ordning i texten" },
 	{ value: "updated", label: "Senast ändrad" },
 	{ value: "alphabetical", label: "Alfabetiskt" },
 ]
 
-/** Sorterar inom ett verk. API:t levererar redan textens ordning (stycke, position). */
-function sortAnnotations(annotations: Annotation[], order: SortOrder) {
-	if (order === "updated") return [...annotations].sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-	if (order === "alphabetical") {
-		const key = (annotation: Annotation) => annotation.target_text || annotation.excerpt
-		return [...annotations].sort((a, b) => key(a).localeCompare(key(b), "sv"))
-	}
-	return annotations
-}
+const PAGER_BUTTON = `rounded-sm font-display italic whitespace-nowrap hover:text-text cursor-pointer ${FOCUS}`
 
 function modernFormOf(annotation: Annotation) {
 	const value = annotation.entry?.inflection_data?.modern_form
@@ -65,21 +56,6 @@ function explanationOf(annotation: Annotation) {
 /** Läsvyn öppnad vid annotationens stycke (se `enhet` i app/opus/verk/[id]/page.tsx). */
 function readingHref(annotation: Annotation) {
 	return `/verk/${annotation.work.id}?enhet=${annotation.unit}`
-}
-
-function matches(annotation: Annotation, query: string) {
-	const haystack = [
-		annotation.target_text,
-		explanationOf(annotation),
-		modernFormOf(annotation),
-		...synonymsOf(annotation),
-		annotation.work.title,
-		annotation.edition_title,
-		annotation.chapter?.label ?? "",
-	]
-		.join(" ")
-		.toLocaleLowerCase("sv")
-	return haystack.includes(query.toLocaleLowerCase("sv"))
 }
 
 function EditForm({
@@ -269,65 +245,105 @@ function AnnotationRow({
 }
 
 /** Alla användarens anteckningar, hänvisningar och definitioner som en kompakt lista per verk. */
-export default function AnnotationsView({ annotations }: { annotations: Annotation[] }) {
+export default function AnnotationsView({ firstPage }: { firstPage: AnnotationPage }) {
 	const user = useUser()
-	const [items, setItems] = useState(annotations)
 	const [kind, setKind] = useState<AnnotationKind | null>(null)
 	const [workId, setWorkId] = useState<Id | null>(null)
-	const [order, setOrder] = useState<SortOrder>("text")
+	const [order, setOrder] = useState<AnnotationOrdering>("text")
 	const [query, setQuery] = useState("")
+	// Sökningen skickas först när man slutat skriva.
+	const [search, setSearch] = useState("")
+	const [page, setPage] = useState(1)
+	// Räknas upp när sidan ska hämtas om, efter att något tagits bort.
+	const [version, setVersion] = useState(0)
 
-	const works = useMemo(() => {
-		const byId = new Map<Id, string>()
-		for (const annotation of items) byId.set(annotation.work.id, annotation.work.title)
-		return [...byId.entries()]
-			.map(([id, title]) => ({ id, title }))
-			.sort((a, b) => a.title.localeCompare(b.title, "sv"))
-	}, [items])
+	const requestKey = JSON.stringify([page, workId, kind, order, search, version])
+	const loadedKey = useRef(requestKey)
+	// Förra sidan står kvar tills nästa har kommit, så att listan inte blinkar.
+	const [loaded, setLoaded] = useState<{ key: string; data: AnnotationPage; error: string | null }>({
+		key: requestKey,
+		data: firstPage,
+		error: null,
+	})
+	const { data, error } = loaded
+	const loading = loaded.key !== requestKey
+
+	useEffect(() => {
+		const timeout = setTimeout(() => {
+			setSearch(query.trim())
+			setPage(1)
+		}, 300)
+		return () => clearTimeout(timeout)
+	}, [query])
+
+	useEffect(() => {
+		if (loadedKey.current === requestKey) return
+		let active = true
+		listAnnotations({ page, work: workId, kind, ordering: order, search })
+			.then(result => {
+				if (!active) return
+				loadedKey.current = requestKey
+				setLoaded({ key: requestKey, data: result, error: null })
+			})
+			.catch(() => {
+				if (active) setLoaded(current => ({ ...current, key: requestKey, error: "Listan kunde inte hämtas." }))
+			})
+		return () => {
+			active = false
+		}
+	}, [requestKey, page, workId, kind, order, search])
 
 	// Antalen per typ följer valt verk, så att filtren visar vad som faktiskt finns att se.
-	const counts = useMemo(() => {
-		const byKind = new Map<string, number>()
-		for (const annotation of items) {
-			if (workId !== null && annotation.work.id !== workId) continue
-			byKind.set(annotation.kind, (byKind.get(annotation.kind) ?? 0) + 1)
-		}
-		return byKind
-	}, [items, workId])
-	const total = [...counts.values()].reduce((sum, count) => sum + count, 0)
+	const total = Object.values(data.kinds).reduce((sum, count) => sum + count, 0)
+	const pageCount = Math.max(1, Math.ceil(data.count / data.page_size))
 
+	// API:t ordnar per verk, så sidans rader kan grupperas i den ordning de kommer.
 	const groups = useMemo(() => {
-		const trimmed = query.trim()
 		const byWork = new Map<Id, { title: string; annotations: Annotation[] }>()
-		for (const annotation of items) {
-			if (workId !== null && annotation.work.id !== workId) continue
-			if (kind && annotation.kind !== kind) continue
-			if (trimmed && !matches(annotation, trimmed)) continue
+		for (const annotation of data.results) {
 			const group = byWork.get(annotation.work.id) ?? { title: annotation.work.title, annotations: [] }
 			group.annotations.push(annotation)
 			byWork.set(annotation.work.id, group)
 		}
-		return [...byWork.entries()]
-			.map(([id, group]) => ({ workId: id, title: group.title, annotations: sortAnnotations(group.annotations, order) }))
-			.sort((a, b) => a.title.localeCompare(b.title, "sv"))
-	}, [items, workId, kind, order, query])
+		return [...byWork.entries()].map(([id, group]) => ({ workId: id, ...group }))
+	}, [data.results])
 
-	const shown = groups.reduce((sum, group) => sum + group.annotations.length, 0)
-	const filtered = kind !== null || workId !== null || query.trim() !== ""
+	const filtered = kind !== null || workId !== null || search !== ""
+
+	function goToPage(next: number) {
+		setPage(next)
+		window.scrollTo({ top: 0 })
+	}
+
+	function handleChanged(saved: Annotation) {
+		setLoaded(current => ({
+			...current,
+			data: { ...current.data, results: current.data.results.map(item => (item.id === saved.id ? saved : item)) },
+		}))
+	}
+
+	/** Hämtar om sidan, så att nästa sidas rader flyttar upp och antalen stämmer. */
+	function handleRemoved() {
+		if (data.results.length === 1 && page > 1) setPage(page - 1)
+		else setVersion(current => current + 1)
+	}
 
 	return (
 		<>
 			<section className='flex flex-col gap-5 md:flex-row md:items-end md:justify-between'>
 				<h1 className='font-display text-3xl font-bold text-text'>Anteckningar</h1>
-				{items.length > 0 && (
+				{data.total > 0 && (
 					<div className='grid gap-3 sm:grid-cols-3 md:w-3xl'>
 						<SelectField
 							label='Verk'
 							hideLabel
 							value={workId ?? ""}
-							onChange={event => setWorkId(event.target.value ? Number(event.target.value) : null)}>
+							onChange={event => {
+								setWorkId(event.target.value ? Number(event.target.value) : null)
+								setPage(1)
+							}}>
 							<option value=''>Alla verk</option>
-							{works.map(work => (
+							{data.works.map(work => (
 								<option key={work.id} value={work.id}>
 									{work.title}
 								</option>
@@ -337,7 +353,10 @@ export default function AnnotationsView({ annotations }: { annotations: Annotati
 							label='Sortering'
 							hideLabel
 							value={order}
-							onChange={event => setOrder(event.target.value as SortOrder)}>
+							onChange={event => {
+								setOrder(event.target.value as AnnotationOrdering)
+								setPage(1)
+							}}>
 							{SORTS.map(sort => (
 								<option key={sort.value} value={sort.value}>
 									{sort.label}
@@ -355,18 +374,21 @@ export default function AnnotationsView({ annotations }: { annotations: Annotati
 					</div>
 				)}
 			</section>
-			{items.length > 0 && (
+			{data.total > 0 && (
 				<div className='mt-4 flex flex-wrap gap-1.5' role='group' aria-label='Visa typ'>
 					{FILTERS.map(option => {
 						const active = option.value === kind
-						const count = option.value ? counts.get(option.value) ?? 0 : total
+						const count = option.value ? data.kinds[option.value] ?? 0 : total
 						if (option.value && count === 0 && !active) return null
 						return (
 							<button
 								key={option.label}
 								type='button'
 								aria-pressed={active}
-								onClick={() => setKind(option.value)}
+								onClick={() => {
+									setKind(option.value)
+									setPage(1)
+								}}
 								className={[
 									"rounded-md border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
 									FOCUS,
@@ -382,31 +404,37 @@ export default function AnnotationsView({ annotations }: { annotations: Annotati
 			)}
 			<Divider>
 				<span className='font-display italic oldstyle-nums'>
-					{items.length === 0
+					{data.total === 0
 						? "Inga anteckningar"
 						: filtered
-							? `${shown} av ${items.length}`
-							: `${items.length} i ${groups.length} verk`}
+							? `${data.count} av ${data.total}`
+							: `${data.total} i ${data.works.length} verk`}
 				</span>
 			</Divider>
 
-			{items.length === 0 ? (
+			{error && (
+				<p role='alert' className='mt-6 text-center text-sm text-danger'>
+					{error}
+				</p>
+			)}
+			{data.total === 0 ? (
 				<p className='my-10 text-center font-display text-lg text-text-muted'>
 					Inga anteckningar än. Öppna en bok och markera ett ord eller en fras.{" "}
 					<Link href='/' className={`rounded-sm text-primary underline underline-offset-4 hover:text-text ${FOCUS}`}>
 						Till bokhyllan
 					</Link>
 				</p>
-			) : shown === 0 ? (
+			) : data.count === 0 ? (
 				<p className='my-10 text-center font-display text-lg italic text-text-muted'>Inget matchar.</p>
 			) : (
-				<div className='my-6 flex flex-col gap-8'>
+				<div
+					aria-busy={loading}
+					className={`my-6 flex flex-col gap-8 transition-opacity ${loading ? "opacity-60" : ""}`}>
 					{groups.map(group => (
 						<section key={group.workId} aria-labelledby={`work-${group.workId}`}>
 							<div className='flex items-baseline justify-between gap-4 border-b border-text/40 pb-1'>
 								<h2 id={`work-${group.workId}`} className='font-display text-xl font-semibold text-text'>
-									{group.title}{" "}
-									<span className='font-normal text-text-muted oldstyle-nums'>{group.annotations.length}</span>
+									{group.title}
 								</h2>
 								<Link
 									href={`/verk/${group.workId}`}
@@ -425,15 +453,36 @@ export default function AnnotationsView({ annotations }: { annotations: Annotati
 											annotation.entry.owner === null ||
 											annotation.entry.owner === user?.id
 										}
-										onChanged={saved =>
-											setItems(current => current.map(item => (item.id === saved.id ? saved : item)))
-										}
-										onRemoved={id => setItems(current => current.filter(item => item.id !== id))}
+										onChanged={handleChanged}
+										onRemoved={handleRemoved}
 									/>
 								))}
 							</ul>
 						</section>
 					))}
+					{pageCount > 1 && (
+						<nav
+							aria-label='Sidor med anteckningar'
+							className='grid grid-cols-[1fr_auto_1fr] items-baseline gap-x-4 text-sm text-text-muted'>
+							<span>
+								{page > 1 && (
+									<button type='button' onClick={() => goToPage(page - 1)} className={PAGER_BUTTON}>
+										Föregående
+									</button>
+								)}
+							</span>
+							<span className='font-display italic oldstyle-nums'>
+								Sida {page} av {pageCount}
+							</span>
+							<span className='justify-self-end'>
+								{page < pageCount && (
+									<button type='button' onClick={() => goToPage(page + 1)} className={PAGER_BUTTON}>
+										Nästa
+									</button>
+								)}
+							</span>
+						</nav>
+					)}
 				</div>
 			)}
 		</>

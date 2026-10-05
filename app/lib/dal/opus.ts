@@ -329,11 +329,15 @@ export type LexicalEntry = {
   part_of_speech: string;
   gender: string;
   inflection_data: Record<string, unknown>;
+  /** Kort översättning som visas i glosförhör; `definition` är den längre förklaringen. */
+  translation: string;
   definition: string;
   /** Null för poster från innan poster hade ägare. */
   owner: Nullable<User["id"]>;
   /** Den inloggade användarens egna ordlistor som innehåller ordet. */
   glossaries: Id[];
+  /** Stavningsvarianter och böjda former som hör till ordet. */
+  forms: LexicalForm[];
 };
 
 export type LexicalEntryCreate = {
@@ -342,10 +346,49 @@ export type LexicalEntryCreate = {
   part_of_speech?: string;
   gender?: string;
   inflection_data?: Record<string, unknown>;
+  translation?: string;
   definition?: string;
 };
 
 export type LexicalEntryUpdate = Partial<LexicalEntryCreate>;
+
+/** GET /lexical-entries/languages/: språken bland användarens egna ord. */
+export type LexicalLanguage = { language: LanguageCode; count: number };
+
+export type LexicalFormKind = "spelling" | "inflection";
+
+/** En stavningsvariant eller böjd form knuten till ett ords grundform. */
+export type LexicalForm = {
+  id: Id;
+  entry: Id;
+  form: string;
+  kind: LexicalFormKind;
+  /** Fri böjningsbeskrivning, t.ex. "pres. ind. 3 sg.". */
+  inflection: string;
+  /** Kopplingen till grundformen är osäker. */
+  is_uncertain: boolean;
+  /** Textstället där formen hittades. */
+  unit: Nullable<Id>;
+  /** Var textstället ligger; null utan textställe eller i någon annans privata verk. */
+  source: Nullable<{
+    work: Pick<Work, "id" | "title">;
+    edition_title: string;
+    chapter: Nullable<{ id: Id; label: string }>;
+  }>;
+  created_at: ISODateTime;
+  updated_at: ISODateTime;
+};
+
+export type LexicalFormCreate = {
+  entry: Id;
+  form: string;
+  kind?: LexicalFormKind;
+  inflection?: string;
+  is_uncertain?: boolean;
+  unit?: Nullable<Id>;
+};
+
+export type LexicalFormUpdate = Partial<LexicalFormCreate>;
 
 /** En ordlista: offentlig, eller privat för ägaren, som ett verk. */
 export type Glossary = {
@@ -393,7 +436,7 @@ export type Annotation = {
   /** The unit's text, cut at 280 characters. */
   excerpt: string;
   /** The linked lexical entry's data. */
-  entry: Nullable<Omit<LexicalEntry, "gender" | "glossaries">>;
+  entry: Nullable<Omit<LexicalEntry, "gender" | "glossaries" | "forms">>;
 };
 
 export type AnnotationCreate = {
@@ -408,6 +451,24 @@ export type AnnotationCreate = {
 
 export type AnnotationUpdate = Partial<AnnotationCreate>;
 
+export type AnnotationOrdering = "text" | "updated" | "alphabetical";
+
+/** GET /api/opus/annotations/: en sida, plus underlaget till listans filter. */
+export type AnnotationPage = {
+  results: Annotation[];
+  /** Antal som matchar filtren, över alla sidor. */
+  count: number;
+  next: Nullable<string>;
+  previous: Nullable<string>;
+  page_size: number;
+  /** Alla användarens annotationer, ofiltrerat. */
+  total: number;
+  /** Verken som har annotationer, i titelordning. */
+  works: Pick<Work, "id" | "title">[];
+  /** Antal per typ, i det valda verket. */
+  kinds: Record<AnnotationKind, number>;
+};
+
 /* Annotationer inbäddade i GET /api/opus/status/ */
 
 export type ReadingAnnotation = {
@@ -416,7 +477,7 @@ export type ReadingAnnotation = {
   start_offset: Nullable<number>;
   end_offset: Nullable<number>;
   body: string;
-  lexical_entry: Nullable<Omit<LexicalEntry, "owner" | "glossaries">>;
+  lexical_entry: Nullable<Omit<LexicalEntry, "owner" | "glossaries" | "forms">>;
 };
 
 /* ============================================================================
@@ -773,6 +834,13 @@ export type AnnotationFilters = {
   lexical_entry?: string;
   lexical_entry__isnull?: string;
   kind?: string;
+  work?: string;
+  /** Söker i ordet, förklaringen, modern form, synonymer, verk, utgåva och kapitel. */
+  search?: string;
+  /** Ordning inom ett verk; listan är alltid ordnad per verk först. */
+  ordering?: AnnotationOrdering;
+  page?: string;
+  page_size?: string;
 };
 
 export type LexicalEntryFilters = {
@@ -783,6 +851,18 @@ export type LexicalEntryFilters = {
   lemma__icontains?: string;
   owner?: string;
   glossaries?: string;
+  /** Slår upp grundformen från en stavningsvariant eller böjd form. */
+  forms__form__iexact?: string;
+};
+
+export type LexicalFormFilters = {
+  entry?: string;
+  form?: string;
+  form__iexact?: string;
+  form__icontains?: string;
+  kind?: string;
+  is_uncertain?: string;
+  unit?: string;
 };
 
 export type GlossaryFilters = {

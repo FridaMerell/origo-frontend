@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/components/ui/Button";
 import { Checkbox, Field, fieldInputClass } from "@/app/components/form/Field";
-import { LockIcon } from "lucide-react";
 import { FileUpload } from "@/app/components/ui/FileUpload";
 import { useUploadedFiles } from "@/app/components/form/useUploadedFiles";
 import { useUser } from "@/app/lib/user-context";
 import { createApsisPost } from "@/app/actions/apsis";
+import { ChurchPicker, churchDetail } from "@/app/apsis/ui/church-picker";
+import { Sign } from "@/app/apsis/ui/Sign";
+import type { ApsisPlace } from "@/app/lib/dal";
 import { PlacePicker } from "@/app/tempus/observationer/quick-observation/place-picker";
 import { parseLatLon } from "@/app/tempus/formatters";
 
@@ -23,18 +25,18 @@ export default function UploadView() {
   const uploadedFiles = useUploadedFiles();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // The church comes from Svenska kyrkan; name and position are only typed by
+  // hand for a church it does not list.
+  const [place, setPlace] = useState<ApsisPlace | null>(null);
+  const [manual, setManual] = useState(false);
 
   if (!user) {
     return (
-      <div className="mx-auto flex max-w-[420px] flex-col items-center gap-4 px-6 pt-16 pb-12 text-center sm:px-12">
-        <LockIcon size={26} className="text-text-muted" />
-        <p className="text-sm text-text-muted">
-          Logga in för att lägga till egna absidfoton i samlingen.
-        </p>
-        <Button className="whitespace-nowrap" onClick={() => router.push("/login")}>
+      <Sign title="Ladda upp" lead="Logga in för att lägga till egna absidfoton i samlingen.">
+        <Button className="apsis-press whitespace-nowrap" rounded="rounded-none" onClick={() => router.push("/login")}>
           Logga in
         </Button>
-      </div>
+      </Sign>
     );
   }
 
@@ -45,7 +47,13 @@ export default function UploadView() {
       setError("Välj en bild att ladda upp.");
       return;
     }
-    const coordinates = parseLatLon(lat, lon);
+    if (!place && !manual) {
+      setError("Välj en kyrka.");
+      return;
+    }
+    const coordinates = place
+      ? { lat: place.latitude, lon: place.longitude }
+      : parseLatLon(lat, lon);
     if ("error" in coordinates) {
       setError(coordinates.error);
       return;
@@ -53,8 +61,9 @@ export default function UploadView() {
     setSubmitting(true);
     const result = await createApsisPost(
       {
-        name,
+        name: place ? place.name : name,
         has_apsis: hasApsis,
+        svenska_kyrkan_place_id: place?.id ?? "",
         geolocation:
           coordinates.lat === null || coordinates.lon === null
             ? ""
@@ -78,33 +87,54 @@ export default function UploadView() {
   };
 
   return (
-    <form className="mx-auto flex max-w-[520px] flex-col gap-4 px-6 pt-7 pb-12 sm:px-12" onSubmit={onSubmit}>
-      <Field label="Kyrkans namn (valfritt)">
-        <input
-          type="text"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="T.ex. Lunds Domkyrka"
-          className={fieldInputClass}
-        />
-      </Field>
+    <Sign title="Ladda upp" lead="Lägg till ett fotografi av en kyrka i samlingen, med eller utan absid.">
+        <form className="flex max-w-prose flex-col gap-4" onSubmit={onSubmit}>
+      <ChurchPicker
+        selected={place ? { name: place.name, detail: churchDetail(place) } : null}
+        onSelect={(hit) => {
+          setPlace(hit);
+          setManual(false);
+          setError(null);
+        }}
+        onClear={() => setPlace(null)}
+      />
+
+      {!place && !manual && (
+        <button type="button" onClick={() => setManual(true)} className="-mt-2 self-start text-sm text-text-muted underline underline-offset-2 hover:text-text">
+          Kyrkan finns inte hos Svenska kyrkan
+        </button>
+      )}
+
+      {!place && manual && (
+        <>
+          <Field label="Kyrkans namn">
+            <input
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="T.ex. San Martín, Fuentidueña"
+              className={fieldInputClass}
+            />
+          </Field>
+
+          <PlacePicker
+            lat={lat}
+            lon={lon}
+            legend="Plats"
+            onChange={({ lat: nextLat, lon: nextLon }) => {
+              setLat(nextLat);
+              setLon(nextLon);
+            }}
+            onClearError={() => setError(null)}
+            onError={setError}
+          />
+        </>
+      )}
 
       <Checkbox
         label="Kyrkan har en absid"
         checked={hasApsis}
         onChange={(event) => setHasApsis(event.target.checked)}
-      />
-
-      <PlacePicker
-        lat={lat}
-        lon={lon}
-        legend="Plats"
-        onChange={({ lat: nextLat, lon: nextLon }) => {
-          setLat(nextLat);
-          setLon(nextLon);
-        }}
-        onClearError={() => setError(null)}
-        onError={setError}
       />
 
       <div className="flex flex-col gap-1 text-sm">
@@ -121,9 +151,10 @@ export default function UploadView() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <Button type="submit" className="w-fit whitespace-nowrap" disabled={submitting}>
+      <Button type="submit" className="apsis-press w-fit whitespace-nowrap" rounded="rounded-none" disabled={submitting}>
         {submitting ? "Laddar upp..." : "Ladda upp"}
       </Button>
-    </form>
+        </form>
+    </Sign>
   );
 }

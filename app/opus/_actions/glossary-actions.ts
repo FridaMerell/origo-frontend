@@ -1,6 +1,6 @@
 "use server"
 import { glossaryApi } from "./actions"
-import type { Glossary, GlossaryCreate, GlossaryDetail, GlossaryUpdate, Id } from "@/app/lib/dal/opus"
+import type { Glossary, GlossaryCreate, GlossaryDetail, GlossaryUpdate, Id, LexicalEntry } from "@/app/lib/dal/opus"
 
 /** Alla ordlistor användaren ser: egna (även privata) och andras offentliga. */
 export async function listGlossaries(): Promise<Glossary[]> {
@@ -29,4 +29,9 @@ export async function addGlossaryEntry(id: Id, entryId: Id): Promise<void> {
 
 export async function removeGlossaryEntry(id: Id, entryId: Id): Promise<void> {
 	return glossaryApi.removeEntry(id, entryId)
+}
+
+/** Ett nytt slumpat urval ord ur ordlistan för ett glosförhör. */
+export async function getGlossaryQuiz(id: Id, count: number): Promise<LexicalEntry[]> {
+	return glossaryApi.quiz(id, count)
 }

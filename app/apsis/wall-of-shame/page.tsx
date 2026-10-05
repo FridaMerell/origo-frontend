@@ -1,33 +1,53 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { useApsisPosts } from "@/app/apsis/_state/apsis-context";
+import { fileProxyUrl } from "@/app/lib/files";
+import { ApseDrawing } from "@/app/apsis/ui/ApseDrawing";
+import { Sign, signBodyClass, signPanelClass, signPrintClass } from "@/app/apsis/ui/Sign";
 
+/**
+ * The churches without an apse, as a sign like the start page: three columns
+ * of panels under a rule each, a photo in the same format every time with the
+ * church's name under it.
+ */
 export default function WallOfShamePage() {
   const absentApsisPosts = useApsisPosts().filter((post) => !post.has_apsis);
 
   return (
-    <div className="container py-6 sm:py-10">
-      <main className="border border-border bg-surface px-6 py-8 sm:px-10 sm:py-12">
-        <h1 className="font-display text-4xl font-semibold text-text sm:text-5xl">Wall of shame</h1>
-        <p className="mt-5 max-w-2xl text-base leading-7 text-text-muted">Det sägs att varje gång en kyrka byggs utan en absid gråter Jesubarnet. Här hamnar kyrkorna som fått även oss att fälla tårar.</p>
-
+    <Sign
+      title="Wall of shame"
+      figure={<ApseDrawing withApse={false} className="w-full" />}
+      lead="Det sägs att varje gång en kyrka byggs utan en absid gråter Jesubarnet. Här hamnar kyrkorna som fått även oss att fälla tårar."
+    >
         {absentApsisPosts.length === 0 ? (
-          <p className="mt-8 border-y border-border py-8 text-text-muted">Inga kyrkor på listan ännu.</p>
+          <p className={signBodyClass}>Inga kyrkor på listan ännu.</p>
         ) : (
-          <ol className="mt-8 divide-y divide-border border-y border-border">
-            {absentApsisPosts.map((church, index) => (
-              <li key={church.id} className="grid gap-2 py-5 sm:grid-cols-[3rem_1fr] sm:gap-5">
-                <span className="text-sm text-text-faint">{index + 1}.</span>
-                <div>
-                  <h2 className="font-display text-xl font-semibold text-text">{church.name || "Okänd kyrka"}</h2>
-                  {church.geolocation && <p className="mt-1 text-sm text-text-muted">{church.geolocation}</p>}
-                  {church.content && church.content !== church.name && <p className="mt-2 text-base leading-7 text-text-muted">{church.content}</p>}
-                </div>
-              </li>
-            ))}
-          </ol>
+          <div className="grid items-start gap-x-8 gap-y-10 lg:grid-cols-3">
+            {absentApsisPosts.map((church) => {
+              const image = church.files?.[0];
+              const ownComment = church.content && church.content !== church.name && church.content !== "Absidfoto" ? church.content : "";
+
+              return (
+                <section key={church.id} aria-labelledby={`kyrka-${church.id}`} className={signPanelClass}>
+                  <Link href={`/kyrka/${church.id}`} className={`apsis-photo block ${signPrintClass}`} aria-hidden="true" tabIndex={-1}>
+                    {image ? (
+                      <Image src={fileProxyUrl(image.url)} alt="" width={880} height={660} sizes="(min-width: 1024px) 33vw, 100vw" className="aspect-[4/3] w-full object-cover object-[50%_70%]" />
+                    ) : (
+                      <div className="aspect-[4/3] w-full border border-border bg-surface-2" />
+                    )}
+                  </Link>
+                  <h2 id={`kyrka-${church.id}`} className="mt-4 font-display text-xl font-semibold leading-8 text-text">
+                    <Link href={`/kyrka/${church.id}`} className="apsis-link">{church.name || "Okänd kyrka"}</Link>
+                  </h2>
+                  {church.geolocation && <p className={`italic ${signBodyClass}`}>{church.geolocation}</p>}
+                  {ownComment && <p className={`mt-3 ${signBodyClass}`}>{ownComment}</p>}
+                </section>
+              );
+            })}
+          </div>
         )}
-      </main>
-    </div>
+    </Sign>
   );
 }

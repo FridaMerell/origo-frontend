@@ -3,8 +3,15 @@
 import { useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Button } from "@/app/components/ui/Button"
-import type { GlossaryDetail, LexicalEntry, LexicalEntryCreate } from "@/app/lib/dal/opus"
+import { Button, LinkButton } from "@/app/components/ui/Button"
+import type {
+	GlossaryDetail,
+	LexicalEntry,
+	LexicalEntryCreate,
+	LexicalForm,
+	LexicalFormCreate,
+	LexicalFormKind,
+} from "@/app/lib/dal/opus"
 import { useUser } from "@/app/lib/user-context"
 import {
 	addGlossaryEntry,
@@ -14,9 +21,11 @@ import {
 	updateGlossary,
 } from "../../_actions/glossary-actions"
 import { createLexicalEntry, updateLexicalEntry } from "../../_actions/lexical-entry-actions"
-import { TextAreaField, TextField } from "../../forms/Fields/Fields"
+import { createLexicalForm, deleteLexicalForm, updateLexicalForm } from "../../_actions/lexical-form-actions"
+import { CheckboxField, SelectField, TextAreaField, TextField } from "../../forms/Fields/Fields"
 import Divider from "../../ui/Divider"
 import GlossaryForm from "../GlossaryForm"
+import { describeForm, FORM_KIND_LABELS } from "../lexical-forms"
 
 /** Synlig fokusmarkering för tangentbordsnavigering, samma som Opus formulärfält. */
 const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
@@ -34,7 +43,15 @@ function synonymsOf(entry: LexicalEntry) {
 }
 
 function matches(entry: LexicalEntry, query: string) {
-	const haystack = [entry.lemma, entry.definition, entry.part_of_speech, modernFormOf(entry), ...synonymsOf(entry)]
+	const haystack = [
+		entry.lemma,
+		entry.translation,
+		entry.definition,
+		entry.part_of_speech,
+		modernFormOf(entry),
+		...synonymsOf(entry),
+		...(entry.forms ?? []).map(form => form.form),
+	]
 		.join(" ")
 		.toLocaleLowerCase("sv")
 	return haystack.includes(query.toLocaleLowerCase("sv"))
@@ -56,7 +73,9 @@ function EntryForm({
 	const [language, setLanguage] = useState(entry?.language ?? "sv")
 	const [modernForm, setModernForm] = useState(entry ? modernFormOf(entry) : "")
 	const [partOfSpeech, setPartOfSpeech] = useState(entry?.part_of_speech ?? "")
+	const [gender, setGender] = useState(entry?.gender ?? "")
 	const [synonyms, setSynonyms] = useState(entry ? synonymsOf(entry).join(", ") : "")
+	const [translation, setTranslation] = useState(entry?.translation ?? "")
 	const [definition, setDefinition] = useState(entry?.definition ?? "")
 	const [pending, setPending] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -71,6 +90,8 @@ function EntryForm({
 				lemma: lemma.trim(),
 				language: language.trim() || "sv",
 				part_of_speech: partOfSpeech.trim(),
+				gender: gender.trim(),
+				translation: translation.trim(),
 				definition: definition.trim(),
 				inflection_data: {
 					// Övriga uppgifter i inflection_data (från andra verktyg) behålls.
@@ -99,7 +120,14 @@ function EntryForm({
 				/>
 				<TextField label='Språk' value={language} onChange={event => setLanguage(event.target.value)} maxLength={16} />
 			</div>
-			<div className='grid gap-3 sm:grid-cols-2'>
+			<TextField
+				label='Översättning'
+				value={translation}
+				onChange={event => setTranslation(event.target.value)}
+				maxLength={255}
+				placeholder='Kort glosa, visas i glosförhör'
+			/>
+			<div className='grid gap-3 sm:grid-cols-3'>
 				<TextField
 					label='Modernt'
 					value={modernForm}
@@ -112,6 +140,13 @@ function EntryForm({
 					onChange={event => setPartOfSpeech(event.target.value)}
 					maxLength={100}
 					placeholder='verb, substantiv…'
+				/>
+				<TextField
+					label='Genus'
+					value={gender}
+					onChange={event => setGender(event.target.value)}
+					maxLength={50}
+					placeholder='maskulinum, femininum…'
 				/>
 			</div>
 			<TextField
@@ -138,24 +173,221 @@ function EntryForm({
 	)
 }
 
+/** En stavningsvariant eller böjd form av ordet; för att lägga till en ny eller redigera en. */
+function LexicalFormForm({
+	form,
+	entryId,
+	onSaved,
+	onCancel,
+}: {
+	form?: LexicalForm
+	entryId: number
+	onSaved: () => Promise<void>
+	onCancel: () => void
+}) {
+	const [text, setText] = useState(form?.form ?? "")
+	const [kind, setKind] = useState<LexicalFormKind>(form?.kind ?? "spelling")
+	const [inflection, setInflection] = useState(form?.inflection ?? "")
+	const [uncertain, setUncertain] = useState(form?.is_uncertain ?? false)
+	const [pending, setPending] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+
+	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+		event.preventDefault()
+		if (!text.trim()) return
+		setPending(true)
+		setError(null)
+		const data: LexicalFormCreate = {
+			entry: entryId,
+			form: text.trim(),
+			kind,
+			inflection: kind === "inflection" ? inflection.trim() : "",
+			is_uncertain: uncertain,
+		}
+		try {
+			if (form) await updateLexicalForm(form.id, data)
+			else await createLexicalForm(data)
+			await onSaved()
+		} catch {
+			setError("Formen kunde inte sparas.")
+		} finally {
+			setPending(false)
+		}
+	}
+
+	return (
+		<form onSubmit={handleSubmit} className='flex flex-col gap-3 rounded-md border border-border p-4'>
+			<div className='grid gap-3 sm:grid-cols-2'>
+				<TextField
+					label='Form'
+					value={text}
+					onChange={event => setText(event.target.value)}
+					maxLength={255}
+					placeholder='Som den står i texten'
+					autoFocus
+					required
+				/>
+				<SelectField label='Typ' value={kind} onChange={event => setKind(event.target.value as LexicalFormKind)}>
+					{(Object.keys(FORM_KIND_LABELS) as LexicalFormKind[]).map(value => (
+						<option key={value} value={value}>
+							{FORM_KIND_LABELS[value]}
+						</option>
+					))}
+				</SelectField>
+			</div>
+			{kind === "inflection" && (
+				<TextField
+					label='Böjning'
+					value={inflection}
+					onChange={event => setInflection(event.target.value)}
+					maxLength={255}
+					placeholder='pres. ind. 3 sg., gen. pl.…'
+				/>
+			)}
+			<CheckboxField
+				label='Osäker koppling'
+				helpText='Jag är inte helt säker på att formen hör till det här ordet.'
+				checked={uncertain}
+				onChange={event => setUncertain(event.target.checked)}
+			/>
+			{error && (
+				<p role='alert' className='text-sm text-danger'>
+					{error}
+				</p>
+			)}
+			<div className='flex justify-end gap-3'>
+				<Button type='button' variant='ghost' size='sm' onClick={onCancel}>
+					Avbryt
+				</Button>
+				<Button type='submit' size='sm' disabled={pending || !text.trim()}>
+					{pending ? "Sparar…" : form ? "Spara" : "Lägg till"}
+				</Button>
+			</div>
+		</form>
+	)
+}
+
+/** Ordets stavningsvarianter och böjda former. Den som får redigera ordet kan ändra dem. */
+function LexicalForms({
+	entry,
+	canEdit,
+	onChanged,
+}: {
+	entry: LexicalEntry
+	canEdit: boolean
+	onChanged: () => Promise<void>
+}) {
+	const forms = entry.forms ?? []
+	// Id för formen som redigeras, "new" för en ny, eller null.
+	const [editing, setEditing] = useState<number | "new" | null>(null)
+	const [error, setError] = useState<string | null>(null)
+
+	async function handleDelete(form: LexicalForm) {
+		setError(null)
+		try {
+			await deleteLexicalForm(form.id)
+			await onChanged()
+		} catch {
+			setError("Formen kunde inte tas bort.")
+		}
+	}
+
+	if (forms.length === 0 && !canEdit) return null
+
+	return (
+		<div className='mt-3 flex flex-col gap-2'>
+			{forms.length > 0 && (
+				<ul className='flex flex-col gap-1 text-sm'>
+					{forms.map(form =>
+						editing === form.id ? (
+							<li key={form.id}>
+								<LexicalFormForm
+									form={form}
+									entryId={entry.id}
+									onCancel={() => setEditing(null)}
+									onSaved={async () => {
+										await onChanged()
+										setEditing(null)
+									}}
+								/>
+							</li>
+						) : (
+							<li key={form.id} className='flex flex-wrap items-baseline gap-x-3'>
+								<span className='font-display text-base italic text-text'>{form.form}</span>
+								<span className='text-text-muted'>{describeForm(form)}</span>
+								{form.source && form.unit && (
+									<Link
+										href={`/verk/${form.source.work.id}?enhet=${form.unit}`}
+										title='Visa i texten'
+										className={LINK_BUTTON}>
+										{[form.source.work.title, form.source.edition_title, form.source.chapter?.label]
+											.filter(Boolean)
+											.join(", ")}
+									</Link>
+								)}
+								{canEdit && (
+									<span className='flex gap-3'>
+										<button type='button' onClick={() => setEditing(form.id)} className={LINK_BUTTON}>
+											Ändra
+										</button>
+										<button type='button' onClick={() => handleDelete(form)} className={`${LINK_BUTTON} hover:text-danger`}>
+											Ta bort
+										</button>
+									</span>
+								)}
+							</li>
+						),
+					)}
+				</ul>
+			)}
+			{error && (
+				<p role='alert' className='text-sm text-danger'>
+					{error}
+				</p>
+			)}
+			{canEdit &&
+				(editing === "new" ? (
+					<LexicalFormForm
+						entryId={entry.id}
+						onCancel={() => setEditing(null)}
+						onSaved={async () => {
+							await onChanged()
+							setEditing(null)
+						}}
+					/>
+				) : (
+					<p className='text-sm'>
+						<button type='button' onClick={() => setEditing("new")} className={LINK_BUTTON}>
+							Lägg till variant eller böjd form
+						</button>
+					</p>
+				))}
+		</div>
+	)
+}
+
 function EntryItem({
 	entry,
 	canEdit,
 	canRemove,
 	onSave,
 	onRemove,
+	onFormsChanged,
 }: {
 	entry: LexicalEntry
 	canEdit: boolean
 	canRemove: boolean
 	onSave: (data: LexicalEntryCreate) => Promise<void>
 	onRemove: () => Promise<void>
+	onFormsChanged: () => Promise<void>
 }) {
 	const [editing, setEditing] = useState(false)
 	const [removing, setRemoving] = useState(false)
 	const modernForm = modernFormOf(entry)
 	const synonyms = synonymsOf(entry)
-	const facts = [modernForm && `Modernt: ${modernForm}`, entry.part_of_speech, entry.language].filter(Boolean)
+	const facts = [modernForm && `Modernt: ${modernForm}`, entry.part_of_speech, entry.gender, entry.language].filter(
+		Boolean,
+	)
 
 	if (editing) {
 		return (
@@ -180,12 +412,14 @@ function EntryItem({
 				{facts.length > 0 && <p className='text-sm text-text-muted'>{facts.join(" · ")}</p>}
 			</div>
 			<div className='min-w-0 flex-1'>
+				{entry.translation && <p className='font-display text-lg font-semibold text-text'>{entry.translation}</p>}
 				{entry.definition ? (
 					<p className='font-display text-lg leading-relaxed text-text'>{entry.definition}</p>
 				) : (
-					<p className='font-display text-lg italic text-text-muted'>Ingen definition</p>
+					!entry.translation && <p className='font-display text-lg italic text-text-muted'>Ingen definition</p>
 				)}
 				{synonyms.length > 0 && <p className='mt-1 text-sm text-text-muted'>Synonymer: {synonyms.join(", ")}</p>}
+				<LexicalForms entry={entry} canEdit={canEdit} onChanged={onFormsChanged} />
 			</div>
 			{(canEdit || canRemove) && (
 				<div className='flex shrink-0 gap-4 text-sm'>
@@ -279,7 +513,7 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 			) : (
 				<section className='flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between'>
 					<div className='max-w-2xl'>
-						<h1 className='font-display text-3xl font-bold text-text first-letter:text-primary'>{glossary.title}</h1>
+						<h1 className='font-display text-3xl font-bold text-text'>{glossary.title}</h1>
 						{glossary.description && (
 							<p className='mt-2 whitespace-pre-line font-display text-lg italic text-text-muted'>{glossary.description}</p>
 						)}
@@ -295,7 +529,10 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 						)}
 					</div>
 					{glossary.entries.length > 0 && (
-						<div className='w-full sm:w-72'>
+						<div className='flex w-full flex-col gap-3 sm:w-72'>
+							<LinkButton href={`/ordlistor/${glossary.id}/forhor`} variant='secondary' className='justify-center'>
+								Glosförhör
+							</LinkButton>
 							<TextField
 								label='Sök i ordlistan'
 								hideLabel
@@ -343,6 +580,7 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 								await refresh()
 							}}
 							onRemove={() => handleRemoveEntry(entry.id)}
+							onFormsChanged={refresh}
 						/>
 					))}
 				</ul>

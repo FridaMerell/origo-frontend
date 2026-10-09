@@ -1,11 +1,12 @@
 import { cache } from "react"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
-import { fetchItem } from "@/app/lib/dal/client"
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
+import { buildQuery, fetchItem } from "@/app/lib/dal/client"
+import { buildCookieHeader, fetchOrigoApi, sharedOrigoJson } from "@/app/lib/api-client"
 import { getSessionCookies } from "@/app/lib/session"
 import {
   fetchTempusPage,
   paginationQuery,
+  toTempusPage,
   type TempusListParams,
   type TempusPage,
 } from "./shared"
@@ -275,14 +276,52 @@ export const getTempusSpeciesPhenogram = cache(
   }
 )
 
+// The seasonal overview is the same for every visitor without a session, and its
+// counts are the same for everyone, so those reads are shared and cached briefly.
+const readSharedSeasonalOverview = sharedOrigoJson({ revalidate: 300 })
+
 export const getTempusSeasonalOverviewPage = cache(
-  async (params?: TempusListParams): Promise<TempusPage<TempusSeasonalOverview>> => {
+  async (
+    params?: TempusListParams,
+    // `shared`: the caller only needs user-independent data (a count), so the
+    // cached anonymous read serves a signed-in user too.
+    { shared = false }: { shared?: boolean } = {},
+  ): Promise<TempusPage<TempusSeasonalOverview>> => {
     const query = paginationQuery(params, 24, 50)
+    if (shared || !(await getSessionCookies()).sessionId) {
+      const body = await readSharedSeasonalOverview(
+        `${TEMPUS_ENDPOINTS.speciesSeasonalOverview}${buildQuery(query)}`,
+      )
+      if (body !== null) return { ...toTempusPage<TempusSeasonalOverview>(body), pageSize: query.page_size }
+    }
+    // The seasonal overview is the one Tempus feed the API serves without a session.
     const page = await fetchTempusPage<TempusSeasonalOverview>(
       TEMPUS_ENDPOINTS.speciesSeasonalOverview,
       query,
+      { allowAnonymous: true },
     )
     return { ...page, pageSize: query.page_size }
+  },
+)
+
+// One landscape type with the species it matters most to. A species tied to
+// several types is counted under each, so the counts overlap.
+export type TempusSeasonalLandscape = {
+  name: string
+  code: string
+  count: number
+  species: TempusSeasonalOverview[]
+}
+
+// The seasonal overview grouped by landscape type. The same for everyone, so it
+// is always the shared, briefly cached read; an empty list if it cannot be read.
+export const getTempusSeasonalLandscapes = cache(
+  async (params?: TempusListParams): Promise<TempusSeasonalLandscape[]> => {
+    const body = await readSharedSeasonalOverview(
+      `${TEMPUS_ENDPOINTS.speciesSeasonalLandscapes}${buildQuery(params)}`,
+    )
+    const results = (body as { results?: TempusSeasonalLandscape[] } | null)?.results
+    return Array.isArray(results) ? results : []
   },
 )
 

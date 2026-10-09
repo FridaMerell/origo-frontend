@@ -1,147 +1,122 @@
-import type { TempusSeasonalOverview } from "@/app/lib/dal"
-import { STATUS_META, speciesName, dominantHabitat, toWindowEntry, type HomeSpecies } from "./home/season-helpers"
+"use client"
+
+import { Fragment, type ReactNode } from "react"
+import { useTempusPreviewedPosition } from "./_state/tempus-context"
+import { InterestingSpots } from "./home/interesting-spots"
+import { useHomeData } from "./home/overview-data"
+import { useOverview } from "./home/overview-provider"
+import { fieldNote, registerNote, summaryNote, windowsNote } from "./home/rail-notes"
+import { RegisterSection } from "./home/register-section"
 import { SeasonOverviewHeader } from "./home/season-overview-header"
 import { SeasonWindows } from "./home/season-windows"
-import { SpeciesRegister } from "./home/species-register"
-import { RouteOverview, type HomeRouteOverview } from "./home/route-overview"
-import { InterestingSpots } from "./home/interesting-spots"
+import { RailMark, SECTION_RULE, type RailNote } from "./home/sheet-rail"
+import { LABEL } from "./home/styles"
 
-export type { HomeSpecies, HomeRouteOverview }
+type SheetSection = { key: string; note: RailNote; content: ReactNode }
 
+// The start page as a sheet: a title strip under the menu, then its sections,
+// each with a note in the margin.
+//
+// How it hangs together:
+// - `useHomeData` builds everything that is shown, for whichever selection is
+//   chosen. It is called here, once, and handed down as props.
+// - The visitor's choices (selection, reading, pages) live in the URL and are
+//   read and changed through `useOverview`.
+// - The sheet's numbered sections are the season's own: the state of it, what
+//   is about to change, and the species. To add one, add an entry to `sections`.
 export default function HomeView({
-  items,
   areaName,
+  position,
   todayLabel,
+  week,
   currentMonth,
-  view,
-  overview,
-  overviewCount,
-  overviewPage,
-  overviewHasNext,
-  overviewHasPrevious,
-  overviewIncoming,
-  overviewOutgoing,
-  overviewIncomingCount,
-  overviewOutgoingCount,
-  overviewIncomingPage,
-  overviewOutgoingPage,
-  overviewIncomingHasNext,
-  overviewIncomingHasPrevious,
-  overviewOutgoingHasNext,
-  overviewOutgoingHasPrevious,
-  routeOverview,
+  route,
+  nextRoute,
 }: {
-  items: HomeSpecies[]
   areaName: string
+  // The area's centre as coordinates, when it has a shape.
+  position: string | null
   todayLabel: string
+  // Today's ISO week number.
+  week: number
   currentMonth: number
-  view: "followed" | "all"
-  overview: TempusSeasonalOverview[]
-  overviewCount: number
-  overviewPage: number
-  overviewHasNext: boolean
-  overviewHasPrevious: boolean
-  overviewIncoming: TempusSeasonalOverview[]
-  overviewOutgoing: TempusSeasonalOverview[]
-  overviewIncomingCount: number
-  overviewOutgoingCount: number
-  overviewIncomingPage: number
-  overviewOutgoingPage: number
-  overviewIncomingHasNext: boolean
-  overviewIncomingHasPrevious: boolean
-  overviewOutgoingHasNext: boolean
-  overviewOutgoingHasPrevious: boolean
-  routeOverview: HomeRouteOverview | null
+  // The next planned route, rendered on the server, and what the margin says of it.
+  route: ReactNode
+  nextRoute: { name: string; date: string } | null
 }) {
-  const isAll = view === "all"
+  const { isGuest, selection } = useOverview()
+  const data = useHomeData()
+  const previewedPosition = useTempusPreviewedPosition()
 
-  const sortedItems = [...items].sort((first, second) => {
-    return STATUS_META[first.seasonal_status.status].rank - STATUS_META[second.seasonal_status.status].rank || speciesName(first).localeCompare(speciesName(second), "sv")
-  })
-  const activeCount = items.filter(
-    (species) => species.seasonal_status.is_in_season || species.seasonal_status.is_coming_into_season,
-  ).length
-  const incomingCount = sortedItems.filter((species) => species.seasonal_status.is_coming_into_season).length
-
-  const inSeasonSpecies = sortedItems
-    .filter((species) => species.seasonal_status.is_in_season)
-  const habitat = isAll
-    ? null
-    : dominantHabitat(inSeasonSpecies) ?? dominantHabitat(items)
-  const habitatNote = inSeasonSpecies.length > 0 ? "vanligast bland arter i säsong nu" : "vanligast i din bevakning"
-
-  const tally = isAll
-    ? [
-        { label: "Arter i urvalet", value: overviewCount, lead: true },
-        { label: "På väg in", value: overviewIncomingCount, lead: false },
-        { label: "På väg ut", value: overviewOutgoingCount, lead: false },
-      ]
-    : [
-        { label: "Följda arter", value: items.length, lead: false },
-        { label: "Aktuella nu", value: activeCount, lead: true },
-        { label: "På väg in", value: incomingCount, lead: false },
-      ]
-
-  const overviewName = (item: HomeSpecies) => item.swedish_name?.trim() || item.scientific_name
-
-  const incomingEntries = isAll
-    ? overviewIncoming.map((item) => toWindowEntry(item, "/taxa/oversikt", "days_until_start", overviewName))
-    : sortedItems
-        .filter((species) => species.seasonal_status.is_coming_into_season)
-        .map((species) => toWindowEntry(species, "/taxa/foljda", "days_until_start", speciesName))
-  const outgoingEntries = isAll
-    ? overviewOutgoing.map((item) => toWindowEntry(item, "/taxa/oversikt", "days_until_end", overviewName))
-    : sortedItems
-        .filter((species) => species.seasonal_status.is_going_out_of_season)
-        .map((species) => toWindowEntry(species, "/taxa/foljda", "days_until_end", speciesName))
-
-  const registerCount = isAll ? overviewCount : items.length
+  const sections: SheetSection[] = [
+    {
+      key: "summary",
+      note: summaryNote(data, week),
+      content: <SeasonOverviewHeader areaName={areaName} intro={data.intro} map={data.map} tally={data.tally} />,
+    },
+    {
+      key: "windows",
+      note: windowsNote(data),
+      content: <SeasonWindows windows={data.windows} view={data.view} />,
+    },
+    {
+      key: "register",
+      note: registerNote(data, selection),
+      content: <RegisterSection data={data} areaName={areaName} currentMonth={currentMonth} />,
+    },
+    // Places near the visitor and the next planned route share one section,
+    // one under the other: they are not related, so they are not set side by
+    // side. Visitors without a session have neither.
+    ...(isGuest
+      ? []
+      : [
+          {
+            key: "field",
+            note: fieldNote(nextRoute),
+            content: (
+              <section>
+                <InterestingSpots allowLocation onSheet />
+                <div className="mt-8 border-t border-border pt-8">{route}</div>
+              </section>
+            ),
+          },
+        ]),
+  ]
 
   return (
-    <div className="container  py-8 ">
-      <div className="flex flex-col gap-10 text-text">
-        <SeasonOverviewHeader
-          areaName={areaName}
-          todayLabel={todayLabel}
-          view={view}
-          tally={tally}
-          habitat={habitat}
-          habitatNote={habitatNote}
-        />
+    <div className="container text-text">
+      <div className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-b border-text py-3.5 text-text-muted ${LABEL}`}>
+        <span>
+          <span className="text-text">{areaName}</span>
+          <span aria-hidden="true" className="mx-2.5">·</span>
+          {todayLabel}
+        </span>
+        <span>
+          {/* While the pointer rests on an area in the area list, its coordinates stand here instead. */}
+          {previewedPosition ?? position ? (
+            <>
+              <span className={`tabular-nums transition-colors duration-200 ${previewedPosition ? "text-text" : ""}`}>
+                {previewedPosition ?? position}
+              </span>
+              <span aria-hidden="true" className="mx-2.5">·</span>
+            </>
+          ) : null}
+          vecka {week}
+        </span>
+      </div>
 
-        <InterestingSpots allowLocation />
-
-        <RouteOverview routeOverview={routeOverview} />
-
-        <SpeciesRegister
-          isAll={isAll}
-          sortedItems={sortedItems}
-          overview={overview}
-          overviewCount={overviewCount}
-          overviewPage={overviewPage}
-          overviewHasNext={overviewHasNext}
-          overviewHasPrevious={overviewHasPrevious}
-          registerCount={registerCount}
-          currentMonth={currentMonth}
-        />
-
-        <SeasonWindows
-          isAll={isAll}
-          incomingEntries={incomingEntries}
-          outgoingEntries={outgoingEntries}
-          incomingCount={overviewIncomingCount}
-          outgoingCount={overviewOutgoingCount}
-          incomingPage={overviewIncomingPage}
-          outgoingPage={overviewOutgoingPage}
-          incomingHasNext={overviewIncomingHasNext}
-          incomingHasPrevious={overviewIncomingHasPrevious}
-          outgoingHasNext={overviewOutgoingHasNext}
-          outgoingHasPrevious={overviewOutgoingHasPrevious}
-        />
-
-        <p className="text-right font-display text-[10px] italic text-text-faint">
-          Sammanställt ur Dyntaxa · aktuellt per {todayLabel}
-        </p>
+      {/* The margin's width and the gap beside it are fixed, so the content's
+          edges do not move. Sections are parted by one rule across the whole
+          sheet, with the same room (40px) above it as below. */}
+      <div className="grid sm:grid-cols-[6.5rem_minmax(0,1fr)]">
+        {sections.map((section, index) => (
+          <Fragment key={section.key}>
+            <RailMark number={index + 1} note={section.note} ruled={index > 0} />
+            <div className={`min-w-0 ${index > 0 ? SECTION_RULE : ""}`}>
+              <div className="py-10 sm:pl-8">{section.content}</div>
+            </div>
+          </Fragment>
+        ))}
       </div>
     </div>
   )

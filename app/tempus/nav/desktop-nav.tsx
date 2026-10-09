@@ -8,7 +8,7 @@ import Logo from "../ui/Logo"
 import { FieldIcon, isActiveLink, mainLinks, moreLinks, primaryLinks } from "./nav-links"
 import { GeoAreaSelector } from "./geo-area-selector"
 import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
-import { Bell, ChevronDown, LogOut, Menu, Moon, Search, Settings, Sun, X } from "lucide-react"
+import { Bell, ChevronDown, LogIn, LogOut, Menu, Moon, Search, Settings, Sun, X } from "lucide-react"
 
 export function DesktopNav({
   pathname,
@@ -48,7 +48,7 @@ export function DesktopNav({
           </span>
         </Link>
 
-        <div className="hidden min-w-0 flex-1 items-center gap-1 xl:flex">
+        <div className="hidden min-w-0 flex-1 items-center gap-8 pl-10 xl:flex">
           {mainLinks.map((link) => {
             const active = isActiveLink(pathname, link.href)
 
@@ -57,11 +57,12 @@ export function DesktopNav({
                 key={link.href}
                 href={link.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex h-18 items-center border-b-2 px-3 text-sm no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-focus-ring ${active
-                  ? "border-accent font-semibold text-text"
-                  : "border-transparent text-text-muted hover:border-border-strong hover:text-text"
+                className={`group flex h-18 items-center gap-2 font-display text-[17px] font-medium no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-focus-ring ${active
+                  ? "font-semibold text-text"
+                  : "text-text-muted hover:text-text"
                   }`}
               >
+                <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${active ? "bg-accent" : "bg-transparent group-hover:bg-text"}`} />
                 {link.label}
               </Link>
             )
@@ -72,9 +73,9 @@ export function DesktopNav({
               aria-expanded={more.open}
               aria-controls="tempus-more-menu"
               onClick={() => more.setOpen((current) => !current)}
-              className={`flex h-18 items-center gap-1 border-b-2 px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-focus-ring ${more.open
-                ? "border-accent font-semibold text-text"
-                : "border-transparent text-text-muted hover:border-border-strong hover:text-text"
+              className={`flex h-18 items-center gap-1 font-display text-[17px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-focus-ring ${more.open
+                ? "text-text"
+                : "text-text-muted hover:text-text"
                 }`}
             >
               Mer
@@ -83,7 +84,7 @@ export function DesktopNav({
             {more.open ? (
               <div
                 id="tempus-more-menu"
-                className="absolute left-0 top-full z-50 min-w-44 rounded-md border border-border bg-surface p-1 shadow-lg"
+                className="absolute left-0 top-full z-50 min-w-44 rounded-md border border-border bg-surface p-1 shadow-lg transition-[opacity,translate] duration-150 ease-(--ease-standard) starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
               >
                 {moreLinks.map((link) => {
                   const active = isActiveLink(pathname, link.href)
@@ -93,12 +94,12 @@ export function DesktopNav({
                       href={link.href}
                       aria-current={active ? "page" : undefined}
                       onClick={() => more.setOpen(false)}
-                      className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-sm no-underline transition-colors focus-visible:outline-2 focus-visible:outline-focus-ring ${active
-                        ? "font-semibold text-accent"
-                        : "text-text-muted hover:bg-accent-wash hover:text-text"
+                      className={`group flex min-h-10 items-center gap-2 px-3 font-display text-[17px] no-underline transition-colors focus-visible:outline-2 focus-visible:outline-focus-ring ${active
+                        ? "font-semibold text-text"
+                        : "font-medium text-text hover:text-text"
                         }`}
                     >
-                      <FieldIcon name={link.icon} className="size-4" />
+                      <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${active ? "bg-accent" : "bg-transparent group-hover:bg-text"}`} />
                       {link.label}
                     </Link>
                   )
@@ -109,22 +110,45 @@ export function DesktopNav({
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          <button
-            type="button"
-            onClick={onOpenSpeciesSearch}
-            aria-label="Öppna artsök"
-            title="Artsök"
-            className="hidden h-10 items-center gap-2 rounded-md px-2.5 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex"
-          >
-            <Search size={18} />
-            <span className="hidden 2xl:inline">Artsök</span>
-          </button>
+          {/* Species search and quick observation need a session; a visitor
+              without one gets the way in instead. Every page link stays, and
+              leads to the login when followed. */}
+          {user ? (
+            <button
+              type="button"
+              onClick={onOpenSpeciesSearch}
+              aria-label="Öppna artsök"
+              title="Artsök"
+              className="hidden h-10 items-center gap-2 rounded-md px-2.5 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex"
+            >
+              <Search size={18} />
+              <span className="hidden 2xl:inline">Artsök</span>
+            </button>
+          ) : null}
           <div className="hidden sm:block">
             <GeoAreaSelector />
           </div>
-          <div className="hidden sm:block">
-            <QuickObservation />
-          </div>
+          {user ? (
+            <div className="hidden sm:block">
+              <QuickObservation />
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden h-10 shrink-0 items-center rounded-md px-2.5 text-sm text-text-muted no-underline transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex"
+            >
+              Logga in
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={onToggleMode}
+            aria-label={mode === "dark" ? "Ljust läge" : "Mörkt läge"}
+            title={mode === "dark" ? "Ljust läge" : "Mörkt läge"}
+            className="hidden size-10 items-center justify-center text-text-muted transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex"
+          >
+            {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <div ref={actions.ref} className="relative hidden border-l border-border pl-1 sm:block">
             <button
               type="button"
@@ -133,14 +157,14 @@ export function DesktopNav({
               aria-label="Öppna konto och inställningar"
               title="Konto och inställningar"
               onClick={() => actions.setOpen((current) => !current)}
-              className="flex size-10 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              className="flex size-10 items-center justify-center text-text-muted transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             >
               <Settings size={18} />
             </button>
             {actions.open ? (
               <div
                 id="tempus-actions-menu"
-                className="absolute right-0 top-full z-50 mt-1 min-w-56 rounded-md border border-border bg-surface p-1 shadow-lg"
+                className="absolute right-0 top-full z-50 mt-1 min-w-56 rounded-md border border-border bg-surface p-1 shadow-lg transition-[opacity,translate] duration-150 ease-(--ease-standard) starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
               >
                 {user ? (
                   <NotificationMenu align="right">
@@ -262,17 +286,28 @@ export function DesktopNav({
               </nav>
 
               <div className="grid gap-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false)
-                    onOpenSpeciesSearch()
-                  }}
-                  className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
-                >
-                  <Search size={18} />
-                  Artsök
-                </button>
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      onOpenSpeciesSearch()
+                    }}
+                    className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
+                  >
+                    <Search size={18} />
+                    Artsök
+                  </button>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted no-underline transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
+                  >
+                    <LogIn size={18} />
+                    Logga in
+                  </Link>
+                )}
                 <p className="px-3 pb-1 pt-2 font-mono text-[10px] uppercase tracking-wide text-text-faint">
                   Inställningar
                 </p>

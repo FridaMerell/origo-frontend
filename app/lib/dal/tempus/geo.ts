@@ -1,5 +1,6 @@
 import { cache } from "react"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
+import { sharedOrigoJson } from "@/app/lib/api-client"
 import { fetchItem, fetchList } from "@/app/lib/dal/client"
 import type { TempusListParams } from "./shared"
 
@@ -30,9 +31,23 @@ export type TempusLocale = {
   user: number
 }
 
+export const TEMPUS_GEO_AREAS_TAG = "tempus-geo-areas"
+
+// The area list is the same for everyone and slow to produce (it carries every
+// area's geometry), so the unfiltered list is read once and shared for an hour.
+// Creating an area clears it (see _actions/geo-areas.ts).
+const readSharedGeoAreas = sharedOrigoJson({ revalidate: 3600, tags: [TEMPUS_GEO_AREAS_TAG] })
+
 export const getTempusGeoAreas = cache(
-  (params?: TempusListParams): Promise<TempusGeoArea[]> =>
-    fetchList(TEMPUS_ENDPOINTS.geoAreas, params)
+  async (params?: TempusListParams): Promise<TempusGeoArea[]> => {
+    if (!params) {
+      const payload = await readSharedGeoAreas(TEMPUS_ENDPOINTS.geoAreas)
+      if (Array.isArray(payload)) return payload as TempusGeoArea[]
+      const results = (payload as { results?: unknown } | null)?.results
+      if (Array.isArray(results)) return results as TempusGeoArea[]
+    }
+    return fetchList(TEMPUS_ENDPOINTS.geoAreas, params)
+  }
 )
 
 

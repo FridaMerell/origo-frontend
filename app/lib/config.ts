@@ -147,6 +147,7 @@ export const TEMPUS_ENDPOINTS = {
   species: "/api/tempus/species/",
   speciesResolve: "/api/tempus/species/resolve/",
   speciesSeasonalOverview: "/api/tempus/species/seasonal-overview/",
+  speciesSeasonalLandscapes: "/api/tempus/species/seasonal-landscapes/",
   speciesImportChecklist: "/api/tempus/species/import-checklist/",
   speciesRegister: "/api/tempus/species/register/",
   speciesSearch: "/api/tempus/species/search/",

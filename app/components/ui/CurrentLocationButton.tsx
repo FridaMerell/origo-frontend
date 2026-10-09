@@ -18,6 +18,8 @@ type Props = {
   pendingLabel?: string
   className?: string
   size?: "sm" | "md"
+  // The shared Button's variant; the filled secondary button unless another is asked for.
+  variant?: "secondary" | "paper-bordered"
   disabled?: boolean
   highAccuracy?: boolean
 }
@@ -35,6 +37,7 @@ export function CurrentLocationButton({
   pendingLabel = "Hämtar plats…",
   className = "",
   size = "md",
+  variant = "secondary",
   disabled = false,
   highAccuracy = true,
 }: Props) {
@@ -79,7 +82,7 @@ export function CurrentLocationButton({
     <>
       <Button
         type="button"
-        variant="secondary"
+        variant={variant}
         size={size}
         className={twMerge("whitespace-nowrap", className)}
         onClick={locate}

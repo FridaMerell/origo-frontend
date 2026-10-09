@@ -480,6 +480,19 @@ export type ReadingAnnotation = {
   lexical_entry: Nullable<Omit<LexicalEntry, "owner" | "glossaries" | "forms">>;
 };
 
+/**
+ * Ett känt ord som hittats i styckets text: ett eget ord eller ett ur en synlig ordlista.
+ * Sparas inte per textställe, till skillnad från en annotation.
+ */
+export type ReadingGloss = {
+  start_offset: number;
+  end_offset: number;
+  /** Bara ägaren kan ändra eller ta bort ordet. */
+  lexical_entry: NonNullable<ReadingAnnotation["lexical_entry"]> & Pick<LexicalEntry, "owner">;
+  /** Satt när ordet i texten är en stavningsvariant eller böjd form, inte grundformen. */
+  form: Nullable<Pick<LexicalForm, "id" | "kind" | "inflection" | "is_uncertain">>;
+};
+
 /* ============================================================================
    Läsning
    ========================================================================== */
@@ -568,6 +581,8 @@ export type ReadingUnit = {
   label: string;
   content: string;
   annotations: ReadingAnnotation[];
+  /** Known words in the text outside the annotations; empty outside the alignment matrix. */
+  glosses: ReadingGloss[];
   /** The chapter the unit belongs to, when it is in one. */
   chapter?: Nullable<{ id: Id; position: number; label: string }>;
   /** Alignment matrix only: the unit opens its chapter (show the chapter heading above it). */
@@ -849,6 +864,8 @@ export type LexicalEntryFilters = {
   gender?: string;
   lemma?: string;
   lemma__icontains?: string;
+  /** Söker i grundformen, sparade former, modern form och översättning. */
+  search?: string;
   owner?: string;
   glossaries?: string;
   /** Slår upp grundformen från en stavningsvariant eller böjd form. */

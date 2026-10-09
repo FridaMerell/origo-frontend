@@ -27,6 +27,8 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [menuOpen])
 
+  // A visitor without a session gets the same menu, with every page link. A
+  // page that needs a session sends them to the login and back afterwards.
   return (
     <>
       <DesktopNav
@@ -41,6 +43,7 @@ export default function Nav({ mode, onToggleMode }: NavProps) {
 
       <MobileNav
         pathname={pathname}
+        isGuest={!user}
         menuOpen={menuOpen}
         onToggleMenu={() => setMenuOpen((current) => !current)}
       />

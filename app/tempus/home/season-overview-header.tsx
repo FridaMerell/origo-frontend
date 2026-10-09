@@ -1,127 +1,89 @@
-import Link from "next/link"
-import { BiotopeMap } from "../ui/biotope-map"
-import { biotopePropsFromSpecies } from "../ui/biotope-map/BiotopeMap"
-import { CornerTicks } from "./corner-ticks"
-import type { HomeSpecies } from "./season-helpers"
+"use client"
 
-type TallyCell = { label: string; value: number; lead: boolean }
-type Habitat = { count: number; name: string; species: HomeSpecies }
+import { biotopePropsFromSpecies } from "../ui/biotope-map/BiotopeMap"
+import { MapBackdrop } from "./map-backdrop"
+import type { HomeData } from "./overview-data"
+import { useOverview } from "./overview-provider"
+import { formatCount, type Habitat } from "./season-helpers"
+import { LABEL, pending } from "./styles"
+import { ViewTabs } from "./view-tabs"
+
+function ScaleBar() {
+  return (
+    <span aria-hidden="true" className="flex h-1.5 w-16 border border-text">
+      <span className="flex-1 bg-text" />
+      <span className="flex-1" />
+      <span className="flex-1 bg-text" />
+      <span className="flex-1" />
+    </span>
+  )
+}
+
+// The header's map fills the right half behind the heading. Its caption says
+// which landscape type it shows and why that one.
+function HeaderMap({ habitat, reason, areaName }: { habitat: Habitat; reason: string; areaName: string }) {
+  return (
+    <figure className="pointer-events-none absolute -inset-y-6 right-0 hidden w-[70%] overflow-hidden sm:block">
+      <MapBackdrop ink="header" biotope={biotopePropsFromSpecies(habitat.species).biotope} seed={areaName} />
+      <figcaption className="absolute inset-0 flex flex-col items-end justify-end pb-8">
+        <span className="flex items-center gap-2">
+          <ScaleBar />
+          <span className={`${LABEL} text-text`}>{habitat.name}</span>
+        </span>
+        <span className="mt-1 block font-display text-sm italic text-text-muted">{reason}</span>
+      </figcaption>
+    </figure>
+  )
+}
+
+// The summary's three figures, in thirds like the register's columns. The
+// dividers stand in the gaps between them.
+function Tally({ cells, loading, ruled }: HomeData["tally"] & { ruled: boolean }) {
+  return (
+    <dl aria-busy={loading} className={`grid grid-cols-3 gap-x-8 pt-8 ${ruled ? "border-t border-border" : ""} ${pending(loading)}`}>
+      {cells.map((cell, index) => (
+        <div key={cell.label} className={index === 0 ? "" : "-ml-4 border-l border-border pl-4"}>
+          <dt className={`${LABEL} text-text`}>{cell.label}</dt>
+          <dd className={`mt-2.5 font-display text-3xl font-semibold leading-none tabular-nums sm:text-5xl ${cell.lead ? "text-accent" : "text-text"}`}>
+            {cell.value == null ? "–" : formatCount(cell.value)}
+          </dd>
+          <dd className="mt-2.5 text-sm text-text-muted">{cell.note}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
 
 export function SeasonOverviewHeader({
   areaName,
-  todayLabel,
-  view,
+  intro,
+  map,
   tally,
-  habitat,
-  habitatNote,
-}: {
-  areaName: string
-  todayLabel: string
-  view: "followed" | "all"
-  tally: TallyCell[]
-  habitat: Habitat | null
-  habitatNote: string
-}) {
-  const isAll = view === "all"
+}: { areaName: string } & Pick<HomeData, "intro" | "map" | "tally">) {
+  const { isGuest } = useOverview()
 
   return (
-    <header className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-2 font-mono text-[11px] uppercase tracking-[.18em] text-text-faint">
-        <span className="text-text-muted">{areaName}</span>
-        <span>{todayLabel}</span>
-      </div>
+    <header>
+      <div className={`relative ${map.habitat ? "sm:min-h-72" : ""}`}>
+        {map.habitat ? <HeaderMap key={map.habitat.name} habitat={map.habitat} reason={map.reason} areaName={areaName} /> : null}
 
-      <div className={`grid gap-6 sm:items-start ${habitat ? "sm:grid-cols-[minmax(0,1fr)_16rem]" : ""}`}>
-        <div>
+        <div className="relative">
           <h1 className="font-display text-[2rem] font-semibold tracking-tight text-text sm:text-4xl lg:text-5xl">
             Säsongsöversikt
           </h1>
           <span aria-hidden="true" className="mt-3 block h-px w-20 bg-text" />
           <span aria-hidden="true" className="mt-[3px] block h-px w-12 bg-text/50" />
-          <p className="mt-4 max-w-md text-base leading-relaxed text-text-muted">
-            {isAll
-              ? "Rapportstarka arter för området och var i sin årscykel de befinner sig just nu."
-              : "Arterna du bevakar, ordnade efter var i sin årscykel de befinner sig just nu."}
-          </p>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-text-muted">{intro}</p>
         </div>
-
-        {habitat ? (
-          <figure className="min-w-0">
-            <div className="relative aspect-[8/5] overflow-hidden border border-border bg-surface-2/40">
-              <BiotopeMap
-                {...biotopePropsFromSpecies(habitat.species)}
-                width={800}
-                height={500}
-                compass
-                aria-hidden="true"
-                className="absolute inset-0 size-full!"
-              />
-              <CornerTicks />
-            </div>
-            <figcaption className="mt-2">
-              <span className="flex items-center gap-2">
-                <span aria-hidden="true" className="flex h-1.5 w-16 border border-text">
-                  <span className="flex-1 bg-text" />
-                  <span className="flex-1" />
-                  <span className="flex-1 bg-text" />
-                  <span className="flex-1" />
-                </span>
-                <span className="font-mono text-[11px] uppercase tracking-[.14em] text-text">{habitat.name}</span>
-              </span>
-              <span className="mt-1 block font-display text-sm italic text-text-muted">{habitatNote}</span>
-            </figcaption>
-          </figure>
-        ) : null}
       </div>
 
-      {/* Index-flikar */}
-      <nav aria-label="Urval" className="flex items-end gap-6 border-b border-border">
-        <Link
-          href="/"
-          aria-current={view === "followed" ? "page" : undefined}
-          className={`-mb-px border-b-2 pb-2 font-mono text-[12px] uppercase tracking-[.16em] no-underline ${
-            view === "followed"
-              ? "border-accent text-text"
-              : "border-transparent text-text-muted hover:text-text"
-          }`}
-        >
-          Följda arter
-        </Link>
-        <Link
-          href="/?view=all"
-          aria-current={view === "all" ? "page" : undefined}
-          className={`-mb-px border-b-2 pb-2 font-mono text-[12px] uppercase tracking-[.16em] no-underline ${
-            view === "all"
-              ? "border-accent text-text"
-              : "border-transparent text-text-muted hover:text-text"
-          }`}
-        >
-          Hela urvalet
-        </Link>
-      </nav>
-
-      {/* Summering */}
-      <dl className="grid grid-cols-3 border-y border-border divide-x divide-border">
-        {tally.map((cell) => (
-          <div key={cell.label} className="px-2.5 py-3 sm:px-4">
-            <dt className="font-mono text-[10px] uppercase tracking-[.12em] text-text-faint sm:text-[11px] sm:tracking-[.16em]">{cell.label}</dt>
-            <dd
-              className={`mt-1 font-display text-2xl font-semibold tabular-nums sm:text-3xl ${
-                cell.lead ? "text-accent" : "text-text"
-              }`}
-            >
-              {cell.value.toLocaleString("sv-SE")}
-            </dd>
-          </div>
-        ))}
-      </dl>
-
-      {isAll ? (
-        <p className="-mt-3 text-xs leading-relaxed text-text-muted">
-          Urvalet omfattar arter med minst 20 rapporter i valt område. Arter med färre rapporter ingår därför inte i totalsiffran.
-          Lågkonfidensarter kan fortfarande ingå om de uppfyller rapportgränsen.
-        </p>
-      ) : null}
+      {/* The gap above is what the map reaches down into. A visitor without a
+          session has one selection only, so no tabs; the tabs' own line is
+          otherwise the summary's top rule. */}
+      <div className="mt-6">
+        {isGuest ? null : <ViewTabs />}
+        <Tally {...tally} ruled={isGuest} />
+      </div>
     </header>
   )
 }

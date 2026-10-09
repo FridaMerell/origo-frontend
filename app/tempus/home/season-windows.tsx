@@ -1,135 +1,73 @@
+"use client"
+
 import Link from "next/link"
+import type { HomeData, SeasonWindowKind } from "./overview-data"
+import { useOverview } from "./overview-provider"
+import { PageSteps } from "./page-steps"
+import { formatCount, speciesHref, speciesName, type HomeSpecies } from "./season-helpers"
+import type { HomeViewName } from "./selection"
+import { LABEL, ROW_HOVER, pending } from "./styles"
 
-export type WindowEntry = { key: string; name: string; href: string; days: number | null }
+// What differs between the two lists. `sign` is written before the day count:
+// days until the season starts, or days left of it.
+const WINDOWS = {
+  incoming: { title: "Snart i säsong", ink: "text-secondary", sign: "+", days: "days_until_start", pageField: "incomingPage" },
+  outgoing: { title: "Snart ur säsong", ink: "text-warning", sign: "−", days: "days_until_end", pageField: "outgoingPage" },
+} as const
 
-function SeasonWindow({
-  title,
-  entries,
-  ink,
-  emptyText,
-  count,
-  page,
-  hasNext,
-  hasPrevious,
-  pageParam,
-  otherPageParam,
-  otherPage,
-}: {
-  title: string
-  entries: WindowEntry[]
-  ink: string
-  emptyText: string
-  count: number
-  page: number
-  hasNext: boolean
-  hasPrevious: boolean
-  pageParam: "incoming_page" | "outgoing_page"
-  otherPageParam: "incoming_page" | "outgoing_page"
-  otherPage: number
-}) {
-  const pageHref = (nextPage: number) =>
-    `/tempus?view=all&${pageParam}=${nextPage}&${otherPageParam}=${otherPage}`
+const ROW = "flex items-baseline gap-4 border-b border-dotted border-text-faint py-3"
+
+function WindowRow({ species, kind, view }: { species: HomeSpecies; kind: SeasonWindowKind; view: HomeViewName }) {
+  const { ink, sign, days: field } = WINDOWS[kind]
+  const days = species.seasonal_status[field]
 
   return (
-    <div className="border border-border bg-surface">
-      <div className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2">
-        <span className="font-mono text-[11px] uppercase tracking-[.16em] text-text-faint">{title}</span>
-        <span className="font-mono text-[10px] tabular-nums text-text-faint">{count.toLocaleString("sv-SE")} totalt</span>
+    <Link href={speciesHref(species, view)} className={`group/entry no-underline ${ROW} ${ROW_HOVER}`}>
+      <span className="min-w-0 flex-1 truncate font-display text-[17px] text-text transition-colors duration-150 group-hover/entry:text-accent">
+        {speciesName(species)}
+      </span>
+      <span className={`shrink-0 font-mono text-[12px] tabular-nums ${ink}`}>{days == null ? "—" : `${sign}${days} d`}</span>
+    </Link>
+  )
+}
+
+function SeasonWindow({ kind, list, view }: { kind: SeasonWindowKind; list: HomeData["windows"][SeasonWindowKind]; view: HomeViewName }) {
+  const { title, pageField } = WINDOWS[kind]
+  const page = useOverview().selection[pageField]
+
+  return (
+    <div className="min-w-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className={`${LABEL} text-text`}>{title}</h2>
+        <div className="flex items-baseline gap-3 font-mono text-[11px] tabular-nums text-text-muted">
+          <span>{formatCount(list.count)} totalt</span>
+          <PageSteps compact field={pageField} page={page} hasPrevious={list.hasPrevious} hasNext={list.hasNext} label={`${title}, sidor`} />
+        </div>
       </div>
-      {entries.length > 0 ? (
-        <ol>
-          {entries.map((entry, index) => (
-            <li key={entry.key}>
-              <Link
-                href={entry.href}
-                className="grid grid-cols-[1.75rem_minmax(0,1fr)_auto] items-baseline gap-x-3 border-b border-border px-4 py-2.5 no-underline transition-colors last:border-b-0 hover:bg-surface-2/45"
-              >
-                <span className="font-mono text-[12px] tabular-nums text-text-faint">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span className="min-w-0 truncate font-display text-sm text-text">{entry.name}</span>
-                <span className={`shrink-0 font-display text-sm italic tabular-nums ${ink}`}>
-                  {entry.days != null ? `${entry.days} d` : "—"}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="px-4 py-6 text-sm leading-relaxed text-text-muted">{emptyText}</p>
-      )}
-      {count > 0 && (hasPrevious || hasNext) ? (
-        <nav className="flex items-center justify-between border-t border-border px-4 py-2 font-mono text-[10px] uppercase tracking-wide" aria-label={`${title} paginering`}>
-          {hasPrevious ? <Link href={pageHref(page - 1)} className="text-link hover:underline">Föregående</Link> : <span className="text-text-faint">Föregående</span>}
-          <span className="text-text-faint">Sida {page}</span>
-          {hasNext ? <Link href={pageHref(page + 1)} className="text-link hover:underline">Nästa</Link> : <span className="text-text-faint">Nästa</span>}
-        </nav>
-      ) : null}
+
+      <div aria-busy={list.loading} className={`mt-2 ${pending(list.loading)}`}>
+        {list.rows.length > 0 ? (
+          <ol>
+            {list.rows.map((species) => (
+              <li key={species.id}>
+                <WindowRow species={species} kind={kind} view={view} />
+              </li>
+            ))}
+          </ol>
+        ) : list.loading ? null : (
+          <p className={`text-sm leading-relaxed text-text-muted ${ROW}`}>{list.emptyText}</p>
+        )}
+      </div>
     </div>
   )
 }
 
-export function SeasonWindows({
-  isAll,
-  incomingEntries,
-  outgoingEntries,
-  incomingCount,
-  outgoingCount,
-  incomingPage,
-  outgoingPage,
-  incomingHasNext,
-  incomingHasPrevious,
-  outgoingHasNext,
-  outgoingHasPrevious,
-}: {
-  isAll: boolean
-  incomingEntries: WindowEntry[]
-  outgoingEntries: WindowEntry[]
-  incomingCount: number
-  outgoingCount: number
-  incomingPage: number
-  outgoingPage: number
-  incomingHasNext: boolean
-  incomingHasPrevious: boolean
-  outgoingHasNext: boolean
-  outgoingHasPrevious: boolean
-}) {
+// Species about to enter their season, and species about to leave it.
+export function SeasonWindows({ windows, view }: Pick<HomeData, "windows" | "view">) {
   return (
-    <section className="grid gap-4 sm:grid-cols-2">
-      <SeasonWindow
-        title="Snart i säsong"
-        entries={incomingEntries}
-        ink="text-secondary"
-        count={isAll ? incomingCount : incomingEntries.length}
-        page={incomingPage}
-        hasNext={isAll && incomingHasNext}
-        hasPrevious={isAll && incomingHasPrevious}
-        pageParam="incoming_page"
-        otherPageParam="outgoing_page"
-        otherPage={outgoingPage}
-        emptyText={
-          isAll
-            ? "Inga arter väntas gå in i säsong just nu."
-            : "Ingen bevakad art väntas gå in i säsong just nu."
-        }
-      />
-      <SeasonWindow
-        title="Snart ur säsong"
-        entries={outgoingEntries}
-        ink="text-warning"
-        count={isAll ? outgoingCount : outgoingEntries.length}
-        page={outgoingPage}
-        hasNext={isAll && outgoingHasNext}
-        hasPrevious={isAll && outgoingHasPrevious}
-        pageParam="outgoing_page"
-        otherPageParam="incoming_page"
-        otherPage={incomingPage}
-        emptyText={
-          isAll
-            ? "Inga arter väntas lämna säsongen just nu."
-            : "Ingen bevakad art väntas lämna säsongen just nu."
-        }
-      />
+    <section className="grid gap-8 sm:grid-cols-2">
+      <SeasonWindow kind="incoming" list={windows.incoming} view={view} />
+      <SeasonWindow kind="outgoing" list={windows.outgoing} view={view} />
     </section>
   )
 }

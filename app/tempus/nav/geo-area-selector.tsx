@@ -3,7 +3,7 @@ import { useTempusGeoAreas } from "@/app/tempus/_state/tempus-context"
 import { Check, ChevronDown, MapPin } from "lucide-react"
 
 export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
-  const { geoAreas, selectedGeoArea, selectGeoArea } = useTempusGeoAreas()
+  const { geoAreas, selectedGeoArea, selectGeoArea, previewGeoArea } = useTempusGeoAreas()
   const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>()
   const allSweden = selectedGeoArea === null
 
@@ -38,7 +38,7 @@ export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
       </button>
 
       {open ? (
-        <div className={`absolute z-50 min-w-52 overflow-hidden rounded-md border border-border bg-surface py-1 shadow-md ${compact ? "inset-x-0 bottom-full mb-1" : "right-0 top-full mt-1"}`}>
+        <div className={`absolute z-50 min-w-52 overflow-hidden rounded-md border border-border bg-surface py-1 shadow-md transition-[opacity,translate] duration-150 ease-(--ease-standard) starting:opacity-0 motion-reduce:transition-none ${compact ? "inset-x-0 bottom-full mb-1 starting:translate-y-1" : "right-0 top-full mt-1 starting:-translate-y-1"}`}>
           <button
             type="button"
             aria-pressed={allSweden}
@@ -56,7 +56,13 @@ export function GeoAreaSelector({ compact = false }: { compact?: boolean }) {
             <button
               key={geoArea.id}
               type="button"
+              // The start page's title strip shows the coordinates of the area the pointer rests on.
+              onPointerEnter={() => previewGeoArea(geoArea.id)}
+              onPointerLeave={() => previewGeoArea(null)}
+              onFocus={() => previewGeoArea(geoArea.id)}
+              onBlur={() => previewGeoArea(null)}
               onClick={() => {
+                previewGeoArea(null)
                 setOpen(false)
                 if (geoArea.id !== selectedGeoArea?.id) selectGeoArea(geoArea.id)
               }}

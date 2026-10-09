@@ -6,6 +6,7 @@ import {
 	LexicalEntry,
 	LexicalFormKind,
 	ReadingAnnotation,
+	ReadingGloss,
 	ReadingUnit,
 } from "@/app/lib/dal/opus"
 import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react"
@@ -21,16 +22,17 @@ import {
 import { createAnnotation, deleteAnnotation, updateAnnotation } from "../../_actions/annotation-actions"
 import {
 	createLexicalEntry,
+	deleteLexicalEntry,
 	getLexicalEntry,
 	listLexicalEntries,
 	setEntryGlossaries,
 	updateLexicalEntry,
 } from "../../_actions/lexical-entry-actions"
-import { createLexicalForm, updateLexicalForm } from "../../_actions/lexical-form-actions"
+import { createLexicalForm, deleteLexicalForm, updateLexicalForm } from "../../_actions/lexical-form-actions"
 import { listGlossaries } from "../../_actions/glossary-actions"
 import { useUser } from "@/app/lib/user-context"
 import { CheckboxField, SelectField, TextField, TextAreaField } from "../../forms/Fields/Fields"
-import { FORM_KIND_LABELS, sameWord } from "../../ordlistor/lexical-forms"
+import { describeForm, FORM_KIND_LABELS, sameWord } from "../../ordlistor/lexical-forms"
 
 const ANNOTATION_KINDS: { value: AnnotationKind; label: string }[] = [
 	{ value: "definition", label: "Definition" },
@@ -52,7 +54,10 @@ function trimToTokenBounds(content: string, start: number, end: number): [number
 
 function getTextOffset(container: Node, targetNode: Node, targetOffset: number): number {
 	let offset = 0
-	const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+	// Definitionsrutorna ligger i samma element som texten men hör inte till den.
+	const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, node =>
+		node.parentElement?.closest("[data-term-card]") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+	)
 	let node: Node | null
 	while ((node = walker.nextNode())) {
 		if (node === targetNode) {
@@ -71,16 +76,82 @@ function explanationOf(annotation: ReadingAnnotation) {
 	return annotation.lexical_entry?.definition || annotation.body
 }
 
+const TERM_MARK_CLASS = "bg-transparent text-primary underline decoration-dotted decoration-primary/60 underline-offset-4"
+
+/** Rutan som visas när man håller över ett ord med definition. Dess text räknas inte till styckets (se getTextOffset). */
+function TermCard({
+	text,
+	entry,
+	form,
+	explanation,
+	hint,
+}: {
+	text: string
+	entry: ReadingAnnotation["lexical_entry"]
+	form?: ReadingGloss["form"]
+	explanation: string
+	hint?: string
+}) {
+	const modernForm = entry?.inflection_data?.modern_form
+	const synonyms = entry?.inflection_data?.synonyms
+	return (
+		<span
+			data-term-card
+			className="pointer-events-none absolute left-0 top-full z-30 mt-2 w-60 rounded-md bg-bg p-3 text-left text-[13px] font-normal text-text opacity-0 shadow-xl ring-1 ring-text/15 transition-opacity group-hover/term:opacity-100 group-focus-within/term:opacity-100">
+			<span className="block text-[10px] uppercase tracking-[0.2em] text-text-muted">
+				Ordlista
+			</span>
+			<span className="mt-1 block font-display text-lg font-bold text-text">
+				{text}
+			</span>
+			{entry && !sameWord(entry.lemma, text) && (
+				<span className="mt-1 block text-text">
+					Grundform: <span className="font-medium text-text">{entry.lemma}</span>
+					{form && <span className="text-text-muted"> · {describeForm(form)}</span>}
+				</span>
+			)}
+			{typeof modernForm === "string" && modernForm && (
+				<span className="mt-1 block text-text">
+					Modernt: <span className="font-medium text-text">{modernForm}</span>
+					{entry?.part_of_speech && <> · {entry.part_of_speech}</>}
+				</span>
+			)}
+			{entry?.translation && (
+				<span className="mt-0.5 block text-text">
+					Översättning: <span className="font-medium text-text">{entry.translation}</span>
+				</span>
+			)}
+			{Array.isArray(synonyms) && synonyms.length > 0 && (
+				<span className="mt-0.5 block text-xs text-text">
+					Synonymer: {synonyms.join(", ")}
+				</span>
+			)}
+			{explanation && <span className="mt-1 block text-text">{explanation}</span>}
+			{hint && <span className="mt-2 block text-[11px] text-text-muted">{hint}</span>}
+		</span>
+	)
+}
+
 function highlightContent(
 	content: string,
 	annotations: ReadingAnnotation[],
+	glosses: ReadingGloss[],
 	pending: { start: number; end: number } | null | undefined,
 	onEdit: (annotation: ReadingAnnotation, anchor: HTMLElement) => void,
+	/** Öppnar ett känt ord för redigering; `canEditGloss` avgör vilka ord som är ens egna. */
+	onEditGloss: (gloss: ReadingGloss, anchor: HTMLElement) => void,
+	canEditGloss: (gloss: ReadingGloss) => boolean,
 ): React.ReactNode {
-	const spans = annotations
-		.filter(a => a.start_offset != null && a.end_offset != null)
-		.map(a => ({ start: a.start_offset!, end: a.end_offset!, annotation: a }))
-		.sort((a, b) => a.start - b.start)
+	// Kända ord som API:t hittat i texten ritas som definitioner, utan att vara annotationer.
+	const spans: { start: number; end: number; annotation?: ReadingAnnotation; gloss?: ReadingGloss }[] = [
+		...annotations
+			.filter(a => a.start_offset != null && a.end_offset != null)
+			.map(a => ({ start: a.start_offset!, end: a.end_offset!, annotation: a })),
+		...glosses
+			// Ett ord som håller på att markeras visas som markerat, inte som känt ord.
+			.filter(gloss => !pending || gloss.end_offset <= pending.start || gloss.start_offset >= pending.end)
+			.map(gloss => ({ start: gloss.start_offset, end: gloss.end_offset, gloss })),
+	].sort((a, b) => a.start - b.start)
 
 	// En text som ännu inte är en annotation (under markering) ritas som samma stil, ovanpå
 	// den vanliga texten. Den överlappar inte redan sparade annotationer i praktiken, eftersom
@@ -111,73 +182,62 @@ function highlightContent(
 		if (span.start > cursor) {
 			nodes.push(plain(content.slice(cursor, span.start), cursor, `plain-${cursor}`))
 		}
-		const isDefinition = span.annotation.kind === "definition"
 		const text = content.slice(span.start, span.end)
-		// Markeringen ligger under ordet (underline-offset), inte som en färgad text ovanpå det.
-		const mark = (
-			<mark
-				key={`${span.start}-${span.end}`}
-				tabIndex={0}
-				title={isDefinition ? undefined : "Redigera annotationen"}
-				onClick={event => onEdit(span.annotation, event.currentTarget)}
-				onKeyDown={event => {
-					if (event.key === "Enter") onEdit(span.annotation, event.currentTarget)
-				}}
-				className='cursor-pointer bg-transparent text-primary underline decoration-dotted decoration-primary/60 underline-offset-4'>
-				{text}
-			</mark>
-		)
-		nodes.push(
-			isDefinition ? (
-				<span key={`${span.start}-${span.end}-term`} className="group/term relative inline-block">
-					{mark}
-					<span className="pointer-events-none absolute left-0 top-full z-30 mt-2 w-60 rounded-md bg-bg p-3 text-left text-[13px] font-normal text-text opacity-0 shadow-xl ring-1 ring-text/15 transition-opacity group-hover/term:opacity-100 group-focus-within/term:opacity-100">
-						<span className="block text-[10px] uppercase tracking-[0.2em] text-text-muted">
-							Ordlista
-						</span>
-						<span className="mt-1 block font-display text-lg font-bold text-text">
-							{text}
-						</span>
-						{(() => {
-							const entry = span.annotation.lexical_entry
-							const modernForm = entry?.inflection_data?.modern_form
-							const synonyms = entry?.inflection_data?.synonyms
-							return (
-								<>
-									{entry && !sameWord(entry.lemma, text) && (
-										<span className="mt-1 block text-text">
-											Grundform: <span className="font-medium text-text">{entry.lemma}</span>
-										</span>
-									)}
-									{typeof modernForm === "string" && modernForm && (
-										<span className="mt-1 block text-text">
-											Modernt: <span className="font-medium text-text">{modernForm}</span>
-											{entry?.part_of_speech && <> · {entry.part_of_speech}</>}
-										</span>
-									)}
-									{entry?.translation && (
-										<span className="mt-0.5 block text-text">
-											Översättning: <span className="font-medium text-text">{entry.translation}</span>
-										</span>
-									)}
-									{Array.isArray(synonyms) && synonyms.length > 0 && (
-										<span className="mt-0.5 block text-xs text-text">
-											Synonymer: {synonyms.join(", ")}
-										</span>
-									)}
-								</>
-							)
-						})()}
-						{explanationOf(span.annotation) && (
-							<span className="mt-1 block text-text">{explanationOf(span.annotation)}</span>
-						)}
-						<span className="mt-2 block text-[11px] text-text-muted">Klicka för att redigera</span>
+		const { annotation, gloss } = span
+		if (annotation) {
+			const isDefinition = annotation.kind === "definition"
+			// Markeringen ligger under ordet (underline-offset), inte som en färgad text ovanpå det.
+			const mark = (
+				<mark
+					key={`${span.start}-${span.end}`}
+					tabIndex={0}
+					title={isDefinition ? undefined : "Redigera annotationen"}
+					onClick={event => onEdit(annotation, event.currentTarget)}
+					onKeyDown={event => {
+						if (event.key === "Enter") onEdit(annotation, event.currentTarget)
+					}}
+					className={`cursor-pointer ${TERM_MARK_CLASS}`}>
+					{text}
+				</mark>
+			)
+			nodes.push(
+				isDefinition ? (
+					<span key={`${span.start}-${span.end}-term`} className="group/term relative inline-block">
+						{mark}
+						<TermCard
+							text={text}
+							entry={annotation.lexical_entry}
+							explanation={explanationOf(annotation)}
+							hint="Klicka för att redigera"
+						/>
 					</span>
-				</span>
-			) : (
-				mark
-			),
-		)
+				) : (
+					mark
+				),
+			)
+		} else if (gloss) {
+			const editable = canEditGloss(gloss)
+			nodes.push(
+				<span key={`${span.start}-${span.end}-term`} className="group/term relative inline-block">
+					<mark
+						tabIndex={0}
+						onClick={editable ? event => onEditGloss(gloss, event.currentTarget) : undefined}
+						onKeyDown={event => {
+							if (editable && event.key === "Enter") onEditGloss(gloss, event.currentTarget)
+						}}
+						className={editable ? `cursor-pointer ${TERM_MARK_CLASS}` : TERM_MARK_CLASS}>
+						{text}
+					</mark>
+					<TermCard
+						text={text}
+						entry={gloss.lexical_entry}
+						form={gloss.form}
+						explanation={gloss.lexical_entry.definition}
+						hint={editable ? "Klicka för att redigera" : undefined}
+					/>
+				</span>,
+			)
+		}
 		cursor = span.end
 	}
 
@@ -210,6 +270,8 @@ type SelectionState = {
 	centerX: number
 	/** Satt när panelen redigerar en befintlig annotation i stället för att skapa en ny. */
 	annotation?: ReadingAnnotation
+	/** Satt när panelen redigerar ett känt ord som hittats i texten, utan annotation. */
+	gloss?: ReadingGloss
 }
 
 /** Det panelen placeras vid: markeringen (ny annotation) eller det markerade ordet (redigering). */
@@ -245,6 +307,8 @@ export default function UnitText({
 	const [splitAt, setSplitAt] = useState<number | null>(null)
 	const [pending, setPending] = useState<SelectionState | null>(null)
 	const [kind, setKind] = useState<AnnotationKind>("definition")
+	// Panelen sparar bara det markerade ordet som en form av ett befintligt eget ord, utan annotation.
+	const [formOnly, setFormOnly] = useState(false)
 	const [body, setBody] = useState("")
 	const [partOfSpeech, setPartOfSpeech] = useState("")
 	const [modernForm, setModernForm] = useState("")
@@ -342,6 +406,7 @@ export default function UnitText({
 			centerX: rect.left + rect.width / 2,
 		})
 		setKind("definition")
+		setFormOnly(false)
 		setBody("")
 		setPartOfSpeech("")
 		setModernForm("")
@@ -418,6 +483,7 @@ export default function UnitText({
 				annotation,
 			})
 			setKind(annotation.kind)
+			setFormOnly(false)
 			setBody(annotation.kind === "definition" ? explanationOf(annotation) : annotation.body)
 			setPartOfSpeech(entry?.part_of_speech ?? "")
 			setModernForm(typeof modern === "string" ? modern : "")
@@ -441,6 +507,41 @@ export default function UnitText({
 		[unit, resetBase, chooseBaseEntry],
 	)
 
+	/** Öppnar panelen för ett eget ord som hittats i texten, ifylld med ordets uppgifter. */
+	const startEditingGloss = useCallback(
+		(gloss: ReadingGloss, anchor: HTMLElement) => {
+			const rect = anchor.getBoundingClientRect()
+			const entry = gloss.lexical_entry
+			const synonymList = entry.inflection_data?.synonyms
+			const modern = entry.inflection_data?.modern_form
+			rangeRef.current = anchor
+			setPending({
+				startOffset: gloss.start_offset,
+				endOffset: gloss.end_offset,
+				text: unit.content.slice(gloss.start_offset, gloss.end_offset),
+				top: rect.top,
+				bottom: rect.bottom,
+				centerX: rect.left + rect.width / 2,
+				gloss,
+			})
+			setKind("definition")
+			setFormOnly(false)
+			setBody(entry.definition)
+			setPartOfSpeech(entry.part_of_speech ?? "")
+			setModernForm(typeof modern === "string" ? modern : "")
+			setSynonyms(Array.isArray(synonymList) ? synonymList.join(", ") : "")
+			setTranslation(entry.translation ?? "")
+			resetBase()
+			setGlossaryIds([])
+			setFormError(null)
+			// Vilka av ens ordlistor ordet ligger i finns inte i läsvyns data; hämta ordet.
+			getLexicalEntry(entry.id)
+				.then(full => setGlossaryIds(full.glossaries))
+				.catch(() => {})
+		},
+		[unit, resetBase],
+	)
+
 	// Ens egna ordlistor, som en definition kan läggas i. Hämtas första gången panelen öppnas.
 	useEffect(() => {
 		if (!pending || ownGlossaries !== null || !user) return
@@ -455,14 +556,29 @@ export default function UnitText({
 	const shownBaseMatches = baseMatches.filter(match => match.lemma === baseForm.trim())
 	useEffect(() => {
 		const value = baseForm.trim()
-		if (!pendingText || kind !== "definition" || !value || sameWord(value, pendingText)) return
+		if (!pendingText || formOnly || kind !== "definition" || !value || sameWord(value, pendingText)) return
 		const timer = window.setTimeout(() => {
 			listLexicalEntries({ lemma: value })
 				.then(list => setBaseMatches(list.filter(entry => entry.owner === user?.id)))
 				.catch(() => setBaseMatches([]))
 		}, 300)
 		return () => window.clearTimeout(timer)
-	}, [baseForm, pendingText, kind, user])
+	}, [baseForm, pendingText, formOnly, kind, user])
+
+	// "Form av…": egna ord, oavsett språk, där det skrivna finns i grundformen, en sparad form,
+	// den moderna formen eller översättningen.
+	const wordQuery = baseForm.trim()
+	const shownWordMatches = baseMatches.slice(0, 8)
+	useEffect(() => {
+		const value = baseForm.trim()
+		if (!pendingText || !formOnly || !user || value.length < 2) return
+		const timer = window.setTimeout(() => {
+			listLexicalEntries({ search: value, owner: String(user.id) })
+				.then(setBaseMatches)
+				.catch(() => setBaseMatches([]))
+		}, 200)
+		return () => window.clearTimeout(timer)
+	}, [baseForm, pendingText, formOnly, user])
 
 	useEffect(() => {
 		if (!pending) return
@@ -510,27 +626,79 @@ export default function UnitText({
 		setPlacement({ top, left })
 	}, [pending])
 
+	/** Ordets uppgifter, inklusive förklaringen, sparas på ordet så att ordlistor kan visa dem. */
+	function entryFields() {
+		return {
+			part_of_speech: partOfSpeech.trim(),
+			translation: translation.trim(),
+			definition: body.trim(),
+			inflection_data: {
+				...(modernForm.trim() ? { modern_form: modernForm.trim() } : {}),
+				...(synonyms.trim()
+					? { synonyms: synonyms.split(",").map(s => s.trim()).filter(Boolean) }
+					: {}),
+			},
+		}
+	}
+
+	/** Tar bort ett känt ord helt, eller bara kopplingen mellan textens form och ordet. */
+	async function handleDeleteGloss(target: "entry" | "form") {
+		const gloss = pending?.gloss
+		if (!pending || !gloss) return
+		const lemma = gloss.lexical_entry.lemma
+		const question =
+			target === "form"
+				? `Ta bort »${pending.text}» som form av ${lemma}?`
+				: `Ta bort ordet ${lemma}? Det försvinner ur alla texter och ordlistor, tillsammans med definitionerna som pekar på det, och går inte att ångra.`
+		if (!window.confirm(question)) return
+		setSubmitting(true)
+		setFormError(null)
+		try {
+			if (target === "form" && gloss.form) await deleteLexicalForm(gloss.form.id)
+			else await deleteLexicalEntry(gloss.lexical_entry.id)
+			setPending(null)
+			onAnnotated()
+		} catch {
+			setFormError("Kunde inte ta bort.")
+		} finally {
+			setSubmitting(false)
+		}
+	}
+
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault()
-		if (!pending || !body.trim()) return
+		if (!pending || (pending.gloss ? false : formOnly ? !baseEntry : !body.trim())) return
 		setSubmitting(true)
 		setFormError(null)
 		const existing = pending.annotation
 		try {
+			if (pending.gloss) {
+				// Ordet ändras där det ligger; alla ställen i texten som känner igen det följer med.
+				const entry = await updateLexicalEntry(pending.gloss.lexical_entry.id, entryFields())
+				await setEntryGlossaries(entry.id, entry.glossaries, glossaryIds)
+				setPending(null)
+				onAnnotated()
+				return
+			}
+			if (formOnly && baseEntry) {
+				const text = pending.text.trim()
+				const formData = {
+					kind: formKind,
+					inflection: formKind === "inflection" ? formInflection.trim() : "",
+					is_uncertain: formUncertain,
+				}
+				const known = baseEntry.forms?.find(form => sameWord(form.form, text))
+				if (known) await updateLexicalForm(known.id, formData)
+				else await createLexicalForm({ entry: baseEntry.id, form: text, unit: unit.id, ...formData })
+				setPending(null)
+				window.getSelection()?.removeAllRanges()
+				// Formen känns nu igen i texten, så stycket hämtas om med ordets definition.
+				onAnnotated()
+				return
+			}
 			let lexicalEntryId: Id | null = null
 			if (kind === "definition") {
-				// Ordets uppgifter, inklusive förklaringen, sparas på ordet så att ordlistor kan visa dem.
-				const entryData = {
-					part_of_speech: partOfSpeech.trim(),
-					translation: translation.trim(),
-					definition: body.trim(),
-					inflection_data: {
-						...(modernForm.trim() ? { modern_form: modernForm.trim() } : {}),
-						...(synonyms.trim()
-							? { synonyms: synonyms.split(",").map(s => s.trim()).filter(Boolean) }
-							: {}),
-					},
-				}
+				const entryData = entryFields()
 				const text = pending.text.trim()
 				const base = baseForm.trim()
 				// Det markerade ordet är en böjd form eller variant av en annan grundform.
@@ -792,8 +960,13 @@ export default function UnitText({
 							{highlightContent(
 							unit.content,
 							unit.annotations,
-							pending && !pending.annotation ? { start: pending.startOffset, end: pending.endOffset } : null,
+							unit.glosses ?? [],
+							pending && !pending.annotation && !pending.gloss
+								? { start: pending.startOffset, end: pending.endOffset }
+								: null,
 							startEditingAnnotation,
+							startEditingGloss,
+							gloss => user != null && gloss.lexical_entry.owner === user.id,
 						)}
 						</div>
 					)}
@@ -866,22 +1039,25 @@ export default function UnitText({
 						}}>
 						<div className="flex items-baseline justify-between gap-3 px-4 pt-3 pb-2 border-b border-border">
 							<p className="font-body text-xs font-semibold text-text shrink-0">
-								{pending.annotation ? "Redigera annotation" : "Ny annotation"}
+								{pending.gloss ? "Redigera ord" : pending.annotation ? "Redigera annotation" : "Ny annotation"}
 							</p>
 							<p className="font-display italic text-sm text-text-muted truncate">
 								»{pending.text}»
 							</p>
 						</div>
 						<div className="flex flex-col gap-2.5 px-4 py-3">
-							<div className="flex flex-wrap gap-1.5">
+							<div className={pending.gloss ? "hidden" : "flex flex-wrap gap-1.5"}>
 								{ANNOTATION_KINDS.map(option => {
-									const active = option.value === kind
+									const active = !formOnly && option.value === kind
 									return (
 										<button
 											key={option.value}
 											type="button"
 											aria-pressed={active}
-											onClick={() => setKind(option.value)}
+											onClick={() => {
+												setKind(option.value)
+												setFormOnly(false)
+											}}
 											className={[
 												"rounded-md border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
 												active
@@ -892,17 +1068,108 @@ export default function UnitText({
 										</button>
 									)
 								})}
+								{!pending.annotation && (
+									<button
+										type="button"
+										aria-pressed={formOnly}
+										onClick={() => setFormOnly(true)}
+										className={[
+											"rounded-md border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
+											formOnly
+												? "border-primary bg-primary text-bg"
+												: "border-text/30 text-text-muted hover:border-primary hover:text-primary",
+										].join(" ")}>
+										Form av…
+									</button>
+								)}
 							</div>
-							{kind === "definition" && (
+							{formOnly && (
 								<>
 									<TextField
-										label="Grundform"
+										label="Ord"
 										value={baseForm}
 										onChange={e => changeBaseForm(e.target.value)}
 										maxLength={255}
-										placeholder="Om ordet är böjt eller annorlunda stavat"
+										placeholder="Sök bland dina ord"
+										autoFocus
 									/>
-									{baseForm.trim() !== "" && !sameWord(baseForm, pending.text) && (
+									{!baseEntry && wordQuery.length >= 2 && shownWordMatches.length > 0 && (
+										<div className="flex flex-col gap-1.5">
+											{shownWordMatches.map(match => (
+												<button
+													key={match.id}
+													type="button"
+													onClick={() => chooseBaseEntry(match, pending.text, false)}
+													className="rounded-md border border-text/30 px-2.5 py-1.5 text-left text-xs text-text transition-colors hover:border-primary cursor-pointer">
+													<span className="font-semibold">{match.lemma}</span>
+													{typeof match.inflection_data?.modern_form === "string" &&
+														match.inflection_data.modern_form && (
+															<span> ({match.inflection_data.modern_form})</span>
+														)}
+													{(match.translation || match.definition) && (
+														<span className="text-text-muted">
+															{" "}
+															· {(match.translation || match.definition).slice(0, 60)}
+														</span>
+													)}
+												</button>
+											))}
+										</div>
+									)}
+									{baseEntry && (
+										<>
+											<p className="text-xs text-text-muted">
+												»{pending.text.trim()}» sparas som en form av {baseEntry.lemma} och känns sedan igen i
+												alla texter.
+											</p>
+											<div className="grid grid-cols-2 gap-2">
+												<SelectField
+													label="Typ"
+													value={formKind}
+													onChange={e => setFormKind(e.target.value as LexicalFormKind)}>
+													{(Object.keys(FORM_KIND_LABELS) as LexicalFormKind[]).map(value => (
+														<option key={value} value={value}>
+															{FORM_KIND_LABELS[value]}
+														</option>
+													))}
+												</SelectField>
+												{formKind === "inflection" && (
+													<TextField
+														label="Böjning"
+														value={formInflection}
+														onChange={e => setFormInflection(e.target.value)}
+														maxLength={255}
+														placeholder="pres. ind. 3 sg."
+													/>
+												)}
+											</div>
+											<CheckboxField
+												label="Osäker grundform"
+												checked={formUncertain}
+												onChange={e => setFormUncertain(e.target.checked)}
+											/>
+										</>
+									)}
+								</>
+							)}
+							{!formOnly && kind === "definition" && (
+								<>
+									{pending.gloss ? (
+										!sameWord(pending.gloss.lexical_entry.lemma, pending.text) && (
+											<p className="text-xs text-text-muted">
+												»{pending.text}» är en form av {pending.gloss.lexical_entry.lemma}. Ändringarna gäller ordet.
+											</p>
+										)
+									) : (
+										<TextField
+											label="Grundform"
+											value={baseForm}
+											onChange={e => changeBaseForm(e.target.value)}
+											maxLength={255}
+											placeholder="Om ordet är böjt eller annorlunda stavat"
+										/>
+									)}
+									{!pending.gloss && baseForm.trim() !== "" && !sameWord(baseForm, pending.text) && (
 										<>
 											{shownBaseMatches.length > 0 && (
 												<div className="flex flex-col gap-1.5">
@@ -999,16 +1266,18 @@ export default function UnitText({
 									</div>
 								</>
 							)}
-							<TextAreaField
-								label="Definition eller anteckning"
-								value={body}
-								onChange={e => setBody(e.target.value)}
-								placeholder="Skriv en kort förklaring…"
-								rows={2}
-								required
-								autoFocus
-							/>
-							{kind === "definition" && ownGlossaries && ownGlossaries.length > 0 && (
+							{!formOnly && (
+								<TextAreaField
+									label="Definition eller anteckning"
+									value={body}
+									onChange={e => setBody(e.target.value)}
+									placeholder="Skriv en kort förklaring…"
+									rows={2}
+									required={!pending.gloss}
+									autoFocus
+								/>
+							)}
+							{!formOnly && kind === "definition" && ownGlossaries && ownGlossaries.length > 0 && (
 								<fieldset className="flex flex-col gap-1.5">
 									<legend className="mb-1.5 font-body text-sm text-text">Ordlistor</legend>
 									{ownGlossaries.map(glossary => (
@@ -1042,6 +1311,26 @@ export default function UnitText({
 										Ta bort
 									</button>
 								)}
+								{pending.gloss && (
+									<span className="mr-auto flex flex-wrap gap-x-3">
+										<button
+											type="button"
+											disabled={submitting}
+											onClick={() => handleDeleteGloss("entry")}
+											className="font-body text-sm text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-40 cursor-pointer">
+											Ta bort ordet
+										</button>
+										{pending.gloss.form && (
+											<button
+												type="button"
+												disabled={submitting}
+												onClick={() => handleDeleteGloss("form")}
+												className="font-body text-sm text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-40 cursor-pointer">
+												Ta bort formen
+											</button>
+										)}
+									</span>
+								)}
 								<button
 									type="button"
 									onClick={() => setPending(null)}
@@ -1050,7 +1339,7 @@ export default function UnitText({
 								</button>
 								<button
 									type="submit"
-									disabled={submitting || !body.trim()}
+									disabled={submitting || (pending.gloss ? false : formOnly ? !baseEntry : !body.trim())}
 									className="rounded-md px-3 py-1.5 font-body text-sm font-semibold bg-primary text-bg hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 transition-colors">
 									{submitting ? "Sparar…" : "Spara"}
 								</button>

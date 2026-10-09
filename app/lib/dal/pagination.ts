@@ -18,25 +18,34 @@ function isPaginatedEnvelope<T>(body: unknown): body is Page<T> {
   )
 }
 
-/** Fetches a `{ results, count, next, previous }` collection endpoint, tolerating a plain array response too. */
+/**
+ * Fetches a `{ results, count, next, previous }` collection endpoint, tolerating a plain array response too.
+ * Without a session it returns an empty page, unless `allowAnonymous` is set for an endpoint the API serves publicly.
+ */
 export async function fetchPage<T>(
   path: string,
-  params?: QueryParams
+  params?: QueryParams,
+  { allowAnonymous = false }: { allowAnonymous?: boolean } = {}
 ): Promise<Page<T>> {
   const empty: Page<T> = { results: [], count: 0, next: null, previous: null }
 
   const { sessionId, csrfToken } = await getSessionCookies()
-  if (!sessionId) return empty
+  if (!sessionId && !allowAnonymous) return empty
 
-  const response = await fetchOrigoApi(`${path}${buildQuery(params)}`, {
-    headers: {
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
-  })
+  const response = await fetchOrigoApi(
+    `${path}${buildQuery(params)}`,
+    sessionId
+      ? { headers: { Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }) } }
+      : undefined,
+  )
 
   if (!response.ok) return empty
 
-  const body: unknown = await response.json()
+  return toPage<T>(await response.json())
+}
+
+/** Normalizes a collection response body, paginated envelope or plain array, into a `Page`. */
+export function toPage<T>(body: unknown): Page<T> {
   if (isPaginatedEnvelope<T>(body)) {
     return {
       results: body.results,

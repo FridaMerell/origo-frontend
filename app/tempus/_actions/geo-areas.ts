@@ -1,8 +1,9 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, updateTag } from "next/cache"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
+import { TEMPUS_GEO_AREAS_TAG } from "@/app/lib/dal/tempus/geo"
 import { getCurrentUser } from "@/app/lib/dal/auth"
 import { authedJsonHeaders, firstErrorMessage } from "./request"
 
@@ -37,6 +38,7 @@ export async function createGeoArea(input: CreateGeoAreaInput): Promise<CreateGe
     return { error: firstErrorMessage(detail, response.status) }
   }
   const created = (await response.json().catch(() => null)) as { id?: unknown } | null
+  updateTag(TEMPUS_GEO_AREAS_TAG)
   revalidatePath("/maps")
   return { success: true, id: typeof created?.id === "string" ? created.id : undefined }
 }

@@ -26,7 +26,12 @@ function detailLabels(items: unknown[]) {
   return items.map(highlightLabel).filter((item): item is string => Boolean(item))
 }
 
-export function InterestingSpots({ initialData = null, allowLocation = false, label = "Nära dig" }: { initialData?: TempusInterestingSpots | null; allowLocation?: boolean; label?: string }) {
+// On the start page's sheet the list has no rules of its own: a heading and a
+// sentence on the left, its button on the right. The button is Tempus's usual
+// one, as "Ny checklista" and "Ny observation" on their pages: the shared
+// Button's "paper-bordered" variant with square corners.
+
+export function InterestingSpots({ initialData = null, allowLocation = false, label = "Nära dig", onSheet = false }: { initialData?: TempusInterestingSpots | null; allowLocation?: boolean; label?: string; onSheet?: boolean }) {
   const [data, setData] = useState(initialData)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,12 +54,29 @@ export function InterestingSpots({ initialData = null, allowLocation = false, la
       setLoading(false)
     }
   }
+  const note = "mt-4 text-sm text-text-muted"
+  const untouched = !data && !loading && !error
+  const sheetAction = allowLocation ? <CurrentLocationButton onLocate={load} onError={setError} label="Hämta nära mig" pendingLabel="Hämtar…" variant="paper-bordered" className="shrink-0 rounded-none text-sm" /> : null
   return (
-    <section className="border-y border-border py-5" aria-labelledby="interesting-spots-title">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">Externa observationer</p><h2 id="interesting-spots-title" className="mt-1 font-display text-2xl font-medium italic">{label}</h2></div>{allowLocation ? <CurrentLocationButton onLocate={load} onError={setError} label="Hämta nära mig" pendingLabel="Hämtar…" size="sm" /> : null}</div>
-      {loading ? <p className="mt-4 text-sm text-text-muted">Hämtar intressanta platser…</p> : null}
+    <section className={onSheet ? "min-w-0" : "border-y border-border py-5"} aria-labelledby="interesting-spots-title">
+      {onSheet ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 id="interesting-spots-title" className="font-display text-xl font-semibold">{label}</h2>
+            {untouched && allowLocation ? (
+              <p className="mt-1 text-base text-text-muted">
+                Tillåt platsåtkomst för att se platser med intressanta observationer nära dig.
+              </p>
+            ) : null}
+          </div>
+          {sheetAction}
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">Externa observationer</p><h2 id="interesting-spots-title" className="mt-1 font-display text-2xl font-medium italic">{label}</h2></div>{allowLocation ? <CurrentLocationButton onLocate={load} onError={setError} label="Hämta nära mig" pendingLabel="Hämtar…" size="sm" /> : null}</div>
+      )}
+      {loading ? <p className={note}>Hämtar intressanta platser…</p> : null}
       {error ? <p className="mt-4 text-sm text-danger" role="alert">{error}</p> : null}
-      {!loading && !error && data && data.spots.length === 0 ? <p className="mt-4 text-sm text-text-muted">Inga intressanta platser hittades i närheten.</p> : null}
+      {!loading && !error && data && data.spots.length === 0 ? <p className={note}>Inga intressanta platser hittades i närheten.</p> : null}
       {!loading && !error && data && data.spots.length > 0 ? <>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-xs" role="group" aria-label="Sortera platser">
           <span className="text-text-muted">Sortera:</span>
@@ -91,7 +113,7 @@ export function InterestingSpots({ initialData = null, allowLocation = false, la
         </ol>
         {data.spots.length > 4 ? <button type="button" onClick={() => setShowAll((visible) => !visible)} className="mt-3 font-display text-sm italic text-accent underline underline-offset-4 hover:text-accent-hover">{showAll ? "Visa färre" : "Visa mer"}</button> : null}
       </> : null}
-      {!data && !loading && !error && allowLocation ? <p className="mt-4 text-sm text-text-muted">Tillåt platsåtkomst för att se platser med intressanta observationer nära dig.</p> : null}
+      {untouched && allowLocation && !onSheet ? <p className={note}>Tillåt platsåtkomst för att se platser med intressanta observationer nära dig.</p> : null}
     </section>
   )
 }

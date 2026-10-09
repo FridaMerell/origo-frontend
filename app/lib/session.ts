@@ -3,6 +3,9 @@ import { COOKIE_DOMAIN, CSRF_COOKIE, SESSION_COOKIE } from "@/app/lib/config";
 
 const DJANGO_SESSION_COOKIE = "sessionid";
 const DJANGO_CSRF_COOKIE = "csrftoken";
+// Without a max-age these are session cookies, which an installed PWA drops whenever
+// the OS closes it. The API's own session lifetime still caps how long a login lasts.
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 /**
  * The shared domain only when the request's host lies under it (e.g. opus.origo.test under
@@ -18,6 +21,7 @@ async function cookieOptions() {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
+    maxAge: ONE_YEAR_SECONDS,
     ...(shared ? { domain: COOKIE_DOMAIN } : {}),
   };
 }

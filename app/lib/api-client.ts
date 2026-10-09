@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { headers } from "next/headers";
 import { API_BASE_URL } from "@/app/lib/config";
 
@@ -18,13 +19,43 @@ export function buildCookieHeader(cookies: Record<string, string | undefined>): 
     .join("; ");
 }
 
-export async function fetchOrigoApi(path: string, init: RequestInit = {}) {
+async function resolveOrigin(): Promise<string | undefined> {
   const requestHeaders = await headers();
   const origin = requestHeaders.get("origin");
   const host = requestHeaders.get("host");
-  const resolvedOrigin = origin ?? (host ? `https://${host}` : undefined);
+  return origin ?? (host ? `https://${host}` : undefined);
+}
+
+export async function fetchOrigoApi(path: string, init: RequestInit = {}) {
+  const resolvedOrigin = await resolveOrigin();
   return fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: { ...init.headers, ...(resolvedOrigin ? { Origin: resolvedOrigin } : {}) },
   });
+}
+
+/**
+ * Builds a reader for public, user-independent endpoints: the request carries no
+ * session, and its JSON is kept in Next's data cache and shared by every visitor
+ * for `revalidate` seconds. A failed request is never cached; the reader then
+ * returns null so the caller can fall back to a live, authenticated request.
+ */
+export function sharedOrigoJson(options: { revalidate: number; tags?: string[] }) {
+  const read = unstable_cache(
+    async (path: string, origin: string | undefined): Promise<unknown> => {
+      const response = await fetch(`${API_BASE_URL}${path}`, { headers: origin ? { Origin: origin } : {} });
+      if (!response.ok) throw new Error(`Origo API responded ${response.status}`);
+      return response.json();
+    },
+    ["origo-shared-json"],
+    options,
+  );
+  return async (path: string): Promise<unknown> => {
+    const origin = await resolveOrigin();
+    try {
+      return await read(path, origin);
+    } catch {
+      return null;
+    }
+  };
 }

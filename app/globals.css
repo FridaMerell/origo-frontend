@@ -404,6 +404,30 @@ svg {
 	}
 }
 
+/* ── Tempus start page ───────────────────────────────────────────────── */
+/* The loupe over a biotope map (home/map-backdrop.tsx): the map takes full ink
+   in a soft circle around the mouse. The circle's radius is registered as a
+   length so it can open and close; the mask itself is set where the map is used. */
+@property --sketch-loupe {
+	syntax: "<length>";
+	inherits: true;
+	initial-value: 0px;
+}
+.tempus-sketch[data-loupe] {
+	--sketch-loupe: 0px;
+	--sketch-loupe-x: 50%;
+	--sketch-loupe-y: 50%;
+	transition: --sketch-loupe 460ms var(--ease-standard);
+}
+.tempus-sketch[data-loupe="on"] {
+	--sketch-loupe: 170px;
+}
+@media (prefers-reduced-motion: reduce) {
+	.tempus-sketch[data-loupe] {
+		transition: none;
+	}
+}
+
 @utility grain {
   position: relative;
   &::before {

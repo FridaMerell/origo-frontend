@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, type ReactNode } from "react"
+import { flushSync } from "react-dom"
 import { usePathname } from "next/navigation"
 import Nav from "./nav"
 import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
@@ -23,17 +24,25 @@ export default function TempusShell({ children }: { children: ReactNode }) {
   }, [])
 
   const toggleMode = () => {
-    setMode((previous) => {
-      const next = previous
-        ? previous === "dark"
-          ? "light"
-          : "dark"
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "light"
-          : "dark"
-      localStorage.setItem(STORAGE_KEY, next)
-      return next
-    })
+    const apply = () =>
+      setMode((previous) => {
+        const next = previous
+          ? previous === "dark"
+            ? "light"
+            : "dark"
+          : window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "light"
+            : "dark"
+        localStorage.setItem(STORAGE_KEY, next)
+        return next
+      })
+    // The browser cross-fades the two modes; where it cannot, or with reduced
+    // motion, the mode switches at once as before.
+    if (document.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.startViewTransition(() => flushSync(apply))
+    } else {
+      apply()
+    }
   }
 
   if (isLoginRoute) {

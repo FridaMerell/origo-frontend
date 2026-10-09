@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { API_BASE_URL, AUTH_ENDPOINTS, CSRF_COOKIE, SESSION_COOKIE } from "@/app/lib/config";
+import { API_BASE_URL, AUTH_ENDPOINTS, COOKIE_DOMAIN, CSRF_COOKIE, SESSION_COOKIE } from "@/app/lib/config";
 import { buildCookieHeader } from "@/app/lib/api-client";
 import { isPublicPath, resolveTenant } from "@/app/lib/tenant";
+
+const DJANGO_SESSION_COOKIE = "sessionid";
+const DJANGO_CSRF_COOKIE = "csrftoken";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -17,6 +20,8 @@ export async function proxy(request: NextRequest) {
   // reachable; everything else stays gated unless the tenant lists it.
   const isPublicRoute =
     isLoginRoute || isRootLanding || isJoinRoute || (tenant !== null && isPublicPath(tenant, pathname));
+
+  let validSessionId: string | undefined;
 
   if (request.method === "GET") {
     const sessionId = request.cookies.get(SESSION_COOKIE)?.value;
@@ -37,6 +42,7 @@ export async function proxy(request: NextRequest) {
         hasValidSession = false;
       }
     }
+    if (hasValidSession) validSessionId = sessionId;
 
     if (!isPublicRoute && !hasValidSession) {
       const loginUrl = new URL("/login", request.url);
@@ -60,13 +66,34 @@ export async function proxy(request: NextRequest) {
   // "/login" is rewritten too (not skipped), so it resolves to the
   // tenant-specific "/flux/login" or "/verso/login" page instead of always
   // falling through to the generic "/login" page.
+  let response = NextResponse.next();
   if (tenant && !isJoinRoute) {
     const url = request.nextUrl.clone();
     url.pathname = `/${tenant}${pathname === "/" ? "" : pathname}`;
-    return NextResponse.rewrite(url);
+    response = NextResponse.rewrite(url);
   }
 
-  return NextResponse.next();
+  // Browser-to-API requests (BirdNET SSE, flux board) go straight to Django,
+  // which only reads its own cookie names. Login writes those, but a session
+  // that predates that — or a browser that never got them — only carries the
+  // origo_* pair, so the stream is rejected. Mirror them for any valid session.
+  if (validSessionId && request.cookies.get(DJANGO_SESSION_COOKIE)?.value !== validSessionId) {
+    const parent = COOKIE_DOMAIN.replace(/^\./, "");
+    const shared = hostname === parent || hostname.endsWith(`.${parent}`);
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      ...(shared ? { domain: COOKIE_DOMAIN } : {}),
+    };
+    response.cookies.set(DJANGO_SESSION_COOKIE, validSessionId, options);
+    const csrfToken = request.cookies.get(CSRF_COOKIE)?.value;
+    if (csrfToken) response.cookies.set(DJANGO_CSRF_COOKIE, csrfToken, options);
+  }
+
+  return response;
 }
 
 export const config = {

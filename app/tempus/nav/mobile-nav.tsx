@@ -2,13 +2,16 @@ import { AppLink as Link } from "@/app/components/ui/AppLink"
 import QuickObservation from "../observationer/quick-observation"
 import Logo from "../ui/Logo"
 import { FieldIcon, isActiveLink } from "./nav-links"
+import { LogIn } from "lucide-react"
 
 export function MobileNav({
   pathname,
+  isGuest,
   menuOpen,
   onToggleMenu,
 }: {
   pathname: string
+  isGuest: boolean
   menuOpen: boolean
   onToggleMenu: () => void
 }) {
@@ -44,10 +47,23 @@ export function MobileNav({
           </span>
         </Link>
 
-        <div className="flex min-w-0 flex-col items-center justify-center gap-0.5 text-text-muted [&>button]:border [&>button]:border-accent/50 [&>button]:shadow-sm">
-          <QuickObservation />
-          <span className="font-mono text-[9px] uppercase tracking-[0.04em]">Snabbobs.</span>
-        </div>
+        {/* Quick observation needs a session; a visitor without one gets the way in in its place. */}
+        {isGuest ? (
+          <Link
+            href="/login"
+            className="group flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-md text-text-muted no-underline transition-colors hover:bg-accent-wash hover:text-text focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-focus-ring"
+          >
+            <span className="flex size-9 items-center justify-center rounded-sm border border-accent/50 text-accent">
+              <LogIn size={18} />
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.04em]">Logga in</span>
+          </Link>
+        ) : (
+          <div className="flex min-w-0 flex-col items-center justify-center gap-0.5 text-text-muted [&>button]:border [&>button]:border-accent/50 [&>button]:shadow-sm">
+            <QuickObservation />
+            <span className="font-mono text-[9px] uppercase tracking-[0.04em]">Snabbobs.</span>
+          </div>
+        )}
 
         <Link
           href="/checklistor"

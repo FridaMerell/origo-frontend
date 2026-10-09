@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { LinkButton } from "@/app/components/ui/Button"
 import type { TempusRoute, TempusRouteStop, TempusSuggestedStop } from "@/app/lib/dal"
 import { formatDateLong } from "@/app/lib/formatters"
 import { RouteMap } from "../rutt/route-map"
@@ -12,7 +13,7 @@ export type HomeRouteOverview = {
 }
 
 // `value` is a plain date (no time); parse at noon so no timezone can roll it to the previous/next day.
-function formatRouteDate(value: string) {
+export function formatRouteDate(value: string) {
   const date = new Date(`${value}T12:00:00`)
   return Number.isNaN(date.getTime()) ? value : formatDateLong(date)
 }
@@ -20,24 +21,19 @@ function formatRouteDate(value: string) {
 export function RouteOverview({ routeOverview }: { routeOverview: HomeRouteOverview | null }) {
   if (!routeOverview) {
     return (
-      <section className="border border-border bg-surface">
-        <div className="border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[.16em] text-text-faint">
-          Nästa rutt
+      // Nothing planned: a heading and a sentence on the left, the button on the
+      // right, open on the sheet with no box around it.
+      <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="font-display text-xl font-semibold">Ingen resa inplanerad</h2>
+          <p className="mt-1 text-base text-text-muted">
+            Planera en tur så förs föreslagna arter och stopp längs vägen in här.
+          </p>
         </div>
-        <div className="flex flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="font-display text-xl font-semibold">Ingen resa inplanerad</h2>
-            <p className="mt-1 text-base text-text-muted">
-              Planera en tur så förs föreslagna arter och stopp längs vägen in här.
-            </p>
-          </div>
-          <Link
-            href="/rutt/ny"
-            className="w-fit shrink-0 border border-accent px-3 py-2 text-base text-accent no-underline hover:bg-accent-wash"
-          >
-            Planera en rutt
-          </Link>
-        </div>
+        {/* The same button as "Ny checklista" and "Ny observation" on their pages. */}
+        <LinkButton href="/rutt/ny" variant="paper-bordered" rounded="rounded-none" className="w-fit shrink-0 text-sm no-underline">
+          Planera en rutt
+        </LinkButton>
       </section>
     )
   }
@@ -97,8 +93,9 @@ export function RouteOverview({ routeOverview }: { routeOverview: HomeRouteOverv
   }
 
   return (
-    <section className="border border-border bg-surface">
-      <div className="border-b border-border px-4 py-2 font-mono text-[11px] uppercase tracking-[.16em] text-text-faint">
+    // A planned route is a framed table like the register: same frame, no fill.
+    <section className="border border-text">
+      <div className="border-b border-text px-4 py-2.5 font-mono text-[11px] uppercase tracking-[.14em] text-text">
         Nästa rutt
       </div>
       <div className="grid lg:grid-cols-[18rem_minmax(0,1fr)_20rem]">

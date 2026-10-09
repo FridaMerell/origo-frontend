@@ -1,7 +1,8 @@
 "use client";
 
-import { useId, type ComponentPropsWithoutRef, type MouseEvent } from "react";
+import { useId, useMemo, type ComponentPropsWithoutRef, type MouseEvent } from "react";
 import { SWEDEN_LAKES, SWEDEN_LAND, type PolygonCoordinates } from "./sweden-data";
+import { areaFeatures, createProjection } from "./sweden-map-area-geometry";
 import { mapThemeStyle } from "./theme";
 import { PALETTE, type MapTheme } from "./types";
 
@@ -71,71 +72,11 @@ export type SwedenMapProps = Omit<
 
 type Project = (position: readonly number[]) => readonly [number, number];
 
-const REFERENCE_LATITUDE = 62.2;
-const LONGITUDE_SCALE = Math.cos((REFERENCE_LATITUDE * Math.PI) / 180);
-
-function projected(position: readonly number[]): readonly [number, number] {
-  return [position[0]! * LONGITUDE_SCALE, -position[1]!];
-}
-
-function landBounds() {
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  for (const polygon of SWEDEN_LAND) {
-    for (const ring of polygon) {
-      for (const position of ring) {
-        const [x, y] = projected(position);
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
-      }
-    }
-  }
-
-  return { minX, minY, maxX, maxY };
-}
-
-const BOUNDS = landBounds();
-
-function createProject(width: number, height: number, padding: number): Project {
-  const availableWidth = Math.max(1, width - padding * 2);
-  const availableHeight = Math.max(1, height - padding * 2);
-  const dataWidth = BOUNDS.maxX - BOUNDS.minX;
-  const dataHeight = BOUNDS.maxY - BOUNDS.minY;
-  const scale = Math.min(availableWidth / dataWidth, availableHeight / dataHeight);
-  const offsetX = padding + (availableWidth - dataWidth * scale) / 2;
-  const offsetY = padding + (availableHeight - dataHeight * scale) / 2;
-
-  return (position) => {
-    const [x, y] = projected(position);
-    return [offsetX + (x - BOUNDS.minX) * scale, offsetY + (y - BOUNDS.minY) * scale];
-  };
-}
-
-function createUnproject(width: number, height: number, padding: number) {
-  const availableWidth = Math.max(1, width - padding * 2);
-  const availableHeight = Math.max(1, height - padding * 2);
-  const dataWidth = BOUNDS.maxX - BOUNDS.minX;
-  const dataHeight = BOUNDS.maxY - BOUNDS.minY;
-  const scale = Math.min(availableWidth / dataWidth, availableHeight / dataHeight);
-  const offsetX = padding + (availableWidth - dataWidth * scale) / 2;
-  const offsetY = padding + (availableHeight - dataHeight * scale) / 2;
-
-  return (x: number, y: number): GeoJsonPosition => [
-    ((x - offsetX) / scale) / LONGITUDE_SCALE,
-    -((y - offsetY) / scale),
-  ];
-}
-
 function ringPath(ring: readonly (readonly number[])[], project: Project): string {
   return ring
     .map((position, index) => {
       const [x, y] = project(position);
-      return `${index === 0 ? "M" : "L"}${Math.round(x * 10) / 10} ${Math.round(y * 10) / 10}`;
+      return `${index === 0 ? "M" : "L"}${round1(x)} ${round1(y)}`;
     })
     .join("") + "Z";
 }
@@ -199,10 +140,40 @@ function contentBounds(
   return { minX, minY, maxX, maxY };
 }
 
-function areaFeatures(areas: SwedenMapProps["areas"]): readonly SwedenMapFeature[] {
-  if (!areas) return [];
-  if (Array.isArray(areas)) return areas;
-  return (areas as SwedenMapFeatureCollection).features;
+const round1 = (value: number) => Math.round(value * 10) / 10;
+
+/**
+ * viewBox som zoomar in på innehållet (områden, annars punkter) med samma proportioner som
+ * kartan, så att den fyller ramen utan kanter. Hela kartan om det inte finns något innehåll.
+ */
+function autoZoomViewBox(
+  features: readonly SwedenMapFeature[],
+  points: readonly SwedenMapPoint[],
+  project: Project,
+  { width, height, padding, pointRadius }: { width: number; height: number; padding: number; pointRadius: number },
+): string {
+  const fullView = `0 0 ${width} ${height}`;
+  const bounds = contentBounds(features, [], project) ?? contentBounds([], points, project);
+  if (!bounds) return fullView;
+
+  const zoomPadding = Math.max(padding * 5, pointRadius * 16);
+  const minX = Math.max(0, bounds.minX - zoomPadding);
+  const minY = Math.max(0, bounds.minY - zoomPadding);
+  const maxX = Math.min(width, bounds.maxX + zoomPadding);
+  const maxY = Math.min(height, bounds.maxY + zoomPadding);
+  let zoomWidth = maxX - minX;
+  let zoomHeight = maxY - minY;
+  if (zoomWidth <= 0 || zoomHeight <= 0) return fullView;
+
+  const targetRatio = width / height;
+  if (zoomWidth / zoomHeight > targetRatio) zoomHeight = zoomWidth / targetRatio;
+  else zoomWidth = zoomHeight * targetRatio;
+  zoomWidth = Math.min(zoomWidth, width);
+  zoomHeight = Math.min(zoomHeight, height);
+
+  const centerX = Math.min(Math.max(minX + (maxX - minX) / 2, zoomWidth / 2), width - zoomWidth / 2);
+  const centerY = Math.min(Math.max(minY + (maxY - minY) / 2, zoomHeight / 2), height - zoomHeight / 2);
+  return [centerX - zoomWidth / 2, centerY - zoomHeight / 2, zoomWidth, zoomHeight].map(round1).join(" ");
 }
 
 function featureId(feature: SwedenMapFeature, index: number): string {
@@ -232,43 +203,17 @@ export function SwedenMap({
   ...svgProps
 }: SwedenMapProps) {
   const landClipId = `sweden-land-${useId().replace(/:/g, "")}`;
-  const project = createProject(width, height, padding);
-  const unproject = createUnproject(width, height, padding);
+  const projection = useMemo(() => createProjection(width, height, padding), [width, height, padding]);
+  const project: Project = projection.toMap;
+  const unproject = projection.toGeoJson;
   const features = areaFeatures(areas);
-  const landPath = SWEDEN_LAND.map((polygon) => polygonPath(polygon, project)).join("");
-  const lakesPath = SWEDEN_LAKES.map((lake) => polygonPath(lake.coordinates, project)).join("");
+  // Sveriges land och sjöar är stora polygoner och ändras bara med kartans mått.
+  const landPath = useMemo(() => SWEDEN_LAND.map((polygon) => polygonPath(polygon, projection.toMap)).join(""), [projection]);
+  const lakesPath = useMemo(() => SWEDEN_LAKES.map((lake) => polygonPath(lake.coordinates, projection.toMap)).join(""), [projection]);
 
-  let viewBox = `0 0 ${width} ${height}`;
-  if (autoZoom) {
-    const bounds = contentBounds(features, [], project) ?? contentBounds([], points, project);
-    if (bounds) {
-      const zoomPadding = Math.max(padding * 5, pointRadius * 16);
-      const minX = Math.max(0, bounds.minX - zoomPadding);
-      const minY = Math.max(0, bounds.minY - zoomPadding);
-      const maxX = Math.min(width, bounds.maxX + zoomPadding);
-      const maxY = Math.min(height, bounds.maxY + zoomPadding);
-      let zoomWidth = maxX - minX;
-      let zoomHeight = maxY - minY;
-      if (zoomWidth > 0 && zoomHeight > 0) {
-        // Match the svg aspect ratio so the map fills the frame without letterboxing.
-        const targetRatio = width / height;
-        let centerX = minX + zoomWidth / 2;
-        let centerY = minY + zoomHeight / 2;
-        if (zoomWidth / zoomHeight > targetRatio) {
-          zoomHeight = zoomWidth / targetRatio;
-        } else {
-          zoomWidth = zoomHeight * targetRatio;
-        }
-        zoomWidth = Math.min(zoomWidth, width);
-        zoomHeight = Math.min(zoomHeight, height);
-        centerX = Math.min(Math.max(centerX, zoomWidth / 2), width - zoomWidth / 2);
-        centerY = Math.min(Math.max(centerY, zoomHeight / 2), height - zoomHeight / 2);
-        const originX = centerX - zoomWidth / 2;
-        const originY = centerY - zoomHeight / 2;
-        viewBox = `${Math.round(originX * 10) / 10} ${Math.round(originY * 10) / 10} ${Math.round(zoomWidth * 10) / 10} ${Math.round(zoomHeight * 10) / 10}`;
-      }
-    }
-  }
+  const viewBox = autoZoom
+    ? autoZoomViewBox(features, points, project, { width, height, padding, pointRadius })
+    : `0 0 ${width} ${height}`;
 
   const handleMapClick = (event: MouseEvent<SVGSVGElement>) => {
     if (!onMapClick) return;
@@ -352,7 +297,9 @@ export function SwedenMap({
               role={onPointClick ? "button" : undefined}
               tabIndex={onPointClick ? 0 : undefined}
               onKeyDown={onPointClick ? (event) => {
-                if (event.key === "Enter" || event.key === " ") onPointClick(point);
+                if (event.key !== "Enter" && event.key !== " ") return;
+                event.preventDefault();
+                onPointClick(point);
               } : undefined}
             >
               <circle

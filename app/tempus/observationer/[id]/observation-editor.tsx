@@ -8,6 +8,7 @@ import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { deleteObservation, updateObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import type { TempusObservation } from "@/app/lib/dal"
+import { stageShortcutIndex } from "../quick-observation"
 
 function toLocalInput(iso: string) {
   const date = new Date(iso)
@@ -15,6 +16,9 @@ function toLocalInput(iso: string) {
   date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
   return date.toISOString().slice(0, 16)
 }
+
+const STAGE_BUTTON_ACTIVE = "border-accent bg-accent-wash text-accent"
+const STAGE_BUTTON_IDLE = "border-field-border text-text-muted hover:border-border-strong"
 
 export default function ObservationEditor({
   observation,
@@ -29,47 +33,71 @@ export default function ObservationEditor({
   const [error, setError] = useState<string | null>(null)
   const { requestConfirm, dialog } = useConfirmDialog()
 
-  const initialPoint =
+  const savedPoint =
     observation.location && "coordinates" in observation.location
       ? observation.location.coordinates
       : null
+  // Fältens startvärden kommer från den sparade observationen.
+  const initialValues = () => ({
+    observedAt: toLocalInput(observation.observed_at),
+    lat: savedPoint ? String(savedPoint[1]) : "",
+    lon: savedPoint ? String(savedPoint[0]) : "",
+    count: observation.count ? String(observation.count) : "",
+    lifeStage: observation.life_stage ?? "",
+    notes: observation.notes ?? "",
+    customLifeStage: Boolean(observation.life_stage && !stages.includes(observation.life_stage)),
+  })
 
-  const [observedAt, setObservedAt] = useState(toLocalInput(observation.observed_at))
-  const [lat, setLat] = useState(initialPoint ? String(initialPoint[1]) : "")
-  const [lon, setLon] = useState(initialPoint ? String(initialPoint[0]) : "")
-  const [count, setCount] = useState(observation.count ? String(observation.count) : "")
-  const [lifeStage, setLifeStage] = useState(observation.life_stage ?? "")
-  const [notes, setNotes] = useState(observation.notes ?? "")
-  const [customLifeStage, setCustomLifeStage] = useState(
-    Boolean(observation.life_stage && !stages.includes(observation.life_stage)),
-  )
+  const [observedAt, setObservedAt] = useState(() => initialValues().observedAt)
+  const [lat, setLat] = useState(() => initialValues().lat)
+  const [lon, setLon] = useState(() => initialValues().lon)
+  const [count, setCount] = useState(() => initialValues().count)
+  const [lifeStage, setLifeStage] = useState(() => initialValues().lifeStage)
+  const [notes, setNotes] = useState(() => initialValues().notes)
+  const [customLifeStage, setCustomLifeStage] = useState(() => initialValues().customLifeStage)
   const hasLifeStageChoices = stages.length > 0 || Boolean(observation.life_stage)
   const customLifeStageInputRef = useRef<HTMLInputElement>(null)
 
-  const focusCustomLifeStage = () => {
+  const selectLifeStage = (stage: string) => {
+    setCustomLifeStage(false)
+    setLifeStage(stage)
+  }
+
+  const selectCustomLifeStage = () => {
+    setCustomLifeStage(true)
+    if (stages.includes(lifeStage)) setLifeStage("")
     requestAnimationFrame(() => customLifeStageInputRef.current?.focus())
   }
 
+  // Avbryter redigeringen och kastar osparade ändringar, så att nästa redigering utgår från det sparade.
+  const cancelEditing = () => {
+    const initial = initialValues()
+    setObservedAt(initial.observedAt)
+    setLat(initial.lat)
+    setLon(initial.lon)
+    setCount(initial.count)
+    setLifeStage(initial.lifeStage)
+    setNotes(initial.notes)
+    setCustomLifeStage(initial.customLifeStage)
+    setError(null)
+    setEditing(false)
+  }
+
+  // Tangent 1..n väljer livsstadium, 0 väljer "Annat" (inte medan man skriver i ett fält).
   useEffect(() => {
     if (!editing || !hasLifeStageChoices) return
     const onStageShortcut = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey) return
       if (event.target instanceof HTMLElement && event.target.matches("input, textarea, select, [contenteditable='true']")) return
-      const shortcutIndex = event.key === "0" ? stages.length : Number(event.key) - 1
-      if (!Number.isInteger(shortcutIndex) || shortcutIndex < 0 || shortcutIndex > stages.length) return
+      const index = stageShortcutIndex(event.key, stages.length)
+      if (index === null) return
       event.preventDefault()
-      if (shortcutIndex === stages.length) {
-        setCustomLifeStage(true)
-        if (stages.includes(lifeStage)) setLifeStage("")
-        requestAnimationFrame(() => customLifeStageInputRef.current?.focus())
-        return
-      }
-      setCustomLifeStage(false)
-      setLifeStage(stages[shortcutIndex])
+      if (index === stages.length) selectCustomLifeStage()
+      else selectLifeStage(stages[index])
     }
     window.addEventListener("keydown", onStageShortcut)
     return () => window.removeEventListener("keydown", onStageShortcut)
-  }, [editing, hasLifeStageChoices, lifeStage, stages])
+  })
 
   const save = () => {
     setError(null)
@@ -157,7 +185,7 @@ export default function ObservationEditor({
         </div>
         <button
           type="button"
-          onClick={() => setEditing(false)}
+          onClick={cancelEditing}
           disabled={pending}
           className="text-xs text-text-muted hover:text-text disabled:opacity-50"
           aria-label="Stäng redigeringen"
@@ -180,34 +208,14 @@ export default function ObservationEditor({
         {hasLifeStageChoices ? (
           <div className="border-b border-r border-border px-3 py-2 sm:px-4">
             <p className="font-display text-[9px] italic text-text-faint">Livsstadie <span>(valfritt)</span></p>
-            <div
-              className="mt-1 flex flex-wrap gap-1"
-              role="group"
-              aria-label="Livsstadie"
-              onKeyDown={(event) => {
-                const shortcutIndex = event.key === "0" ? stages.length : Number(event.key) - 1
-                if (!Number.isInteger(shortcutIndex) || shortcutIndex < 0 || shortcutIndex > stages.length) return
-                event.preventDefault()
-                if (shortcutIndex === stages.length) {
-                  setCustomLifeStage(true)
-                  if (stages.includes(lifeStage)) setLifeStage("")
-                  focusCustomLifeStage()
-                  return
-                }
-                setCustomLifeStage(false)
-                setLifeStage(stages[shortcutIndex])
-              }}
-            >
+            <div className="mt-1 flex flex-wrap gap-1" role="group" aria-label="Livsstadie">
               {stages.map((stage, index) => (
                 <button
                   key={stage}
                   type="button"
-                  aria-keyshortcuts={String(stages.indexOf(stage) + 1)}
-                  onClick={() => {
-                    setCustomLifeStage(false)
-                    setLifeStage(stage)
-                  }}
-                  className={`rounded border px-2.5 py-1 text-xs ${lifeStage === stage && !customLifeStage ? "border-accent bg-accent-wash text-accent" : "border-field-border text-text-muted hover:border-border-strong"}`}
+                  aria-keyshortcuts={String(index + 1)}
+                  onClick={() => selectLifeStage(stage)}
+                  className={`rounded border px-2.5 py-1 text-xs ${lifeStage === stage && !customLifeStage ? STAGE_BUTTON_ACTIVE : STAGE_BUTTON_IDLE}`}
                 >
                   {index + 1}. {stage}
                 </button>
@@ -215,12 +223,8 @@ export default function ObservationEditor({
               <button
                 type="button"
                 aria-keyshortcuts="0"
-                onClick={() => {
-                  setCustomLifeStage(true)
-                  if (stages.includes(lifeStage)) setLifeStage("")
-                  focusCustomLifeStage()
-                }}
-                className={`rounded border px-2.5 py-1 text-xs ${customLifeStage ? "border-accent bg-accent-wash text-accent" : "border-field-border text-text-muted hover:border-border-strong"}`}
+                onClick={selectCustomLifeStage}
+                className={`rounded border px-2.5 py-1 text-xs ${customLifeStage ? STAGE_BUTTON_ACTIVE : STAGE_BUTTON_IDLE}`}
               >
                 0. Annat
               </button>
@@ -305,7 +309,7 @@ export default function ObservationEditor({
         </Button>
         <button
           type="button"
-          onClick={() => setEditing(false)}
+          onClick={cancelEditing}
           disabled={pending}
           className="text-xs text-text-muted hover:text-text disabled:opacity-50"
         >

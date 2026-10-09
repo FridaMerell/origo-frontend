@@ -38,11 +38,82 @@ const LAND_COVER_FETCH_POLL_MS = 4000
 // instead of via MapLibre's own hit-testing).
 const POINT_HIT_RADIUS_PX = 16
 
+// Stabil tom lista, så att "ingen data än" inte ger en ny array (och därmed omräkning av allt som härleds) vid varje render.
+const NO_FEATURES: readonly LandCoverMapFeature[] = []
+const EARTH_CIRCUMFERENCE_M = 40_075_016.686
+const MAP_TILE_SIZE_PX = 512
+
 function boundsForGeometry(geometry: Geometry) {
-  const pairs = geometry.type === "Polygon" ? geometry.coordinates.flat() : geometry.type === "MultiPolygon" ? geometry.coordinates.flat(2) : []
-  const lngs = pairs.map((point) => point[0])
-  const lats = pairs.map((point) => point[1])
-  return lngs.length ? [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]] as [[number, number], [number, number]] : null
+  const positions =
+    geometry.type === "Polygon" ? geometry.coordinates.flat()
+      : geometry.type === "MultiPolygon" ? geometry.coordinates.flat(2)
+        : []
+  if (positions.length === 0) return null
+  const lngs = positions.map((position) => position[0])
+  const lats = positions.map((position) => position[1])
+  return [
+    [Math.min(...lngs), Math.min(...lats)],
+    [Math.max(...lngs), Math.max(...lats)],
+  ] as [[number, number], [number, number]]
+}
+
+function isPolygonal(feature: LandCoverMapFeature) {
+  return feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon"
+}
+
+function metersPerPixelAt(map: import("maplibre-gl").Map) {
+  return (EARTH_CIRCUMFERENCE_M * Math.cos((map.getCenter().lat * Math.PI) / 180)) / (MAP_TILE_SIZE_PX * 2 ** map.getZoom())
+}
+
+/** Närmaste observationspunkt inom klickradien, eller null. */
+function findClosestPoint(map: import("maplibre-gl").Map, points: Iterable<AtlasPoint>, click: { x: number; y: number }) {
+  let closest: { point: AtlasPoint; distance: number } | null = null
+  for (const point of points) {
+    const projected = map.project([point.coordinates[0], point.coordinates[1]])
+    const distance = Math.hypot(projected.x - click.x, projected.y - click.y)
+    if (distance <= POINT_HIT_RADIUS_PX && (!closest || distance < closest.distance)) closest = { point, distance }
+  }
+  return closest?.point ?? null
+}
+
+/**
+ * Markslaget vid en punkt. En punkt kan vara både t.ex. skog och sankmark, så sankmarken
+ * redovisas separat oavsett vilken som råkade komma först i listan.
+ */
+function describeAreaAt(features: readonly LandCoverMapFeature[], position: [number, number]): AreaSelection | null {
+  const matches = features.filter((candidate) => {
+    if (!isPolygonal(candidate)) return false
+    try {
+      return turfBooleanPointInPolygon(position, candidate.geometry as unknown as Polygon | MultiPolygon)
+    } catch {
+      return false
+    }
+  })
+  if (matches.length === 0) return null
+
+  const wetlandMatch = matches.find((candidate) => origoTextureKind(candidate) === "wetland")
+  const primaryMatch = matches.find((candidate) => origoTextureKind(candidate) !== "wetland") ?? matches[0]
+  return {
+    label: origoLandLabel(primaryMatch),
+    values: formatHistoricArea(turfArea({ type: "Feature", properties: {}, geometry: primaryMatch.geometry as unknown as Geometry })),
+    wetland: wetlandMatch && wetlandMatch !== primaryMatch ? landLabel(wetlandMatch.properties) : undefined,
+  }
+}
+
+function AreaPanel({ area }: { area: AreaSelection }) {
+  const { values } = area
+  return (
+    <aside className="absolute left-4 top-16 z-20 max-w-72 border border-[#4a3526]/70 bg-[#fbf8f0]/95 p-3 text-xs text-[#4a3526] shadow-sm" aria-live="polite">
+      <p className="font-display text-sm italic capitalize">{area.label}</p>
+      {area.wetland ? <p className="mt-1 capitalize">Sankmark: {area.wetland}</p> : null}
+      <p className="mt-1">{values.hectares} · {values.tunnland}</p>
+      <p className="mt-1 text-[#665744]">
+        {values.markland} · {values.oresland}
+        <br />
+        {values.ortugsland} · {values.penningland}
+      </p>
+    </aside>
+  )
 }
 
 // A fixed, jordebok-style rendering of one Locale. All land-cover comes from
@@ -78,7 +149,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
   // failure (network error, or a genuine 404 on the Locale itself) hitting
   // the endpoint at all, which the backend can't report a `status` for.
   const [landCoverFetchRequestError, setLandCoverFetchRequestError] = useState("")
-  const rawLandCover = landCoverFetch?.status === "succeeded" ? landCoverFetch.land_cover.features : []
+  const rawLandCover = landCoverFetch?.status === "succeeded" ? landCoverFetch.land_cover.features : NO_FEATURES
   const landCoverStatus = landCoverFetchRequestError
     ? landCoverFetchRequestError
     : !landCoverFetch || landCoverFetch.status === "succeeded" ? ""
@@ -92,7 +163,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
   // effect. Both the map's own solid fill layer and the canvas texture below
   // read this buffered geometry, so their edges always agree with each other.
   const bufferedLandCover = useMemo<readonly LandCoverMapFeature[]>(() => rawLandCover.flatMap((feature) => {
-    if (feature.geometry.type !== "Polygon" && feature.geometry.type !== "MultiPolygon") return []
+    if (!isPolygonal(feature)) return []
     try {
       const buffered = turfBuffer(
         { type: "Feature", properties: {}, geometry: feature.geometry as unknown as Polygon | MultiPolygon },
@@ -109,7 +180,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
     }
   }), [rawLandCover])
   const rasterPolygons = useMemo<readonly RasterPolygonFeature[]>(() => bufferedLandCover.flatMap((feature, index) => {
-    if (feature.geometry.type !== "Polygon" && feature.geometry.type !== "MultiPolygon") return []
+    if (!isPolygonal(feature)) return []
     const kind = rasterTextureKind(feature)
     if (!kind) return []
     return [{
@@ -118,9 +189,9 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
       geometry: feature.geometry as unknown as RasterPolygonFeature["geometry"],
     }]
   }), [bufferedLandCover])
-  // Always the current value for the click handler below (defined once, at
-  // map "load" time, so it can't just close over bufferedLandCover directly).
-  bufferedLandCoverRef.current = bufferedLandCover
+  // Alltid aktuellt värde åt klick-hanteraren, som skapas en gång vid kartans "load"
+  // och därför inte kan stänga över bufferedLandCover direkt.
+  useEffect(() => { bufferedLandCoverRef.current = bufferedLandCover }, [bufferedLandCover])
 
   useEffect(() => { onPointClickRef.current = onPointClick }, [onPointClick])
 
@@ -161,57 +232,18 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
         }
         map.on("click", (event) => {
           if (!map) return
-          // MapLibre's queryRenderedFeatures can't hit-test observation
-          // points here: this style has no `glyphs` server configured (see
-          // ObservationLabels' comment on why the visible labels are plain
-          // HTML instead), so a text-field symbol layer never gets shaped
-          // glyphs and never produces a queryable feature at all — a
-          // previous "locale-observation-points" layer relied on exactly
-          // that and could never actually be clicked. Testing screen-space
-          // distance directly against `points` — the same data
-          // ObservationLabels itself projects — sidesteps needing a
-          // rendered/hit-testable layer entirely.
-          let closest: { point: AtlasPoint; distance: number } | null = null
-          for (const point of pointLookup.current.values()) {
-            const projected = map.project([point.coordinates[0], point.coordinates[1]])
-            const distance = Math.hypot(projected.x - event.point.x, projected.y - event.point.y)
-            if (distance <= POINT_HIT_RADIUS_PX && (!closest || distance < closest.distance)) closest = { point, distance }
+          // Observationspunkterna testas direkt mot skärmavstånd: stilen saknar glyphs-server,
+          // så ett symbollager med text skulle aldrig ge några träffbara features (se ObservationLabels).
+          const clickedPoint = findClosestPoint(map, pointLookup.current.values(), event.point)
+          if (clickedPoint) {
+            onPointClickRef.current(clickedPoint)
+            return
           }
-          if (closest) { onPointClickRef.current(closest.point); return }
-          // Test directly against the same bufferedLandCover array the canvas
-          // texture is drawn from, instead of querying MapLibre's rendered
-          // origo-texture-* layers — those turned out to sometimes disagree
-          // with what the canvas actually painted. Reading the same data both
-          // draw from directly removes any chance of that divergence. A click
-          // outside all origo-land-cover coverage simply finds nothing.
-          const clickPoint: [number, number] = [event.lngLat.lng, event.lngLat.lat]
-          const origoMatches = bufferedLandCoverRef.current.filter((candidate) => {
-            if (candidate.geometry.type !== "Polygon" && candidate.geometry.type !== "MultiPolygon") return false
-            try {
-              return turfBooleanPointInPolygon(clickPoint, candidate.geometry as unknown as Polygon | MultiPolygon)
-            } catch {
-              return false
-            }
-          })
-          if (!origoMatches.length) { setArea(null); return }
-          // A point can genuinely carry both a land-cover classification and,
-          // independently, a wetland one (e.g. wooded AND wet ground) — the
-          // point-lookup endpoint's own land_cover/wetland split reflects
-          // that. Surface the wetland match on its own line regardless of
-          // which happened to come first in the array, rather than letting
-          // it silently lose to whatever else matched at that pixel — the
-          // rendered wetland highlight already sits visually on top for the
-          // same reason.
-          const wetlandMatch = origoMatches.find((candidate) => origoTextureKind(candidate) === "wetland")
-          const primaryMatch = origoMatches.find((candidate) => origoTextureKind(candidate) !== "wetland") ?? origoMatches[0]!
-          if (primaryMatch.geometry.type !== "Polygon" && primaryMatch.geometry.type !== "MultiPolygon") return
-          setArea({
-            label: origoLandLabel(primaryMatch),
-            values: formatHistoricArea(turfArea({ type: "Feature", properties: {}, geometry: primaryMatch.geometry as unknown as Geometry })),
-            wetland: wetlandMatch && wetlandMatch !== primaryMatch ? landLabel(wetlandMatch.properties) : undefined,
-          })
+          // Markslaget slås upp mot samma buffrade data som texturen ritas från. MapLibres egna
+          // lager kunde avvika från det som faktiskt målades.
+          setArea(describeAreaAt(bufferedLandCoverRef.current, [event.lngLat.lng, event.lngLat.lat]))
         })
-        const updateScale = () => setMetersPerPixel((40_075_016.686 * Math.cos((map!.getCenter().lat * Math.PI) / 180)) / (512 * 2 ** map!.getZoom()))
+        const updateScale = () => setMetersPerPixel(metersPerPixelAt(map!))
         map.on("move", updateScale)
         updateScale()
         setMapReady((value) => value + 1)
@@ -359,7 +391,11 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
     <CompassComponent />
     <ScaleBar metersPerPixel={metersPerPixel} />
     {selectedPoint ? <span className="sr-only">Vald observation: {selectedPoint.label}</span> : null}
-    {landCoverStatus ? <p className="absolute bottom-16 right-5 z-20 max-w-60 rounded border border-[#4a3526]/50 bg-[#fbf8f0]/90 px-2 py-1 text-xs text-[#4a3526]" role="status">{landCoverStatus}</p> : null}
-    {area ? <aside className="absolute left-4 top-16 z-20 max-w-72 border border-[#4a3526]/70 bg-[#fbf8f0]/95 p-3 text-xs text-[#4a3526] shadow-sm" aria-live="polite"><p className="font-display text-sm italic capitalize">{area.label}</p>{area.wetland ? <p className="mt-1 capitalize">Sankmark: {area.wetland}</p> : null}<p className="mt-1">{area.values.hectares} · {area.values.tunnland}</p><p className="mt-1 text-[#665744]">{area.values.markland} · {area.values.oresland}<br />{area.values.ortugsland} · {area.values.penningland}</p></aside> : null}
+    {landCoverStatus ? (
+      <p className="absolute bottom-16 right-5 z-20 max-w-60 rounded border border-[#4a3526]/50 bg-[#fbf8f0]/90 px-2 py-1 text-xs text-[#4a3526]" role="status">
+        {landCoverStatus}
+      </p>
+    ) : null}
+    {area ? <AreaPanel area={area} /> : null}
   </div>
 }

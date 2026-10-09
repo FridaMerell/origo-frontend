@@ -11,7 +11,7 @@ import {
   type TempusObservationCategoryPage,
 } from "@/app/lib/dal/tempus/observations"
 import { observationFormSchema, type ObservationFormValues } from "@/app/lib/schemas"
-import { authedJsonHeaders, firstErrorMessage } from "./request"
+import { authedJsonHeaders, responseErrorMessage } from "./request"
 
 export type ObservationResult = {
   success?: boolean
@@ -49,8 +49,7 @@ export async function createObservation(input: ObservationFormValues): Promise<O
     body: JSON.stringify(parsed.data),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
 
   const created = (await response.json().catch(() => null)) as { id?: unknown } | null
@@ -84,8 +83,7 @@ export async function createObservationsBatch(
       body: JSON.stringify(parsed.data),
     })
     if (!response.ok) {
-      const detail = await response.text().catch(() => "")
-      results[index] = { index, species: parsed.data.species, ok: false, error: firstErrorMessage(detail, response.status) }
+      results[index] = { index, species: parsed.data.species, ok: false, error: await responseErrorMessage(response) }
       return
     }
     const created = (await response.json().catch(() => null)) as { id?: unknown } | null
@@ -114,8 +112,7 @@ export async function updateObservation(
     body: JSON.stringify(parsed.data),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath("/observationer")
   return { success: true, observationId: id }
@@ -128,8 +125,7 @@ export async function deleteObservation(id: string): Promise<ObservationResult> 
     headers: await authedJsonHeaders(),
   })
   if (!response.ok && response.status !== 404) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath("/observationer")
   return { success: true }

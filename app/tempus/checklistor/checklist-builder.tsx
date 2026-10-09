@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
@@ -18,6 +18,12 @@ import type {
 import { SpeciesSelector } from "./checklist-builder/species-selector"
 import Select from "../forms/Select"
 import { Checkbox, Label, TextArea, TextField } from "../forms/Fields"
+
+const SELECTED_PAGE_SIZE = 25
+
+function Optional({ children = "valfritt" }: { children?: React.ReactNode }) {
+	return <span className='font-normal text-text-faint'>({children})</span>
+}
 
 export default function ChecklistBuilder({
 	categories,
@@ -54,14 +60,20 @@ export default function ChecklistBuilder({
 		? Math.max(selected.size, selectedCategory.species_count)
 		: selected.size
 
+	const selectedGeoArea = geoAreas.find(geoArea => geoArea.id === geoAreaId)
+	const selectedLocale = locales.find(locale => String(locale.id) === localeId)
+
 	const selectedIds = useMemo(() => [...selected], [selected])
-	const selectedTotalPages = Math.max(1, Math.ceil(selectedIds.length / 25))
+	const selectedTotalPages = Math.max(
+		1,
+		Math.ceil(selectedIds.length / SELECTED_PAGE_SIZE),
+	)
 	const effectiveSelectedPage = Math.min(selectedPage, selectedTotalPages)
 	const selectedPageIds = useMemo(
 		() =>
 			selectedIds.slice(
-				(effectiveSelectedPage - 1) * 25,
-				effectiveSelectedPage * 25,
+				(effectiveSelectedPage - 1) * SELECTED_PAGE_SIZE,
+				effectiveSelectedPage * SELECTED_PAGE_SIZE,
 			),
 		[effectiveSelectedPage, selectedIds],
 	)
@@ -69,21 +81,27 @@ export default function ChecklistBuilder({
 		.map(id => knownSpecies.get(id))
 		.filter((item): item is TempusSpecies => Boolean(item))
 
+	// Ids vi redan försökt hämta, så att en art som saknas i svaret inte hämtas om och om igen.
+	const requestedIds = useRef<Set<string>>(new Set())
+
 	useEffect(() => {
-		const missing = selectedPageIds.filter(id => !knownSpecies.has(id))
+		const missing = selectedPageIds.filter(
+			id => !knownSpecies.has(id) && !requestedIds.current.has(id),
+		)
 		if (missing.length === 0) return
-		let active = true
-		loadSpeciesItems(missing).then(items => {
-			if (!active) return
-			setKnownSpecies(current => {
-				const next = new Map(current)
-				items.forEach(item => next.set(item.id, item))
-				return next
+		missing.forEach(id => requestedIds.current.add(id))
+		loadSpeciesItems(missing)
+			.then(items => {
+				setKnownSpecies(current => {
+					const next = new Map(current)
+					items.forEach(item => next.set(item.id, item))
+					return next
+				})
 			})
-		})
-		return () => {
-			active = false
-		}
+			.catch(() => {
+				// Tillåt ny hämtning om anropet misslyckades.
+				missing.forEach(id => requestedIds.current.delete(id))
+			})
 	}, [knownSpecies, selectedPageIds])
 
 	const toggleSpecies = (id: string, item?: TempusSpecies) => {
@@ -210,10 +228,7 @@ export default function ChecklistBuilder({
 									</Label>
 									<div className={"sm:col-span-2"}>
 										<Label>
-											Beskrivning{" "}
-											<span className='font-normal text-text-faint'>
-												(valfritt)
-											</span>
+											Beskrivning <Optional />
 											<TextArea
 												value={description}
 												onChange={event => setDescription(event.target.value)}
@@ -227,10 +242,7 @@ export default function ChecklistBuilder({
 										Lägg till arter automatiskt
 									</Checkbox>
 									<Label>
-										Område{" "}
-										<span className='font-normal text-text-faint'>
-											(valfritt)
-										</span>
+										Område <Optional />
 										<Select
 											value={geoAreaId}
 											onChange={event => setGeoAreaId(event.target.value)}>
@@ -244,10 +256,7 @@ export default function ChecklistBuilder({
 									</Label>
 
 									<Label>
-									Lokal
-										<span className='font-normal text-text-faint'>
-											(t.ex. &quot;Stenmovägen&quot;, valfritt)
-										</span>
+										Lokal <Optional>t.ex. &quot;Stenmovägen&quot;, valfritt</Optional>
 										<Select
 											value={localeId}
 											onChange={event => setLocaleId(event.target.value)}>
@@ -261,10 +270,7 @@ export default function ChecklistBuilder({
 									</Label>
 
 									<Label className={"sm:col-span-1 col-span-2"}>
-										Startdatum{" "}
-										<span className='font-normal text-text-faint'>
-											(valfritt)
-										</span>
+										Startdatum <Optional />
 										<input
 											type='date'
 											value={startDate}
@@ -273,10 +279,7 @@ export default function ChecklistBuilder({
 										/>
 									</Label>
 									<Label className={"sm:col-span-1 col-span-2"}>
-										Slutdatum{" "}
-										<span className='font-normal text-text-faint'>
-											(valfritt)
-										</span>
+										Slutdatum <Optional />
 										<input
 											type='date'
 											value={endDate}
@@ -321,15 +324,12 @@ export default function ChecklistBuilder({
 										</h2>
 										{geoAreaId ? (
 											<p className='mt-1 text-xs text-text-muted'>
-												{
-													geoAreas.find(geoArea => geoArea.id === geoAreaId)
-														?.name
-												}
+												{selectedGeoArea?.name}
 											</p>
 										) : null}
 										{localeId ? (
 											<p className='mt-1 text-xs text-text-muted'>
-										{locales.find(locale => String(locale.id) === localeId)?.name}
+												{selectedLocale?.name}
 											</p>
 										) : null}
 									</div>

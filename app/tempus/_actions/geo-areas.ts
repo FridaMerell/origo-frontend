@@ -5,7 +5,7 @@ import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
 import { TEMPUS_GEO_AREAS_TAG } from "@/app/lib/dal/tempus/geo"
 import { getCurrentUser } from "@/app/lib/dal/auth"
-import { authedJsonHeaders, firstErrorMessage } from "./request"
+import { authedJsonHeaders, responseErrorMessage } from "./request"
 
 export type GeoAreaKind = "country" | "county" | "province" | "nature_reserve" | "biological_area"
 export type GeoAreaPolygon = { type: "Polygon"; coordinates: readonly (readonly (readonly number[])[])[] }
@@ -34,8 +34,7 @@ export async function createGeoArea(input: CreateGeoAreaInput): Promise<CreateGe
     }),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   const created = (await response.json().catch(() => null)) as { id?: unknown } | null
   updateTag(TEMPUS_GEO_AREAS_TAG)

@@ -18,6 +18,14 @@ import {
 } from "./sweden-map-area-geometry";
 import { useAreaEditorInteraction, type EditorTool } from "./use-area-editor-interaction";
 
+const TOOLS: readonly { id: EditorTool; label: string }[] = [
+  { id: "polygon", label: "Punkter" },
+  { id: "square", label: "Ruta" },
+  { id: "move", label: "Flytta" },
+];
+
+const DRAFT_COLOR = "var(--biotope-map-area-stroke, var(--accent-hover, var(--color-accent, #8f4932)))";
+
 export type SwedenMapAreaEditorProps = Omit<
   SwedenMapProps,
   "areas" | "className" | "onChange"
@@ -49,7 +57,7 @@ export function SwedenMapAreaEditor({
   const [points, setPoints] = useState<GeoJsonPosition[]>(() => openRing(defaultValue));
   const [tool, setTool] = useState<EditorTool>("polygon");
   const projection = useMemo(() => createProjection(width, height, padding), [width, height, padding]);
-  const geometry = polygonFromPoints(points);
+  const geometry = useMemo(() => polygonFromPoints(points), [points]);
   const visibleAreas = useMemo<readonly SwedenMapFeature[]>(
     () => [
       ...areaFeatures(areas),
@@ -79,36 +87,20 @@ export function SwedenMapAreaEditor({
   return (
     <div className={["flex flex-col gap-3", className].filter(Boolean).join(" ")}>
       <div className="flex flex-wrap gap-2" role="toolbar" aria-label="Ritverktyg">
-        <Button
-          type="button"
-          size="sm"
-          variant={tool === "polygon" ? "primary" : "secondary"}
-          disabled={disabled}
-          aria-pressed={tool === "polygon"}
-          onClick={() => setTool("polygon")}
-        >
-          Punkter
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={tool === "square" ? "primary" : "secondary"}
-          disabled={disabled}
-          aria-pressed={tool === "square"}
-          onClick={() => setTool("square")}
-        >
-          Ruta
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={tool === "move" ? "primary" : "secondary"}
-          disabled={disabled || !geometry}
-          aria-pressed={tool === "move"}
-          onClick={() => setTool("move")}
-        >
-          Flytta
-        </Button>
+        {TOOLS.map(({ id, label }) => (
+          <Button
+            key={id}
+            type="button"
+            size="sm"
+            variant={tool === id ? "primary" : "secondary"}
+            // Det går bara att flytta ett färdigt område.
+            disabled={disabled || (id === "move" && !geometry)}
+            aria-pressed={tool === id}
+            onClick={() => setTool(id)}
+          >
+            {label}
+          </Button>
+        ))}
       </div>
 
       <div className="relative overflow-hidden rounded border border-border">
@@ -138,7 +130,7 @@ export function SwedenMapAreaEditor({
             <polyline
               points={mapPoints.map(([x, y]) => `${x},${y}`).join(" ")}
               fill="none"
-              stroke="var(--biotope-map-area-stroke, var(--accent-hover, var(--color-accent, #8f4932)))"
+              stroke={DRAFT_COLOR}
               strokeWidth={2}
               strokeDasharray={geometry ? undefined : "5 5"}
               vectorEffect="non-scaling-stroke"
@@ -151,7 +143,7 @@ export function SwedenMapAreaEditor({
               cx={x}
               cy={y}
               r={3.5}
-              fill="var(--biotope-map-area-stroke, var(--accent-hover, var(--color-accent, #8f4932)))"
+              fill={DRAFT_COLOR}
               stroke="var(--surface, white)"
               strokeWidth={1.5}
               vectorEffect="non-scaling-stroke"

@@ -16,7 +16,7 @@ import {
   checklistFormSchema,
   type ChecklistFormValues,
 } from "@/app/lib/schemas"
-import { authedJsonHeaders, firstErrorMessage } from "./request"
+import { authedJsonHeaders, responseErrorMessage } from "./request"
 
 export type CreateChecklistResult = {
   success?: boolean
@@ -63,8 +63,7 @@ export async function createChecklist(input: ChecklistFormValues): Promise<Creat
     }),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   const checklist = (await response.json().catch(() => null)) as { id?: unknown } | null
   if (typeof checklist?.id !== "string") return { error: "Checklistan skapades, men svaret saknade ett checklist-ID." }
@@ -152,8 +151,7 @@ export async function updateChecklist(
     )),
   ])
   if (metadataResponse && !metadataResponse.ok) {
-    const detail = await metadataResponse.text().catch(() => "")
-    return { error: firstErrorMessage(detail, metadataResponse.status) }
+    return { error: await responseErrorMessage(metadataResponse) }
   }
   const changeResponses = [
     ...removalResponses,
@@ -161,8 +159,8 @@ export async function updateChecklist(
   ]
   const failed = changeResponses.find((itemResponse) => !itemResponse.ok && itemResponse.status !== 404)
   if (failed) {
-    const detail = await failed.text().catch(() => "")
-    return { checklistId: id, error: `Checklistan sparades, men artlistan kunde inte uppdateras helt. ${firstErrorMessage(detail, failed.status)}` }
+    const reason = await responseErrorMessage(failed)
+    return { checklistId: id, error: `Checklistan sparades, men artlistan kunde inte uppdateras helt. ${reason}` }
   }
 
   return { success: true, checklistId: id }
@@ -175,8 +173,7 @@ export async function deleteChecklist(id: string): Promise<{ success?: boolean; 
     headers: await authedJsonHeaders(),
   })
   if (!response.ok && response.status !== 404) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath("/checklistor")
   return { success: true }
@@ -198,8 +195,7 @@ export async function syncChecklistCategory(
     body: JSON.stringify({ species_category_id: speciesCategoryId }),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
 
   revalidatePath("/checklistor")
@@ -216,8 +212,7 @@ export async function syncChecklistObservations(id: string): Promise<ChecklistSy
     headers: await authedJsonHeaders(),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
 
   revalidatePath("/checklistor")

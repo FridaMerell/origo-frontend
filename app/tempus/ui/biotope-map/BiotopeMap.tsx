@@ -70,7 +70,6 @@ export const biotopePropsFromSpecies = (species: BiotopeSpecies) => {
     frame: DEFAULT_BIOTOPE_MAP_OPTIONS.frame,
     label: DEFAULT_BIOTOPE_MAP_OPTIONS.label,
     compass: DEFAULT_BIOTOPE_MAP_OPTIONS.compass,
-
   }
 }
 
@@ -102,12 +101,11 @@ export function BiotopeMap({
   theme,
   ...svgProps
 }: BiotopeMapProps) {
-  const trees = features?.trees ?? DEFAULT_FEATURES.trees
-  const ponds = features?.ponds ?? DEFAULT_FEATURES.ponds
-  const meadows = features?.meadows ?? DEFAULT_FEATURES.meadows
-  const hills = features?.hills ?? DEFAULT_FEATURES.hills
-  const valleys = features?.valleys ?? DEFAULT_FEATURES.valleys
-  const roads = features?.roads ?? DEFAULT_FEATURES.roads
+  // Utelämnade (eller undefined) funktioner faller tillbaka på standardvärdet.
+  const resolvedFeatures = { ...DEFAULT_FEATURES }
+  for (const key of Object.keys(DEFAULT_FEATURES) as FeatureKey[]) {
+    resolvedFeatures[key] = features?.[key] ?? DEFAULT_FEATURES[key]
+  }
 
   const scene = generateMap({
     biotope,
@@ -115,7 +113,7 @@ export function BiotopeMap({
     width,
     height,
     detail,
-    features: { trees, ponds, meadows, hills, valleys, roads },
+    features: resolvedFeatures,
     featureAmount,
     waterStrength,
     relief,

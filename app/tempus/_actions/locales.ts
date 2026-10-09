@@ -6,7 +6,7 @@ import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
 import { getCurrentUser } from "@/app/lib/dal/auth"
 import type { TempusLocale } from "@/app/lib/dal"
-import { authedJsonHeaders, firstErrorMessage } from "./request"
+import { authedJsonHeaders, responseErrorMessage } from "./request"
 
 const positionSchema = z.tuple([
   z.number().min(-180).max(180),
@@ -38,8 +38,7 @@ export async function createLocale(input: CreateLocaleInput): Promise<{ success?
     body: JSON.stringify({ name, geometry: geometry.data }),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
 
   revalidatePath("/lokaler")
@@ -62,8 +61,7 @@ export async function updateLocale(id: string | number, input: CreateLocaleInput
     body: JSON.stringify({ name, geometry: geometry.data }),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
 
   revalidatePath("/lokaler")
@@ -83,8 +81,7 @@ export async function deleteLocale(id: string | number): Promise<{ success?: boo
     headers: await authedJsonHeaders(),
   })
   if (!response.ok && response.status !== 404) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
 
   revalidatePath("/lokaler")

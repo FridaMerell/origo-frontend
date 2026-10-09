@@ -21,9 +21,6 @@ export default async function ObservationsPage() {
     <div className="container mx-auto flex flex-col gap-4 py-5 max-sm:px-4 sm:py-7">
       <header className="flex flex-wrap items-end justify-between gap-6 border-b border-border pb-4">
         <div className="flex flex-col gap-1">
-          <div className="font-mono text-[10px] uppercase tracking-[.2em] text-accent">
-            Observationer
-          </div>
           <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
             Dina observationer
           </h1>

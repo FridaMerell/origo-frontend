@@ -2,7 +2,9 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import {
+  type TempusObservation,
   getTempusObservationItem,
+  getTempusPublicObservationItem,
   getTempusSpeciesCategoriesAll,
   getTempusSpeciesItems,
 } from "@/app/lib/dal"
@@ -13,7 +15,7 @@ type PageProps = { params: Promise<{ id: string }> }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
-  const observation = await getTempusObservationItem(id)
+  const observation = (await getTempusObservationItem(id)) ?? (await getTempusPublicObservationItem(id))
   if (!observation) return { title: "Observation | Tempus" }
   const species = (await getTempusSpeciesItems([observation.species]))[0] ?? null
   const name = species?.swedish_name || species?.scientific_name
@@ -22,7 +24,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ObservationDetailPage({ params }: PageProps) {
   const { id } = await params
-  const observation = await getTempusObservationItem(id)
+  const own = await getTempusObservationItem(id)
+  // Someone else's observation is shown to read, without the editor.
+  const shared = own ? null : await getTempusPublicObservationItem(id)
+  const observation: TempusObservation | null =
+    own ?? (shared ? { ...shared, checklist_items: [], checklist_names: [], locale: null } : null)
   if (!observation) notFound()
 
   const [species, categories] = await Promise.all([
@@ -55,9 +61,11 @@ export default async function ObservationDetailPage({ params }: PageProps) {
         checklistNames={checklistNames}
       />
 
-      <div className="mt-3">
-        <ObservationEditor observation={observation} stages={species?.stages ?? []} />
-      </div>
+      {own ? (
+        <div className="mt-3">
+          <ObservationEditor observation={own} stages={species?.stages ?? []} />
+        </div>
+      ) : null}
     </div>
   )
 }

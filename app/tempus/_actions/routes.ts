@@ -11,7 +11,7 @@ import {
 } from "@/app/tempus/_data/routes"
 import { type RouteFormValues, routeFormSchema } from "@/app/lib/schemas"
 import { getSessionCookies } from "@/app/lib/session"
-import { authedJsonHeaders, firstErrorMessage } from "./request"
+import { authedJsonHeaders, responseErrorMessage } from "./request"
 
 export type RouteResult = { success?: boolean; routeId?: string; error?: string }
 
@@ -25,8 +25,7 @@ export async function createRoute(input: RouteFormValues): Promise<RouteResult> 
     body: JSON.stringify(parsed.data),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   const created = (await response.json().catch(() => null)) as { id?: unknown } | null
   revalidatePath("/rutt")
@@ -43,8 +42,7 @@ export async function updateRoute(id: string, input: Partial<RouteFormValues>): 
     body: JSON.stringify(parsed.data),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath("/rutt")
   revalidatePath(`/rutt/${id}`)
@@ -62,8 +60,7 @@ export async function deleteRoute(id: string): Promise<{ success?: boolean; erro
     },
   })
   if (!response.ok && response.status !== 404) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath("/rutt")
   return { success: true }
@@ -96,8 +93,7 @@ export async function createRouteStop(input: AddRouteStopInput): Promise<{ succe
     }),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath(`/rutt/${input.route}`)
   return { success: true }
@@ -114,8 +110,7 @@ export async function deleteRouteStop(routeId: string, stopId: string): Promise<
     },
   })
   if (!response.ok && response.status !== 404) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath(`/rutt/${routeId}`)
   return { success: true }
@@ -175,8 +170,7 @@ export async function startSuggestedStops(routeId: string, params: SuggestedStop
     return { error: "Kunde inte nå servern. Försök igen om en stund." }
   }
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   const run = parseSuggestedStopsRun(await response.json().catch(() => null))
   return run ? { data: run } : { error: "Kunde inte tolka svaret från servern." }
@@ -195,8 +189,7 @@ export async function pollSuggestedStops(routeId: string): Promise<SuggestedStop
   }
   if (response.status === 404) return { error: "Ingen sökning har startats för den här rutten." }
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   const run = parseSuggestedStopsRun(await response.json().catch(() => null))
   return run ? { data: run } : { error: "Kunde inte tolka svaret från servern." }

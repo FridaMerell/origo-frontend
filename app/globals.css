@@ -420,7 +420,7 @@ svg {
 	transition: --sketch-loupe 460ms var(--ease-standard);
 }
 .tempus-sketch[data-loupe="on"] {
-	--sketch-loupe: 170px;
+	--sketch-loupe: 240px;
 }
 @media (prefers-reduced-motion: reduce) {
 	.tempus-sketch[data-loupe] {

@@ -50,6 +50,11 @@ export function fieldNote(nextRoute: { name: string; date: string } | null): Rai
   return { heading: "Lokaler", lines: nextRoute ? [nextRoute.name, nextRoute.date] : [] }
 }
 
+// The latest observations from every user.
+export function observationsNote(count: number): RailNote {
+  return { heading: "Senaste obsar", lines: count > 0 ? [`${formatCount(count)} totalt`] : [] }
+}
+
 // The species. The tabs beside it already name the reading, so the note keeps
 // to the section's name and says which reading and which rows are shown.
 export function registerNote({ view, register }: HomeData, selection: Selection): RailNote {

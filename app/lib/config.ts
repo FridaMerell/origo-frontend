@@ -130,6 +130,7 @@ export const TEMPUS_ENDPOINTS = {
   checklistSyncCategory: (id: string) => `/api/tempus/checklists/${id}/sync-category/`,
   checklistItems: "/api/tempus/checklist-items/",
   observations: "/api/tempus/observations/",
+  allObservations: "/api/tempus/all-observations/",
   observationsByCategory: "/api/tempus/observations/by-category/",
   observationsSyncChecklists: "/api/tempus/observations/sync-checklists/",
   interestingSpots: "/api/tempus/interesting-spots/",

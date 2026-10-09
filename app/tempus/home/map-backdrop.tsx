@@ -16,8 +16,21 @@ const INK = {
     "[&_svg]:[mask-image:radial-gradient(circle_at_var(--sketch-loupe-x)_var(--sketch-loupe-y),#000_0,#000_calc(var(--sketch-loupe)*.5),transparent_var(--sketch-loupe)),linear-gradient(to_right,transparent,rgb(0_0_0/.95)_75%)]",
 }
 
+// The loupe's own layer: the same map drawn darker and heavier, visible only
+// inside the circle, so the loupe shows a different drawing and not just more
+// of the same faint one. The circle is cut by the same fade as the map's own
+// ink, so the heavy drawing never reaches the text on the left.
+const LENS = {
+  header:
+    "[&_svg]:[mask-composite:intersect] [&_svg]:[mask-image:radial-gradient(circle_at_var(--sketch-loupe-x)_var(--sketch-loupe-y),#000_0,#000_calc(var(--sketch-loupe)*.6),transparent_var(--sketch-loupe)),linear-gradient(to_right,transparent,#000_35%)]",
+  row:
+    "[&_svg]:[mask-composite:intersect] [&_svg]:[mask-image:radial-gradient(circle_at_var(--sketch-loupe-x)_var(--sketch-loupe-y),#000_0,#000_calc(var(--sketch-loupe)*.6),transparent_var(--sketch-loupe)),linear-gradient(to_right,transparent,#000_75%)]",
+}
+
 // Drawn in the page's own ink, so the map reads as a drawing and not as a tint.
 const THEME = { paper: "transparent", paperWarm: "transparent", contourMinor: "var(--text-faint)", inkSoft: "var(--text)" }
+
+const LENS_THEME = { ...THEME, contourMinor: "var(--text)" }
 
 // A biotope map as a backdrop that fills its parent, with the loupe: a soft
 // circle of full ink that follows the mouse while it is over the map. The
@@ -47,15 +60,27 @@ export function MapBackdrop({ ink, ...map }: { ink: keyof typeof INK } & Pick<Bi
   }, [])
 
   return (
-    <div ref={root} data-loupe="off" className={`tempus-sketch absolute inset-0 ${INK[ink]}`}>
-      <BiotopeMap
-        {...map}
-        theme={THEME}
-        compass={false}
-        aria-hidden="true"
-        preserveAspectRatio="xMaxYMid slice"
-        className="absolute inset-0 size-full!"
-      />
+    <div ref={root} data-loupe="off" className="tempus-sketch absolute inset-0">
+      <div className={`absolute inset-0 ${INK[ink]}`}>
+        <BiotopeMap
+          {...map}
+          theme={THEME}
+          compass={false}
+          aria-hidden="true"
+          preserveAspectRatio="xMaxYMid slice"
+          className="absolute inset-0 size-full!"
+        />
+      </div>
+      <div className={`absolute inset-0 ${LENS[ink]}`}>
+        <BiotopeMap
+          {...map}
+          theme={LENS_THEME}
+          compass={false}
+          aria-hidden="true"
+          preserveAspectRatio="xMaxYMid slice"
+          className="absolute inset-0 size-full!"
+        />
+      </div>
     </div>
   )
 }

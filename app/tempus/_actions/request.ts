@@ -10,6 +10,12 @@ export async function authedJsonHeaders() {
   }
 }
 
+/** Läser felsvaret från API:t och returnerar ett läsbart felmeddelande. */
+export async function responseErrorMessage(response: Response): Promise<string> {
+  const detail = await response.text().catch(() => "")
+  return firstErrorMessage(detail, response.status)
+}
+
 export function firstErrorMessage(detail: string, status: number): string {
   const fallback = `Ett fel uppstod (${status}).`
   try {

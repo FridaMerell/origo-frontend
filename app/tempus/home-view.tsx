@@ -5,7 +5,7 @@ import { useTempusPreviewedPosition } from "./_state/tempus-context"
 import { InterestingSpots } from "./home/interesting-spots"
 import { useHomeData } from "./home/overview-data"
 import { useOverview } from "./home/overview-provider"
-import { fieldNote, registerNote, summaryNote, windowsNote } from "./home/rail-notes"
+import { fieldNote, observationsNote, registerNote, summaryNote, windowsNote } from "./home/rail-notes"
 import { RegisterSection } from "./home/register-section"
 import { SeasonOverviewHeader } from "./home/season-overview-header"
 import { SeasonWindows } from "./home/season-windows"
@@ -32,6 +32,8 @@ export default function HomeView({
   currentMonth,
   route,
   nextRoute,
+  observations,
+  observationCount,
 }: {
   areaName: string
   // The area's centre as coordinates, when it has a shape.
@@ -43,6 +45,9 @@ export default function HomeView({
   // The next planned route, rendered on the server, and what the margin says of it.
   route: ReactNode
   nextRoute: { name: string; date: string } | null
+  // The latest observations from every user, rendered on the server, and how many there are.
+  observations: ReactNode
+  observationCount: number
 }) {
   const { isGuest, selection } = useOverview()
   const data = useHomeData()
@@ -81,6 +86,7 @@ export default function HomeView({
             ),
           },
         ]),
+    ...(observations ? [{ key: "observations", note: observationsNote(observationCount), content: observations }] : []),
   ]
 
   return (

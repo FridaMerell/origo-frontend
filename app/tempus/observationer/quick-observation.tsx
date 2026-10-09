@@ -10,6 +10,12 @@ import { PlacePicker } from "./quick-observation/place-picker"
 import { SpeciesPicker, type PresetChecklistItem, type PresetSpecies } from "./quick-observation/species-picker"
 import { LocaleField } from "@/app/tempus/locale-match"
 
+const INPUT_CLASS =
+  "rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+
+const STAGE_BUTTON_ACTIVE = "border-accent bg-accent-wash text-accent"
+const STAGE_BUTTON_IDLE = "border-field-border text-text-muted hover:border-border-strong"
+
 function nowLocal() {
   const now = new Date()
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
@@ -17,9 +23,104 @@ function nowLocal() {
 }
 
 function defaultLifeStage(stages?: string[]) {
-  return stages?.find((stage) => stage.localeCompare("Imago", "sv", { sensitivity: "accent" }) === 0)
-    ?? stages?.find((stage) => stage.localeCompare("Blomma", "sv", { sensitivity: "accent" }) === 0)
+  const matches = (stage: string, name: string) =>
+    stage.localeCompare(name, "sv", { sensitivity: "accent" }) === 0
+  return stages?.find((stage) => matches(stage, "Imago"))
+    ?? stages?.find((stage) => matches(stage, "Blomma"))
     ?? ""
+}
+
+/**
+ * Tangent 1..n väljer livsstadium nummer n, tangent 0 väljer "Annat".
+ * Returnerar index i `stages`, `stages.length` för "Annat", eller null om tangenten inte är en genväg.
+ */
+export function stageShortcutIndex(key: string, stageCount: number) {
+  const index = key === "0" ? stageCount : Number(key) - 1
+  return Number.isInteger(index) && index >= 0 && index <= stageCount ? index : null
+}
+
+function LifeStageField({
+  stages,
+  lifeStage,
+  custom,
+  onSelectStage,
+  onSelectCustom,
+  onLifeStageChange,
+}: {
+  stages: string[]
+  lifeStage: string
+  custom: boolean
+  onSelectStage: (stage: string) => void
+  onSelectCustom: () => void
+  onLifeStageChange: (value: string) => void
+}) {
+  const customInputRef = useRef<HTMLInputElement>(null)
+
+  const selectCustom = () => {
+    onSelectCustom()
+    requestAnimationFrame(() => customInputRef.current?.focus())
+  }
+
+  // Genvägarna fungerar överallt i dialogen utom när man skriver i ett fält.
+  // Prenumerationen sätts om vid varje render så att callbacks och `stages` alltid är aktuella.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      if (event.target instanceof HTMLElement && event.target.matches("input, textarea, select, [contenteditable='true']")) return
+      const index = stageShortcutIndex(event.key, stages.length)
+      if (index === null) return
+      event.preventDefault()
+      if (index === stages.length) selectCustom()
+      else onSelectStage(stages[index])
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  })
+
+  return (
+    <fieldset className="flex flex-col gap-1.5">
+      <legend className="text-sm font-medium">Livsstadie <span className="font-normal text-text-muted">(valfritt)</span></legend>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Livsstadie">
+        {stages.map((stage, index) => (
+          <button
+            key={stage}
+            type="button"
+            aria-keyshortcuts={String(index + 1)}
+            onClick={() => onSelectStage(stage)}
+            className={`rounded border px-3 py-1.5 text-sm ${lifeStage === stage && !custom ? STAGE_BUTTON_ACTIVE : STAGE_BUTTON_IDLE}`}
+          >
+            {index + 1}. {stage}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-keyshortcuts="0"
+          onClick={selectCustom}
+          className={`rounded border px-3 py-1.5 text-sm ${custom ? STAGE_BUTTON_ACTIVE : STAGE_BUTTON_IDLE}`}
+        >
+          0. Annat
+        </button>
+      </div>
+      {custom ? (
+        <input
+          value={lifeStage}
+          ref={customInputRef}
+          onChange={(event) => onLifeStageChange(event.target.value)}
+          placeholder="Ange livsstadie"
+          aria-label="Annat livsstadie"
+          className={`${INPUT_CLASS} text-sm`}
+        />
+      ) : null}
+    </fieldset>
+  )
+}
+
+function AddOptionalButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="text-text-muted hover:text-text">
+      {label}
+    </button>
+  )
 }
 
 export default function QuickObservation({
@@ -64,91 +165,35 @@ export default function QuickObservation({
 
   const searchRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
-  const customLifeStageInputRef = useRef<HTMLInputElement>(null)
 
-  const focusCustomLifeStage = () => {
-    requestAnimationFrame(() => customLifeStageInputRef.current?.focus())
+  const focusSearch = () => requestAnimationFrame(() => searchRef.current?.focus())
+
+  /** Väljer (eller avmarkerar, vid null) art och återställer allt som hör till arten. */
+  const selectSpecies = (
+    next: PresetSpecies | null,
+    items: PresetChecklistItem[] = next?.checklistItems ?? [],
+  ) => {
+    setPicked(next)
+    setLifeStage(defaultLifeStage(next?.stages))
+    setCustomLifeStage(false)
+    setChecklistItems(items)
+    setSelectedChecklistItemIds(items.map((item) => item.id))
   }
 
-  useEffect(() => {
-    if (!open) return
-    const id = requestAnimationFrame(() => setEntered(true))
-    const focus = setTimeout(() => searchRef.current?.focus(), 120)
-    return () => {
-      cancelAnimationFrame(id)
-      clearTimeout(focus)
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (!open || !picked || stages.length === 0) return
-    const onStageShortcut = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey) return
-      if (event.target instanceof HTMLElement && event.target.matches("input, textarea, select, [contenteditable='true']")) return
-      const shortcutIndex = event.key === "0" ? stages.length : Number(event.key) - 1
-      if (!Number.isInteger(shortcutIndex) || shortcutIndex < 0 || shortcutIndex > stages.length) return
-      event.preventDefault()
-      if (shortcutIndex === stages.length) {
-        setCustomLifeStage(true)
-        if (stages.includes(lifeStage)) setLifeStage("")
-        requestAnimationFrame(() => customLifeStageInputRef.current?.focus())
-        return
-      }
-      setCustomLifeStage(false)
-      setLifeStage(stages[shortcutIndex])
-    }
-    window.addEventListener("keydown", onStageShortcut)
-    return () => window.removeEventListener("keydown", onStageShortcut)
-  }, [lifeStage, open, picked, stages])
-
-  useEffect(() => {
-    if (!open) return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        if (picked) {
-          setPicked(null)
-          setChecklistItems([])
-          setSelectedChecklistItemIds([])
-          setLifeStage("")
-          setCustomLifeStage(false)
-          setError(null)
-          requestAnimationFrame(() => searchRef.current?.focus())
-          return
-        }
-        requestClose()
-      }
-    }
-    document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
-  }, [open, picked])
-
-  const onConsumedRef = useRef(onConsumed)
-  onConsumedRef.current = onConsumed
-
-  useEffect(() => {
-    if (!species) return
-    const nextChecklistItems = checklistItem ? [checklistItem] : (species.checklistItems ?? [])
-    setPicked(species)
-    setLifeStage(defaultLifeStage(species.stages))
+  const selectLifeStage = (stage: string) => {
     setCustomLifeStage(false)
-    setChecklistItems(nextChecklistItems)
-    setSelectedChecklistItemIds(nextChecklistItems.map((item) => item.id))
-    setQuery("")
-    setError(null)
-    setSaved(null)
-    setEntered(false)
-    setOpen(true)
-    onConsumedRef.current?.()
-  }, [species, checklistItem])
+    setLifeStage(stage)
+  }
+
+  const selectCustomLifeStage = () => {
+    setCustomLifeStage(true)
+    if (stages.includes(lifeStage)) setLifeStage("")
+  }
 
   const reset = ({ keepComment = false } = {}) => {
     setQuery("")
-    setPicked(null)
-    setChecklistItems([])
-    setSelectedChecklistItemIds([])
+    selectSpecies(null)
     setCount("1")
-    setLifeStage("")
-    setCustomLifeStage(false)
     setError(null)
     if (!keepComment) {
       setNotes("")
@@ -167,9 +212,6 @@ export default function QuickObservation({
     setLon("")
     setShowTime(false)
     setShowPlace(false)
-    setShowComment(false)
-    setNotes("")
-    setKeepCommentForNext(false)
   }
 
   const hasDraft = Boolean(query || picked || count !== "1" || lifeStage || lat || lon || notes || selectedChecklistItemIds.length > 0 || showTime || showPlace || showComment)
@@ -182,6 +224,51 @@ export default function QuickObservation({
     }
     close()
   }
+
+  useEffect(() => {
+    if (!open) return
+    const id = requestAnimationFrame(() => setEntered(true))
+    const focus = setTimeout(() => searchRef.current?.focus(), 120)
+    return () => {
+      cancelAnimationFrame(id)
+      clearTimeout(focus)
+    }
+  }, [open])
+
+  // Escape: först ångra valet av art, sedan stäng. Prenumerationen sätts om vid varje render
+  // så att requestClose alltid ser aktuellt utkast (hasDraft/pending).
+  useEffect(() => {
+    if (!open) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      if (picked) {
+        selectSpecies(null)
+        setError(null)
+        focusSearch()
+        return
+      }
+      requestClose()
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  })
+
+  const onConsumedRef = useRef(onConsumed)
+  useEffect(() => {
+    onConsumedRef.current = onConsumed
+  }, [onConsumed])
+
+  // Förvald art (och ev. checklistpost) utifrån: öppna dialogen direkt.
+  useEffect(() => {
+    if (!species) return
+    selectSpecies(species, checklistItem ? [checklistItem] : (species.checklistItems ?? []))
+    setQuery("")
+    setError(null)
+    setSaved(null)
+    setEntered(false)
+    setOpen(true)
+    onConsumedRef.current?.()
+  }, [species, checklistItem])
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -235,8 +322,14 @@ export default function QuickObservation({
       onSaved?.(selectedChecklistItemIds, result.observationId)
       setSaved(`${label} sparad.`)
       reset({ keepComment: keepCommentForNext })
-      requestAnimationFrame(() => searchRef.current?.focus())
+      focusSearch()
     })
+  }
+
+  const toggleChecklistItem = (id: string) => {
+    setSelectedChecklistItemIds((current) =>
+      current.includes(id) ? current.filter((itemId) => itemId !== id) : [...current, id],
+    )
   }
 
   return (
@@ -301,217 +394,130 @@ export default function QuickObservation({
                   query={query}
                   onQueryChange={setQuery}
                   picked={picked}
-                  onPick={(nextPicked) => {
-                    setPicked(nextPicked)
-                    setLifeStage(defaultLifeStage(nextPicked?.stages))
-                    setCustomLifeStage(false)
-                    setChecklistItems(nextPicked?.checklistItems ?? [])
-                    setSelectedChecklistItemIds((nextPicked?.checklistItems ?? []).map((item) => item.id))
-                  }}
+                  onPick={(next) => selectSpecies(next)}
                   onClearError={() => setError(null)}
                   onSubmit={() => formRef.current?.requestSubmit()}
                 />
 
-              {checklistItems.length > 0 ? (
-                <fieldset className="flex flex-col gap-2">
-                  <legend className="text-sm font-medium">Checklistor</legend>
-                  <div className="flex flex-col gap-1.5">
-                      {checklistItems.map((item) => {
-                        const checked = selectedChecklistItemIds.includes(item.id)
-                        return (
-                          <label
-                            key={item.id}
-                            className="flex min-h-10 items-center gap-3 rounded border border-field-border px-3 text-sm text-text hover:border-border-strong"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => {
-                                setSelectedChecklistItemIds((current) =>
-                                  checked ? current.filter((id) => id !== item.id) : [...current, item.id],
-                                )
-                              }}
-                              className="size-4 accent-accent"
-                            />
-                            {item.name}
-                          </label>
-                        )
-                      })}
-                  </div>
-                </fieldset>
-              ) : null}
+                {checklistItems.length > 0 ? (
+                  <fieldset className="flex flex-col gap-2">
+                    <legend className="text-sm font-medium">Checklistor</legend>
+                    <div className="flex flex-col gap-1.5">
+                      {checklistItems.map((item) => (
+                        <label
+                          key={item.id}
+                          className="flex min-h-10 items-center gap-3 rounded border border-field-border px-3 text-sm text-text hover:border-border-strong"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedChecklistItemIds.includes(item.id)}
+                            onChange={() => toggleChecklistItem(item.id)}
+                            className="size-4 accent-accent"
+                          />
+                          {item.name}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                ) : null}
 
-              {stages.length > 0 ? (
-                <fieldset className="flex flex-col gap-1.5">
-                  <legend className="text-sm font-medium">Livsstadie <span className="font-normal text-text-muted">(valfritt)</span></legend>
-                  <div
-                    className="flex flex-wrap gap-1.5"
-                    role="group"
-                    aria-label="Livsstadie"
-                    onKeyDown={(event) => {
-                      const shortcutIndex = event.key === "0" ? stages.length : Number(event.key) - 1
-                      if (!Number.isInteger(shortcutIndex) || shortcutIndex < 0 || shortcutIndex > stages.length) return
-                      event.preventDefault()
-                      if (shortcutIndex === stages.length) {
-                        setCustomLifeStage(true)
-                        if (stages.includes(lifeStage)) setLifeStage("")
-                        focusCustomLifeStage()
-                        return
-                      }
-                      setCustomLifeStage(false)
-                      setLifeStage(stages[shortcutIndex])
-                    }}
-                  >
-                    {stages.map((stage, index) => (
-                      <button
-                        key={stage}
-                        type="button"
-                        aria-keyshortcuts={String(stages.indexOf(stage) + 1)}
-                        onClick={() => {
-                          setCustomLifeStage(false)
-                          setLifeStage(stage)
-                        }}
-                        className={`rounded border px-3 py-1.5 text-sm ${lifeStage === stage && !customLifeStage ? "border-accent bg-accent-wash text-accent" : "border-field-border text-text-muted hover:border-border-strong"}`}
-                      >
-                        {index + 1}. {stage}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      aria-keyshortcuts="0"
-                      onClick={() => {
-                        setCustomLifeStage(true)
-                        if (stages.includes(lifeStage)) setLifeStage("")
-                        focusCustomLifeStage()
-                      }}
-                      className={`rounded border px-3 py-1.5 text-sm ${customLifeStage ? "border-accent bg-accent-wash text-accent" : "border-field-border text-text-muted hover:border-border-strong"}`}
-                    >
-                      0. Annat
-                    </button>
-                  </div>
-                  {customLifeStage ? (
-                    <input
-                      value={lifeStage}
-                      ref={customLifeStageInputRef}
-                      onChange={(event) => setLifeStage(event.target.value)}
-                      placeholder="Ange livsstadie"
-                      aria-label="Annat livsstadie"
-                      className="rounded border border-field-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
-                    />
-                  ) : null}
-                </fieldset>
-              ) : null}
-
-              <div className={showTime ? "grid gap-4 sm:grid-cols-2" : undefined}>
-                <label className="flex flex-col gap-1.5 text-sm font-medium">
-                  Antal
-                  <input
-                    inputMode="numeric"
-                    value={count}
-                    onChange={(event) => setCount(event.target.value)}
-                    placeholder="Antal"
-                    className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
+                {stages.length > 0 ? (
+                  <LifeStageField
+                    stages={stages}
+                    lifeStage={lifeStage}
+                    custom={customLifeStage}
+                    onSelectStage={selectLifeStage}
+                    onSelectCustom={selectCustomLifeStage}
+                    onLifeStageChange={setLifeStage}
                   />
-                </label>
+                ) : null}
 
-                {showTime ? (
+                <div className={showTime ? "grid gap-4 sm:grid-cols-2" : undefined}>
                   <label className="flex flex-col gap-1.5 text-sm font-medium">
-                    Tidpunkt
+                    Antal
                     <input
-                      type="datetime-local"
-                      value={observedAt}
-                      max={nowLocal()}
-                      onChange={(event) => setObservedAt(event.target.value)}
-                      className="rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text focus:border-accent focus:outline-none"
+                      inputMode="numeric"
+                      value={count}
+                      onChange={(event) => setCount(event.target.value)}
+                      placeholder="Antal"
+                      className={INPUT_CLASS}
                     />
                   </label>
-                ) : null}
-              </div>
 
-              <LocaleField
-                lat={lat}
-                lon={lon}
-                onChange={({ lat: nextLat, lon: nextLon }) => {
-                  setLat(nextLat)
-                  setLon(nextLon)
-                  setShowPlace(true)
-                  setError(null)
-                }}
-              />
-
-              {!showTime || !showPlace || !showComment ? (
-                <div className="flex flex-wrap gap-3 text-sm">
-                  {!showTime ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowTime(true)}
-                      className="text-text-muted hover:text-text"
-                    >
-                      + Tidpunkt
-                    </button>
-                  ) : null}
-                  {!showPlace ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowPlace(true)}
-                      className="text-text-muted hover:text-text"
-                    >
-                      + Position
-                    </button>
-                  ) : null}
-                  {!showComment ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowComment(true)}
-                      className="text-text-muted hover:text-text"
-                    >
-                      + Kommentar
-                    </button>
+                  {showTime ? (
+                    <label className="flex flex-col gap-1.5 text-sm font-medium">
+                      Tidpunkt
+                      <input
+                        type="datetime-local"
+                        value={observedAt}
+                        max={nowLocal()}
+                        onChange={(event) => setObservedAt(event.target.value)}
+                        className={INPUT_CLASS}
+                      />
+                    </label>
                   ) : null}
                 </div>
-              ) : null}
 
-              {showPlace ? (
-                <PlacePicker
+                <LocaleField
                   lat={lat}
                   lon={lon}
                   onChange={({ lat: nextLat, lon: nextLon }) => {
                     setLat(nextLat)
                     setLon(nextLon)
+                    setShowPlace(true)
+                    setError(null)
                   }}
-                  onClearError={() => setError(null)}
-                  onError={setError}
                 />
-              ) : null}
 
-              {showComment ? (
-                <div className="flex flex-col gap-2">
-                  <label className="flex flex-col gap-1.5 text-sm font-medium">
-                    Kommentar
-                    <textarea
-                      value={notes}
-                      onChange={(event) => setNotes(event.target.value)}
-                      rows={2}
-                      className="resize-none rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
-                    />
-                  </label>
-                  <label className="flex items-center gap-2 self-start text-xs text-text-muted">
-                    <input
-                      type="checkbox"
-                      checked={keepCommentForNext}
-                      onChange={(event) => setKeepCommentForNext(event.target.checked)}
-                      className="size-3.5 accent-accent"
-                    />
-                    Behåll kommentar till nästa obs
-                  </label>
-                </div>
-              ) : null}
+                {!showTime || !showPlace || !showComment ? (
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    {!showTime ? <AddOptionalButton label="+ Tidpunkt" onClick={() => setShowTime(true)} /> : null}
+                    {!showPlace ? <AddOptionalButton label="+ Position" onClick={() => setShowPlace(true)} /> : null}
+                    {!showComment ? <AddOptionalButton label="+ Kommentar" onClick={() => setShowComment(true)} /> : null}
+                  </div>
+                ) : null}
 
-              {error ? (
-                <p className="rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">
-                  {error}
-                </p>
-              ) : null}
+                {showPlace ? (
+                  <PlacePicker
+                    lat={lat}
+                    lon={lon}
+                    onChange={({ lat: nextLat, lon: nextLon }) => {
+                      setLat(nextLat)
+                      setLon(nextLon)
+                    }}
+                    onClearError={() => setError(null)}
+                    onError={setError}
+                  />
+                ) : null}
+
+                {showComment ? (
+                  <div className="flex flex-col gap-2">
+                    <label className="flex flex-col gap-1.5 text-sm font-medium">
+                      Kommentar
+                      <textarea
+                        value={notes}
+                        onChange={(event) => setNotes(event.target.value)}
+                        rows={2}
+                        className={`resize-none ${INPUT_CLASS}`}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 self-start text-xs text-text-muted">
+                      <input
+                        type="checkbox"
+                        checked={keepCommentForNext}
+                        onChange={(event) => setKeepCommentForNext(event.target.checked)}
+                        className="size-3.5 accent-accent"
+                      />
+                      Behåll kommentar till nästa obs
+                    </label>
+                  </div>
+                ) : null}
+
+                {error ? (
+                  <p className="rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">
+                    {error}
+                  </p>
+                ) : null}
               </div>
 
               <div className="border-t border-border bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
@@ -530,14 +536,8 @@ export default function QuickObservation({
                     Avbryt
                   </button>
                   <Button type="submit" variant="paper-bordered" disabled={pending || !picked} className="min-w-28 justify-center">
-                  {
-                    pending ? (
-                      <Loader2 size={16} className="animate-spin" />
-                    ) : (
-                      <Check size={16} />
-                    )
-                  }
-                  {pending ? "Sparar…" : "Spara"}
+                    {pending ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                    {pending ? "Sparar…" : "Spara"}
                   </Button>
                 </div>
               </div>

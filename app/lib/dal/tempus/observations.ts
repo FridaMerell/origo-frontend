@@ -67,6 +67,26 @@ export const getTempusObservationsPage = cache(
   },
 )
 
+// Any user's observation, newest first. Carries no checklist data.
+export type TempusPublicObservation = Omit<TempusObservation, "checklist_items" | "checklist_names" | "locale" | "species_categories"> & {
+  username: string
+  first_name: string
+  last_name: string
+}
+
+export const getTempusAllObservationsPage = cache(
+  async (params?: TempusListParams): Promise<TempusPage<TempusPublicObservation>> => {
+    const query = paginationQuery(params, 8, 100)
+    const page = await fetchTempusPage<TempusPublicObservation>(TEMPUS_ENDPOINTS.allObservations, query)
+    return { ...page, pageSize: query.page_size }
+  },
+)
+
+export const getTempusPublicObservationItem = cache(
+  (id: string): Promise<TempusPublicObservation | null> =>
+    fetchItem(`${TEMPUS_ENDPOINTS.allObservations}${id}/`)
+)
+
 export const getTempusObservationCategoryPage = cache(
   async (
     locale: string | number,

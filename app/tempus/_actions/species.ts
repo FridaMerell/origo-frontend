@@ -21,14 +21,26 @@ import {
   type SpeciesCategoryFormValues,
 } from "@/app/lib/schemas"
 import { getSessionCookies } from "@/app/lib/session"
-import { authedJsonHeaders, firstErrorMessage } from "./request"
+import { authedJsonHeaders, responseErrorMessage } from "./request"
 
 export type TempusActionState = { error?: string; success?: boolean } | undefined
 export type LoadSpeciesPageInput = { page?: number; pageSize?: number; search?: string; categoryTaxonId?: number | null }
 
+const DEFAULT_PAGE_SIZE = 25
+const MAX_PAGE_SIZE = 50
+
+function isPositiveInteger(value: number | undefined): value is number {
+  return Number.isInteger(value) && (value as number) > 0
+}
+
+/** Nyckel för att jämföra namn/id oberoende av versaler, mellanslag och bindestreck. */
+function matchKey(value: string) {
+  return value.toLocaleLowerCase("sv").replace(/[\s-]+/g, "_")
+}
+
 export async function loadSpeciesPage(input: LoadSpeciesPageInput = {}): Promise<TempusPage<TempusSpecies>> {
-  const page = Number.isInteger(input.page) && (input.page ?? 0) > 0 ? input.page : 1
-  const pageSize = Number.isInteger(input.pageSize) && (input.pageSize ?? 0) > 0 ? Math.min(input.pageSize ?? 25, 50) : 25
+  const page = isPositiveInteger(input.page) ? input.page : 1
+  const pageSize = isPositiveInteger(input.pageSize) ? Math.min(input.pageSize, MAX_PAGE_SIZE) : DEFAULT_PAGE_SIZE
   const params = { page, page_size: pageSize, search: input.search?.trim() || undefined }
   return input.categoryTaxonId && input.categoryTaxonId > 0
     ? getTempusSpeciesPageByCategory(String(input.categoryTaxonId), params)
@@ -37,7 +49,7 @@ export async function loadSpeciesPage(input: LoadSpeciesPageInput = {}): Promise
 
 export async function matchSpeciesValues(values: string[]): Promise<{ matchedIds: string[]; unmatched: string[] }> {
   const candidates = [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, 2000)
-  const normalized = new Map(candidates.map((value) => [value.toLocaleLowerCase("sv").replace(/[\s-]+/g, "_"), value]))
+  const normalized = new Map(candidates.map((value) => [matchKey(value), value]))
   const pending = new Set(normalized.keys())
   const matchedIds = new Set<string>()
   let pageNumber = 1
@@ -45,7 +57,7 @@ export async function matchSpeciesValues(values: string[]): Promise<{ matchedIds
     const page = await getTempusSpeciesPage({ page: pageNumber, page_size: 50 })
     for (const species of page.results) {
       const keys = [species.swedish_name, species.scientific_name, String(species.dyntaxa_taxon_id)]
-        .map((value) => value.toLocaleLowerCase("sv").replace(/[\s-]+/g, "_"))
+        .map(matchKey)
       if (keys.some((key) => pending.has(key))) {
         matchedIds.add(species.id)
         keys.forEach((key) => pending.delete(key))
@@ -104,8 +116,7 @@ export async function createSpeciesCategory(data: SpeciesCategoryFormValues): Pr
     }),
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath("/taxa")
   return { success: true }
@@ -166,8 +177,7 @@ export async function importSpeciesChecklist(
     body,
   })
   if (!response.ok) {
-    const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: await responseErrorMessage(response) }
   }
   revalidatePath("/taxa")
   return { success: true, message: "Filen har validerats och arterna har lagts i importkön." }
@@ -192,8 +202,7 @@ export async function registerSpeciesBatch(speciesCategory: string, taxonIds: nu
     })
     if (response.ok) results.push({ taxon_id, ok: true })
     else {
-      const detail = await response.text().catch(() => "")
-      results.push({ taxon_id, ok: false, error: firstErrorMessage(detail, response.status) })
+      results.push({ taxon_id, ok: false, error: await responseErrorMessage(response) })
     }
   }
   if (results.some((result) => result.ok)) revalidatePath("/taxa")
@@ -209,8 +218,7 @@ export async function followSpecies(taxonId: string, options: FollowSpeciesOptio
   const body = { species: Number(taxonId), priority: options.priority ?? 2, notifications_enabled: options.notificationsEnabled ?? false }
   const followsResponse = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesFollowsMine, { headers })
   if (!followsResponse.ok) {
-    const detail = await followsResponse.text().catch(() => "")
-    return { ok: false, error: firstErrorMessage(detail, followsResponse.status) }
+    return { ok: false, error: await responseErrorMessage(followsResponse) }
   }
   const follows: unknown = await followsResponse.json().catch(() => [])
   const existing = Array.isArray(follows)
@@ -228,8 +236,7 @@ export async function followSpecies(taxonId: string, options: FollowSpeciesOptio
       body: JSON.stringify(body),
     })
   if (response.ok) return { ok: true }
-  const detail = await response.text().catch(() => "")
-  return { ok: false, error: firstErrorMessage(detail, response.status) }
+  return { ok: false, error: await responseErrorMessage(response) }
 }
 
 export async function unfollowSpecies(taxonId: string): Promise<{ ok: boolean; error?: string }> {
@@ -239,8 +246,7 @@ export async function unfollowSpecies(taxonId: string): Promise<{ ok: boolean; e
     headers: await authedJsonHeaders(),
   })
   if (response.ok) return { ok: true }
-  const detail = await response.text().catch(() => "")
-  return { ok: false, error: firstErrorMessage(detail, response.status) }
+  return { ok: false, error: await responseErrorMessage(response) }
 }
 
 export async function getFollowedSpecies(): Promise<TempusSpecies[]> {

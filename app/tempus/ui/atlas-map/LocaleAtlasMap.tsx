@@ -3,7 +3,6 @@
 import { type ComponentType, useEffect, useMemo, useRef, useState } from "react"
 import turfArea from "@turf/area"
 import turfBooleanPointInPolygon from "@turf/boolean-point-in-polygon"
-import turfBuffer from "@turf/buffer"
 import type { Geometry, MultiPolygon, Polygon } from "geojson"
 import type { TempusLocale } from "@/app/lib/dal"
 import { getLocaleLandCoverFetch, type LandCoverMapFeature, type LocaleLandCoverFetch } from "@/app/lib/land-cover"
@@ -11,7 +10,7 @@ import { formatHistoricArea } from "@/app/lib/units"
 import { Compass } from "./Compass"
 import { JordebokRasterTextures, type RasterPolygonFeature } from "./JordebokRasterTextures"
 import { LayerPanel, type AtlasLayers } from "./LayerPanel"
-import { landLabel, origoLandLabel, ORIGO_KIND_FILL, ORIGO_TEXTURE_KINDS, origoTextureKind, rasterTextureKind } from "./land-cover-kinds"
+import { WATER_FILL_COLOR, landLabel, origoLandLabel, ORIGO_KIND_FILL, ORIGO_TEXTURE_KINDS, origoTextureKind, rasterTextureKind } from "./land-cover-kinds"
 import { LinearFeatures } from "./LinearFeatures"
 import { ObservationLabels } from "./ObservationLabels"
 import { ScaleBar } from "./ScaleBar"
@@ -23,13 +22,6 @@ type AreaSelection = { label: string; values: ReturnType<typeof formatHistoricAr
 const WETLAND_HIGHLIGHT_LAYER = "origo-wetland-highlight"
 const WETLAND_OUTLINE_LAYER = "origo-wetland-outline"
 const JORDEBOK_INK = "#8f3509"
-// 0.2 m: just enough to close typical sub-metre digitizing gaps between
-// adjacent parcels without the overlap itself becoming visible. The earlier
-// 3 m value was a real-world distance, not a screen distance — at normal
-// viewing zoom it was wide enough to visibly eat into a neighbouring,
-// differently classified parcel (e.g. a field overlapping into forest),
-// which is a much worse artifact than the hairline gap it was meant to fix.
-const LAND_COVER_BUFFER_KM = 0.0002
 // How often to re-poll the background land-cover-fetch job while it's still
 // "missing"/"pending"/"running" (see getLocaleLandCoverFetch's own comment).
 const LAND_COVER_FETCH_POLL_MS = 4000
@@ -37,9 +29,17 @@ const LAND_COVER_FETCH_POLL_MS = 4000
 // "click" handler below for why this is tested directly against `points`
 // instead of via MapLibre's own hit-testing).
 const POINT_HIT_RADIUS_PX = 16
+// Kartan är en fast vy över en plats, inte en världskarta: längre ut än så här
+// finns inget att se. Utzoomningen stoppas MAX_ZOOM_OUT_LEVELS nivåer under den
+// zoom där platsen precis ryms (fitBounds), aldrig under MIN_ZOOM_FLOOR.
+const MIN_ZOOM_FLOOR = 3
+const MAX_ZOOM_OUT_LEVELS = 1
 
 // Stabil tom lista, så att "ingen data än" inte ger en ny array (och därmed omräkning av allt som härleds) vid varje render.
 const NO_FEATURES: readonly LandCoverMapFeature[] = []
+// Samma sak för vatten och vägar: en ny tom array vid varje rendering skulle få
+// LinearFeatures att rita om dukarna i onödan.
+const NO_LINEAR_FEATURES: readonly never[] = []
 const EARTH_CIRCUMFERENCE_M = 40_075_016.686
 const MAP_TILE_SIZE_PX = 512
 
@@ -116,6 +116,87 @@ function AreaPanel({ area }: { area: AreaSelection }) {
   )
 }
 
+// Havet får samma handritade vattenmönster som sjöarna (LinearFeatures). MapLibres
+// fill-pattern ersätter fyllnadsfärgen, så bilden läggs på en botten av
+// vattenfärgen innan den registreras; fram till dess syns den platta färgen.
+const SEA_PATTERN_IMAGE = "origo-sea-pattern"
+const SEA_PATTERN_SRC = "/tempus/map-textures/historic-water.png"
+// Samma täthet och styrka som sjöarnas mönster: bilden visas i halv storlek.
+const SEA_PATTERN_PIXEL_RATIO = 2
+const SEA_PATTERN_ALPHA = 0.6
+
+function addSeaPattern(map: import("maplibre-gl").Map) {
+  const image = new Image()
+  image.onload = () => {
+    const canvas = document.createElement("canvas")
+    canvas.width = image.naturalWidth
+    canvas.height = image.naturalHeight
+    const context = canvas.getContext("2d")
+    if (!context) return
+    context.fillStyle = WATER_FILL_COLOR
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.globalAlpha = SEA_PATTERN_ALPHA
+    context.drawImage(image, 0, 0)
+    try {
+      if (!map.hasImage(SEA_PATTERN_IMAGE)) map.addImage(SEA_PATTERN_IMAGE, context.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio: SEA_PATTERN_PIXEL_RATIO })
+      if (map.getLayer("origo-texture-water")) map.setPaintProperty("origo-texture-water", "fill-pattern", SEA_PATTERN_IMAGE)
+    } catch {
+      // Kartan hann tas bort innan bilden var klar.
+    }
+  }
+  image.src = SEA_PATTERN_SRC
+}
+
+// Källan och lagren för marktäcket skapas en enda gång per karta, i kartans
+// "load"-händelse. De skapades tidigare i en effekt som avbröt sig tyst om
+// map.isStyleLoaded() var falskt — vilket den är just efter att gränsens
+// geojson-källa har lagts till — och effekten kördes aldrig om, så lagren (och
+// därmed alla markfärger och sankmarkslagret) fanns aldrig.
+function addLandCoverLayers(map: import("maplibre-gl").Map) {
+  if (map.getSource("origo-land-cover")) return
+  map.addSource("origo-land-cover", { type: "geojson", data: { type: "FeatureCollection", features: [] } })
+  // beforeId keeps every fill layer under the locale boundary line (added just
+  // before this, in "load", when the locale has a geometry) — without it
+  // MapLibre appends new layers at the very top, painting the land-cover fill
+  // over the boundary. Falls back to undefined (append on top) on the rare
+  // locale with no geometry, where "locale-boundary" was never added.
+  const beforeId = map.getLayer("locale-boundary") ? "locale-boundary" : undefined
+  for (const kind of ORIGO_TEXTURE_KINDS) {
+    // Every kind gets its own real, visible fill from origo-land-cover — it is
+    // the map's only source of land-cover colour. Wetland stays an invisible
+    // placeholder here: it already has its own dedicated, toggle-only highlight
+    // (WETLAND_HIGHLIGHT_LAYER) rather than an always-on base tint.
+    const paint = ORIGO_KIND_FILL[kind] ?? { "fill-opacity": INVISIBLE_HIT_TESTABLE_OPACITY }
+    map.addLayer({
+      id: `origo-texture-${kind}`,
+      type: "fill",
+      source: "origo-land-cover",
+      filter: ["==", ["get", "texture_kind"], kind],
+      // No antialiasing: with it every fill blends with the paper along its own
+      // edge, which shows as a pale seam where two parcels meet.
+      paint: { ...paint, "fill-antialias": false },
+    }, beforeId)
+  }
+  addSeaPattern(map)
+  // Initial opacity is irrelevant here — the layers.wetland effect runs right
+  // after and sets the real value, same as it does on every later toggle.
+  map.addLayer({
+    id: WETLAND_HIGHLIGHT_LAYER,
+    type: "fill",
+    source: "origo-land-cover",
+    filter: ["==", ["get", "texture_kind"], "wetland"],
+    paint: { "fill-color": "#2f6f5e", "fill-opacity": 0 },
+  }, beforeId)
+  map.addLayer({
+    id: WETLAND_OUTLINE_LAYER,
+    type: "line",
+    source: "origo-land-cover",
+    filter: ["==", ["get", "texture_kind"], "wetland"],
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#1f4f42", "line-width": 1.2, "line-dasharray": [2, 1.5], "line-opacity": 0 },
+  }, beforeId)
+}
+
 // A fixed, jordebok-style rendering of one Locale. All land-cover comes from
 // exactly one call — land-cover/fetch/ — which already returns the Locale's
 // bounding box padded 5 km in every direction as a single, unbroken dataset
@@ -137,7 +218,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
   const mapRef = useRef<import("maplibre-gl").Map | null>(null)
   const onPointClickRef = useRef(onPointClick)
   const pointLookup = useRef(new Map<string, AtlasPoint>())
-  const bufferedLandCoverRef = useRef<readonly LandCoverMapFeature[]>([])
+  const landCoverRef = useRef<readonly LandCoverMapFeature[]>([])
   const [metersPerPixel, setMetersPerPixel] = useState(1)
   const [layers, setLayers] = useState<AtlasLayers>({ wetland: false })
   const [area, setArea] = useState<AreaSelection | null>(null)
@@ -158,28 +239,17 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
   // Adjacent Lantmäteriet parcels rarely share an exact coincident edge —
   // sub-meter gaps between independently digitized boundaries are normal —
   // which left a thin pale seam wherever two differently classified parcels
-  // met. A tiny outward buffer closes that gap (each side overlaps a hair
-  // into the other) and its circular joins soften sharp corners as a side
-  // effect. Both the map's own solid fill layer and the canvas texture below
-  // read this buffered geometry, so their edges always agree with each other.
-  const bufferedLandCover = useMemo<readonly LandCoverMapFeature[]>(() => rawLandCover.flatMap((feature) => {
-    if (!isPolygonal(feature)) return []
-    try {
-      const buffered = turfBuffer(
-        { type: "Feature", properties: {}, geometry: feature.geometry as unknown as Polygon | MultiPolygon },
-        LAND_COVER_BUFFER_KM,
-        { units: "kilometers", steps: 4 },
-      )
-      if (!buffered) return [feature]
-      return [{ ...feature, geometry: buffered.geometry as unknown as LandCoverMapFeature["geometry"] }]
-    } catch {
-      // A degenerate/self-intersecting source polygon can make turfBuffer
-      // throw outright. Fall back to the unbuffered feature instead of
-      // taking down this whole computation (and every layer with it).
-      return [feature]
-    }
-  }), [rawLandCover])
-  const rasterPolygons = useMemo<readonly RasterPolygonFeature[]>(() => bufferedLandCover.flatMap((feature, index) => {
+  // met. That used to be closed by buffering every parcel outwards 0.2 m
+  // (turf-buffer), synchronously while rendering. The cost of that grows much
+  // faster than linearly with a parcel's vertex count (measured: ~5 ms at 500
+  // vertices, ~35 ms at 2 000, ~740 ms at 8 000), so a locale with a few large
+  // parcels froze the page for seconds. The seam now comes out of how the fills
+  // are drawn instead — without antialiasing (see addLandCoverLayers), so
+  // neighbouring fills abut rather than each blending with the paper at its
+  // edge — and the parcels are used exactly as delivered, by both the map's
+  // fill layers and the canvas texture.
+  const polygonalLandCover = useMemo<readonly LandCoverMapFeature[]>(() => rawLandCover.filter(isPolygonal), [rawLandCover])
+  const rasterPolygons = useMemo<readonly RasterPolygonFeature[]>(() => polygonalLandCover.flatMap((feature, index) => {
     if (!isPolygonal(feature)) return []
     const kind = rasterTextureKind(feature)
     if (!kind) return []
@@ -188,10 +258,10 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
       kind,
       geometry: feature.geometry as unknown as RasterPolygonFeature["geometry"],
     }]
-  }), [bufferedLandCover])
+  }), [polygonalLandCover])
   // Alltid aktuellt värde åt klick-hanteraren, som skapas en gång vid kartans "load"
-  // och därför inte kan stänga över bufferedLandCover direkt.
-  useEffect(() => { bufferedLandCoverRef.current = bufferedLandCover }, [bufferedLandCover])
+  // och därför inte kan stänga över polygonalLandCover direkt.
+  useEffect(() => { landCoverRef.current = polygonalLandCover }, [polygonalLandCover])
 
   useEffect(() => { onPointClickRef.current = onPointClick }, [onPointClick])
 
@@ -225,11 +295,15 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
         if (!map || disposed) return
         const geometry = locale.geometry as Geometry | null
         const bounds = geometry ? boundsForGeometry(geometry) : null
-        if (bounds) map.fitBounds(bounds, { padding: 48, maxZoom: 16, animate: false })
+        if (bounds) {
+          map.fitBounds(bounds, { padding: 48, maxZoom: 16, animate: false })
+          map.setMinZoom(Math.max(MIN_ZOOM_FLOOR, map.getZoom() - MAX_ZOOM_OUT_LEVELS))
+        }
         if (geometry) {
           map.addSource("locale-boundary", { type: "geojson", data: { type: "Feature", properties: {}, geometry } })
-          map.addLayer({ id: "locale-boundary", type: "line", source: "locale-boundary", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": JORDEBOK_INK, "line-width": 1.8, "line-dasharray": [1.2, 1.4] } })
+          map.addLayer({ id: "locale-boundary", type: "line", source: "locale-boundary", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": JORDEBOK_INK, "line-width": 2.2, "line-dasharray": [1.2, 1.4] } })
         }
+        addLandCoverLayers(map)
         map.on("click", (event) => {
           if (!map) return
           // Observationspunkterna testas direkt mot skärmavstånd: stilen saknar glyphs-server,
@@ -239,9 +313,9 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
             onPointClickRef.current(clickedPoint)
             return
           }
-          // Markslaget slås upp mot samma buffrade data som texturen ritas från. MapLibres egna
+          // Markslaget slås upp mot samma data som texturen ritas från. MapLibres egna
           // lager kunde avvika från det som faktiskt målades.
-          setArea(describeAreaAt(bufferedLandCoverRef.current, [event.lngLat.lng, event.lngLat.lat]))
+          setArea(describeAreaAt(landCoverRef.current, [event.lngLat.lng, event.lngLat.lat]))
         })
         const updateScale = () => setMetersPerPixel(metersPerPixelAt(map!))
         map.on("move", updateScale)
@@ -252,81 +326,34 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
     return () => { disposed = true; map?.remove(); mapRef.current = null; setMapInstance(null) }
   }, [locale.geometry, locale.id])
 
+  // Ingen kontroll av stilens laddningsläge här: uppslagstabellen är vanlig data,
+  // och en effekt som avbryter sig på isStyleLoaded() körs aldrig om.
   useEffect(() => {
-    if (!mapRef.current?.isStyleLoaded()) return
     pointLookup.current = new Map(points.map((point, index) => [String(point.id ?? index), point]))
-  }, [mapReady, points])
+  }, [points])
 
-  // Source and layers are created exactly once per map instance (guarded by
-  // the getSource check, since mapReady can bump for other reasons) — only
-  // the data underneath them changes afterwards, in the effect below. That
-  // avoids tearing down and re-adding the source plus all fill/line layers
-  // on every land-cover change, which is a heavy DOM/GL operation for what
-  // is really just new GeoJSON data.
+  // Source and layers exist from "load" (addLandCoverLayers); only the data
+  // underneath them changes afterwards, here. That avoids tearing down and
+  // re-adding the source plus all fill/line layers on every land-cover change,
+  // which is a heavy DOM/GL operation for what is really just new GeoJSON data.
   useEffect(() => {
     const map = mapRef.current
-    if (!map?.isStyleLoaded() || map.getSource("origo-land-cover")) return
-    map.addSource("origo-land-cover", { type: "geojson", data: { type: "FeatureCollection", features: [] } })
-    // beforeId keeps every dynamically-added fill layer under the locale
-    // boundary line (added earlier, in "load", when the locale has a
-    // geometry) and the observation-point symbols — without it MapLibre
-    // appends new layers at the very top, painting the land-cover fill over
-    // both. Falls back to undefined (append on top) on the rare locale with
-    // no geometry, where "locale-boundary" was never added.
-    const beforeId = map.getLayer("locale-boundary") ? "locale-boundary" : undefined
-    for (const kind of ORIGO_TEXTURE_KINDS) {
-      // Every kind gets its own real, visible fill from origo-land-cover — it
-      // is the map's only source of land-cover colour. Wetland stays an
-      // invisible placeholder here: it already has its own dedicated,
-      // toggle-only highlight (WETLAND_HIGHLIGHT_LAYER) rather than an
-      // always-on base tint.
-      const paint = ORIGO_KIND_FILL[kind] ?? { "fill-opacity": INVISIBLE_HIT_TESTABLE_OPACITY }
-      map.addLayer({
-        id: `origo-texture-${kind}`,
-        type: "fill",
-        source: "origo-land-cover",
-        filter: ["==", ["get", "texture_kind"], kind],
-        paint,
-      }, beforeId)
-    }
-    // Initial opacity is irrelevant here — the layers.wetland effect below
-    // runs on every mount too and immediately sets the real value, same as
-    // it does on every later toggle.
-    map.addLayer({
-      id: WETLAND_HIGHLIGHT_LAYER,
-      type: "fill",
-      source: "origo-land-cover",
-      filter: ["==", ["get", "texture_kind"], "wetland"],
-      paint: { "fill-color": "#2f6f5e", "fill-opacity": 0 },
-    }, beforeId)
-    map.addLayer({
-      id: WETLAND_OUTLINE_LAYER,
-      type: "line",
-      source: "origo-land-cover",
-      filter: ["==", ["get", "texture_kind"], "wetland"],
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": "#1f4f42", "line-width": 1.2, "line-dasharray": [2, 1.5], "line-opacity": 0 },
-    }, beforeId)
-  }, [mapReady])
-
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map?.isStyleLoaded()) return
+    if (!map) return
     const source = map.getSource("origo-land-cover") as import("maplibre-gl").GeoJSONSource | undefined
     if (!source) return
     source.setData({
       type: "FeatureCollection",
-      features: bufferedLandCover.map((feature, index) => ({
+      features: polygonalLandCover.map((feature, index) => ({
         type: "Feature" as const,
         properties: { ...feature.properties, texture_kind: origoTextureKind(feature), id: feature.feature_id ?? index },
         geometry: feature.geometry as unknown as Geometry,
       })),
     })
-  }, [mapReady, bufferedLandCover])
+  }, [mapReady, polygonalLandCover])
 
   useEffect(() => {
     const map = mapRef.current
-    if (!map?.isStyleLoaded()) return
+    if (!map) return
     if (map.getLayer(WETLAND_HIGHLIGHT_LAYER)) map.setPaintProperty(WETLAND_HIGHLIGHT_LAYER, "fill-opacity", layers.wetland ? 0.42 : 0)
     if (map.getLayer(WETLAND_OUTLINE_LAYER)) map.setPaintProperty(WETLAND_OUTLINE_LAYER, "line-opacity", layers.wetland ? 0.85 : 0)
   }, [layers.wetland, mapReady])
@@ -339,12 +366,16 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
   // fitBounds made the actual place appear unnecessarily small on first view.
   useEffect(() => {
     const map = mapRef.current
-    if (!map?.isStyleLoaded() || landCoverFetch?.status !== "succeeded") return
+    if (!map || mapReady === 0 || landCoverFetch?.status !== "succeeded") return
     const geometry = locale.geometry as Geometry | null
     const localeBounds = geometry ? boundsForGeometry(geometry) : null
     const surroundingBounds = boundsForGeometry(landCoverFetch.geometry as unknown as Geometry)
     const bounds = localeBounds ?? surroundingBounds
     if (!bounds) return
+    // Gränsen sätts innan kameran flyttas, så att den nya passningen inte klipps
+    // mot den gamla gränsen.
+    const fitted = map.cameraForBounds(bounds, { padding: 48, maxZoom: 16 })
+    if (fitted?.zoom !== undefined) map.setMinZoom(Math.max(MIN_ZOOM_FLOOR, fitted.zoom - MAX_ZOOM_OUT_LEVELS))
     map.fitBounds(bounds, { padding: 48, maxZoom: 16, animate: true, duration: 400 })
   }, [locale.geometry, landCoverFetch, mapReady])
 
@@ -384,7 +415,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
   return <div className="relative h-full min-h-0 overflow-hidden bg-[#fbf8f0]">
     <div ref={node} className="h-full w-full" aria-label={`Karta över ${locale.name}`} />
     {mapInstance ? <JordebokRasterTextures map={mapInstance} features={rasterPolygons} /> : null}
-    {mapInstance && landCoverFetch?.status === "succeeded" ? <LinearFeatures map={mapInstance} hydrography={landCoverFetch.hydrography?.features ?? []} roads={landCoverFetch.roads?.features ?? []} /> : null}
+    {mapInstance && landCoverFetch?.status === "succeeded" ? <LinearFeatures map={mapInstance} hydrography={landCoverFetch.hydrography?.features ?? NO_LINEAR_FEATURES} roads={landCoverFetch.roads?.features ?? NO_LINEAR_FEATURES} /> : null}
     {mapInstance ? <ObservationLabels map={mapInstance} points={points} selectedPoint={selectedPoint} /> : null}
     {mapInstance ? <ZoomControl map={mapInstance} /> : null}
     <LayerPanel layers={layers} onChange={setLayers} />

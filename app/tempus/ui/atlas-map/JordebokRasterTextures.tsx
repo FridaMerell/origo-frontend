@@ -66,6 +66,8 @@ const MAX_STAMPS_PER_FRAME = 4000
 // hit the ceiling before every tile lands, leaving a visible gap instead of
 // a fully covered field. Given its own generous headroom instead.
 const MAX_STAMPS_PER_FIELD_FRAME = 12000
+// Se dissolveByKind: över så här många polygoner av ett slag ritas ingen bläckkant.
+const MAX_DISSOLVE_POLYGONS = 150
 
 // Every group here is driven entirely by Lantmäteriet's own land-cover data
 // (the `features` prop, from origo-land-cover) — there is no external
@@ -136,8 +138,8 @@ const GROUPS: readonly TextureGroup[] = [
 	},
 	{
 		kind: "open",
-		detail: { spacing: 260, size: 102, density: 0.36 },
-		overview: { spacing: 460, size: 52, density: 0.05 },
+		detail: { spacing: 260, size: 50, density: 0.36 },
+		overview: { spacing: 460, size: 26, density: 0.05 },
 	},
 	{
 		kind: "general",
@@ -249,6 +251,10 @@ function dissolveByKind(features: readonly RasterPolygonFeature[], kind: Texture
 		}
 	}
 	if (!flat.length) return []
+	// turf-dissolve växer snabbt med antalet polygoner och körs synkront i
+	// webbläsarens huvudtråd. Över gränsen hoppar vi över bläckkanten hellre än
+	// att frysa fliken (se ritningen i draw(): ingen kant ritas då).
+	if (flat.length > MAX_DISSOLVE_POLYGONS) return []
 	try {
 		const dissolved = turfDissolve({ type: "FeatureCollection", features: flat })
 		return dissolved.features.flatMap((feature) =>
@@ -836,7 +842,11 @@ export function JordebokRasterTextures({
 			schedule()
 		}
 
-		const markSourceDirty = () => {
+		// Texturerna ritas ur `features`, inte ur kartans källor. Bara när
+		// land-cover-källan faktiskt är färdigladdad behövs en ny ritning; varje
+		// annan sourcedata-händelse gav tidigare en full omritning.
+		const markSourceDirty = (event: { sourceId?: string; isSourceLoaded?: boolean }) => {
+			if (event.sourceId !== "origo-land-cover" || !event.isSourceLoaded) return
 			sourceDirty = true
 			schedule()
 		}

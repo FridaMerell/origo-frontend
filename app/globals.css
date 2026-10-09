@@ -428,6 +428,48 @@ svg {
 	}
 }
 
+/* ── Tempus place page (lokaler/[id]) ────────────────────────────────── */
+/* Quiet, as the rest of Tempus: the sheet and its entries arrive with a short
+   rise, a row takes the hover wash, a ticked box fills in. Nothing loops. */
+@keyframes tempus-arrive {
+	from { opacity: 0; transform: translateY(6px); }
+	to { opacity: 1; transform: none; }
+}
+@keyframes tempus-fade {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}
+.tempus-sheet-in {
+	animation: tempus-arrive 240ms var(--ease-standard) both;
+}
+.tempus-row-in {
+	animation: tempus-arrive 200ms var(--ease-standard) both;
+	animation-delay: calc(var(--i, 0) * 40ms + 120ms);
+}
+.tempus-detail-in {
+	animation: tempus-fade var(--duration-normal) var(--ease-standard) both;
+}
+.tempus-row {
+	transition: background-color var(--duration-fast) var(--ease-standard);
+}
+.tempus-row:hover {
+	background-color: var(--accent-wash);
+}
+.tempus-tick {
+	transition: scale var(--duration-fast) var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+	.tempus-sheet-in,
+	.tempus-row-in,
+	.tempus-detail-in {
+		animation: none;
+	}
+	.tempus-row,
+	.tempus-tick {
+		transition: none;
+	}
+}
+
 @utility grain {
   position: relative;
   &::before {

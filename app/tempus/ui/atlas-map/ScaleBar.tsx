@@ -46,10 +46,10 @@ export function ScaleBar({ metersPerPixel }: { metersPerPixel: number }) {
   return <button
     type="button"
     onClick={() => setUnitIndex((current) => (current + 1) % SCALE_UNITS.length)}
-    className="absolute bottom-5 right-5 z-20 flex cursor-pointer flex-col items-center gap-1 text-[#4a3526] outline-offset-4 focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#4a3526]"
+    className="absolute bottom-5 right-5 z-20 flex min-h-11 cursor-pointer flex-col items-center justify-end gap-1 text-[#4a3526] outline-offset-4 focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#4a3526]"
     aria-label={`Byt skalenhet. Visar ${label}.`}
   >
-    <div style={{ width: widthPx }} className="h-1.5 border border-[#4a3526]/80 bg-[#fbf8f0]/90" />
-    <span className="font-display text-[10px] italic">{label}</span>
+    <div style={{ width: widthPx }} className="h-2 border border-[#4a3526]/80 bg-[#fbf8f0]/90" />
+    <span className="font-display text-xs italic">{label}</span>
   </button>
 }

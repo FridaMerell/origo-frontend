@@ -15,9 +15,9 @@ const OBSERVATION_LABEL_ACTIVE_COLOR = "#c0392b"
 const OBSERVATION_LABEL_HALO = "#fbf8f0"
 
 function sizeForZoom(zoom: number) {
-  // Mirrors the old MapLibre symbol layer's interpolation: 14px at zoom 10
-  // up to 24px at zoom 16.
-  return Math.min(24, Math.max(14, 14 + (zoom - 10) * (10 / 6)))
+  // 16px at zoom 10 up to 26px at zoom 16 (the old layer ran 14–24px; a
+  // little larger reads better over the textures).
+  return Math.min(26, Math.max(16, 16 + (zoom - 10) * (10 / 6)))
 }
 
 function locationKey(point: AtlasPoint) {

@@ -43,6 +43,25 @@ export async function GET(request: NextRequest) {
   })
 
   const retryAfter = response.headers.get("Retry-After")
+
+  // Ett färdigt marktäcke (ca 6,6 MB) ändras inte av att man öppnar platsen igen.
+  // Webbläsaren får behålla det en kort stund, så att ett återbesök, bakåtknappen
+  // eller en omladdning inte väntar på backend på nytt. Bara svar med status
+  // "succeeded" får cachas; "missing"/"pending"/"running" pollas och ska alltid
+  // vara färska. Korta tiden är avsiktlig: en ändrad plats ska inte visa gammalt
+  // marktäcke länge.
+  if (resource === "locale-land-cover-fetch" && response.ok) {
+    const body = await response.text()
+    const finished = /"status"\s*:\s*"succeeded"/.test(body.slice(0, 2000))
+    return new Response(body, {
+      status: response.status,
+      headers: {
+        "Content-Type": response.headers.get("Content-Type") ?? "application/json",
+        "Cache-Control": finished ? "private, max-age=120" : "no-store",
+      },
+    })
+  }
+
   return new Response(response.body, {
     status: response.status,
     headers: {

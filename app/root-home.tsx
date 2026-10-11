@@ -37,6 +37,7 @@ const APP_DESCRIPTION: Record<string, string> = {
 }
 
 const NAV_LINKS = [
+  { href: "/om", label: "Om" },
   { href: "/konto", label: "Konto" },
   { href: "/docs", label: "Dokumentation" },
   { href: "/konto/anslutningar", label: "Anslutningar" },
@@ -106,6 +107,13 @@ export default function RootHome() {
           <span className='font-mono text-[11px] font-medium uppercase tracking-[0.18em]'>
             ORIGO / 00°00′
           </span>
+          {!user && (
+            <a
+              href='/om'
+              className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
+              Om
+            </a>
+          )}
           {user && (
             <>
               <nav

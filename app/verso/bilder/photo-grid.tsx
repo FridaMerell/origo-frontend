@@ -51,7 +51,7 @@ export function PhotoGrid({
                 />
               </button>
               {photo.title && (
-                <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-black/60 to-transparent px-2 pb-1.5 pt-6 text-xs text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-linear-to-t from-black/60 to-transparent px-2 pb-1.5 pt-6 text-xs text-white transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                   {photo.title}
                 </span>
               )}

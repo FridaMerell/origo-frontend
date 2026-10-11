@@ -24,7 +24,7 @@ function FilterChip({ href, selected, children }: { href: string; selected: bool
   return (
     <Link
       href={href}
-      className={`rounded-full border px-3 py-1 text-xs no-underline duration-200 ${
+      className={`rounded-full border px-3 py-1.5 text-xs no-underline duration-200 ${
         selected
           ? "border-accent bg-accent-wash text-accent"
           : "border-border text-text-muted hover:bg-accent-wash hover:text-accent"
@@ -50,8 +50,8 @@ export default function PhotosView({
   const hasFilter = Boolean(active.album || active.tag || active.stage)
 
   return (
-    <div className="container flex flex-1 flex-col gap-4 py-5 sm:py-8">
-      <div className="flex items-baseline justify-between">
+    <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
+      <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-2xl font-display font-semibold">
           Bilder <span className="text-sm font-normal text-text-faint">{photos.length}</span>
         </h1>

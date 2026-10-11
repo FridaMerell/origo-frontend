@@ -126,7 +126,7 @@ export function Drawer({
 												type='button'
 												onClick={() => setOpen(false)}
 												aria-label='Stäng'
-												className='text-text-muted hover:text-text'>
+												className='-mr-2 flex size-10 items-center justify-center text-text-muted hover:text-text'>
 												<X size={16} />
 											</button>
 										</div>

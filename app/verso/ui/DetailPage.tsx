@@ -21,7 +21,7 @@ export function DetailNotFound({
   message: string;
 }) {
   return (
-    <div className="flex flex-1 flex-col gap-5 p-7">
+    <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:py-8">
       <BackLink href={backHref}>{backLabel}</BackLink>
       <div className="text-text-muted">{message}</div>
     </div>

@@ -24,7 +24,7 @@ export default function ExpenseView() {
     : null
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-7">
+    <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:gap-6 sm:py-8">
       <BackLink href="/ekonomi">Utgifter</BackLink>
 
       <Card className="flex flex-col gap-1">

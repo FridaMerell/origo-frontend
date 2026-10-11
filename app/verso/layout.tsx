@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { FACILITY_COOKIE, VERSO_MODE_COOKIE } from "@/app/lib/config";
 import { getVersoDashboard } from "@/app/lib/dal/verso";
 import { VersoDataProvider } from "@/app/verso/_state/verso-context";
-import { BookingDrawerProvider } from "@/app/verso/_state/booking-drawer";
 import { NavProgressBar } from "@/app/lib/nav-progress";
 import { Splash } from "@/app/components/ui/Splash";
 import VersoShell, { type VersoMode } from "./verso-shell";
@@ -44,9 +43,7 @@ async function VersoData({ children, mode }: { children: ReactNode; mode: VersoM
       expenses={dashboard?.expenses ?? []}
       updates={dashboard?.updates ?? []}
     >
-      <BookingDrawerProvider>
-        <VersoShell initialMode={mode}>{children}</VersoShell>
-      </BookingDrawerProvider>
+      <VersoShell initialMode={mode}>{children}</VersoShell>
     </VersoDataProvider>
   );
 }

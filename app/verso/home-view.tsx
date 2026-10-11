@@ -44,7 +44,7 @@ const HomeView = ({ onThisDay }: { onThisDay: OnThisDayData | null }) => {
           <p className="mt-1 text-sm text-text-muted">{nextVisitLabel}</p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-          <Drawer trigger="Lägg till uppdatering" triggerVariant={"secondary"} triggerSize={'sm'} title={'Ny uppdatering'} >
+          <Drawer trigger="Lägg till uppdatering" triggerVariant="secondary" triggerSize="sm" triggerClassName="justify-center" title="Ny uppdatering">
             <UpdateForm />
           </Drawer>
           <BookVisitButton />

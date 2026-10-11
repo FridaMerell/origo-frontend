@@ -59,7 +59,7 @@ export default function BesokView() {
       <Card className="overflow-hidden p-0">
         <div className="grid grid-cols-7 border-b border-l border-t border-border">
           {WEEKDAYS.map((d) => (
-            <div key={d} className="border-r border-border px-3 py-2.5 text-xs font-semibold text-text-muted">
+            <div key={d} className="truncate border-r border-border px-1.5 py-2 text-xs font-semibold text-text-muted sm:px-3 sm:py-2.5">
               {d}
             </div>
           ))}

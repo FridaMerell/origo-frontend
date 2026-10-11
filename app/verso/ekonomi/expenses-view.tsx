@@ -21,15 +21,15 @@ export default function ExpensesView() {
   const groups = groupItems(sorted, (e) => groupLabel(e.date_incurred))
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-7">
-      <div className="flex items-baseline justify-between">
+    <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
+      <div className="flex items-baseline justify-between gap-3">
         <h1 className="m-0 font-display text-2xl font-semibold text-text">Utgifter</h1>
         <Drawer trigger="Ny utgift" triggerSize="sm" title="Ny utgift">
           <ExpenseForm />
         </Drawer>
       </div>
 
-      <div className="flex gap-4 text-sm text-text-muted">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-muted">
         <span>{expenses.length} poster</span>
         <span>&middot;</span>
         <span>{yearlyExpenses.toLocaleString("sv-SE")} kr i år</span>

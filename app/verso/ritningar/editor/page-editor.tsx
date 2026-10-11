@@ -688,19 +688,19 @@ export function PageEditor({
           )}
 
           {selected && (
-            <div className="absolute right-3 top-3 max-h-[calc(100%-1.5rem)] w-60 overflow-y-auto rounded border border-border bg-surface p-3 shadow-md">
+            <div className="absolute inset-x-3 bottom-14 z-10 max-h-[55%] overflow-y-auto rounded border border-border bg-surface p-3 shadow-md sm:inset-x-auto sm:bottom-auto sm:right-3 sm:top-3 sm:max-h-[calc(100%-1.5rem)] sm:w-60">
               <PropertiesPanel key={selected.id} el={selected} unit={drawing.unit} onEdit={editSelected} onEditEnd={endEdit} onDelete={deleteSelected} />
             </div>
           )}
 
           <div className="pointer-events-none absolute bottom-3 left-3 rounded bg-surface/90 px-2.5 py-1.5 text-sm text-text shadow-sm">
             <span className="font-semibold">Netto {formatArea(area.net_m2)}</span>
-            <span className="ml-2 text-xs text-text-muted">
+            <span className="ml-2 hidden text-xs text-text-muted sm:inline">
               Yta {formatArea(area.surface_m2)} minus öppningar {formatArea(area.openings_m2)}
             </span>
           </div>
 
-          <div className="pointer-events-none absolute bottom-3 right-3 rounded bg-surface/90 px-2.5 py-1.5 font-mono text-xs text-text-muted shadow-sm">
+          <div className="pointer-events-none absolute bottom-3 right-3 hidden rounded bg-surface/90 px-2.5 py-1.5 font-mono text-xs text-text-muted shadow-sm sm:block">
             {cursor ? `${formatLength(cursor.x, drawing.unit)}, ${formatLength(cursor.y, drawing.unit)} · ` : ""}
             rutnät {formatLength(gridStep, drawing.unit)}
           </div>

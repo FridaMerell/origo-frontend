@@ -1,8 +1,17 @@
 import type { CSSProperties, ReactElement } from "react"
 
-export type SplashTenant = "verso" | "flux" | "apsis" | "tempus" | "opus"
+export type SplashTenant =
+	| "origo"
+	| "verso"
+	| "flux"
+	| "apsis"
+	| "tempus"
+	| "opus"
 
 type TenantConfig = {
+	// Origo is the root, so it has no tenant theme tokens to inherit; it paints
+	// the same fixed ink-on-paper colours as the root landing page instead.
+	surfaceClass?: string
 	wordmark: string
 	caption: string
 	sizeClass: string
@@ -19,6 +28,16 @@ const EASE = "var(--ease-standard, cubic-bezier(.4,0,.2,1))"
 const STREAM_BUFFER = "\u00a0".repeat(1024)
 
 const CONFIG: Record<SplashTenant, TenantConfig> = {
+	origo: {
+		surfaceClass: "bg-[#E7E5DE] text-[#1B252B]",
+		wordmark: "Origo",
+		caption: "Letar upp nollpunkten …",
+		sizeClass: "text-[2.5rem]",
+		weightClass: "font-medium",
+		trackingClass: "tracking-[-0.06em]",
+		captionClass: "text-[#58636A]",
+		wordmarkAnimation: `splash-wordmark-pulse 2.2s ${EASE} infinite`,
+	},
 	verso: {
 		wordmark: "Verso",
 		caption: "Läser in …",
@@ -62,6 +81,34 @@ const CONFIG: Record<SplashTenant, TenantConfig> = {
 		trackingClass: "tracking-normal",
 		captionClass: "text-text-muted",
 	},
+}
+
+// A crosshair with a point circling the origin, echoing the root page's
+// coordinate lines.
+function OrigoSpinner() {
+	return (
+		<svg width='64' height='64' viewBox='0 0 64 64' aria-hidden>
+			<line x1='32' x2='32' y1='2' y2='62' stroke='#1B252B' strokeOpacity='.2' />
+			<line x1='2' x2='62' y1='32' y2='32' stroke='#1B252B' strokeOpacity='.2' />
+			<circle
+				cx='32'
+				cy='32'
+				r='24'
+				fill='none'
+				stroke='#1B252B'
+				strokeOpacity='.35'
+				strokeWidth='1'
+			/>
+			<circle cx='32' cy='32' r='2' fill='#1B252B' />
+			<g
+				style={{
+					transformOrigin: "32px 32px",
+					animation: "splash-spin 2s linear infinite",
+				}}>
+				<circle cx='32' cy='8' r='3.5' fill='#1B252B' />
+			</g>
+		</svg>
+	)
 }
 
 function VersoSpinner() {
@@ -233,6 +280,7 @@ function OpusSpinner() {
 }
 
 const SPINNERS: Record<SplashTenant, () => ReactElement> = {
+	origo: OrigoSpinner,
 	verso: VersoSpinner,
 	flux: FluxSpinner,
 	apsis: ApsisSpinner,
@@ -256,9 +304,11 @@ export function Splash({ tenant }: { tenant: SplashTenant }) {
 			data-splash
 			role='status'
 			aria-live='polite'
-			className='relative flex min-h-screen min-h-dvh w-full flex-col items-center justify-center gap-6 bg-bg font-body'>
+			className={`relative flex min-h-screen min-h-dvh w-full flex-col items-center justify-center gap-6 font-body ${
+				config.surfaceClass ?? "bg-bg"
+			}`}>
 			<div
-				className={`text-text ${config.sizeClass} ${config.weightClass} ${config.trackingClass} ${
+				className={`${config.surfaceClass ? "" : "text-text"} ${config.sizeClass} ${config.weightClass} ${config.trackingClass} ${
 					config.uppercase ? "uppercase" : ""
 				}`}
 				style={wordmarkStyle}>

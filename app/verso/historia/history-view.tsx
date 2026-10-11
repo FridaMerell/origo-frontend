@@ -26,7 +26,7 @@ function AlbumChip({ href, selected, children }: { href: string; selected: boole
   return (
     <Link
       href={href}
-      className={`rounded-full border px-3 py-1 text-xs no-underline duration-200 ${
+      className={`rounded-full border px-3 py-1.5 text-xs no-underline duration-200 ${
         selected
           ? "border-accent bg-accent-wash text-accent"
           : "border-border text-text-muted hover:bg-accent-wash hover:text-accent"
@@ -70,8 +70,8 @@ export default function HistoryView({
   const isEmpty = photos.length === 0 && events.length === 0 && documents.length === 0
 
   return (
-    <div className="container flex flex-1 flex-col gap-4 py-5 sm:py-8">
-      <div className="flex items-baseline justify-between">
+    <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
         <h1 className="text-2xl font-display font-semibold">Historia</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Link

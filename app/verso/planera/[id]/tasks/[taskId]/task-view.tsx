@@ -25,12 +25,12 @@ export default function VentureTaskView() {
   const taskUpdates = updates.filter((u) => String(u.task) === String(task.id))
 
   return (
-    <div className="flex flex-1 flex-col gap-5 p-7">
+    <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:py-8">
       <BackLink href={`/planera/${venture.id}`}>{venture.name}</BackLink>
 
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <h1 className="m-0 font-display text-2xl font-semibold text-text">{task.name}</h1>
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+          <h1 className="m-0 min-w-0 break-words font-display text-2xl font-semibold text-text">{task.name}</h1>
           <VentureTaskStatusBadge task={task} />
         </div>
         <div className="flex items-center gap-2">

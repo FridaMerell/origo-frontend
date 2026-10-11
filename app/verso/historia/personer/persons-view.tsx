@@ -134,7 +134,7 @@ export default function PersonsView({
           ) : shown.length === 0 ? (
             <p className="m-0 px-1 text-sm text-text-muted">Ingen träff.</p>
           ) : (
-            <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+            <ul className="m-0 flex max-h-60 list-none flex-col gap-0.5 overflow-y-auto p-0 md:max-h-none md:overflow-visible">
               {shown.map((person) => {
                 const active = selected?.id === person.id && mode !== "new"
                 return (

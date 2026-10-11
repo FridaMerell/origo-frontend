@@ -22,7 +22,7 @@ export function StayBar({
     <button
       type="button"
       onClick={() => openEdit(booking)}
-      className={`mt-1.5 block h-5 w-full appearance-none border-0 text-left font-body text-[11px] leading-5 text-white ${showLabel ? "px-1.5" : "px-0"} ${roundLeft ? "rounded-l" : ""} ${roundRight ? "rounded-r" : ""}`}
+      className={`mt-1.5 block h-5 w-full appearance-none truncate border-0 text-left font-body text-[11px] leading-5 text-white ${showLabel ? "px-1.5" : "px-0"} ${roundLeft ? "rounded-l" : ""} ${roundRight ? "rounded-r" : ""}`}
       style={{ background: color }}
     >
       {showLabel ? booking.visitor : " "}

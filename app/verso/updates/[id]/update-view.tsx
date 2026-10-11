@@ -29,11 +29,11 @@ export default function UpdateView() {
   const linkedTask = update.task ? ventureTasks.find((t) => String(t.id) === String(update.task)) : null
 
   return (
-    <div className="flex flex-1 flex-col gap-5 p-7">
+    <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:py-8">
       <BackLink href="/updates">Uppdateringar</BackLink>
 
-      <div className="flex items-baseline justify-between">
-        <h1 className="m-0 font-display text-2xl font-semibold text-text">{update.title}</h1>
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
+        <h1 className="m-0 min-w-0 break-words font-display text-2xl font-semibold text-text">{update.title}</h1>
         <Drawer trigger="Redigera" triggerVariant="secondary" triggerSize="sm" title="Redigera uppdatering">
           <UpdateForm update={update} />
         </Drawer>

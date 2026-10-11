@@ -13,8 +13,8 @@ export default function PlaneraView() {
   const groups = groupItems(sorted, (venture) => priorityLabel(venture.priority))
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-7">
-      <div className="flex items-baseline justify-between">
+    <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
+      <div className="flex items-baseline justify-between gap-3">
         <h1 className="text-2xl font-display font-semibold">Planering</h1>
         <Drawer trigger="Nytt projekt" triggerSize="sm" title="Nytt projekt">
           <VentureForm />
@@ -32,9 +32,9 @@ export default function PlaneraView() {
               <span className="truncate text-sm text-text">{venture.name}</span>
               <span className="truncate text-xs text-text-faint">{venture.description}</span>
             </span>
-            <span className="flex shrink-0 items-center gap-4 text-xs text-text-faint">
+            <span className="flex shrink-0 flex-col items-end gap-0.5 text-xs text-text-faint sm:flex-row sm:items-center sm:gap-4">
               {venture.budget > 0 && (
-                <span className="font-mono text-sm text-text">
+                <span className="font-mono text-xs text-text sm:text-sm">
                   {venture.total_spent} / {venture.budget}
                 </span>
               )}

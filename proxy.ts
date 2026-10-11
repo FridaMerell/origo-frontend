@@ -18,8 +18,14 @@ export async function proxy(request: NextRequest) {
   const isJoinRoute = pathname === "/join";
   // Routes a tenant has opted into serving without a session. "/login" is always
   // reachable; everything else stays gated unless the tenant lists it.
+  // The "about" page is public and host-agnostic too, like the join route.
+  const isAboutRoute = pathname === "/om";
   const isPublicRoute =
-    isLoginRoute || isRootLanding || isJoinRoute || (tenant !== null && isPublicPath(tenant, pathname));
+    isLoginRoute ||
+    isRootLanding ||
+    isJoinRoute ||
+    isAboutRoute ||
+    (tenant !== null && isPublicPath(tenant, pathname));
 
   let validSessionId: string | undefined;
 
@@ -67,7 +73,7 @@ export async function proxy(request: NextRequest) {
   // tenant-specific "/flux/login" or "/verso/login" page instead of always
   // falling through to the generic "/login" page.
   let response = NextResponse.next();
-  if (tenant && !isJoinRoute) {
+  if (tenant && !isJoinRoute && !isAboutRoute) {
     const url = request.nextUrl.clone();
     url.pathname = `/${tenant}${pathname === "/" ? "" : pathname}`;
     response = NextResponse.rewrite(url);

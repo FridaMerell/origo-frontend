@@ -44,7 +44,32 @@ const TENANT_MANIFESTS: Record<TenantId, TenantManifest> = {
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const requestHeaders = await headers()
   const hostname = requestHeaders.get("host")?.split(":")[0] ?? ""
-  const tenant = resolveTenant(hostname) ?? "tempus"
+  const tenant = resolveTenant(hostname)
+
+  // No tenant subdomain (the Origo root landing page): describe Origo itself
+  // with the root app/icon.png instead of falling back to Tempus.
+  if (tenant === null) {
+    return {
+      id: "/",
+      name: "Origo",
+      short_name: "Origo",
+      description: "Origo",
+      start_url: "/",
+      scope: "/",
+      display: "standalone",
+      background_color: "#FAF8EF",
+      theme_color: "#A4410D",
+      icons: [
+        {
+          src: "/icon.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "any",
+        },
+      ],
+    }
+  }
+
   const { name } = TENANTS[tenant]
   const config = TENANT_MANIFESTS[tenant]
 

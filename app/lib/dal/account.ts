@@ -32,3 +32,60 @@ export type HouseInvitation = Invitation
 export const getInvitations = cache(
   (): Promise<Invitation[]> => fetchList(ACCOUNTS_ENDPOINTS.invitations),
 )
+
+// One entry in the user's own action history. The response shape of
+// GET /api/accounts/activity/ is read defensively (same approach as
+// actions/notifications.ts), so every field except `id` may be empty.
+export type ActivityItem = {
+  id: string
+  action: string
+  description: string
+  target: string
+  createdAt: string | null
+}
+
+function textFrom(record: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = record[key]
+    if (typeof value === "string" && value.trim()) return value
+  }
+  return ""
+}
+
+function activityFrom(value: unknown, index: number): ActivityItem | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null
+  const record = value as Record<string, unknown>
+  const id = record.id
+  return {
+    id:
+      typeof id === "string" || typeof id === "number"
+        ? String(id)
+        : `activity-${index}`,
+    action: textFrom(record, ["action", "verb", "type", "kind", "event"]),
+    description: textFrom(record, [
+      "description",
+      "summary",
+      "message",
+      "title",
+      "text",
+    ]),
+    target: textFrom(record, [
+      "target",
+      "target_label",
+      "object",
+      "object_repr",
+      "label",
+    ]),
+    createdAt:
+      textFrom(record, ["created_at", "createdAt", "timestamp", "created", "time"]) ||
+      null,
+  }
+}
+
+// The user's latest actions across products, newest first as returned by the API.
+export const getActivity = cache(async (): Promise<ActivityItem[]> => {
+  const raw = await fetchList<unknown>(ACCOUNTS_ENDPOINTS.activity)
+  return raw
+    .map(activityFrom)
+    .filter((item): item is ActivityItem => item !== null)
+})

@@ -164,6 +164,16 @@ export function AccountView({ user }: { user: User }) {
           Öppna anslutningar →
         </Link>
       </Section>
+
+      <Section title="Aktivitet">
+        <p className="text-sm text-[#58636A]">Dina senaste actions.</p>
+        <Link
+          href="/konto/aktivitet"
+          className={`${MONO} w-fit text-[11px] uppercase tracking-[0.12em] underline underline-offset-4`}
+        >
+          Öppna aktivitet →
+        </Link>
+      </Section>
     </KontoShell>
   );
 }

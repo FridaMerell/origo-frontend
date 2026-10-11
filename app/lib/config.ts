@@ -33,6 +33,7 @@ export const AUTH_ENDPOINTS = {
 export const ACCOUNTS_ENDPOINTS = {
   users: "/api/accounts/users/",
   selfToken: "/api/accounts/self/token/",
+  activity: "/api/accounts/activity/",
   invitations: "/api/accounts/invitations/",
   invitation: (id: string) => `/api/accounts/invitations/${encodeURIComponent(id)}/`,
   redeemInvitation: "/api/accounts/invitations/redeem/",

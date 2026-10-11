@@ -36,6 +36,13 @@ const APP_DESCRIPTION: Record<string, string> = {
   apsis: "VI gillar absider. Det är på riktigt bara bilder på absider.",
 }
 
+const NAV_LINKS = [
+  { href: "/konto", label: "Konto" },
+  { href: "/docs", label: "Dokumentation" },
+  { href: "/konto/anslutningar", label: "Anslutningar" },
+  { href: "/konto/aktivitet", label: "Aktivitet" },
+]
+
 // Add a public path here when a product screenshot is available, for example
 // { flux: "/screenshots/flux.png" }. The layout automatically uses it.
 const APP_SCREENSHOTS: Record<string, string> = {}
@@ -48,11 +55,20 @@ export default function RootHome() {
     x: number
     y: number
   } | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
   useEffect(() => {
     setHrefs(
       Object.fromEntries(APP_LINKS.map(app => [app.id, appHref(app.id)])),
     )
   }, [])
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [menuOpen])
   const apps = APP_LINKS.filter(app => app.id !== "origo")
   const previewApp = preview ? apps.find(app => app.id === preview.id) : null
   const updatePreview = (id: string, x: number, y: number) => {
@@ -86,36 +102,78 @@ export default function RootHome() {
         className='absolute left-0 top-1/2 h-px w-full bg-[#1B252B]/15'
       />
       <div className='relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col'>
-        <header className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+        <header className='flex flex-wrap items-center justify-between gap-3'>
           <span className='font-mono text-[11px] font-medium uppercase tracking-[0.18em]'>
             ORIGO / 00°00′
           </span>
           {user && (
-            <div className='flex flex-wrap items-center gap-x-4 gap-y-2'>
-              <a
-                href='/konto'
-                className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
-                Konto
-              </a>
-              <a
-                href='/docs'
-                className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
-                Dokumentation
-              </a>
-              <a
-                href='/konto/anslutningar'
-                className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
-                Anslutningar
-              </a>
+            <>
+              <nav
+                aria-label='Konto'
+                className='hidden flex-wrap items-center gap-x-4 gap-y-2 sm:flex'>
+                {NAV_LINKS.map(link => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
+                    {link.label}
+                  </a>
+                ))}
+                <button
+                  type='button'
+                  onClick={() =>
+                    void logout().then(() => window.location.reload())
+                  }
+                  className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
+                  Logga ut
+                </button>
+              </nav>
               <button
                 type='button'
-                onClick={() =>
-                  void logout().then(() => window.location.reload())
-                }
-                className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
-                Logga ut
+                aria-expanded={menuOpen}
+                aria-controls='mobile-menu'
+                onClick={() => setMenuOpen(open => !open)}
+                className='flex items-center gap-2 border border-[#1B252B] px-3 py-2 font-mono text-[11px] uppercase tracking-[0.12em] sm:hidden'>
+                <span aria-hidden className='flex w-4 flex-col gap-[3px]'>
+                  <span
+                    className={
+                      "h-px w-full bg-current transition-transform " +
+                      (menuOpen ? "translate-y-[2px] rotate-45" : "")
+                    }
+                  />
+                  <span
+                    className={
+                      "h-px w-full bg-current transition-transform " +
+                      (menuOpen ? "-translate-y-[2px] -rotate-45" : "")
+                    }
+                  />
+                </span>
+                {menuOpen ? "Stäng" : "Meny"}
               </button>
-            </div>
+              {menuOpen && (
+                <nav
+                  id='mobile-menu'
+                  aria-label='Konto'
+                  className='basis-full border-l border-[#1B252B] bg-[#E7E5DE] sm:hidden'>
+                  {NAV_LINKS.map(link => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      className='block border-b border-[#1B252B]/20 px-5 py-4 font-mono text-xs uppercase tracking-[0.12em] active:bg-[#1B252B] active:text-[#F4F2EC]'>
+                      {link.label}
+                    </a>
+                  ))}
+                  <button
+                    type='button'
+                    onClick={() =>
+                      void logout().then(() => window.location.reload())
+                    }
+                    className='block w-full border-b border-[#1B252B]/20 px-5 py-4 text-left font-mono text-xs uppercase tracking-[0.12em] active:bg-[#1B252B] active:text-[#F4F2EC]'>
+                    Logga ut
+                  </button>
+                </nav>
+              )}
+            </>
           )}
         </header>
         <section className='flex flex-1 flex-col justify-center py-16'>

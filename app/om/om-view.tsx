@@ -9,6 +9,7 @@ import opusIcon from "../opus/icon.png"
 import tempusIcon from "../tempus/icon.png"
 import versoIcon from "../verso/icon.png"
 import origoIcon from "../icon.png"
+import caelusIcon from "../caelus/icon.png"
 import {
 	ApsisDrawing,
 	FluxDrawing,
@@ -16,6 +17,7 @@ import {
 	TempusDrawing,
 	VersoDrawing,
 } from "./drawings"
+import OrionChart from "../caelus/ui/OrionChart"
 
 type Section = {
 	name: string
@@ -56,7 +58,7 @@ const SECTIONS: Section[] = [
 			"Tempus startsida är en säsongsöversikt för ett område eller hela Sverige: aktuell vecka, vilka arters säsongsfönster som är öppna och ett register över arter månad för månad. Inloggad ser du också platser nära dig, nästa planerade rutt och de senaste observationerna.",
 			"Observationer registreras en eller flera i taget. Checklistor för områden, inventeringar och utflykter skapas för hand eller importeras från CSV. Platser läggs ut på karta. Rutter planeras som en körsträcka med stopp och en sökkorridor, och stoppen rankas efter artdata.",
 			"Under Utforska anger du en biotop eller miljö och får förslag på vad du kan titta efter där. Arterna går att bläddra i per taxon.",
-      "BirdNet-integrationen kopplar mot ett annat projekt med en raspberry Pi som utrustas med mikrofon och spelar in fågelsång, och rapporterar löpande vad den tycker sig höra. Projektet använder BirdNets python-bibliotek fungerar skapligt, trots underdimensionerad hårdvara."
+			"BirdNet-integrationen kopplar mot ett annat projekt med en raspberry Pi som utrustas med mikrofon och spelar in fågelsång, och rapporterar löpande vad den tycker sig höra. Projektet använder BirdNets python-bibliotek fungerar skapligt, trots underdimensionerad hårdvara.",
 		],
 		drawing: <TempusDrawing />,
 	},
@@ -76,11 +78,21 @@ const SECTIONS: Section[] = [
 		icon: apsisIcon,
 		kind: "Absider i kyrkor",
 		paragraphs: [
-			"Apsis utgår egentligen bara från att \"absid\" är ett väldigt bra ord. Därför kände vi att det behövdes en sida för att hylla absider.",
+			'Apsis utgår egentligen bara från att "absid" är ett väldigt bra ord. Därför kände vi att det behövdes en sida för att hylla absider.',
 			"Sidan innehåller verkligen mest bilder på kyrkor och text om absider. Numera även med en koppling till svenska kyrkans API så man kan läsa lite om själva kyrkan om man vill. Vi planerar kartlägga så många absider vi bara kan.",
 			"Du kan slumpa fram en kyrka ur samlingen och, inloggad, ladda upp egna foton med eller utan absid. Man kan också ladda upp absidlösa kyrkor, men de blir naturligtvis skammade.",
 		],
 		drawing: <ApsisDrawing />,
+	},
+	{
+		name: "Caelus",
+		icon: caelusIcon,
+		kind: "Himlakroppar, stjärntecken m.m",
+		paragraphs: [
+			"Fokus i Caelus är himlen, eftersom det är så ont om roliga fjärilar eller fåglar vintertid. Caelus är under utveckling, men hittills finns det stöd för stjärntecken med kalender, plats, och tidpunkt, i ett gäng olika kulturer",
+      "Utöver det finns det information om KP-index och molnighet så man vet om det är värt att titta ut.\nI pipen finns planer på att skicka notiser så man för en gångs skull kan se den orangea månen eller vad det nu är, meteorskurar, kometer och annat skoj."
+		],
+		drawing: <OrionChart />,
 	},
 ]
 
@@ -325,8 +337,10 @@ export default function OmView() {
 								fick.
 							</p>
 							<p className='text-[17px] leading-[1.65] text-[#3A464D]'>
-                Inlogget kan användas för att utfärda en personlig access token för egen integration av systemen, men den dokumentationen är säkerligen inte helt aktuell.
-              </p>
+								Inlogget kan användas för att utfärda en personlig access token
+								för egen integration av systemen, men den dokumentationen är
+								säkerligen inte helt aktuell.
+							</p>
 							<p className='text-[17px] leading-[1.65] text-[#3A464D]'>
 								Fåvitsko betyder dåraktig eller oförståndigt. Eftersom projektet
 								är till största del ett dumt hobbyprojekt för inbördes beundran

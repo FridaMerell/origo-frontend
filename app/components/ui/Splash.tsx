@@ -7,6 +7,7 @@ export type SplashTenant =
 	| "apsis"
 	| "tempus"
 	| "opus"
+	| "caelus"
 
 type TenantConfig = {
 	// Origo is the root, so it has no tenant theme tokens to inherit; it paints
@@ -76,6 +77,15 @@ const CONFIG: Record<SplashTenant, TenantConfig> = {
 	opus: {
 		wordmark: "Opus",
 		caption: "Översätter från knittel …",
+		sizeClass: "text-[2.5rem]",
+		weightClass: "font-medium",
+		trackingClass: "tracking-normal",
+		captionClass: "text-text-muted",
+	},
+	caelus: {
+		// Caelus visar inget namn eller märke.
+		wordmark: "",
+		caption: "Väntar på mörkret …",
 		sizeClass: "text-[2.5rem]",
 		weightClass: "font-medium",
 		trackingClass: "tracking-normal",
@@ -279,6 +289,30 @@ function OpusSpinner() {
 	)
 }
 
+// A point circling the pole.
+function CaelusSpinner() {
+	return (
+		<svg width='64' height='64' viewBox='0 0 64 64' aria-hidden>
+			<circle
+				cx='32'
+				cy='32'
+				r='24'
+				fill='none'
+				stroke='var(--border)'
+				strokeWidth='1'
+			/>
+			<circle cx='32' cy='32' r='1.5' fill='var(--text)' />
+			<g
+				style={{
+					transformOrigin: "32px 32px",
+					animation: "splash-spin 2.4s linear infinite",
+				}}>
+				<circle cx='32' cy='8' r='2.5' fill='var(--text)' />
+			</g>
+		</svg>
+	)
+}
+
 const SPINNERS: Record<SplashTenant, () => ReactElement> = {
 	origo: OrigoSpinner,
 	verso: VersoSpinner,
@@ -286,6 +320,7 @@ const SPINNERS: Record<SplashTenant, () => ReactElement> = {
 	apsis: ApsisSpinner,
 	tempus: TempusSpinner,
 	opus: OpusSpinner,
+	caelus: CaelusSpinner,
 }
 
 export function Splash({ tenant }: { tenant: SplashTenant }) {

@@ -37,7 +37,12 @@ const TENANT_MANIFESTS: Record<TenantId, TenantManifest> = {
     description: "Opus - Origo",
     background_color: "#f5ecda",
     theme_color:'#6d0d35'
-  }
+  },
+  caelus: {
+    description: "Caelus – Origo",
+    background_color: "#eceae3",
+    theme_color: "#1d1f33",
+  },
 
 }
 
@@ -66,6 +71,12 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
           type: "image/png",
           purpose: "any",
         },
+        {
+          src: "/icon.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "maskable",
+        },
       ],
     }
   }
@@ -89,6 +100,12 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
+      },
+      {
+        src: `/${tenant}/icon.png`,
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ],
   }

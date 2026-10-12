@@ -43,6 +43,17 @@
   --radius: 8px;
 }
 
+[data-theme="caelus"] {
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-card: none;
+  --ease-standard: cubic-bezier(.35, 0, .25, 1);
+  --duration-fast: 110ms;
+  --duration-normal: 170ms;
+  --border-width: 1px;
+}
+
 [data-theme="opus"][data-mode="dark"] {
   --shadow-sm: 0 1px 1px rgba(var(--shadow-color), .06);
   --shadow-md: 0 1px 3px rgba(var(--shadow-color), .08), 0 1px 2px rgba(var(--shadow-color), .05);

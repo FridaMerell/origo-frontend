@@ -73,3 +73,24 @@
   --brand-font-mono: var(--font-opus-space-grotesk), ui-monospace, monospace;
 
 }
+[data-theme="caelus"]{
+  --font-display: var(--font-caelus-cormorant), 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-caelus-cormorant), 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-mono: var(--font-caelus-cormorant), 'Cormorant Garamond', Georgia, serif;
+  /* Cormorant har låg x-höjd: skalan ligger ett steg över de andra temanas för samma läsbarhet. */
+  --text-xs: 1.125rem;
+  --text-sm: 1.25rem;
+  --text-base: 1.375rem;
+  --text-md: 1.5rem;
+  --text-lg: 1.75rem;
+  --text-xl: 2.25rem;
+  --text-2xl: 2.875rem;
+  --text-3xl: 3.75rem;
+  --leading-tight: 1.1;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+  --tracking-tight: -.015em;
+  --tracking-normal: 0;
+  --tracking-wide: .06em;
+}

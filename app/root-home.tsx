@@ -11,20 +11,23 @@ import fluxIcon from "./flux/icon.png"
 import tempusIcon from "./tempus/icon.png"
 import versoIcon from "./verso/icon.png"
 import opusIcon from "./opus/icon.png"
+import caelusIcon from "./caelus/icon.png"
 
 const APP_ICONS: Record<string, StaticImageData> = {
   apsis: apsisIcon,
   flux: fluxIcon,
   tempus: tempusIcon,
   verso: versoIcon,
-  opus: opusIcon
+  opus: opusIcon,
+  caelus: caelusIcon
 }
 const APP_NOTE: Record<string, string> = {
   verso: "Modulbaserad fastighetsnav",
   flux: "Projekthantering",
   tempus: "Artrikedom och säsonger",
   apsis: "Verkligen bara absider",
-  opus: "Läs böcker och jämför utgåvor"
+  opus: "Läs böcker och jämför utgåvor",
+  caelus: "Stjärnhimlen"
 }
 const APP_DESCRIPTION: Record<string, string> = {
   verso:
@@ -34,6 +37,7 @@ const APP_DESCRIPTION: Record<string, string> = {
   tempus:
     "Taxonomisk data, säsongsbedömningar och biotoper för arter. Men även observationer, krysslistor, hjälp att planera utflykter och en ML-mottagare för automatisk klassificering av fågelsång.",
   apsis: "VI gillar absider. Det är på riktigt bara bilder på absider.",
+  caelus: "Stjärnhimlen, med Kp-index och molnighet.",
 }
 
 const NAV_LINKS = [
@@ -242,7 +246,7 @@ export default function RootHome() {
                         height={120}
                         className='size-full object-cover object-top'
                       />
-                    ) : (
+                    ) : APP_ICONS[app.id] ? (
                       <Image
                         src={APP_ICONS[app.id]}
                         alt=''
@@ -250,7 +254,7 @@ export default function RootHome() {
                         height={64}
                         className='size-14 border-border rounded-sm object-contain sm:size-16'
                       />
-                    )}
+                    ) : null}
                   </span>
                   <span className='min-w-0 flex-1'>
                     <span className='block text-xl font-semibold tracking-tight sm:text-2xl'>
@@ -303,13 +307,15 @@ export default function RootHome() {
                 <div className='relative mb-4 flex aspect-video items-center justify-center border border-[#F4F2EC]/25 bg-[#243239]'>
                   <span className='absolute left-1/2 top-0 h-full w-px bg-[#F4F2EC]/10' />
                   <span className='absolute left-0 top-1/2 h-px w-full bg-[#F4F2EC]/10' />
-                  <Image
-                    src={APP_ICONS[previewApp.id]}
-                    alt=''
-                    width={76}
-                    height={76}
-                    className='relative size-16 object-contain border-border'
-                  />
+                  {APP_ICONS[previewApp.id] && (
+                    <Image
+                      src={APP_ICONS[previewApp.id]}
+                      alt=''
+                      width={76}
+                      height={76}
+                      className='relative size-16 object-contain border-border'
+                    />
+                  )}
                   <span className='absolute bottom-2 left-3 font-mono text-[9px] uppercase tracking-[0.12em] text-[#C9D0CE]'>
                     Förhandsvisning saknas
                   </span>

@@ -9,6 +9,7 @@ import { Drawer } from "@/app/components/ui/Drawer"
 import { Gallery } from "@/app/components/ui/Gallery"
 import UpdateForm from "@/app/verso/forms/update-form"
 import { BackLink, DetailNotFound } from "@/app/verso/ui/DetailPage"
+import { PageHeader } from "@/app/verso/ui/PageHeader"
 import { Link2 } from "lucide-react"
 
 export default function UpdateView() {
@@ -32,12 +33,14 @@ export default function UpdateView() {
     <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:py-8">
       <BackLink href="/updates">Uppdateringar</BackLink>
 
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
-        <h1 className="m-0 min-w-0 break-words font-display text-2xl font-semibold text-text">{update.title}</h1>
-        <Drawer trigger="Redigera" triggerVariant="secondary" triggerSize="sm" title="Redigera uppdatering">
-          <UpdateForm update={update} />
-        </Drawer>
-      </div>
+      <PageHeader
+        title={update.title}
+        actions={
+          <Drawer trigger="Redigera" triggerVariant="secondary" triggerSize="sm" title="Redigera uppdatering">
+            <UpdateForm update={update} />
+          </Drawer>
+        }
+      />
 
       <Card className="flex flex-col gap-4">
         <div className="flex items-center gap-3">

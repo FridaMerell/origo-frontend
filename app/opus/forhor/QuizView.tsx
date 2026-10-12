@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/app/components/ui/Button"
 import type { LexicalEntry } from "@/app/lib/dal/opus"
 import { getGlossaryQuiz } from "../_actions/glossary-actions"
-import { getLanguageQuiz } from "../_actions/lexical-entry-actions"
+import { getLanguageQuiz, setQuizMark } from "../_actions/lexical-entry-actions"
 import { SelectField } from "../forms/Fields/Fields"
 import Divider from "../ui/Divider"
 import { describeForm, languageName } from "../ordlistor/lexical-forms"
@@ -82,18 +82,30 @@ export default function QuizView({
 	source,
 	scope,
 	entryCount,
+	markedCount,
 	back,
 }: {
 	source: QuizSource
 	/** Varifrån orden kommer, i löptext: "bland dina ord på latin", "ur Ordlistan". */
 	scope: string
 	entryCount: number
+	/** Hur många av orden som är markerade för förhör. */
+	markedCount: number
 	back: { href: string; label: string }
 }) {
-	const available = Math.min(entryCount, MAX_COUNT)
+	// Antalet markerade ord följer med när man markerar eller avmarkerar under förhöret.
+	const [marked, setMarked] = useState(markedCount)
+	// Finns det markerade ord förhörs de, så att en lång lista inte slumpar fram vad som helst.
+	const [wantsMarked, setOnlyMarked] = useState(true)
+	const onlyMarked = wantsMarked && marked > 0
+	const available = Math.min(onlyMarked ? marked : entryCount, MAX_COUNT)
 	const counts = [10, 20, 50].filter(count => count < available)
-	const [count, setCount] = useState(String(Math.min(20, available)))
+	const [wantedCount, setCount] = useState("20")
+	// Antalet följer urvalet: ett val som inte längre finns blir "alla".
+	const count = counts.includes(Number(wantedCount)) ? wantedCount : String(available)
 	const [direction, setDirection] = useState<Direction>("word")
+	// Markeringar som ändrats under förhöret; servern har redan fått dem.
+	const [marks, setMarks] = useState<Record<number, boolean>>({})
 	const [words, setWords] = useState<LexicalEntry[] | null>(null)
 	const [index, setIndex] = useState(0)
 	const [revealed, setRevealed] = useState(false)
@@ -115,14 +127,27 @@ export default function QuizView({
 		try {
 			const list =
 				source.kind === "language"
-					? await getLanguageQuiz(source.language, Number(count))
-					: await getGlossaryQuiz(source.id, Number(count))
+					? await getLanguageQuiz(source.language, Number(count), onlyMarked)
+					: await getGlossaryQuiz(source.id, Number(count), onlyMarked)
 			// Ett ord utan fråga i den valda riktningen går inte att förhöra.
 			begin(list.filter(entry => promptOf(entry, direction)))
 		} catch {
 			setError("Förhöret kunde inte hämtas.")
 		} finally {
 			setLoading(false)
+		}
+	}
+
+	/** Lägger ordet i ens förhör eller tar det ur dem, t.ex. när man märker att man kan det. */
+	async function toggleMark(entry: LexicalEntry) {
+		const mark = !(marks[entry.id] ?? entry.in_quiz)
+		setError(null)
+		try {
+			await setQuizMark(entry.id, mark)
+			setMarks(previous => ({ ...previous, [entry.id]: mark }))
+			setMarked(previous => previous + (mark ? 1 : -1))
+		} catch {
+			setError("Markeringen kunde inte sparas.")
 		}
 	}
 
@@ -143,7 +168,7 @@ export default function QuizView({
 		</p>
 	)
 
-	if (available === 0) {
+	if (entryCount === 0) {
 		return (
 			<>
 				{backLink}
@@ -162,7 +187,16 @@ export default function QuizView({
 					Ett ord i taget {scope}. Försök minnas svaret, visa det och säg själv om du kunde det.
 				</p>
 				<Divider />
-				<form onSubmit={handleStart} className='mt-6 grid gap-4 sm:grid-cols-2'>
+				<form onSubmit={handleStart} className={`mt-6 grid gap-4 ${marked > 0 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+					{marked > 0 && (
+						<SelectField
+							label='Ord'
+							value={onlyMarked ? "marked" : "all"}
+							onChange={event => setOnlyMarked(event.target.value === "marked")}>
+							<option value='marked'>Markerade för förhör ({marked})</option>
+							<option value='all'>Alla ord ({entryCount})</option>
+						</SelectField>
+					)}
 					<SelectField label='Antal ord' value={count} onChange={event => setCount(event.target.value)}>
 						{counts.map(value => (
 							<option key={value} value={value}>
@@ -176,11 +210,11 @@ export default function QuizView({
 						<option value='meaning'>Betydelsen, minns ordet</option>
 					</SelectField>
 					{error && (
-						<p role='alert' className='text-sm text-danger sm:col-span-2'>
+						<p role='alert' className='text-sm text-danger sm:col-span-full'>
 							{error}
 						</p>
 					)}
-					<div className='sm:col-span-2'>
+					<div className='sm:col-span-full'>
 						<Button type='submit' disabled={loading}>
 							{loading ? "Hämtar ord…" : "Börja"}
 						</Button>
@@ -272,6 +306,22 @@ export default function QuizView({
 						Kunde
 					</Button>
 				</div>
+			)}
+			{revealed && (
+				<p className='mt-4 text-center text-sm'>
+					<button
+						type='button'
+						aria-pressed={marks[entry.id] ?? entry.in_quiz}
+						onClick={() => toggleMark(entry)}
+						className={`cursor-pointer rounded-sm text-text-muted underline underline-offset-4 hover:text-text ${FOCUS}`}>
+						{(marks[entry.id] ?? entry.in_quiz) ? "Ta ur förhör" : "Lägg i förhör"}
+					</button>
+				</p>
+			)}
+			{error && (
+				<p role='alert' className='mt-2 text-center text-sm text-danger'>
+					{error}
+				</p>
 			)}
 		</>
 	)

@@ -62,6 +62,7 @@ import type {
 	LexicalEntry,
 	LexicalEntryCreate,
 	LexicalEntryFilters,
+	LexicalEntryPage,
 	LexicalEntryUpdate,
 	LexicalLanguage,
 	LexicalForm,
@@ -344,7 +345,8 @@ export const excerptApi = {
 }
 
 export const lexicalEntryApi = {
-	list: cachedList<LexicalEntry, LexicalEntryFilters>("/lexical-entries/"),
+	/** En sida av orden användaren ser; filter och sökning sker i API:t. */
+	list: (filters: LexicalEntryFilters = {}) => request<LexicalEntryPage>(withQuery("/lexical-entries/", filters)),
 	retrieve: cachedRetrieve<LexicalEntry>("/lexical-entries/"),
 	create: (data: LexicalEntryCreate) =>
 		request<LexicalEntry>("/lexical-entries/", {
@@ -360,9 +362,17 @@ export const lexicalEntryApi = {
 		request<void>(`/lexical-entries/${id}/`, { method: "DELETE" }),
 	/** Språken bland användarens egna ord, med antal ord per språk. */
 	languages: () => request<LexicalLanguage[]>("/lexical-entries/languages/"),
-	/** Ett slumpat urval av användarens egna ord på ett språk, för ett glosförhör (1–200 ord). */
-	quiz: (language: string, count: number) =>
-		request<LexicalEntry[]>(withQuery("/lexical-entries/quiz/", { language, count: String(count) })),
+	/**
+	 * Ett slumpat urval av användarens egna ord på ett språk, för ett glosförhör (1–200 ord).
+	 * Med `marked` bara bland orden användaren markerat för förhör.
+	 */
+	quiz: (language: string, count: number, marked: boolean) =>
+		request<LexicalEntry[]>(
+			withQuery("/lexical-entries/quiz/", { language, count: String(count), marked: String(marked) }),
+		),
+	/** Markerar ordet för användarens glosförhör, eller tar bort markeringen. */
+	setQuizMark: (id: number, marked: boolean) =>
+		request<void>(`/lexical-entries/${id}/quiz-mark/`, { method: marked ? "PUT" : "DELETE" }),
 }
 
 export const lexicalFormApi = {
@@ -406,9 +416,9 @@ export const glossaryApi = {
 	/** Tar bort ordet ur ordlistan; själva ordet finns kvar. */
 	removeEntry: (id: number, entryId: Id) =>
 		request<void>(`/glossaries/${id}/entries/${entryId}/`, { method: "DELETE" }),
-	/** Ett slumpat urval av ordlistans ord för ett glosförhör (1–200 ord). */
-	quiz: (id: number, count: number) =>
-		request<LexicalEntry[]>(`/glossaries/${id}/quiz/?count=${count}`),
+	/** Ett slumpat urval av ordlistans ord för ett glosförhör (1–200 ord); med `marked` bara bland de markerade. */
+	quiz: (id: number, count: number, marked: boolean) =>
+		request<LexicalEntry[]>(`/glossaries/${id}/quiz/?count=${count}&marked=${marked}`),
 }
 
 export const readingProgressApi = {

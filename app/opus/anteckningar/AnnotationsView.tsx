@@ -5,10 +5,11 @@ import Link from "next/link"
 import { BookOpenIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
 import type { Annotation, AnnotationKind, AnnotationOrdering, AnnotationPage, Id } from "@/app/lib/dal/opus"
-import { useUser } from "@/app/lib/user-context"
 import { deleteAnnotation, listAnnotations, updateAnnotation } from "../_actions/annotation-actions"
 import { updateLexicalEntry } from "../_actions/lexical-entry-actions"
-import { SelectField, TextAreaField, TextField } from "../forms/Fields/Fields"
+import { ComboboxField, SelectField, TextAreaField, TextField } from "../forms/Fields/Fields"
+import ConnotationFields from "../ordlistor/ConnotationFields"
+import { PART_OF_SPEECH_SUGGESTIONS, parseSynonyms, parseTags, synonymText } from "../ordlistor/lexical-forms"
 import Divider from "../ui/Divider"
 
 /** Synlig fokusmarkering för tangentbordsnavigering, samma som Opus formulärfält. */
@@ -43,11 +44,6 @@ function modernFormOf(annotation: Annotation) {
 	return typeof value === "string" ? value : ""
 }
 
-function synonymsOf(annotation: Annotation) {
-	const value = annotation.entry?.inflection_data?.synonyms
-	return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
-}
-
 /** Definitionens förklaring ligger på ordet; äldre definitioner har den i annotationens text. */
 function explanationOf(annotation: Annotation) {
 	return annotation.kind === "definition" ? annotation.entry?.definition || annotation.body : annotation.body
@@ -71,7 +67,9 @@ function EditForm({
 	const [text, setText] = useState(explanationOf(annotation))
 	const [modernForm, setModernForm] = useState(modernFormOf(annotation))
 	const [partOfSpeech, setPartOfSpeech] = useState(annotation.entry?.part_of_speech ?? "")
-	const [synonyms, setSynonyms] = useState(synonymsOf(annotation).join(", "))
+	const [synonyms, setSynonyms] = useState(synonymText(annotation.entry))
+	const [connotations, setConnotations] = useState((annotation.entry?.connotations ?? []).join(", "))
+	const [connotationNote, setConnotationNote] = useState(annotation.entry?.connotation_note ?? "")
 	const [pending, setPending] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
@@ -85,10 +83,12 @@ function EditForm({
 				const entry = await updateLexicalEntry(annotation.entry.id, {
 					part_of_speech: partOfSpeech.trim(),
 					definition: text.trim(),
+					synonyms: parseSynonyms(synonyms, annotation.entry.synonyms ?? []),
+					connotations: parseTags(connotations),
+					connotation_note: connotationNote.trim(),
 					inflection_data: {
 						...annotation.entry.inflection_data,
 						modern_form: modernForm.trim() || undefined,
-						synonyms: synonyms.trim() ? synonyms.split(",").map(s => s.trim()).filter(Boolean) : undefined,
 					},
 				})
 				// Äldre definitioner har förklaringen i annotationen; den flyttas till ordet.
@@ -114,10 +114,11 @@ function EditForm({
 						onChange={event => setModernForm(event.target.value)}
 						placeholder='Nutida form'
 					/>
-					<TextField
+					<ComboboxField
 						label='Ordklass'
+						options={PART_OF_SPEECH_SUGGESTIONS}
 						value={partOfSpeech}
-						onChange={event => setPartOfSpeech(event.target.value)}
+						onValueChange={setPartOfSpeech}
 						maxLength={100}
 						placeholder='verb, substantiv…'
 					/>
@@ -128,6 +129,14 @@ function EditForm({
 						placeholder='Kommaseparerade'
 					/>
 				</div>
+			)}
+			{isDefinition && (
+				<ConnotationFields
+					tags={connotations}
+					note={connotationNote}
+					onTagsChange={setConnotations}
+					onNoteChange={setConnotationNote}
+				/>
 			)}
 			<TextAreaField
 				label={isDefinition ? "Definition" : "Anteckning"}
@@ -246,7 +255,6 @@ function AnnotationRow({
 
 /** Alla användarens anteckningar, hänvisningar och definitioner som en kompakt lista per verk. */
 export default function AnnotationsView({ firstPage }: { firstPage: AnnotationPage }) {
-	const user = useUser()
 	const [kind, setKind] = useState<AnnotationKind | null>(null)
 	const [workId, setWorkId] = useState<Id | null>(null)
 	const [order, setOrder] = useState<AnnotationOrdering>("text")
@@ -447,12 +455,8 @@ export default function AnnotationsView({ firstPage }: { firstPage: AnnotationPa
 									<AnnotationRow
 										key={annotation.id}
 										annotation={annotation}
-										canEdit={
-											annotation.kind !== "definition" ||
-											annotation.entry === null ||
-											annotation.entry.owner === null ||
-											annotation.entry.owner === user?.id
-										}
+										// En definition ändrar ordet; servern avgör om användaren får det.
+										canEdit={annotation.kind !== "definition" || annotation.entry === null || annotation.entry.can_edit}
 										onChanged={handleChanged}
 										onRemoved={handleRemoved}
 									/>

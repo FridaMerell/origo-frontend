@@ -1,6 +1,7 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { getGlossary } from "../../_actions/glossary-actions"
+import { listGlossaryEntries } from "../../_actions/lexical-entry-actions"
 import GlossaryView from "./GlossaryView"
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -14,7 +15,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function GlossaryPage({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params
-	const glossary = await getGlossary(Number(id)).catch(() => null)
-	if (!glossary) notFound()
-	return <GlossaryView glossary={glossary} />
+	const [glossary, firstPage] = await Promise.all([
+		getGlossary(Number(id)).catch(() => null),
+		listGlossaryEntries(Number(id)).catch(() => null),
+	])
+	if (!glossary || !firstPage) notFound()
+	return <GlossaryView glossary={glossary} firstPage={firstPage} />
 }

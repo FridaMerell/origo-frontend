@@ -1,5 +1,5 @@
 [data-theme="verso"]{
---font-display:'Petrona',Georgia,'Times New Roman',serif;--font-body:'Karla','Helvetica Neue',sans-serif;--font-mono:'IBM Plex Mono',monospace;
+--font-display:var(--font-petrona),'Petrona',Georgia,'Times New Roman',serif;--font-body:var(--font-karla),'Karla','Helvetica Neue',sans-serif;--font-mono:var(--font-plex-mono),'IBM Plex Mono',monospace;
 --text-xs:.75rem;--text-sm:.875rem;--text-base:1rem;--text-md:1.125rem;--text-lg:1.375rem;--text-xl:1.75rem;--text-2xl:2.25rem;--text-3xl:3rem;
 --leading-tight:1.15;--leading-snug:1.35;--leading-normal:1.6;--leading-relaxed:1.75;
 --tracking-tight:-.01em;--tracking-normal:0;--tracking-wide:.02em;
@@ -11,13 +11,13 @@
 --tracking-tight:-.02em;--tracking-normal:-.005em;--tracking-wide:.04em;
 }
 [data-theme="tempus"]{
---font-display:'Petrona',Georgia,'Times New Roman',serif;--font-body:'Karla','Helvetica Neue',sans-serif;--font-mono:'IBM Plex Mono',monospace;
+--font-display:var(--font-petrona),'Petrona',Georgia,'Times New Roman',serif;--font-body:var(--font-karla),'Karla','Helvetica Neue',sans-serif;--font-mono:var(--font-plex-mono),'IBM Plex Mono',monospace;
 --text-xs:.8125rem;--text-sm:.875rem;--text-base:1rem;--text-md:1.125rem;--text-lg:1.25rem;--text-xl:1.625rem;--text-2xl:2.125rem;--text-3xl:2.75rem;
 --leading-tight:1.1;--leading-snug:1.3;--leading-normal:1.5;--leading-relaxed:1.65;
 --tracking-tight:-.015em;--tracking-normal:0;--tracking-wide:.06em;
 }
 [data-theme="apsis"]{
---font-display:'Source Serif 4',Georgia,serif;--font-body:'PT Serif',Georgia,serif;--font-mono:'IBM Plex Mono',monospace;
+--font-display:var(--font-source-serif),'Source Serif 4',Georgia,serif;--font-body:var(--font-pt-serif),'PT Serif',Georgia,serif;--font-mono:var(--font-plex-mono),'IBM Plex Mono',monospace;
 --text-xs:.75rem;--text-sm:.875rem;--text-base:1.0625rem;--text-md:1.1875rem;--text-lg:1.4375rem;--text-xl:1.875rem;--text-2xl:2.5rem;--text-3xl:3.25rem;
 --leading-tight:1.2;--leading-snug:1.4;--leading-normal:1.65;--leading-relaxed:1.8;
 --tracking-tight:0;--tracking-normal:.01em;--tracking-wide:.06em;

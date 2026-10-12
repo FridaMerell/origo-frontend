@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { Drawer } from "@/app/components/ui/Drawer"
+import { EmptyState } from "@/app/components/ui/EmptyState"
 import { ScrollTextIcon } from "lucide-react"
 import { AlbumForm } from "@/app/verso/bilder/album-form"
 import { PhotoUploadForm } from "@/app/verso/bilder/photo-upload-form"
@@ -12,6 +13,7 @@ import { EventDetail, NewEventForm } from "@/app/verso/historia/event-detail"
 import { DocumentDetail } from "@/app/verso/historia/document-detail"
 import { DocumentUploadForm } from "@/app/verso/historia/document-upload-form"
 import { OnThisDay } from "@/app/verso/historia/on-this-day"
+import { PageHeader } from "@/app/verso/ui/PageHeader"
 import type {
   Album,
   HistoryEvent,
@@ -71,12 +73,13 @@ export default function HistoryView({
 
   return (
     <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
-        <h1 className="text-2xl font-display font-semibold">Historia</h1>
-        <div className="flex flex-wrap items-center gap-2">
+      <PageHeader
+        title="Historia"
+        actions={
+          <>
           <Link
             href="/historia/personer"
-            className="rounded px-2.5 py-1.5 text-sm text-text-muted no-underline duration-200 hover:bg-accent-wash hover:text-accent"
+            className="rounded border border-border px-3 py-1.5 text-sm font-semibold text-text no-underline duration-200 hover:bg-accent-wash hover:text-accent"
           >
             Personer ({people.length})
           </Link>
@@ -105,8 +108,9 @@ export default function HistoryView({
               />
             </Drawer>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         {historyAlbums.length > 0 && (
@@ -125,11 +129,11 @@ export default function HistoryView({
             ))}
           </>
         )}
-        <Drawer trigger="Nytt historiealbum" triggerVariant="ghost" triggerSize="sm" title="Nytt historiealbum">
+        <Drawer trigger="Nytt historiealbum" triggerVariant="ghost" triggerSize="sm" triggerClassName="border border-border hover:bg-accent-wash" title="Nytt historiealbum">
           <AlbumForm defaultKind="history" />
         </Drawer>
         {active && (
-          <Drawer trigger="Redigera album" triggerVariant="ghost" triggerSize="sm" title="Redigera album">
+          <Drawer trigger="Redigera album" triggerVariant="ghost" triggerSize="sm" triggerClassName="border border-border hover:bg-accent-wash" title="Redigera album">
             <AlbumForm album={active} />
           </Drawer>
         )}
@@ -138,14 +142,11 @@ export default function HistoryView({
       <OnThisDay data={onThisDay} onOpenEvent={setSelectedEventId} onOpenPhoto={setSelectedId} />
 
       {isEmpty ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-12 text-center text-text-muted">
-          <ScrollTextIcon size={28} />
-          <p className="text-sm">
-            {historyAlbums.length === 0
-              ? "Lägg till en händelse, eller skapa ett historiealbum för att lägga upp dokument."
-              : "Inget här ännu. Lägg till en händelse eller ladda upp den första filen."}
-          </p>
-        </div>
+        <EmptyState icon={<ScrollTextIcon size={28} />}>
+          {historyAlbums.length === 0
+            ? "Lägg till en händelse, eller skapa ett historiealbum för att lägga upp dokument."
+            : "Inget här ännu. Lägg till en händelse eller ladda upp den första filen."}
+        </EmptyState>
       ) : (
         <HistoryTimeline
           photos={photos}

@@ -332,13 +332,37 @@ export type LexicalEntry = {
   /** Kort översättning som visas i glosförhör; `definition` är den längre förklaringen. */
   translation: string;
   definition: string;
+  /** Korta taggar som "ålderdomlig" eller "formell"; `connotation_note` förklarar dem. */
+  connotations: string[];
+  connotation_note: string;
+  /** Ord med samma eller nästan samma betydelse; sökbara. */
+  synonyms: LexicalSynonym[];
   /** Null för poster från innan poster hade ägare. */
   owner: Nullable<User["id"]>;
   /** Den inloggade användarens egna ordlistor som innehåller ordet. */
   glossaries: Id[];
   /** Stavningsvarianter och böjda former som hör till ordet. */
   forms: LexicalForm[];
+  /** Om den inloggade användaren har markerat ordet för sina glosförhör. */
+  in_quiz: boolean;
+  /**
+   * Om användaren får ändra ordet, enligt servern: egna ord, och ägarlösa ord från innan ord hade
+   * ägare som användaren får ta över.
+   */
+  can_edit: boolean;
 };
+
+/** Ett synonymord; `target` pekar på ordet i lexikonet när synonymen också är ett eget ord. */
+export type LexicalSynonym = {
+  /** Null för en synonym sparad som lista innan synonymer fick en egen tabell. */
+  id: Nullable<Id>;
+  text: string;
+  target: Nullable<Id>;
+  target_lemma: Nullable<string>;
+};
+
+/** En synonym som skickas till API:t; hela listan ersätter ordets synonymer. */
+export type LexicalSynonymInput = { text: string; target?: Nullable<Id> };
 
 export type LexicalEntryCreate = {
   lemma: string;
@@ -348,22 +372,42 @@ export type LexicalEntryCreate = {
   inflection_data?: Record<string, unknown>;
   translation?: string;
   definition?: string;
+  connotations?: string[];
+  connotation_note?: string;
+  synonyms?: LexicalSynonymInput[];
 };
 
 export type LexicalEntryUpdate = Partial<LexicalEntryCreate>;
 
 /** GET /lexical-entries/languages/: språken bland användarens egna ord. */
-export type LexicalLanguage = { language: LanguageCode; count: number };
+export type LexicalLanguage = {
+  language: LanguageCode;
+  count: number;
+  /** Hur många av orden användaren har markerat för glosförhör. */
+  marked: number;
+};
 
 export type LexicalFormKind = "spelling" | "inflection";
 
+/** De strukturerade grammatiska egenskaperna hos en böjd form; tom sträng när de inte är angivna. */
+export type FormGrammar = {
+  grammatical_case: string;
+  number: string;
+  person: string;
+  tense: string;
+  mood: string;
+  voice: string;
+  degree: string;
+  definiteness: string;
+};
+
 /** En stavningsvariant eller böjd form knuten till ett ords grundform. */
-export type LexicalForm = {
+export type LexicalForm = FormGrammar & {
   id: Id;
   entry: Id;
   form: string;
   kind: LexicalFormKind;
-  /** Fri böjningsbeskrivning, t.ex. "pres. ind. 3 sg.". */
+  /** Fri anteckning vid de strukturerade egenskaperna, t.ex. "pres. ind. 3 sg.". */
   inflection: string;
   /** Kopplingen till grundformen är osäker. */
   is_uncertain: boolean;
@@ -379,7 +423,7 @@ export type LexicalForm = {
   updated_at: ISODateTime;
 };
 
-export type LexicalFormCreate = {
+export type LexicalFormCreate = Partial<FormGrammar> & {
   entry: Id;
   form: string;
   kind?: LexicalFormKind;
@@ -402,8 +446,23 @@ export type Glossary = {
   updated_at: ISODateTime;
 };
 
-/** GET /glossaries/{id}/ (och svaret på create/update): ordlistan med alla ord. */
-export type GlossaryDetail = Glossary & { entries: LexicalEntry[] };
+/**
+ * GET /glossaries/{id}/ (och svaret på create/update). Orden hämtas en sida i taget från
+ * /lexical-entries/?glossaries={id}.
+ */
+export type GlossaryDetail = Glossary & {
+  /** Hur många av ordlistans ord användaren har markerat för glosförhör. */
+  marked_count: number;
+};
+
+/** GET /lexical-entries/: en sida ord, ordnade efter grundform. */
+export type LexicalEntryPage = {
+  results: LexicalEntry[];
+  /** Antal ord som matchar filtren, över alla sidor. */
+  count: number;
+  next: Nullable<string>;
+  previous: Nullable<string>;
+};
 
 export type GlossaryCreate = {
   title: string;
@@ -436,7 +495,7 @@ export type Annotation = {
   /** The unit's text, cut at 280 characters. */
   excerpt: string;
   /** The linked lexical entry's data. */
-  entry: Nullable<Omit<LexicalEntry, "gender" | "glossaries" | "forms">>;
+  entry: Nullable<Omit<LexicalEntry, "gender" | "glossaries" | "forms" | "in_quiz">>;
 };
 
 export type AnnotationCreate = {
@@ -477,8 +536,20 @@ export type ReadingAnnotation = {
   start_offset: Nullable<number>;
   end_offset: Nullable<number>;
   body: string;
-  lexical_entry: Nullable<Omit<LexicalEntry, "owner" | "glossaries" | "forms">>;
+  lexical_entry: Nullable<ReadingEntry>;
 };
+
+/** En form som den följer med ett ord i läsvyns data. */
+export type ReadingForm = Pick<
+  LexicalForm,
+  "id" | "form" | "kind" | "inflection" | "is_uncertain" | keyof FormGrammar
+>;
+
+/**
+ * Ett ord i läsvyns data, med allt ordpanelen visar och ändrar (ordlistor, former, synonymer),
+ * så att panelen inte behöver hämta ordet när den öppnas. En hel `LexicalEntry` duger också.
+ */
+export type ReadingEntry = Omit<LexicalEntry, "owner" | "forms" | "in_quiz"> & { forms: ReadingForm[] };
 
 /**
  * Ett känt ord som hittats i styckets text: ett eget ord eller ett ur en synlig ordlista.
@@ -488,9 +559,9 @@ export type ReadingGloss = {
   start_offset: number;
   end_offset: number;
   /** Bara ägaren kan ändra eller ta bort ordet. */
-  lexical_entry: NonNullable<ReadingAnnotation["lexical_entry"]> & Pick<LexicalEntry, "owner">;
+  lexical_entry: ReadingEntry & Pick<LexicalEntry, "owner">;
   /** Satt när ordet i texten är en stavningsvariant eller böjd form, inte grundformen. */
-  form: Nullable<Pick<LexicalForm, "id" | "kind" | "inflection" | "is_uncertain">>;
+  form: Nullable<ReadingForm>;
 };
 
 /* ============================================================================
@@ -864,15 +935,21 @@ export type LexicalEntryFilters = {
   gender?: string;
   lemma?: string;
   lemma__icontains?: string;
-  /** Söker i grundformen, sparade former, modern form och översättning. */
+  /** Söker i grundformen, sparade former, synonymer, modern form, översättning, definition och konnotationer. */
   search?: string;
   owner?: string;
+  /** Orden i en ordlista (ordlistans id). */
   glossaries?: string;
   /** Slår upp grundformen från en stavningsvariant eller böjd form. */
   forms__form__iexact?: string;
+  /** "true": bara ord användaren får ändra (egna, och ägarlösa från innan ord hade ägare). */
+  editable?: string;
+  page?: string;
+  /** Högst 200; 25 om inget anges. */
+  page_size?: string;
 };
 
-export type LexicalFormFilters = {
+export type LexicalFormFilters = Partial<FormGrammar> & {
   entry?: string;
   form?: string;
   form__iexact?: string;

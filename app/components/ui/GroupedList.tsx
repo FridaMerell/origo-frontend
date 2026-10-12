@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Card } from "./Card";
+import { EmptyState } from "./EmptyState";
 
 export type GroupedListGroup<T> = {
   label: string;
@@ -32,28 +33,28 @@ export function GroupedList<T>({
   renderRow: (item: T) => ReactNode;
 }) {
   if (groups.length === 0) {
-    return <Card className="text-sm text-text-muted">{emptyMessage}</Card>;
+    return <EmptyState>{emptyMessage}</EmptyState>;
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {groups.map((group) => (
-        <div key={group.label} className="flex flex-col gap-1.5">
-          <span className="px-1 text-xs font-semibold uppercase tracking-wide text-text-faint">
+        <section key={group.label} className="flex min-w-0 flex-col gap-2">
+          <h2 className="m-0 px-1 font-display text-lg font-semibold leading-tight text-text">
             {group.label}
-          </span>
-          <Card className="flex flex-col gap-0 p-0">
+          </h2>
+          <Card className="flex flex-col gap-0 overflow-hidden p-0">
             {group.items.map((item) => (
               <Link
                 key={getKey(item)}
                 href={getHref(item)}
-                className="flex items-center justify-between gap-4 border-b border-border px-4 py-2.5 last:border-b-0 hover:bg-surface-2"
+                className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-4 py-3 no-underline duration-150 last:border-b-0 hover:bg-surface-2 active:bg-surface-2 focus-visible:bg-surface-2 sm:py-2.5"
               >
                 {renderRow(item)}
               </Link>
             ))}
           </Card>
-        </div>
+        </section>
       ))}
     </div>
   );

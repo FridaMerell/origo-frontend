@@ -9,6 +9,7 @@ import VentureTaskForm from "@/app/verso/forms/venture-task-form"
 import { UpdateCard } from "@/app/verso/updates/update-card"
 import { VentureTaskStatusBadge } from "@/app/verso/planera/venture-task-status"
 import { BackLink, DetailNotFound, SectionHeading } from "@/app/verso/ui/DetailPage"
+import { PageHeader } from "@/app/verso/ui/PageHeader"
 
 export default function VentureTaskView() {
   const { id, taskId } = useParams<{ id: string; taskId: string }>()
@@ -28,20 +29,20 @@ export default function VentureTaskView() {
     <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:py-8">
       <BackLink href={`/planera/${venture.id}`}>{venture.name}</BackLink>
 
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-          <h1 className="m-0 min-w-0 break-words font-display text-2xl font-semibold text-text">{task.name}</h1>
-          <VentureTaskStatusBadge task={task} />
-        </div>
-        <div className="flex items-center gap-2">
-          <Drawer trigger="Redigera" triggerVariant="ghost" triggerSize="sm" title="Redigera uppgift">
-            <VentureTaskForm venture={venture.id} task={task} />
-          </Drawer>
-          <Drawer trigger="Ny uppdatering" triggerVariant="secondary" triggerSize="sm" title="Ny uppdatering">
-            <UpdateForm defaultVenture={venture.id} defaultTask={task.id} />
-          </Drawer>
-        </div>
-      </div>
+      <PageHeader
+        title={task.name}
+        badge={<VentureTaskStatusBadge task={task} />}
+        actions={
+          <>
+            <Drawer trigger="Redigera" triggerVariant="ghost" triggerSize="sm" title="Redigera uppgift">
+              <VentureTaskForm venture={venture.id} task={task} />
+            </Drawer>
+            <Drawer trigger="Ny uppdatering" triggerVariant="secondary" triggerSize="sm" title="Ny uppdatering">
+              <UpdateForm defaultVenture={venture.id} defaultTask={task.id} />
+            </Drawer>
+          </>
+        }
+      />
 
       <Card className="flex flex-col gap-4">
         <p className="whitespace-pre-wrap text-sm text-text">{task.description}</p>

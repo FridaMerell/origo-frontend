@@ -22,6 +22,7 @@ export default async function LanguageQuizPage({ params }: { params: Promise<{ l
 			source={{ kind: "language", language: code }}
 			scope={`bland dina ord på ${languageName(code).toLocaleLowerCase("sv")}`}
 			entryCount={match.count}
+			markedCount={match.marked}
 			back={{ href: "/forhor", label: "Alla språk" }}
 		/>
 	)

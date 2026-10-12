@@ -73,6 +73,12 @@ export default function ApsisShell({ children }: { children: ReactNode }) {
                 {site.name}
               </a>
             ))}
+            <a
+              href="/integritet"
+              className="no-underline hover:text-accent hover:underline"
+            >
+              Integritet
+            </a>
           </nav>
         </div>
       </footer>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button, LinkButton } from "@/app/components/ui/Button"
@@ -8,53 +8,50 @@ import type {
 	GlossaryDetail,
 	LexicalEntry,
 	LexicalEntryCreate,
+	LexicalEntryPage,
 	LexicalForm,
 	LexicalFormCreate,
 	LexicalFormKind,
 } from "@/app/lib/dal/opus"
 import { useUser } from "@/app/lib/user-context"
+import { addGlossaryEntry, deleteGlossary, removeGlossaryEntry, updateGlossary } from "../../_actions/glossary-actions"
 import {
-	addGlossaryEntry,
-	deleteGlossary,
-	getGlossary,
-	removeGlossaryEntry,
-	updateGlossary,
-} from "../../_actions/glossary-actions"
-import { createLexicalEntry, updateLexicalEntry } from "../../_actions/lexical-entry-actions"
+	createLexicalEntry,
+	getLexicalEntry,
+	listGlossaryEntries,
+	setQuizMark,
+	updateLexicalEntry,
+} from "../../_actions/lexical-entry-actions"
 import { createLexicalForm, deleteLexicalForm, updateLexicalForm } from "../../_actions/lexical-form-actions"
-import { CheckboxField, SelectField, TextAreaField, TextField } from "../../forms/Fields/Fields"
+import { CheckboxField, ComboboxField, SelectField, TextAreaField, TextField } from "../../forms/Fields/Fields"
 import Divider from "../../ui/Divider"
+import ConnotationFields from "../ConnotationFields"
 import GlossaryForm from "../GlossaryForm"
-import { describeForm, FORM_KIND_LABELS } from "../lexical-forms"
+import GrammarFields from "../GrammarFields"
+import {
+	GLOSSARY_PAGE_SIZE,
+	PART_OF_SPEECH_SUGGESTIONS,
+	describeForm,
+	emptyGrammar,
+	FORM_KIND_LABELS,
+	grammarOf,
+	parseSynonyms,
+	parseTags,
+	synonymsOf,
+	synonymText,
+} from "../lexical-forms"
 
 /** Synlig fokusmarkering för tangentbordsnavigering, samma som Opus formulärfält. */
 const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
 
 const LINK_BUTTON = `rounded-sm text-text-muted underline underline-offset-4 hover:text-text disabled:opacity-40 cursor-pointer ${FOCUS}`
 
+/** Samma bläddring som i anteckningslistan. */
+const PAGER_BUTTON = `rounded-sm font-display italic whitespace-nowrap hover:text-text cursor-pointer ${FOCUS}`
+
 function modernFormOf(entry: LexicalEntry) {
 	const value = entry.inflection_data?.modern_form
 	return typeof value === "string" ? value : ""
-}
-
-function synonymsOf(entry: LexicalEntry) {
-	const value = entry.inflection_data?.synonyms
-	return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
-}
-
-function matches(entry: LexicalEntry, query: string) {
-	const haystack = [
-		entry.lemma,
-		entry.translation,
-		entry.definition,
-		entry.part_of_speech,
-		modernFormOf(entry),
-		...synonymsOf(entry),
-		...(entry.forms ?? []).map(form => form.form),
-	]
-		.join(" ")
-		.toLocaleLowerCase("sv")
-	return haystack.includes(query.toLocaleLowerCase("sv"))
 }
 
 /** Ett ords uppgifter; används både för att lägga till ett nytt ord och för att redigera ett. */
@@ -74,7 +71,9 @@ function EntryForm({
 	const [modernForm, setModernForm] = useState(entry ? modernFormOf(entry) : "")
 	const [partOfSpeech, setPartOfSpeech] = useState(entry?.part_of_speech ?? "")
 	const [gender, setGender] = useState(entry?.gender ?? "")
-	const [synonyms, setSynonyms] = useState(entry ? synonymsOf(entry).join(", ") : "")
+	const [synonyms, setSynonyms] = useState(synonymText(entry))
+	const [connotations, setConnotations] = useState((entry?.connotations ?? []).join(", "))
+	const [connotationNote, setConnotationNote] = useState(entry?.connotation_note ?? "")
 	const [translation, setTranslation] = useState(entry?.translation ?? "")
 	const [definition, setDefinition] = useState(entry?.definition ?? "")
 	const [pending, setPending] = useState(false)
@@ -93,11 +92,13 @@ function EntryForm({
 				gender: gender.trim(),
 				translation: translation.trim(),
 				definition: definition.trim(),
+				synonyms: parseSynonyms(synonyms, synonymsOf(entry)),
+				connotations: parseTags(connotations),
+				connotation_note: connotationNote.trim(),
 				inflection_data: {
 					// Övriga uppgifter i inflection_data (från andra verktyg) behålls.
 					...(entry?.inflection_data ?? {}),
 					modern_form: modernForm.trim() || undefined,
-					synonyms: synonyms.trim() ? synonyms.split(",").map(s => s.trim()).filter(Boolean) : undefined,
 				},
 			})
 		} catch {
@@ -134,10 +135,11 @@ function EntryForm({
 					onChange={event => setModernForm(event.target.value)}
 					placeholder='Nutida form'
 				/>
-				<TextField
+				<ComboboxField
 					label='Ordklass'
+					options={PART_OF_SPEECH_SUGGESTIONS}
 					value={partOfSpeech}
-					onChange={event => setPartOfSpeech(event.target.value)}
+					onValueChange={setPartOfSpeech}
 					maxLength={100}
 					placeholder='verb, substantiv…'
 				/>
@@ -154,6 +156,12 @@ function EntryForm({
 				value={synonyms}
 				onChange={event => setSynonyms(event.target.value)}
 				placeholder='Kommaseparerade'
+			/>
+			<ConnotationFields
+				tags={connotations}
+				note={connotationNote}
+				onTagsChange={setConnotations}
+				onNoteChange={setConnotationNote}
 			/>
 			<TextAreaField label='Definition' value={definition} onChange={event => setDefinition(event.target.value)} rows={3} />
 			{error && (
@@ -188,6 +196,7 @@ function LexicalFormForm({
 	const [text, setText] = useState(form?.form ?? "")
 	const [kind, setKind] = useState<LexicalFormKind>(form?.kind ?? "spelling")
 	const [inflection, setInflection] = useState(form?.inflection ?? "")
+	const [grammar, setGrammar] = useState(grammarOf(form))
 	const [uncertain, setUncertain] = useState(form?.is_uncertain ?? false)
 	const [pending, setPending] = useState(false)
 	const [error, setError] = useState<string | null>(null)
@@ -201,7 +210,8 @@ function LexicalFormForm({
 			entry: entryId,
 			form: text.trim(),
 			kind,
-			inflection: kind === "inflection" ? inflection.trim() : "",
+			inflection: inflection.trim(),
+			...(kind === "inflection" ? grammar : emptyGrammar()),
 			is_uncertain: uncertain,
 		}
 		try {
@@ -216,7 +226,7 @@ function LexicalFormForm({
 	}
 
 	return (
-		<form onSubmit={handleSubmit} className='flex flex-col gap-3 rounded-md border border-border p-4'>
+		<form onSubmit={handleSubmit} className='my-2 flex flex-col gap-3'>
 			<div className='grid gap-3 sm:grid-cols-2'>
 				<TextField
 					label='Form'
@@ -235,15 +245,15 @@ function LexicalFormForm({
 					))}
 				</SelectField>
 			</div>
-			{kind === "inflection" && (
-				<TextField
-					label='Böjning'
-					value={inflection}
-					onChange={event => setInflection(event.target.value)}
-					maxLength={255}
-					placeholder='pres. ind. 3 sg., gen. pl.…'
-				/>
-			)}
+			{kind === "inflection" && <GrammarFields value={grammar} onChange={setGrammar} className='grid grid-cols-2 gap-3 sm:grid-cols-4' />}
+			{/* En anmärkning passar båda typerna: en böjning i klartext, eller när en stavning var i bruk. */}
+			<TextField
+				label='Anmärkning'
+				value={inflection}
+				onChange={event => setInflection(event.target.value)}
+				maxLength={255}
+				placeholder={kind === "inflection" ? "Fri text, t.ex. pres. ind. 3 sg." : "Fri text, t.ex. före 1700"}
+			/>
 			<CheckboxField
 				label='Osäker koppling'
 				helpText='Jag är inte helt säker på att formen hör till det här ordet.'
@@ -373,6 +383,7 @@ function EntryItem({
 	onSave,
 	onRemove,
 	onFormsChanged,
+	onQuizMark,
 }: {
 	entry: LexicalEntry
 	canEdit: boolean
@@ -380,27 +391,37 @@ function EntryItem({
 	onSave: (data: LexicalEntryCreate) => Promise<void>
 	onRemove: () => Promise<void>
 	onFormsChanged: () => Promise<void>
+	/** Lägger ordet i ens glosförhör, eller tar det ur dem. */
+	onQuizMark: () => Promise<void>
 }) {
 	const [editing, setEditing] = useState(false)
 	const [removing, setRemoving] = useState(false)
+	const [marking, setMarking] = useState(false)
 	const modernForm = modernFormOf(entry)
-	const synonyms = synonymsOf(entry)
-	const facts = [modernForm && `Modernt: ${modernForm}`, entry.part_of_speech, entry.gender, entry.language].filter(
-		Boolean,
-	)
+	const synonyms = synonymsOf(entry).map(synonym => synonym.text)
+	const connotations = entry.connotations ?? []
+	const facts = [
+		modernForm && `Modernt: ${modernForm}`,
+		entry.part_of_speech,
+		entry.gender,
+		entry.language,
+		entry.in_quiz && "i förhör",
+	].filter(Boolean)
 
 	if (editing) {
 		return (
-			<li className='rounded-lg border border-border bg-surface p-5'>
-				<EntryForm
-					entry={entry}
-					submitLabel='Spara'
-					onCancel={() => setEditing(false)}
-					onSubmit={async data => {
-						await onSave(data)
-						setEditing(false)
-					}}
-				/>
+			<li className='border-b border-border py-5'>
+				<div className='max-w-2xl'>
+					<EntryForm
+						entry={entry}
+						submitLabel='Spara'
+						onCancel={() => setEditing(false)}
+						onSubmit={async data => {
+							await onSave(data)
+							setEditing(false)
+						}}
+					/>
+				</div>
 			</li>
 		)
 	}
@@ -419,55 +440,136 @@ function EntryItem({
 					!entry.translation && <p className='font-display text-lg italic text-text-muted'>Ingen definition</p>
 				)}
 				{synonyms.length > 0 && <p className='mt-1 text-sm text-text-muted'>Synonymer: {synonyms.join(", ")}</p>}
+					{(connotations.length > 0 || entry.connotation_note) && (
+						<p className='mt-1 text-sm text-text-muted'>
+							{[connotations.length > 0 && `Konnotation: ${connotations.join(", ")}`, entry.connotation_note]
+								.filter(Boolean)
+								.join(" – ")}
+						</p>
+					)}
 				<LexicalForms entry={entry} canEdit={canEdit} onChanged={onFormsChanged} />
 			</div>
-			{(canEdit || canRemove) && (
-				<div className='flex shrink-0 gap-4 text-sm'>
-					{canEdit && (
-						<button type='button' onClick={() => setEditing(true)} className={LINK_BUTTON}>
-							Redigera
-						</button>
-					)}
-					{canRemove && (
-						<button
-							type='button'
-							disabled={removing}
-							onClick={async () => {
-								setRemoving(true)
-								try {
-									await onRemove()
-								} finally {
-									setRemoving(false)
-								}
-							}}
-							className={LINK_BUTTON}>
-							{removing ? "Tar bort…" : "Ta bort ur listan"}
-						</button>
-					)}
-				</div>
-			)}
+			{/* Förhörsmarkeringen är ens egen, så den finns på alla ord man ser. */}
+			<div className='flex shrink-0 flex-wrap gap-x-4 gap-y-1 text-sm'>
+				<button
+					type='button'
+					aria-pressed={entry.in_quiz}
+					disabled={marking}
+					onClick={async () => {
+						setMarking(true)
+						try {
+							await onQuizMark()
+						} finally {
+							setMarking(false)
+						}
+					}}
+					className={LINK_BUTTON}>
+					{entry.in_quiz ? "Ta ur förhör" : "Lägg i förhör"}
+				</button>
+				{canEdit && (
+					<button type='button' onClick={() => setEditing(true)} className={LINK_BUTTON}>
+						Redigera
+					</button>
+				)}
+				{canRemove && (
+					<button
+						type='button'
+						disabled={removing}
+						onClick={async () => {
+							setRemoving(true)
+							try {
+								await onRemove()
+							} finally {
+								setRemoving(false)
+							}
+						}}
+						className={LINK_BUTTON}>
+						{removing ? "Tar bort…" : "Ta bort ur listan"}
+					</button>
+				)}
+			</div>
 		</li>
 	)
 }
 
-/** En ordlista med alla ord. Ägaren kan redigera listan och lägga till, ändra och ta bort ord. */
-export default function GlossaryView({ glossary: initial }: { glossary: GlossaryDetail }) {
+/**
+ * En ordlista, en sida ord i taget; sökningen görs i API:t. Ägaren kan redigera listan och lägga
+ * till, ändra och ta bort ord.
+ */
+export default function GlossaryView({
+	glossary: initial,
+	firstPage,
+}: {
+	glossary: GlossaryDetail
+	firstPage: LexicalEntryPage
+}) {
 	const user = useUser()
 	const router = useRouter()
 	const [glossary, setGlossary] = useState(initial)
 	const [editingDetails, setEditingDetails] = useState(false)
 	const [adding, setAdding] = useState(false)
 	const [query, setQuery] = useState("")
+	// Sökningen skickas först när man slutat skriva.
+	const [search, setSearch] = useState("")
+	const [page, setPage] = useState(1)
+	// Räknas upp när sidan ska hämtas om, efter att ett ord lagts till eller tagits bort.
+	const [version, setVersion] = useState(0)
 	const [error, setError] = useState<string | null>(null)
 	const isOwner = glossary.owner === user?.id
 
-	const shown = useMemo(
-		() => (query.trim() ? glossary.entries.filter(entry => matches(entry, query.trim())) : glossary.entries),
-		[glossary.entries, query],
-	)
+	const requestKey = JSON.stringify([page, search, version])
+	const loadedKey = useRef(requestKey)
+	// Förra sidan står kvar tills nästa har kommit, så att listan inte blinkar.
+	const [loaded, setLoaded] = useState({ key: requestKey, data: firstPage })
+	const { data } = loaded
+	const loading = loaded.key !== requestKey
+	const pageCount = Math.max(1, Math.ceil(data.count / GLOSSARY_PAGE_SIZE))
 
-	async function refresh() {
-		setGlossary(await getGlossary(glossary.id))
+	useEffect(() => {
+		const timeout = setTimeout(() => {
+			setSearch(query.trim())
+			setPage(1)
+		}, 300)
+		return () => clearTimeout(timeout)
+	}, [query])
+
+	useEffect(() => {
+		if (loadedKey.current === requestKey) return
+		let active = true
+		listGlossaryEntries(glossary.id, page, search)
+			.then(result => {
+				if (!active) return
+				loadedKey.current = requestKey
+				setLoaded({ key: requestKey, data: result })
+			})
+			.catch(() => {
+				if (!active) return
+				setLoaded(current => ({ ...current, key: requestKey }))
+				setError("Orden kunde inte hämtas.")
+			})
+		return () => {
+			active = false
+		}
+	}, [requestKey, glossary.id, page, search])
+
+	function goToPage(next: number) {
+		setPage(next)
+		window.scrollTo({ top: 0 })
+	}
+
+	/** Byter ut ett ord på sidan mot dess nya uppgifter, utan att hämta om de andra. */
+	function replaceEntry(saved: LexicalEntry) {
+		setLoaded(current => ({
+			...current,
+			data: { ...current.data, results: current.data.results.map(item => (item.id === saved.id ? saved : item)) },
+		}))
+	}
+
+	/** Efter att ett ord lagts till eller tagits bort: antalet ändras och sidan hämtas om. */
+	function entryCountChanged(change: 1 | -1) {
+		setGlossary(current => ({ ...current, entry_count: current.entry_count + change }))
+		if (change === -1 && data.results.length === 1 && page > 1) setPage(page - 1)
+		else setVersion(current => current + 1)
 	}
 
 	async function handleDelete() {
@@ -485,7 +587,7 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 		setError(null)
 		try {
 			await removeGlossaryEntry(glossary.id, entryId)
-			await refresh()
+			entryCountChanged(-1)
 		} catch {
 			setError("Ordet kunde inte tas bort ur listan.")
 		}
@@ -499,7 +601,7 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 				</Link>
 			</p>
 			{editingDetails ? (
-				<section className='max-w-xl rounded-lg border border-border bg-surface p-5'>
+				<section className='max-w-xl'>
 					<GlossaryForm
 						initial={glossary}
 						submitLabel='Spara'
@@ -528,7 +630,7 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 							</div>
 						)}
 					</div>
-					{glossary.entries.length > 0 && (
+					{glossary.entry_count > 0 && (
 						<div className='flex w-full flex-col gap-3 sm:w-72'>
 							<LinkButton href={`/ordlistor/${glossary.id}/forhor`} variant='secondary' className='justify-center'>
 								Glosförhör
@@ -548,7 +650,7 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 
 			<Divider>
 				<span className='font-display italic oldstyle-nums'>
-					{query.trim() ? `${shown.length} av ${glossary.entries.length} ord` : `${glossary.entries.length} ord`} ·{" "}
+					{search ? `${data.count} av ${glossary.entry_count} ord` : `${glossary.entry_count} ord`} ·{" "}
 					{glossary.is_private ? "Privat" : "Offentlig"}
 				</span>
 			</Divider>
@@ -559,7 +661,7 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 				</p>
 			)}
 
-			{glossary.entries.length === 0 && !adding && (
+			{glossary.entry_count === 0 && !adding && (
 				<p className='my-10 text-center font-display text-lg text-text-muted'>
 					{isOwner
 						? "Inga ord än. Lägg till ett här, eller markera ett ord i en text och skapa en definition."
@@ -567,38 +669,69 @@ export default function GlossaryView({ glossary: initial }: { glossary: Glossary
 				</p>
 			)}
 
-			{shown.length > 0 && (
-				<ul className='my-4 flex flex-col'>
-					{shown.map(entry => (
-						<EntryItem
-							key={entry.id}
-							entry={entry}
-							canEdit={entry.owner === user?.id}
-							canRemove={isOwner}
-							onSave={async data => {
-								await updateLexicalEntry(entry.id, data)
-								await refresh()
-							}}
-							onRemove={() => handleRemoveEntry(entry.id)}
-							onFormsChanged={refresh}
-						/>
-					))}
-				</ul>
+			{data.results.length > 0 && (
+				<div aria-busy={loading} className={`transition-opacity ${loading ? "opacity-60" : ""}`}>
+					<ul className='my-4 flex flex-col'>
+						{data.results.map(entry => (
+							<EntryItem
+								key={entry.id}
+								entry={entry}
+								canEdit={entry.can_edit}
+								canRemove={isOwner}
+								onQuizMark={async () => {
+									setError(null)
+									try {
+										await setQuizMark(entry.id, !entry.in_quiz)
+										replaceEntry({ ...entry, in_quiz: !entry.in_quiz })
+									} catch {
+										setError("Markeringen kunde inte sparas.")
+									}
+								}}
+								onSave={async changes => replaceEntry(await updateLexicalEntry(entry.id, changes))}
+								onRemove={() => handleRemoveEntry(entry.id)}
+								onFormsChanged={async () => replaceEntry(await getLexicalEntry(entry.id))}
+							/>
+						))}
+					</ul>
+					{pageCount > 1 && (
+						<nav
+							aria-label='Sidor med ord'
+							className='grid grid-cols-[1fr_auto_1fr] items-baseline gap-x-4 text-sm text-text-muted'>
+							<span>
+								{page > 1 && (
+									<button type='button' onClick={() => goToPage(page - 1)} className={PAGER_BUTTON}>
+										Föregående
+									</button>
+								)}
+							</span>
+							<span className='font-display italic oldstyle-nums'>
+								Sida {page} av {pageCount}
+							</span>
+							<span className='justify-self-end'>
+								{page < pageCount && (
+									<button type='button' onClick={() => goToPage(page + 1)} className={PAGER_BUTTON}>
+										Nästa
+									</button>
+								)}
+							</span>
+						</nav>
+					)}
+				</div>
 			)}
-			{query.trim() && shown.length === 0 && glossary.entries.length > 0 && (
+			{search && data.count === 0 && glossary.entry_count > 0 && (
 				<p className='my-10 text-center font-display text-lg italic text-text-muted'>Inga ord matchar sökningen.</p>
 			)}
 
 			{isOwner &&
 				(adding ? (
-					<section className='my-6 max-w-2xl rounded-lg border border-border bg-surface p-5'>
+					<section className='my-6 max-w-2xl'>
 						<EntryForm
 							submitLabel='Lägg till'
 							onCancel={() => setAdding(false)}
 							onSubmit={async data => {
 								const entry = await createLexicalEntry(data)
 								await addGlossaryEntry(glossary.id, entry.id)
-								await refresh()
+								entryCountChanged(1)
 								setAdding(false)
 							}}
 						/>

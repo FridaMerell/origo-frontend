@@ -4,6 +4,7 @@ import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { useVentureData } from "@/app/verso/_state/verso-context"
 import { DrawingForm } from "@/app/verso/ritningar/drawing-form"
+import { PageHeader } from "@/app/verso/ui/PageHeader"
 import type { Drawing } from "@/app/lib/dal"
 
 const NO_VENTURE = "Utan projekt"
@@ -15,13 +16,16 @@ export default function DrawingsView({ drawings }: { drawings: Drawing[] }) {
   const groups = groupItems(drawings, (drawing) => ventureName(drawing.venture))
 
   return (
-    <div className="container flex flex-1 flex-col gap-4 py-5 sm:py-8">
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-display font-semibold">Ritningar</h1>
-        <Drawer trigger="Ny ritning" triggerSize="sm" title="Ny ritning">
-          <DrawingForm />
-        </Drawer>
-      </div>
+    <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
+      <PageHeader
+        title="Ritningar"
+        meta={`${drawings.length} st`}
+        actions={
+          <Drawer trigger="Ny ritning" triggerSize="sm" triggerClassName="justify-center" title="Ny ritning">
+            <DrawingForm />
+          </Drawer>
+        }
+      />
 
       <GroupedList<Drawing>
         groups={groups}

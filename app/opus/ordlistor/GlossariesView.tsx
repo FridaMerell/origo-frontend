@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Button } from "@/app/components/ui/Button"
 import type { Glossary } from "@/app/lib/dal/opus"
 import { useUser } from "@/app/lib/user-context"
 import { createGlossary } from "../_actions/glossary-actions"
@@ -13,33 +14,22 @@ import GlossaryForm from "./GlossaryForm"
 /** Synlig fokusmarkering för tangentbordsnavigering, samma som Opus formulärfält. */
 const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
 
-const SMALL_CAPS = "font-body text-xs uppercase tracking-widest text-text-muted"
-
-function GlossaryCard({ glossary }: { glossary: Glossary }) {
+/** En ordlista som en rad i en lista med linjer, som språken i glosförhöret. */
+function GlossaryRow({ glossary }: { glossary: Glossary }) {
 	return (
-		<li>
+		<li className='border-b border-border'>
 			<Link
 				href={`/ordlistor/${glossary.id}`}
-				className={`group flex h-full flex-col rounded-lg border border-border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md ${FOCUS}`}>
-				<h3 className='font-display text-2xl leading-tight text-text first-letter:mr-0.5 first-letter:text-4xl first-letter:leading-none first-letter:text-primary'>
-					{glossary.title}
-				</h3>
-				{glossary.description && (
-					<p className='mt-2 line-clamp-3 font-display text-base italic leading-relaxed text-text-muted'>
-						{glossary.description}
-					</p>
-				)}
-				<div className='mt-auto flex items-baseline justify-between gap-4 pt-4'>
-					<p className={SMALL_CAPS}>
-						{glossary.entry_count} ord ·{glossary.is_private ? "Privat" : "Offentlig"}
-					</p>
-					<span className='shrink-0 font-body text-xs uppercase tracking-widest text-primary'>
-						Öppna{" "}
-						<span aria-hidden className='inline-block transition-transform duration-300 group-hover:translate-x-1'>
-							→
-						</span>
-					</span>
+				className={`group grid gap-x-6 gap-y-1 rounded-sm py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline ${FOCUS}`}>
+				<div className='min-w-0'>
+					<p className='font-display text-xl font-semibold text-text group-hover:text-primary'>{glossary.title}</p>
+					{glossary.description && (
+						<p className='mt-1 line-clamp-2 font-display italic text-text-muted'>{glossary.description}</p>
+					)}
 				</div>
+				<p className='text-sm text-text-muted oldstyle-nums'>
+					{glossary.entry_count} ord · {glossary.is_private ? "Privat" : "Offentlig"}
+				</p>
 			</Link>
 		</li>
 	)
@@ -91,44 +81,40 @@ export default function GlossariesView({ glossaries }: { glossaries: Glossary[] 
 			<Divider>
 				<span className='font-display italic oldstyle-nums'>Mina ordlistor</span>
 			</Divider>
-			<ul className='my-6 grid auto-rows-fr gap-5 sm:grid-cols-2 lg:grid-cols-3'>
-				{own.map(glossary => (
-					<GlossaryCard key={glossary.id} glossary={glossary} />
-				))}
-				<li>
-					{creating ? (
-						<div className='h-full rounded-lg border border-border bg-surface p-5'>
-							<GlossaryForm
-								submitLabel='Skapa ordlista'
-								onCancel={() => setCreating(false)}
-								onSubmit={async data => {
-									const glossary = await createGlossary(data)
-									router.push(`/ordlistor/${glossary.id}`)
-								}}
-							/>
-						</div>
-					) : (
-						<button
-							type='button'
-							onClick={() => setCreating(true)}
-							className={`flex h-full min-h-40 w-full flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border px-6 py-5 text-center text-text-muted transition-colors duration-300 hover:border-text-muted cursor-pointer ${FOCUS}`}>
-							<span aria-hidden className='font-display text-2xl text-primary'>
-								+
-							</span>
-							<span className='font-display text-xl text-text'>Ny ordlista</span>
-						</button>
-					)}
-				</li>
-			</ul>
+			{own.length > 0 && (
+				<ul className='flex flex-col'>
+					{own.map(glossary => (
+						<GlossaryRow key={glossary.id} glossary={glossary} />
+					))}
+				</ul>
+			)}
+			<div className='my-6'>
+				{creating ? (
+					<div className='max-w-xl'>
+						<GlossaryForm
+							submitLabel='Skapa ordlista'
+							onCancel={() => setCreating(false)}
+							onSubmit={async data => {
+								const glossary = await createGlossary(data)
+								router.push(`/ordlistor/${glossary.id}`)
+							}}
+						/>
+					</div>
+				) : (
+					<Button type='button' variant='secondary' onClick={() => setCreating(true)}>
+						Ny ordlista
+					</Button>
+				)}
+			</div>
 
 			{shared.length > 0 && (
 				<>
 					<Divider>
 						<span className='font-display italic oldstyle-nums'>Offentliga ordlistor</span>
 					</Divider>
-					<ul className='my-6 grid auto-rows-fr gap-5 sm:grid-cols-2 lg:grid-cols-3'>
+					<ul className='mb-6 flex flex-col'>
 						{shared.map(glossary => (
-							<GlossaryCard key={glossary.id} glossary={glossary} />
+							<GlossaryRow key={glossary.id} glossary={glossary} />
 						))}
 					</ul>
 				</>

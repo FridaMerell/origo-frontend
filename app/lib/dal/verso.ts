@@ -331,6 +331,16 @@ export const getFacilities = cache(
   (): Promise<Facility[]> => fetchList(VERSO_ENDPOINTS.facilities)
 )
 
+/** Bookings that overlap `from`..`to` (both "YYYY-MM-DD", inclusive). The dashboard only carries ongoing and upcoming ones. */
+export const getBookings = cache(
+  (house: string, from: string, to: string): Promise<Booking[]> =>
+    fetchList(VERSO_ENDPOINTS.bookings, {
+      house,
+      ends_on_or_after: from,
+      starts_on_or_before: to,
+    })
+)
+
 // List data for the Verso section is served in one payload by getVersoDashboard
 // above; the per-resource list fetchers were removed with that change. What
 // remains are the single-item detail fetchers used by the [id] routes.

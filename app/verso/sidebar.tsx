@@ -34,9 +34,9 @@ function ModeToggle({
       type="button"
       role="switch"
       aria-checked={dark}
-      aria-label="Växla mörkt läge"
+      aria-label="Toggle dark mode"
       onClick={onToggle}
-      className="flex items-center gap-2.5 px-2.5 py-3 text-sm text-text-muted md:py-2"
+      className="flex items-center gap-2.5 px-2.5 py-2 text-sm text-text-muted"
     >
       <span
         className="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors"
@@ -47,7 +47,7 @@ function ModeToggle({
           style={{ transform: dark ? "translateX(18px)" : "translateX(3px)" }}
         />
       </span>
-      {dark ? "Mörkt läge" : "Ljust läge"}
+      {dark ? "Dark mode" : "Light mode"}
     </button>
   )
 }
@@ -66,7 +66,7 @@ const FacilitySelector = () => {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-1.5 border-b border-accent-hover px-1 py-2 text-left text-sm text-text-muted hover:text-text md:py-1"
+        className="flex border-accent-hover border-b w-full items-center justify-between gap-1.5  px-1 py-1 text-left text-sm text-text-muted hover:text-text"
       >
         <span className="truncate">{selectedFacility?.name}</span>
         <ChevronDownIcon
@@ -84,7 +84,7 @@ const FacilitySelector = () => {
                 setOpen(false)
                 if (facility.id !== selectedFacility?.id) selectFacility(String(facility.id))
               }}
-              className="block w-full truncate px-2.5 py-2.5 text-left text-sm text-text hover:bg-accent-wash hover:text-accent md:py-1.5"
+              className={`block w-full truncate px-2.5 py-1.5 text-left text-sm text-text hover:bg-accent-wash hover:text-accent`}
             >
               {facility.name}
             </button>
@@ -137,7 +137,7 @@ export function SidebarContent({
             key={item.label}
             href={item.href}
             onClick={onNavigate}
-            className={`flex items-center gap-2.5 rounded px-2.5 py-3 text-sm no-underline duration-200 md:py-2 ${active ? " bg-accent-wash text-accent hover:bg-accent-wash" : " hover:bg-accent-wash hover:text-accent"}`}
+            className={`flex items-center gap-2.5 rounded px-2.5 py-2 text-sm no-underline duration-200  ${active ? " bg-accent-wash text-accent hover:bg-accent-wash" : " hover:bg-accent-wash hover:text-accent"}`}
 
           >
             <item.icon size={16} className="shrink-0" />

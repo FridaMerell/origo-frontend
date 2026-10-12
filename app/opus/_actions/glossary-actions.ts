@@ -31,7 +31,7 @@ export async function removeGlossaryEntry(id: Id, entryId: Id): Promise<void> {
 	return glossaryApi.removeEntry(id, entryId)
 }
 
-/** Ett nytt slumpat urval ord ur ordlistan för ett glosförhör. */
-export async function getGlossaryQuiz(id: Id, count: number): Promise<LexicalEntry[]> {
-	return glossaryApi.quiz(id, count)
+/** Ett nytt slumpat urval ord ur ordlistan för ett glosförhör; med `marked` bara bland de markerade. */
+export async function getGlossaryQuiz(id: Id, count: number, marked: boolean): Promise<LexicalEntry[]> {
+	return glossaryApi.quiz(id, count, marked)
 }

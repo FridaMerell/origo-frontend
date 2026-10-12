@@ -37,7 +37,9 @@ export default async function QuizLanguagesPage() {
 								<span className='font-display text-xl font-semibold text-text group-hover:text-primary'>
 									{languageName(item.language)}
 								</span>
-								<span className='shrink-0 text-sm text-text-muted oldstyle-nums'>{item.count} ord</span>
+								<span className='shrink-0 text-sm text-text-muted oldstyle-nums'>
+								{item.count} ord{item.marked > 0 && `, ${item.marked} markerade för förhör`}
+							</span>
 							</Link>
 						</li>
 					))}

@@ -31,7 +31,7 @@ export function ToggleTaskButton({
       }}
       aria-label={status === "done" ? "Öppna uppgift" : "Stäng uppgift"}
       aria-pressed={status === "done"}
-      className={`flex items-center gap-1.5 text-sm ${status === "done" ? "text-success" : "text-text-muted hover:text-accent"} ${className}`}
+      className={`flex min-h-10 items-center gap-1.5 whitespace-nowrap text-sm disabled:opacity-60 ${status === "done" ? "text-success" : "text-text-muted hover:text-accent"} ${className}`}
     >
       {
         status === "done" ? (

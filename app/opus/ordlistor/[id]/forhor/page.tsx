@@ -20,7 +20,8 @@ export default async function GlossaryQuizPage({ params }: { params: Promise<{ i
 		<QuizView
 			source={{ kind: "glossary", id: glossary.id }}
 			scope={`ur ${glossary.title}`}
-			entryCount={glossary.entries.length}
+			entryCount={glossary.entry_count}
+			markedCount={glossary.marked_count}
 			back={{ href: `/ordlistor/${glossary.id}`, label: glossary.title }}
 		/>
 	)

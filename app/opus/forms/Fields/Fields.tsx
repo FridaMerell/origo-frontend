@@ -1,4 +1,5 @@
 import { useId, useState, type ComponentPropsWithoutRef, type DragEvent, type ReactNode } from "react"
+import { useCombobox } from "@/app/components/ui/useCombobox"
 
 export type TextFieldProps = Omit<ComponentPropsWithoutRef<"input">, "className"> & {
 	label: string
@@ -188,6 +189,84 @@ export function SelectField({
 				{children}
 			</select>
 			<FieldMessage id={helpId} helpText={helpText} error={error} />
+		</div>
+	)
+}
+
+/** Ett förslag: `value` hamnar i fältet när det väljs, `label` är det som visas i listan (annars `value`). */
+export type ComboboxOption = { key: string | number; value: string; label?: ReactNode }
+
+export type ComboboxFieldProps = Omit<TextFieldProps, "value" | "onChange" | "list"> & {
+	value: string
+	onValueChange: (value: string) => void
+	/** Förslagen i listan. Vilket annat värde som helst går att skriva i fältet. */
+	options: (string | ComboboxOption)[]
+	/** Falskt när förslagen redan är svaret på det som skrivits (en sökning): då visas alla som de kommer. */
+	filterOptions?: boolean
+	/** Ett förslag valdes ur listan, efter att `onValueChange` fått dess värde. */
+	onPick?: (option: ComboboxOption) => void
+}
+
+/**
+ * Ett textfält med en lista att välja ur, för värden som oftast men inte alltid är ett av förslagen.
+ * Listan visar alla förslag när den öppnas och snävas in först när man skriver. Den har samma
+ * utseende som Opus textmenyer.
+ */
+export function ComboboxField({
+	value,
+	onValueChange,
+	options: givenOptions,
+	filterOptions = true,
+	onPick,
+	...props
+}: ComboboxFieldProps) {
+	const typed = value.trim().toLocaleLowerCase("sv")
+	const lower = (option: ComboboxOption) => option.value.toLocaleLowerCase("sv")
+	// Beteendet (öppna, stänga, tangenter, plats över eller under) är det gemensamma i useCombobox.
+	const { setWrapper, options, shown, above, active, typed: onTyped, inputProps, listProps, optionProps } =
+		useCombobox<ComboboxOption>({
+			options: givenOptions.map(option => (typeof option === "string" ? { key: option, value: option } : option)),
+			query: value,
+			matches: filterOptions ? option => lower(option).includes(typed) : undefined,
+			isCurrent: option => lower(option) === typed,
+			onPick: option => {
+				onValueChange(option.value)
+				onPick?.(option)
+			},
+			// `max-h-48` plus avståndet till fältet.
+			listSpace: 200,
+		})
+
+	return (
+		<div ref={setWrapper} className='relative'>
+			<TextField
+				{...props}
+				{...inputProps}
+				value={value}
+				onChange={event => {
+					onValueChange(event.target.value)
+					onTyped()
+				}}
+			/>
+			{shown && (
+				<div
+					{...listProps}
+					className={`absolute left-0 right-0 z-[35] max-h-48 overflow-y-auto rounded-md border border-border bg-surface py-1 text-text shadow-lg ${
+						above ? "bottom-full mb-1" : "mt-1"
+					}`}>
+					{options.map((option, index) => (
+						<button
+							key={option.key}
+							{...optionProps(index)}
+							type='button'
+							className={`block w-full truncate px-3 py-2 text-left text-sm text-text cursor-pointer ${
+								index === active ? "bg-text/10" : ""
+							}`}>
+							{option.label ?? option.value}
+						</button>
+					))}
+				</div>
+			)}
 		</div>
 	)
 }

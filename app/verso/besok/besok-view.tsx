@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/app/components/ui/Card";
-import { useBookingData } from "@/app/verso/_state/verso-context";
+import type { Booking } from "@/app/lib/dal";
 import { BookVisitButton } from "@/app/verso/besok/book-visit-button";
 import { StayBar } from "@/app/verso/besok/stay-bar";
 import { WEEKDAYS, buildMonthCells, isSameDay, toStays } from "@/app/verso/besok/calendar";
@@ -11,10 +11,9 @@ import { formatMonthYear } from "@/app/lib/formatters";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const monthLinkClass =
-  "flex size-9 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent sm:size-6";
+  "flex size-10 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent sm:size-9";
 
-export default function BesokView() {
-  const { bookings } = useBookingData();
+export default function BesokView({ bookings }: { bookings: Booking[] }) {
   const searchParams = useSearchParams();
 
   const today = new Date();
@@ -40,7 +39,7 @@ export default function BesokView() {
           >
             <ChevronLeft size={16} />
           </Link>
-          <h1 className="m-0 whitespace-nowrap font-display text-xl font-semibold text-text sm:text-2xl">
+          <h1 className="m-0 whitespace-nowrap font-display text-xl font-semibold capitalize text-text sm:text-3xl">
             {formatMonthYear(new Date(year, month, 1))}
           </h1>
           <Link
@@ -73,7 +72,11 @@ export default function BesokView() {
                 key={i}
                 className={`relative box-border block min-h-[64px] overflow-clip border-b border-r border-border sm:min-h-[74px] ${inMonth ? "" : "opacity-40"}`}
               >
-                <span className="p-1.5 text-xs text-text-faint">{date.getDate()}</span>
+                <span
+                  className={`block p-1.5 text-xs ${isSameDay(date, today) ? "font-bold text-accent" : "text-text-faint"}`}
+                >
+                  {date.getDate()}
+                </span>
                 {dayStays.map((stay) => {
                   const isStart = isSameDay(date, stay.start);
                   const isLastDay = isSameDay(date, stay.end);

@@ -1,15 +1,6 @@
 "use client"
-import {
-	AnnotationKind,
-	Glossary,
-	Id,
-	LexicalEntry,
-	LexicalFormKind,
-	ReadingAnnotation,
-	ReadingGloss,
-	ReadingUnit,
-} from "@/app/lib/dal/opus"
-import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react"
+import { ReadingAnnotation, ReadingGloss, ReadingUnit } from "@/app/lib/dal/opus"
+import React, { useState, useRef, useEffect, useCallback } from "react"
 import { ArrowRightIcon, MoreHorizontalIcon, PencilIcon, XIcon } from "lucide-react"
 import Menu from "./Menu"
 import {
@@ -19,26 +10,12 @@ import {
 	updateUnitContent,
 	type UnitEditResult,
 } from "../../_actions/alignment-actions"
-import { createAnnotation, deleteAnnotation, updateAnnotation } from "../../_actions/annotation-actions"
-import {
-	createLexicalEntry,
-	deleteLexicalEntry,
-	getLexicalEntry,
-	listLexicalEntries,
-	setEntryGlossaries,
-	updateLexicalEntry,
-} from "../../_actions/lexical-entry-actions"
-import { createLexicalForm, deleteLexicalForm, updateLexicalForm } from "../../_actions/lexical-form-actions"
-import { listGlossaries } from "../../_actions/glossary-actions"
-import { useUser } from "@/app/lib/user-context"
-import { CheckboxField, SelectField, TextField, TextAreaField } from "../../forms/Fields/Fields"
-import { describeForm, FORM_KIND_LABELS, sameWord } from "../../ordlistor/lexical-forms"
-
-const ANNOTATION_KINDS: { value: AnnotationKind; label: string }[] = [
-	{ value: "definition", label: "Definition" },
-	{ value: "note", label: "Anteckning" },
-	{ value: "reference", label: "Hänvisning" },
-]
+import { deleteAnnotation } from "../../_actions/annotation-actions"
+import { TextAreaField } from "../../forms/Fields/Fields"
+import { describeForm, sameWord } from "../../ordlistor/lexical-forms"
+import WordPanel from "./WordPanel"
+import type { Anchor } from "./usePanelPlacement"
+import { explanationOf, type PanelTarget } from "./word-panel"
 
 const BOUNDARY_CHAR = /[\s.,!?;:()[\]{}"'»«]/
 
@@ -71,11 +48,6 @@ function getTextOffset(container: Node, targetNode: Node, targetOffset: number):
 /** Markeringsstilen som delas av "ny annotation väljs" och "ord valt för delning" (utan pil, utan tooltip). */
 const PENDING_MARK_CLASS = "bg-primary/20 underline decoration-primary decoration-2 underline-offset-4 rounded-[2px]"
 
-/** Definitionens förklaring ligger på ordet; äldre definitioner har den i annotationens text. */
-function explanationOf(annotation: ReadingAnnotation) {
-	return annotation.lexical_entry?.definition || annotation.body
-}
-
 const TERM_MARK_CLASS = "bg-transparent text-primary underline decoration-dotted decoration-primary/60 underline-offset-4"
 
 /** Rutan som visas när man håller över ett ord med definition. Dess text räknas inte till styckets (se getTextOffset). */
@@ -93,7 +65,13 @@ function TermCard({
 	hint?: string
 }) {
 	const modernForm = entry?.inflection_data?.modern_form
-	const synonyms = entry?.inflection_data?.synonyms
+	const synonyms = (entry?.synonyms ?? []).map(synonym => synonym.text)
+	const connotation = [
+		entry?.connotations?.length ? `Konnotation: ${entry.connotations.join(", ")}` : "",
+		entry?.connotation_note ?? "",
+	]
+		.filter(Boolean)
+		.join(" – ")
 	return (
 		<span
 			data-term-card
@@ -121,11 +99,12 @@ function TermCard({
 					Översättning: <span className="font-medium text-text">{entry.translation}</span>
 				</span>
 			)}
-			{Array.isArray(synonyms) && synonyms.length > 0 && (
+			{synonyms.length > 0 && (
 				<span className="mt-0.5 block text-xs text-text">
 					Synonymer: {synonyms.join(", ")}
 				</span>
 			)}
+			{connotation && <span className="mt-0.5 block text-xs text-text">{connotation}</span>}
 			{explanation && <span className="mt-1 block text-text">{explanation}</span>}
 			{hint && <span className="mt-2 block text-[11px] text-text-muted">{hint}</span>}
 		</span>
@@ -167,7 +146,8 @@ function highlightContent(
 		return (
 			<React.Fragment key={key}>
 				{before}
-				<mark className={PENDING_MARK_CLASS}>{marked}</mark>
+				{/* Ordpanelen hålls vid det här elementet (se selectRange). */}
+				<mark data-pending-mark className={PENDING_MARK_CLASS}>{marked}</mark>
 				{after}
 			</React.Fragment>
 		)
@@ -261,21 +241,8 @@ function tokenizeWords(content: string): WordToken[] {
 	return tokens
 }
 
-type SelectionState = {
-	startOffset: number
-	endOffset: number
-	text: string
-	top: number
-	bottom: number
-	centerX: number
-	/** Satt när panelen redigerar en befintlig annotation i stället för att skapa en ny. */
-	annotation?: ReadingAnnotation
-	/** Satt när panelen redigerar ett känt ord som hittats i texten, utan annotation. */
-	gloss?: ReadingGloss
-}
-
-/** Det panelen placeras vid: markeringen (ny annotation) eller det markerade ordet (redigering). */
-type Anchor = { getBoundingClientRect(): DOMRect }
+/** Den öppna ordpanelen: vad den gäller och var i texten den hålls. */
+type OpenPanel = { target: PanelTarget; anchor: Anchor }
 
 /**
  * Ett stycke text där man kan markera ord/fraser och skapa annotationer, och redigera,
@@ -297,7 +264,6 @@ export default function UnitText({
 	heading?: React.ReactNode
 	onChanged: () => void
 }) {
-	const onAnnotated = onChanged
 	const [editing, setEditing] = useState(false)
 	const [draft, setDraft] = useState(unit.content)
 	const [unitBusy, setUnitBusy] = useState(false)
@@ -305,137 +271,60 @@ export default function UnitText({
 	const [showAnnotations, setShowAnnotations] = useState(false)
 	const [splitMode, setSplitMode] = useState(false)
 	const [splitAt, setSplitAt] = useState<number | null>(null)
-	const [pending, setPending] = useState<SelectionState | null>(null)
-	const [kind, setKind] = useState<AnnotationKind>("definition")
-	// Panelen sparar bara det markerade ordet som en form av ett befintligt eget ord, utan annotation.
-	const [formOnly, setFormOnly] = useState(false)
-	const [body, setBody] = useState("")
-	const [partOfSpeech, setPartOfSpeech] = useState("")
-	const [modernForm, setModernForm] = useState("")
-	const [synonyms, setSynonyms] = useState("")
-	const [translation, setTranslation] = useState("")
-	// Grundformen när det markerade ordet är en böjd form eller stavningsvariant; tom när ordet själv är grundformen.
-	const [baseForm, setBaseForm] = useState("")
-	// Ett befintligt eget ord som det markerade ordet knyts till, i stället för att ett nytt skapas.
-	const [baseEntry, setBaseEntry] = useState<LexicalEntry | null>(null)
-	const [baseMatches, setBaseMatches] = useState<LexicalEntry[]>([])
-	const [formKind, setFormKind] = useState<LexicalFormKind>("inflection")
-	const [formInflection, setFormInflection] = useState("")
-	const [formUncertain, setFormUncertain] = useState(false)
-	const [glossaryIds, setGlossaryIds] = useState<Id[]>([])
-	const [ownGlossaries, setOwnGlossaries] = useState<Glossary[] | null>(null)
-	const [formError, setFormError] = useState<string | null>(null)
-	const [submitting, setSubmitting] = useState(false)
-	const [placement, setPlacement] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
+	const [panel, setPanel] = useState<OpenPanel | null>(null)
 	const contentRef = useRef<HTMLDivElement>(null)
-	const panelRef = useRef<HTMLDivElement>(null)
-	const rangeRef = useRef<Anchor | null>(null)
-	const user = useUser()
-
-	const pendingRef = useRef(pending)
-	pendingRef.current = pending
-
-	const resetBase = useCallback(() => {
-		setBaseForm("")
-		setBaseEntry(null)
-		setBaseMatches([])
-		setFormKind("inflection")
-		setFormInflection("")
-		setFormUncertain(false)
-	}, [])
-
-	/**
-	 * Knyter det markerade ordet till ett befintligt ord, med den sparade formen ifylld. `fill` fyller
-	 * också i ordets uppgifter; det behövs inte när panelen redan visar just det ordet.
-	 */
-	const chooseBaseEntry = useCallback((entry: LexicalEntry, text: string, fill = true) => {
-		setBaseEntry(entry)
-		setBaseForm(entry.lemma)
-		if (fill) {
-			const modern = entry.inflection_data?.modern_form
-			const synonymList = entry.inflection_data?.synonyms
-			setPartOfSpeech(entry.part_of_speech ?? "")
-			setTranslation(entry.translation ?? "")
-			setBody(entry.definition ?? "")
-			setModernForm(typeof modern === "string" ? modern : "")
-			setSynonyms(Array.isArray(synonymList) ? synonymList.join(", ") : "")
-			setGlossaryIds(entry.glossaries)
-		}
-		const form = entry.forms?.find(item => sameWord(item.form, text))
-		if (form) {
-			setFormKind(form.kind)
-			setFormInflection(form.inflection)
-			setFormUncertain(form.is_uncertain)
-		}
-	}, [])
-
-	function changeBaseForm(value: string) {
-		setBaseForm(value)
-		// Ett valt ord gäller bara så länge grundformen är dess lemma.
-		if (baseEntry && value.trim() !== baseEntry.lemma) setBaseEntry(null)
-	}
 
 	/** Öppnar panelen för en ny annotation på markeringen `range` (inom styckets text). */
-	const selectRange = useCallback((range: Range) => {
-		const container = contentRef.current
-		if (!container) return
-		const sel = window.getSelection()
-		const rawStart = getTextOffset(container, range.startContainer, range.startOffset)
-		const rawEnd = getTextOffset(container, range.endContainer, range.endOffset)
-		const [start, end] = trimToTokenBounds(
-			unit.content ?? "",
-			Math.min(rawStart, rawEnd),
-			Math.max(rawStart, rawEnd),
-		)
-		if (start === end) {
-			setPending(null)
-			return
-		}
-		const rect = range.getBoundingClientRect()
-		const selectedText = (unit.content ?? "").slice(start, end)
-		rangeRef.current = range.cloneRange()
-		// Vår egen markering (samma stil som "ord valt för delning") ersätter webbläsarens
-		// blå markering, så bara en markering syns.
-		sel?.removeAllRanges()
-		setPending({
-			startOffset: start,
-			endOffset: end,
-			text: selectedText,
-			top: rect.top,
-			bottom: rect.bottom,
-			centerX: rect.left + rect.width / 2,
-		})
-		setKind("definition")
-		setFormOnly(false)
-		setBody("")
-		setPartOfSpeech("")
-		setModernForm("")
-		setSynonyms("")
-		setTranslation("")
-		resetBase()
-		setGlossaryIds([])
-		setFormError(null)
-		// Är ordet redan sparat som en form av ett eget ord, knyts det dit direkt.
-		const text = selectedText.trim()
-		listLexicalEntries({ forms__form__iexact: text })
-			.then(list => {
-				const own = list.find(entry => entry.owner === user?.id)
-				const current = pendingRef.current
-				if (own && current && !current.annotation && current.startOffset === start) chooseBaseEntry(own, text)
+	const selectRange = useCallback(
+		(range: Range) => {
+			const container = contentRef.current
+			if (!container) return
+			const rawStart = getTextOffset(container, range.startContainer, range.startOffset)
+			const rawEnd = getTextOffset(container, range.endContainer, range.endOffset)
+			const [start, end] = trimToTokenBounds(unit.content, Math.min(rawStart, rawEnd), Math.max(rawStart, rawEnd))
+			if (start === end) {
+				setPanel(null)
+				return
+			}
+			// Markeringen ritas om som ett eget element (PENDING_MARK_CLASS) som ersätter webbläsarens blå
+			// markering. Panelen hålls vid det elementet; det kopierade området gäller tills det har ritats.
+			const selected = range.cloneRange()
+			window.getSelection()?.removeAllRanges()
+			// Ett ord som redan är sparat som en form av ett eget ord knyts dit direkt. Läsvyns data pekar
+			// ut de kända orden i stycket, så det behövs ingen fråga till servern.
+			const known = unit.glosses.find(
+				gloss =>
+					gloss.form !== null &&
+					gloss.start_offset === start &&
+					gloss.end_offset === end &&
+					gloss.lexical_entry.can_edit,
+			)
+			setPanel({
+				target: {
+					startOffset: start,
+					endOffset: end,
+					text: unit.content.slice(start, end),
+					knownEntry: known?.lexical_entry,
+				},
+				anchor: {
+					getBoundingClientRect: () =>
+						(container.querySelector("[data-pending-mark]") ?? selected).getBoundingClientRect(),
+				},
 			})
-			.catch(() => {})
-	}, [unit, user, resetBase, chooseBaseEntry])
+		},
+		[unit],
+	)
 
 	const handleMouseUp = useCallback(() => {
-		if (!contentRef.current) return
-		const sel = window.getSelection()
-		if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-			setPending(null)
+		const container = contentRef.current
+		const selection = window.getSelection()
+		if (!container || !selection || selection.isCollapsed || selection.rangeCount === 0) {
+			setPanel(null)
 			return
 		}
-		const range = sel.getRangeAt(0)
-		if (!contentRef.current.contains(range.commonAncestorContainer)) {
-			setPending(null)
+		const range = selection.getRangeAt(0)
+		if (!container.contains(range.commonAncestorContainer)) {
+			setPanel(null)
 			return
 		}
 		selectRange(range)
@@ -443,6 +332,10 @@ export default function UnitText({
 
 	// Pekskärm: markeringen görs med handtag och ger inget mouseup. Läs den när den har slutat
 	// ändras, och bara när ingen panel redan är öppen (då flyttas markeringen in i formuläret).
+	const panelOpen = useRef(false)
+	useEffect(() => {
+		panelOpen.current = panel !== null
+	}, [panel])
 	useEffect(() => {
 		if (!window.matchMedia("(pointer: coarse)").matches) return
 		let timer: number | undefined
@@ -450,9 +343,9 @@ export default function UnitText({
 			window.clearTimeout(timer)
 			timer = window.setTimeout(() => {
 				const container = contentRef.current
-				const sel = window.getSelection()
-				if (!container || pendingRef.current || !sel || sel.isCollapsed || sel.rangeCount === 0) return
-				const range = sel.getRangeAt(0)
+				const selection = window.getSelection()
+				if (!container || panelOpen.current || !selection || selection.isCollapsed || selection.rangeCount === 0) return
+				const range = selection.getRangeAt(0)
 				if (container.contains(range.commonAncestorContainer)) selectRange(range)
 			}, 600)
 		}
@@ -463,315 +356,34 @@ export default function UnitText({
 		}
 	}, [selectRange])
 
-	/** Öppnar panelen för en befintlig annotation, ifylld med dess (och ordets) uppgifter. */
-	const startEditingAnnotation = useCallback(
-		(annotation: ReadingAnnotation, anchor: HTMLElement) => {
-			if (annotation.start_offset == null || annotation.end_offset == null) return
-			const rect = anchor.getBoundingClientRect()
-			const entry = annotation.lexical_entry
-			const synonymList = entry?.inflection_data?.synonyms
-			const modern = entry?.inflection_data?.modern_form
-			const text = unit.content.slice(annotation.start_offset, annotation.end_offset)
-			rangeRef.current = anchor
-			setPending({
+	/** Öppnar panelen för en befintlig annotation, vid ordet den gäller. */
+	function editAnnotation(annotation: ReadingAnnotation, anchor: HTMLElement) {
+		if (annotation.start_offset == null || annotation.end_offset == null) return
+		setPanel({
+			target: {
 				startOffset: annotation.start_offset,
 				endOffset: annotation.end_offset,
-				text,
-				top: rect.top,
-				bottom: rect.bottom,
-				centerX: rect.left + rect.width / 2,
+				text: unit.content.slice(annotation.start_offset, annotation.end_offset),
 				annotation,
-			})
-			setKind(annotation.kind)
-			setFormOnly(false)
-			setBody(annotation.kind === "definition" ? explanationOf(annotation) : annotation.body)
-			setPartOfSpeech(entry?.part_of_speech ?? "")
-			setModernForm(typeof modern === "string" ? modern : "")
-			setSynonyms(Array.isArray(synonymList) ? synonymList.join(", ") : "")
-			setTranslation(entry?.translation ?? "")
-			resetBase()
-			// Ett ord vars lemma inte är det markerade ordet är knutet till en grundform.
-			if (entry && !sameWord(entry.lemma, text)) setBaseForm(entry.lemma)
-			setGlossaryIds([])
-			setFormError(null)
-			// Vilka av ens ordlistor ordet ligger i, och dess former, finns inte i läsvyns data; hämta ordet.
-			if (entry) {
-				getLexicalEntry(entry.id)
-					.then(full => {
-						if (!sameWord(full.lemma, text)) chooseBaseEntry(full, text, false)
-						setGlossaryIds(full.glossaries)
-					})
-					.catch(() => {})
-			}
-		},
-		[unit, resetBase, chooseBaseEntry],
-	)
+			},
+			anchor,
+		})
+	}
 
-	/** Öppnar panelen för ett eget ord som hittats i texten, ifylld med ordets uppgifter. */
-	const startEditingGloss = useCallback(
-		(gloss: ReadingGloss, anchor: HTMLElement) => {
-			const rect = anchor.getBoundingClientRect()
-			const entry = gloss.lexical_entry
-			const synonymList = entry.inflection_data?.synonyms
-			const modern = entry.inflection_data?.modern_form
-			rangeRef.current = anchor
-			setPending({
+	/** Öppnar panelen för ett eget ord som hittats i texten. */
+	function editGloss(gloss: ReadingGloss, anchor: HTMLElement) {
+		setPanel({
+			target: {
 				startOffset: gloss.start_offset,
 				endOffset: gloss.end_offset,
 				text: unit.content.slice(gloss.start_offset, gloss.end_offset),
-				top: rect.top,
-				bottom: rect.bottom,
-				centerX: rect.left + rect.width / 2,
 				gloss,
-			})
-			setKind("definition")
-			setFormOnly(false)
-			setBody(entry.definition)
-			setPartOfSpeech(entry.part_of_speech ?? "")
-			setModernForm(typeof modern === "string" ? modern : "")
-			setSynonyms(Array.isArray(synonymList) ? synonymList.join(", ") : "")
-			setTranslation(entry.translation ?? "")
-			resetBase()
-			setGlossaryIds([])
-			setFormError(null)
-			// Vilka av ens ordlistor ordet ligger i finns inte i läsvyns data; hämta ordet.
-			getLexicalEntry(entry.id)
-				.then(full => setGlossaryIds(full.glossaries))
-				.catch(() => {})
-		},
-		[unit, resetBase],
-	)
-
-	// Ens egna ordlistor, som en definition kan läggas i. Hämtas första gången panelen öppnas.
-	useEffect(() => {
-		if (!pending || ownGlossaries !== null || !user) return
-		listGlossaries()
-			.then(list => setOwnGlossaries(list.filter(glossary => glossary.owner === user.id)))
-			.catch(() => setOwnGlossaries([]))
-	}, [pending, ownGlossaries, user])
-
-	// Egna ord med den skrivna grundformen som lemma, att knyta det markerade ordet till.
-	// Svaren för en tidigare skriven grundform visas inte.
-	const pendingText = pending?.text
-	const shownBaseMatches = baseMatches.filter(match => match.lemma === baseForm.trim())
-	useEffect(() => {
-		const value = baseForm.trim()
-		if (!pendingText || formOnly || kind !== "definition" || !value || sameWord(value, pendingText)) return
-		const timer = window.setTimeout(() => {
-			listLexicalEntries({ lemma: value })
-				.then(list => setBaseMatches(list.filter(entry => entry.owner === user?.id)))
-				.catch(() => setBaseMatches([]))
-		}, 300)
-		return () => window.clearTimeout(timer)
-	}, [baseForm, pendingText, formOnly, kind, user])
-
-	// "Form av…": egna ord, oavsett språk, där det skrivna finns i grundformen, en sparad form,
-	// den moderna formen eller översättningen.
-	const wordQuery = baseForm.trim()
-	const shownWordMatches = baseMatches.slice(0, 8)
-	useEffect(() => {
-		const value = baseForm.trim()
-		if (!pendingText || !formOnly || !user || value.length < 2) return
-		const timer = window.setTimeout(() => {
-			listLexicalEntries({ search: value, owner: String(user.id) })
-				.then(setBaseMatches)
-				.catch(() => setBaseMatches([]))
-		}, 200)
-		return () => window.clearTimeout(timer)
-	}, [baseForm, pendingText, formOnly, user])
-
-	useEffect(() => {
-		if (!pending) return
-		const handler = (e: MouseEvent) => {
-			if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-				setPending(null)
-			}
-		}
-		document.addEventListener("mousedown", handler)
-		return () => document.removeEventListener("mousedown", handler)
-	}, [pending])
-
-	useEffect(() => {
-		if (!pending) return
-		const reposition = () => {
-			const rect = rangeRef.current?.getBoundingClientRect()
-			if (!rect) return
-			setPending(prev =>
-				prev
-					? { ...prev, top: rect.top, bottom: rect.bottom, centerX: rect.left + rect.width / 2 }
-					: prev,
-			)
-		}
-		window.addEventListener("scroll", reposition, true)
-		window.addEventListener("resize", reposition)
-		return () => {
-			window.removeEventListener("scroll", reposition, true)
-			window.removeEventListener("resize", reposition)
-		}
-	}, [pending !== null])
-
-	useLayoutEffect(() => {
-		if (!pending || !panelRef.current) return
-		const margin = 12
-		const { offsetWidth: width, offsetHeight: height } = panelRef.current
-		const spaceBelow = window.innerHeight - pending.bottom
-		const top =
-			spaceBelow >= height + margin
-				? pending.bottom + 8
-				: Math.max(margin, pending.top - height - 8)
-		const left = Math.min(
-			Math.max(margin, pending.centerX - width / 2),
-			window.innerWidth - width - margin,
-		)
-		setPlacement({ top, left })
-	}, [pending])
-
-	/** Ordets uppgifter, inklusive förklaringen, sparas på ordet så att ordlistor kan visa dem. */
-	function entryFields() {
-		return {
-			part_of_speech: partOfSpeech.trim(),
-			translation: translation.trim(),
-			definition: body.trim(),
-			inflection_data: {
-				...(modernForm.trim() ? { modern_form: modernForm.trim() } : {}),
-				...(synonyms.trim()
-					? { synonyms: synonyms.split(",").map(s => s.trim()).filter(Boolean) }
-					: {}),
 			},
-		}
+			anchor,
+		})
 	}
 
-	/** Tar bort ett känt ord helt, eller bara kopplingen mellan textens form och ordet. */
-	async function handleDeleteGloss(target: "entry" | "form") {
-		const gloss = pending?.gloss
-		if (!pending || !gloss) return
-		const lemma = gloss.lexical_entry.lemma
-		const question =
-			target === "form"
-				? `Ta bort »${pending.text}» som form av ${lemma}?`
-				: `Ta bort ordet ${lemma}? Det försvinner ur alla texter och ordlistor, tillsammans med definitionerna som pekar på det, och går inte att ångra.`
-		if (!window.confirm(question)) return
-		setSubmitting(true)
-		setFormError(null)
-		try {
-			if (target === "form" && gloss.form) await deleteLexicalForm(gloss.form.id)
-			else await deleteLexicalEntry(gloss.lexical_entry.id)
-			setPending(null)
-			onAnnotated()
-		} catch {
-			setFormError("Kunde inte ta bort.")
-		} finally {
-			setSubmitting(false)
-		}
-	}
-
-	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault()
-		if (!pending || (pending.gloss ? false : formOnly ? !baseEntry : !body.trim())) return
-		setSubmitting(true)
-		setFormError(null)
-		const existing = pending.annotation
-		try {
-			if (pending.gloss) {
-				// Ordet ändras där det ligger; alla ställen i texten som känner igen det följer med.
-				const entry = await updateLexicalEntry(pending.gloss.lexical_entry.id, entryFields())
-				await setEntryGlossaries(entry.id, entry.glossaries, glossaryIds)
-				setPending(null)
-				onAnnotated()
-				return
-			}
-			if (formOnly && baseEntry) {
-				const text = pending.text.trim()
-				const formData = {
-					kind: formKind,
-					inflection: formKind === "inflection" ? formInflection.trim() : "",
-					is_uncertain: formUncertain,
-				}
-				const known = baseEntry.forms?.find(form => sameWord(form.form, text))
-				if (known) await updateLexicalForm(known.id, formData)
-				else await createLexicalForm({ entry: baseEntry.id, form: text, unit: unit.id, ...formData })
-				setPending(null)
-				window.getSelection()?.removeAllRanges()
-				// Formen känns nu igen i texten, så stycket hämtas om med ordets definition.
-				onAnnotated()
-				return
-			}
-			let lexicalEntryId: Id | null = null
-			if (kind === "definition") {
-				const entryData = entryFields()
-				const text = pending.text.trim()
-				const base = baseForm.trim()
-				// Det markerade ordet är en böjd form eller variant av en annan grundform.
-				const linked = base !== "" && !sameWord(base, text)
-				const lemma = linked ? base : text
-				const existingEntry = existing?.lexical_entry ?? null
-				let entry: LexicalEntry
-				if (linked && baseEntry) {
-					entry = await updateLexicalEntry(baseEntry.id, entryData)
-				} else if (existingEntry && (sameWord(existingEntry.lemma, lemma) || sameWord(existingEntry.lemma, text))) {
-					// Ordet annotationen redan pekar på. Skapades det från det markerade ordet blir det nu grundformen.
-					entry = await updateLexicalEntry(existingEntry.id, { lemma, ...entryData })
-				} else {
-					entry = await createLexicalEntry({ lemma, language, ...entryData })
-				}
-				lexicalEntryId = entry.id
-				// Svaret anger vilka av ens ordlistor ordet ligger i nu, oavsett vilket ord det blev.
-				await setEntryGlossaries(entry.id, entry.glossaries, glossaryIds)
-				if (linked) {
-					const formData = {
-						kind: formKind,
-						inflection: formKind === "inflection" ? formInflection.trim() : "",
-						is_uncertain: formUncertain,
-					}
-					const known = entry.forms?.find(form => sameWord(form.form, text))
-					if (known) await updateLexicalForm(known.id, formData)
-					else await createLexicalForm({ entry: entry.id, form: text, unit: unit.id, ...formData })
-				}
-			}
-			// En definitions förklaring ligger på ordet; annotationen bär bara förankringen i texten.
-			const annotationBody = kind === "definition" ? "" : body.trim()
-			if (existing) {
-				await updateAnnotation(existing.id, { kind, body: annotationBody, lexical_entry: lexicalEntryId })
-			} else {
-				await createAnnotation({
-					unit: unit.id,
-					target_kind: /\s/.test(pending.text.trim()) ? "phrase" : "word",
-					start_offset: pending.startOffset,
-					end_offset: pending.endOffset,
-					kind,
-					body: annotationBody,
-					lexical_entry: lexicalEntryId,
-				})
-			}
-			setPending(null)
-			window.getSelection()?.removeAllRanges()
-			onAnnotated()
-		} catch {
-			setFormError(
-				existing?.lexical_entry
-					? "Kunde inte spara. Ordet kan tillhöra någon annan och då bara redigeras av den."
-					: "Kunde inte spara.",
-			)
-		} finally {
-			setSubmitting(false)
-		}
-	}
-
-	async function handleDeleteEditing() {
-		const existing = pending?.annotation
-		if (!existing || !window.confirm("Ta bort annotationen? Det går inte att ångra.")) return
-		setSubmitting(true)
-		setFormError(null)
-		try {
-			await deleteAnnotation(existing.id)
-			setPending(null)
-			onAnnotated()
-		} catch {
-			setFormError("Annotationen kunde inte tas bort.")
-		} finally {
-			setSubmitting(false)
-		}
-	}
+	const closePanel = useCallback(() => setPanel(null), [])
 
 	async function runUnitEdit(action: () => Promise<UnitEditResult | void>, after?: () => void) {
 		if (unitBusy) return
@@ -839,6 +451,9 @@ export default function UnitText({
 		if (splitAt == null) return
 		runUnitEdit(() => splitUnit(unit.id, splitAt), () => setSplitMode(false))
 	}
+
+	// En ny markering ritas som markerad text; en annotation eller ett känt ord har redan sin egen markering.
+	const selection = panel && !panel.target.annotation && !panel.target.gloss ? panel.target : null
 
 	return (
 		<div className='group/unit'>
@@ -958,16 +573,14 @@ export default function UnitText({
 					) : (
 						<div ref={contentRef} onMouseUp={handleMouseUp}>
 							{highlightContent(
-							unit.content,
-							unit.annotations,
-							unit.glosses ?? [],
-							pending && !pending.annotation && !pending.gloss
-								? { start: pending.startOffset, end: pending.endOffset }
-								: null,
-							startEditingAnnotation,
-							startEditingGloss,
-							gloss => user != null && gloss.lexical_entry.owner === user.id,
-						)}
+								unit.content,
+								unit.annotations,
+								unit.glosses,
+								selection ? { start: selection.startOffset, end: selection.endOffset } : null,
+								editAnnotation,
+								editGloss,
+								gloss => gloss.lexical_entry.can_edit,
+							)}
 						</div>
 					)}
 					{!splitMode && (showAnnotations || (unitError && /annotation/i.test(unitError))) && unit.annotations.length > 0 && (
@@ -991,7 +604,7 @@ export default function UnitText({
 												title='Redigera annotationen'
 												aria-label='Redigera annotationen'
 												disabled={unitBusy}
-												onClick={event => startEditingAnnotation(annotation, event.currentTarget)}
+												onClick={event => editAnnotation(annotation, event.currentTarget)}
 												className='ml-auto shrink-0 text-text-muted hover:text-text disabled:opacity-30 cursor-pointer'>
 												<PencilIcon size={12} />
 											</button>
@@ -1023,330 +636,21 @@ export default function UnitText({
 			)}
 			{unitError && <p className='mt-1 text-xs text-primary'>{unitError}</p>}
 
-			{pending && (
-				<div
-					ref={panelRef}
-					className="fixed z-50"
-					style={{
-						top: placement.top,
-						left: placement.left,
-					}}>
-					<form
-						onSubmit={handleSubmit}
-						className="bg-surface border border-border rounded-md w-96 max-w-[80vw] max-h-[85vh] overflow-y-auto"
-						onKeyDown={e => {
-							if (e.key === "Escape") setPending(null)
-						}}>
-						<div className="flex items-baseline justify-between gap-3 px-4 pt-3 pb-2 border-b border-border">
-							<p className="font-body text-xs font-semibold text-text shrink-0">
-								{pending.gloss ? "Redigera ord" : pending.annotation ? "Redigera annotation" : "Ny annotation"}
-							</p>
-							<p className="font-display italic text-sm text-text-muted truncate">
-								»{pending.text}»
-							</p>
-						</div>
-						<div className="flex flex-col gap-2.5 px-4 py-3">
-							<div className={pending.gloss ? "hidden" : "flex flex-wrap gap-1.5"}>
-								{ANNOTATION_KINDS.map(option => {
-									const active = !formOnly && option.value === kind
-									return (
-										<button
-											key={option.value}
-											type="button"
-											aria-pressed={active}
-											onClick={() => {
-												setKind(option.value)
-												setFormOnly(false)
-											}}
-											className={[
-												"rounded-md border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
-												active
-													? "border-primary bg-primary text-bg"
-													: "border-text/30 text-text-muted hover:border-primary hover:text-primary",
-											].join(" ")}>
-											{option.label}
-										</button>
-									)
-								})}
-								{!pending.annotation && (
-									<button
-										type="button"
-										aria-pressed={formOnly}
-										onClick={() => setFormOnly(true)}
-										className={[
-											"rounded-md border px-2.5 py-1 text-xs font-medium transition-colors cursor-pointer",
-											formOnly
-												? "border-primary bg-primary text-bg"
-												: "border-text/30 text-text-muted hover:border-primary hover:text-primary",
-										].join(" ")}>
-										Form av…
-									</button>
-								)}
-							</div>
-							{formOnly && (
-								<>
-									<TextField
-										label="Ord"
-										value={baseForm}
-										onChange={e => changeBaseForm(e.target.value)}
-										maxLength={255}
-										placeholder="Sök bland dina ord"
-										autoFocus
-									/>
-									{!baseEntry && wordQuery.length >= 2 && shownWordMatches.length > 0 && (
-										<div className="flex flex-col gap-1.5">
-											{shownWordMatches.map(match => (
-												<button
-													key={match.id}
-													type="button"
-													onClick={() => chooseBaseEntry(match, pending.text, false)}
-													className="rounded-md border border-text/30 px-2.5 py-1.5 text-left text-xs text-text transition-colors hover:border-primary cursor-pointer">
-													<span className="font-semibold">{match.lemma}</span>
-													{typeof match.inflection_data?.modern_form === "string" &&
-														match.inflection_data.modern_form && (
-															<span> ({match.inflection_data.modern_form})</span>
-														)}
-													{(match.translation || match.definition) && (
-														<span className="text-text-muted">
-															{" "}
-															· {(match.translation || match.definition).slice(0, 60)}
-														</span>
-													)}
-												</button>
-											))}
-										</div>
-									)}
-									{baseEntry && (
-										<>
-											<p className="text-xs text-text-muted">
-												»{pending.text.trim()}» sparas som en form av {baseEntry.lemma} och känns sedan igen i
-												alla texter.
-											</p>
-											<div className="grid grid-cols-2 gap-2">
-												<SelectField
-													label="Typ"
-													value={formKind}
-													onChange={e => setFormKind(e.target.value as LexicalFormKind)}>
-													{(Object.keys(FORM_KIND_LABELS) as LexicalFormKind[]).map(value => (
-														<option key={value} value={value}>
-															{FORM_KIND_LABELS[value]}
-														</option>
-													))}
-												</SelectField>
-												{formKind === "inflection" && (
-													<TextField
-														label="Böjning"
-														value={formInflection}
-														onChange={e => setFormInflection(e.target.value)}
-														maxLength={255}
-														placeholder="pres. ind. 3 sg."
-													/>
-												)}
-											</div>
-											<CheckboxField
-												label="Osäker grundform"
-												checked={formUncertain}
-												onChange={e => setFormUncertain(e.target.checked)}
-											/>
-										</>
-									)}
-								</>
-							)}
-							{!formOnly && kind === "definition" && (
-								<>
-									{pending.gloss ? (
-										!sameWord(pending.gloss.lexical_entry.lemma, pending.text) && (
-											<p className="text-xs text-text-muted">
-												»{pending.text}» är en form av {pending.gloss.lexical_entry.lemma}. Ändringarna gäller ordet.
-											</p>
-										)
-									) : (
-										<TextField
-											label="Grundform"
-											value={baseForm}
-											onChange={e => changeBaseForm(e.target.value)}
-											maxLength={255}
-											placeholder="Om ordet är böjt eller annorlunda stavat"
-										/>
-									)}
-									{!pending.gloss && baseForm.trim() !== "" && !sameWord(baseForm, pending.text) && (
-										<>
-											{shownBaseMatches.length > 0 && (
-												<div className="flex flex-col gap-1.5">
-													<p className="font-body text-sm text-text">Knyt till ett av dina ord</p>
-													{shownBaseMatches.map(match => {
-														const active = baseEntry?.id === match.id
-														return (
-															<button
-																key={match.id}
-																type="button"
-																aria-pressed={active}
-																onClick={() =>
-																	active ? setBaseEntry(null) : chooseBaseEntry(match, pending.text)
-																}
-																className={[
-																	"rounded-md border px-2.5 py-1.5 text-left text-xs transition-colors cursor-pointer",
-																	active
-																		? "border-primary bg-primary text-bg"
-																		: "border-text/30 text-text hover:border-primary",
-																].join(" ")}>
-																<span className="font-semibold">{match.lemma}</span>
-																{(match.translation || match.definition) && (
-																	<span className={active ? "" : "text-text-muted"}>
-																		{" "}
-																		· {(match.translation || match.definition).slice(0, 60)}
-																	</span>
-																)}
-															</button>
-														)
-													})}
-												</div>
-											)}
-											<p className="text-xs text-text-muted">
-												{baseEntry
-													? `»${pending.text.trim()}» sparas som en form av ${baseEntry.lemma}.`
-													: `»${pending.text.trim()}» sparas som en form av ett nytt ord, ${baseForm.trim()}.`}
-											</p>
-											<div className="grid grid-cols-2 gap-2">
-												<SelectField
-													label="Typ"
-													value={formKind}
-													onChange={e => setFormKind(e.target.value as LexicalFormKind)}>
-													{(Object.keys(FORM_KIND_LABELS) as LexicalFormKind[]).map(value => (
-														<option key={value} value={value}>
-															{FORM_KIND_LABELS[value]}
-														</option>
-													))}
-												</SelectField>
-												{formKind === "inflection" && (
-													<TextField
-														label="Böjning"
-														value={formInflection}
-														onChange={e => setFormInflection(e.target.value)}
-														maxLength={255}
-														placeholder="pres. ind. 3 sg."
-													/>
-												)}
-											</div>
-											<CheckboxField
-												label="Osäker grundform"
-												checked={formUncertain}
-												onChange={e => setFormUncertain(e.target.checked)}
-											/>
-										</>
-									)}
-									<div className="grid grid-cols-2 gap-2">
-										<TextField
-											label="Modernt"
-											value={modernForm}
-											onChange={e => setModernForm(e.target.value)}
-											placeholder="Nutida form"
-										/>
-										<TextField
-											label="Ordklass"
-											value={partOfSpeech}
-											onChange={e => setPartOfSpeech(e.target.value)}
-											placeholder="verb, substantiv…"
-										/>
-									</div>
-									<div className="grid grid-cols-2 gap-2">
-										<TextField
-											label="Översättning"
-											value={translation}
-											onChange={e => setTranslation(e.target.value)}
-											maxLength={255}
-											placeholder="Kort glosa"
-										/>
-										<TextField
-											label="Synonymer"
-											value={synonyms}
-											onChange={e => setSynonyms(e.target.value)}
-											placeholder="Kommaseparerade"
-										/>
-									</div>
-								</>
-							)}
-							{!formOnly && (
-								<TextAreaField
-									label="Definition eller anteckning"
-									value={body}
-									onChange={e => setBody(e.target.value)}
-									placeholder="Skriv en kort förklaring…"
-									rows={2}
-									required={!pending.gloss}
-									autoFocus
-								/>
-							)}
-							{!formOnly && kind === "definition" && ownGlossaries && ownGlossaries.length > 0 && (
-								<fieldset className="flex flex-col gap-1.5">
-									<legend className="mb-1.5 font-body text-sm text-text">Ordlistor</legend>
-									{ownGlossaries.map(glossary => (
-										<CheckboxField
-											key={glossary.id}
-											label={glossary.title}
-											checked={glossaryIds.includes(glossary.id)}
-											onChange={event =>
-												setGlossaryIds(current =>
-													event.target.checked
-														? [...current, glossary.id]
-														: current.filter(id => id !== glossary.id),
-												)
-											}
-										/>
-									))}
-								</fieldset>
-							)}
-							{formError && (
-								<p role="alert" className="text-xs text-danger">
-									{formError}
-								</p>
-							)}
-							<div className="flex items-center justify-end gap-3">
-								{pending.annotation && (
-									<button
-										type="button"
-										disabled={submitting}
-										onClick={handleDeleteEditing}
-										className="mr-auto font-body text-sm text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-40 cursor-pointer">
-										Ta bort
-									</button>
-								)}
-								{pending.gloss && (
-									<span className="mr-auto flex flex-wrap gap-x-3">
-										<button
-											type="button"
-											disabled={submitting}
-											onClick={() => handleDeleteGloss("entry")}
-											className="font-body text-sm text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-40 cursor-pointer">
-											Ta bort ordet
-										</button>
-										{pending.gloss.form && (
-											<button
-												type="button"
-												disabled={submitting}
-												onClick={() => handleDeleteGloss("form")}
-												className="font-body text-sm text-text-muted underline underline-offset-4 hover:text-danger disabled:opacity-40 cursor-pointer">
-												Ta bort formen
-											</button>
-										)}
-									</span>
-								)}
-								<button
-									type="button"
-									onClick={() => setPending(null)}
-									className="font-body text-sm text-text-muted underline underline-offset-4 hover:text-text cursor-pointer">
-									Avbryt
-								</button>
-								<button
-									type="submit"
-									disabled={submitting || (pending.gloss ? false : formOnly ? !baseEntry : !body.trim())}
-									className="rounded-md px-3 py-1.5 font-body text-sm font-semibold bg-primary text-bg hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 transition-colors">
-									{submitting ? "Sparar…" : "Spara"}
-								</button>
-							</div>
-						</div>
-					</form>
-				</div>
+			{panel && (
+				<WordPanel
+					// En ny markering eller ett annat ord ger en ny panel, ifylld från det ordet.
+					key={`${panel.target.startOffset}-${panel.target.endOffset}-${panel.target.annotation?.id ?? (panel.target.gloss ? "ord" : "ny")}`}
+					target={panel.target}
+					anchor={panel.anchor}
+					unitId={unit.id}
+					language={language}
+					onClose={closePanel}
+					onSaved={() => {
+						setPanel(null)
+						window.getSelection()?.removeAllRanges()
+						onChanged()
+					}}
+				/>
 			)}
 		</div>
 	)

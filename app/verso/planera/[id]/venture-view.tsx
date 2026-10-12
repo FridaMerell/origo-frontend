@@ -11,6 +11,7 @@ import { useUpdateData, useVentureData } from "@/app/verso/_state/verso-context"
 import { Card } from "@/app/components/ui/Card"
 import { Badge } from "@/app/components/ui/Badge"
 import { Drawer } from "@/app/components/ui/Drawer"
+import { EmptyState } from "@/app/components/ui/EmptyState"
 import { Gallery } from "@/app/components/ui/Gallery"
 import { Tabs, type TabItem } from "@/app/components/ui/Tabs"
 import UpdateForm from "@/app/verso/forms/update-form"
@@ -24,6 +25,7 @@ import {
   VentureTaskList,
 } from "@/app/verso/planera/[id]/venture-sections"
 import { BackLink, DetailNotFound, SectionHeading } from "@/app/verso/ui/DetailPage"
+import { PageHeader } from "@/app/verso/ui/PageHeader"
 
 type TabId = "activity" | "photos" | "drawings" | "expenses"
 
@@ -68,15 +70,15 @@ export default function VentureView({
     <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:gap-6 sm:py-8">
       <BackLink href="/planera">Planering</BackLink>
 
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-          <h1 className="m-0 font-display text-2xl font-semibold text-text">{venture.name}</h1>
-          <Badge variant="accent">{priorityLabel(venture.priority)}</Badge>
-        </div>
-        <Drawer trigger="Redigera" triggerVariant="ghost" triggerSize="sm" title="Redigera projekt">
-          <VentureForm venture={venture} />
-        </Drawer>
-      </div>
+      <PageHeader
+        title={venture.name}
+        badge={<Badge variant="accent">{priorityLabel(venture.priority)}</Badge>}
+        actions={
+          <Drawer trigger="Redigera" triggerVariant="secondary" triggerSize="sm" title="Redigera projekt">
+            <VentureForm venture={venture} />
+          </Drawer>
+        }
+      />
 
       <Card className="flex flex-col gap-4">
         {venture.description && (
@@ -108,7 +110,7 @@ export default function VentureView({
               </Drawer>
             </div>
             {ventureUpdates.length === 0 ? (
-              <div className="text-sm text-text-muted">Inga uppdateringar ännu.</div>
+              <EmptyState>Inga uppdateringar ännu.</EmptyState>
             ) : (
               <div className="flex flex-col gap-2">
                 {ventureUpdates.map((update) => (
@@ -131,7 +133,7 @@ export default function VentureView({
               <PhotoUploadForm albums={albums} tags={tags} defaultVenture={venture.id} />
             </Drawer>
           </div>
-          {photos.length === 0 && <div className="text-sm text-text-muted">Inga bilder ännu.</div>}
+          {photos.length === 0 && <EmptyState>Inga bilder ännu.</EmptyState>}
           <PhotoGrid photos={photos} albums={albums} tags={tags} />
         </div>
       )}
@@ -144,7 +146,7 @@ export default function VentureView({
             </Drawer>
           </div>
           {drawings.length === 0 ? (
-            <div className="text-sm text-text-muted">Inga ritningar ännu.</div>
+            <EmptyState>Inga ritningar ännu.</EmptyState>
           ) : (
             <Card className="flex flex-col gap-0 p-0">
               {drawings.map((drawing) => (

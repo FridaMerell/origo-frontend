@@ -18,8 +18,9 @@ export async function proxy(request: NextRequest) {
   const isJoinRoute = pathname === "/join";
   // Routes a tenant has opted into serving without a session. "/login" is always
   // reachable; everything else stays gated unless the tenant lists it.
-  // The "about" page is public and host-agnostic too, like the join route.
-  const isAboutRoute = pathname === "/om";
+  // The "about" and privacy pages are public and host-agnostic too, like the
+  // join route.
+  const isAboutRoute = pathname === "/om" || pathname === "/integritet";
   const isPublicRoute =
     isLoginRoute ||
     isRootLanding ||

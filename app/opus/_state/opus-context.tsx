@@ -1,6 +1,6 @@
 "use client"
 
-import { Work, WorkReadingResponse } from "@/app/lib/dal/opus"
+import { Glossary, Work, WorkReadingResponse } from "@/app/lib/dal/opus"
 import { createContext, useContext, useState, type ReactNode } from "react"
 
 type OpusData = {
@@ -34,6 +34,8 @@ export function useWorks() {
 
 type OpusReadingData = {
 	readingProgress: WorkReadingResponse | null
+	/** Användarens egna ordlistor, hämtade med sidan så att ordpanelen har dem direkt. */
+	ownGlossaries: Glossary[]
 }
 
 type OpusReadingState = OpusReadingData & {
@@ -44,6 +46,7 @@ type OpusReadingState = OpusReadingData & {
 
 export const OpusReadingContext = createContext<OpusReadingState>({
 	readingProgress: null,
+	ownGlossaries: [],
 	keepPosition: false,
 	setKeepPosition: () => {},
 })
@@ -51,10 +54,11 @@ export const OpusReadingContext = createContext<OpusReadingState>({
 export function OpusReadingProvider({
 	children,
 	readingProgress,
+	ownGlossaries,
 }: OpusReadingData & { children: ReactNode }) {
 	const [keepPosition, setKeepPosition] = useState(false)
 	return (
-		<OpusReadingContext.Provider value={{ readingProgress, keepPosition, setKeepPosition }}>
+		<OpusReadingContext.Provider value={{ readingProgress, ownGlossaries, keepPosition, setKeepPosition }}>
 			{children}
 		</OpusReadingContext.Provider>
 	)
@@ -63,6 +67,11 @@ export function OpusReadingProvider({
 export function useReading() {
 	const { readingProgress } = useContext(OpusReadingContext)
 	return { readingProgress }
+}
+
+/** Användarens egna ordlistor, i den öppna läsvyn. */
+export function useReadingGlossaries() {
+	return useContext(OpusReadingContext).ownGlossaries
 }
 
 /** Inställningen "läs utan att uppdatera position" för den öppna läsvyn. */

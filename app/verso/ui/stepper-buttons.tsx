@@ -21,6 +21,7 @@ export function StepperButtons({
         type="button"
         onClick={() => onIndexChange(Math.max(0, index - 1))}
         disabled={index === 0}
+        aria-label="Föregående"
         className={buttonClassName}
       >
         <ArrowLeft size={16} />
@@ -29,6 +30,7 @@ export function StepperButtons({
         type="button"
         onClick={() => onIndexChange(Math.min(length - 1, index + 1))}
         disabled={index === length - 1}
+        aria-label="Nästa"
         className={buttonClassName}
       >
         <ArrowRight size={16} />

@@ -331,6 +331,10 @@ export default function RootHome() {
           Projektet är byggt i Django, med Next.js som frontend.
           <br />
           Kontakt: frida.merell@gmail.com
+          <br />
+          <a href='/integritet' className='underline underline-offset-4'>
+            Integritet och cookies
+          </a>
         </footer>
       </div>
     </main>

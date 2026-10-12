@@ -1,5 +1,5 @@
 import { Metadata } from "next"
-import { alignmentSetApi, readingProgressApi, sourceFileApi, workApi } from "../../_actions/actions"
+import { alignmentSetApi, glossaryApi, readingProgressApi, sourceFileApi, workApi } from "../../_actions/actions"
 import { listBookmarks, listWorkBookmarks } from "../../_actions/bookmark-actions"
 import "./page.css"
 import { Work } from "@/app/lib/dal/opus"
@@ -12,6 +12,7 @@ import BookmarksList from "./BookmarksList"
 import AddEdition from "./AddEdition"
 import DeleteWork from "./DeleteWork"
 import KeepPositionToggle from "./KeepPositionToggle"
+import { getCurrentUser } from "@/app/lib/dal"
 import { notFound } from "next/navigation"
 import { revalidatePath } from "next/cache"
 
@@ -46,10 +47,13 @@ export default async function ({
 	const { enhet } = await searchParams
 	const focusUnit = enhet && /^\d+$/.test(enhet) ? Number(enhet) : undefined
 	// Ett verk som inte finns (eller inte är synligt) ger 404 från API:t: visa not-found, inte en kraschsida.
-	const [work, reading, alignmentSets] = await Promise.all([
+	const user = await getCurrentUser()
+	const [work, reading, alignmentSets, ownGlossaries] = await Promise.all([
 		workApi.retrieve(id),
 		readingProgressApi.retrieve(id),
 		alignmentSetApi.list({ work: String(id) }),
+		// Ordpanelen i texten väljer bland dem; läsvyn fungerar även om de inte går att hämta.
+		user ? glossaryApi.list({ owner: String(user.id) }).catch(() => []) : [],
 	]).catch(error => {
 		if (error instanceof Error && error.message.startsWith("404")) notFound()
 		throw error
@@ -105,7 +109,7 @@ export default async function ({
 	}
 
 	return (
-		<OpusReadingProvider readingProgress={reading}>
+		<OpusReadingProvider readingProgress={reading} ownGlossaries={ownGlossaries}>
 			<AlignmentBootstrap workId={id} needsBootstrap={needsBootstrap} />
 			{/* Verkets titelblad: författare och år, titeln med anfang, utgåvorna, och inställningar längst ned. */}
 			<section className={"mb-8 rounded-xl border border-border bg-surface px-5 pt-6 pb-4 shadow-md sm:px-8 sm:pt-8"}>

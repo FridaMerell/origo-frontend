@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Card } from "@/app/components/ui/Card"
 import { Drawer } from "@/app/components/ui/Drawer"
+import { EmptyState } from "@/app/components/ui/EmptyState"
 import ExpenseForm from "@/app/verso/forms/expense-form"
 import VentureTaskForm from "@/app/verso/forms/venture-task-form"
 import { ToggleTaskButton } from "@/app/verso/planera/toggle-task-button"
@@ -10,7 +11,7 @@ import { ventureTaskStatus, VentureTaskStatusBadge } from "@/app/verso/planera/v
 import { SectionHeading } from "@/app/verso/ui/DetailPage"
 import { formatDate } from "@/app/lib/formatters"
 import type { Expense, Venture, VentureTask } from "@/app/lib/dal"
-import { CheckCircle2, ChevronRight, Circle } from "lucide-react"
+import { CheckCircle2, Circle } from "lucide-react"
 
 function StatItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -41,31 +42,36 @@ export function VentureTaskList({ venture, tasks }: { venture: Venture; tasks: V
         </Drawer>
       </div>
       {tasks.length === 0 ? (
-        <div className="text-sm text-text-muted">Inga uppgifter ännu.</div>
+        <EmptyState>Inga uppgifter ännu.</EmptyState>
       ) : (
         <Card className="flex flex-col gap-0 p-0">
           {tasks.map((task) => {
             const status = ventureTaskStatus(task)
             return (
-              <Link
+              <div
                 key={task.id}
-                href={`/planera/${venture.id}/tasks/${task.id}`}
-                className="flex flex-col items-stretch gap-2 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0 hover:bg-surface-2 sm:flex-row sm:items-center sm:justify-between"
+                className="flex items-stretch border-b border-border text-sm text-text last:border-b-0 hover:bg-surface-2"
               >
-                <span className="flex min-w-0 items-center gap-2">
-                  {status === "done" ? (
-                    <CheckCircle2 size={14} className="text-success" />
-                  ) : (
-                    <Circle size={14} className="text-text-faint" />
-                  )}
-                  {task.name}
-                </span>
-                <span className="flex shrink-0 items-center justify-end gap-3">
-                  <VentureTaskStatusBadge task={task} />
+                <Link
+                  href={`/planera/${venture.id}/tasks/${task.id}`}
+                  className="flex min-h-14 min-w-0 flex-1 flex-col justify-center gap-1 px-4 py-3 no-underline sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-2.5"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    {status === "done" ? (
+                      <CheckCircle2 size={16} className="shrink-0 text-success" />
+                    ) : (
+                      <Circle size={16} className="shrink-0 text-text-faint" />
+                    )}
+                    <span className="min-w-0 truncate">{task.name}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center pl-6 sm:pl-0">
+                    <VentureTaskStatusBadge task={task} />
+                  </span>
+                </Link>
+                <span className="flex shrink-0 items-center border-l border-border px-3">
                   <ToggleTaskButton id={task.id} status={status} />
-                  <ChevronRight size={14} className="text-text-faint" />
                 </span>
-              </Link>
+              </div>
             )
           })}
         </Card>
@@ -84,7 +90,7 @@ export function VentureExpenseList({ venture, expenses }: { venture: Venture; ex
         </Drawer>
       </div>
       {expenses.length === 0 ? (
-        <div className="text-sm text-text-muted">Inga utgifter ännu.</div>
+        <EmptyState>Inga utgifter ännu.</EmptyState>
       ) : (
         <Card className="flex flex-col gap-0 p-0">
           {expenses.map((expense) => (

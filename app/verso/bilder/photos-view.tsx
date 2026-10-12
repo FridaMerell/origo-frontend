@@ -2,11 +2,13 @@
 
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { Drawer } from "@/app/components/ui/Drawer"
+import { EmptyState } from "@/app/components/ui/EmptyState"
 import { ImageIcon } from "lucide-react"
 import { PhotoUploadForm } from "@/app/verso/bilder/photo-upload-form"
 import { PhotoGrid, STAGE_LABELS } from "@/app/verso/bilder/photo-grid"
 import { AlbumForm } from "@/app/verso/bilder/album-form"
 import { TagForm } from "@/app/verso/bilder/tag-form"
+import { PageHeader } from "@/app/verso/ui/PageHeader"
 import type { Album, Photo, PhotoStage, PhotoTag } from "@/app/lib/dal"
 
 type Active = { album?: string; tag?: string; stage?: PhotoStage }
@@ -51,29 +53,30 @@ export default function PhotosView({
 
   return (
     <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
-      <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-2xl font-display font-semibold">
-          Bilder <span className="text-sm font-normal text-text-faint">{photos.length}</span>
-        </h1>
-        <Drawer trigger="Ladda upp" triggerSize="sm" title="Ladda upp bilder">
-          <PhotoUploadForm albums={albums} tags={tags} />
-        </Drawer>
-      </div>
+      <PageHeader
+        title="Bilder"
+        meta={`${photos.length} st`}
+        actions={
+          <>
+            <Drawer trigger="Nytt album" triggerVariant="secondary" triggerSize="sm" title="Nytt album">
+              <AlbumForm />
+            </Drawer>
+            <Drawer trigger="Ny tagg" triggerVariant="secondary" triggerSize="sm" title="Ny tagg">
+              <TagForm />
+            </Drawer>
+            {activeAlbum && (
+              <Drawer trigger="Redigera album" triggerVariant="ghost" triggerSize="sm" triggerClassName="border border-border hover:bg-accent-wash" title="Redigera album">
+                <AlbumForm album={activeAlbum} />
+              </Drawer>
+            )}
+            <Drawer trigger="Ladda upp" triggerSize="sm" title="Ladda upp bilder">
+              <PhotoUploadForm albums={albums} tags={tags} />
+            </Drawer>
+          </>
+        }
+      />
 
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap gap-2">
-          <Drawer trigger="Nytt album" triggerVariant="secondary" triggerSize="sm" title="Nytt album">
-            <AlbumForm />
-          </Drawer>
-          <Drawer trigger="Ny tagg" triggerVariant="secondary" triggerSize="sm" title="Ny tagg">
-            <TagForm />
-          </Drawer>
-          {activeAlbum && (
-            <Drawer trigger="Redigera album" triggerVariant="ghost" triggerSize="sm" title="Redigera album">
-              <AlbumForm album={activeAlbum} />
-            </Drawer>
-          )}
-        </div>
 
         {albums.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -118,17 +121,18 @@ export default function PhotosView({
       </div>
 
       {photos.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-4 py-12 text-center text-text-muted">
-          <ImageIcon size={28} />
-          <p className="text-sm">
-            {hasFilter ? "Inga bilder matchar filtret." : "Inga bilder ännu. Ladda upp den första."}
-          </p>
-          {hasFilter && (
-            <Link href="/bilder" className="text-sm text-accent underline">
-              Rensa filter
-            </Link>
-          )}
-        </div>
+        <EmptyState
+          icon={<ImageIcon size={28} />}
+          action={
+            hasFilter && (
+              <Link href="/bilder" className="text-sm text-accent underline">
+                Rensa filter
+              </Link>
+            )
+          }
+        >
+          {hasFilter ? "Inga bilder matchar filtret." : "Inga bilder ännu. Ladda upp den första."}
+        </EmptyState>
       ) : (
         <PhotoGrid photos={photos} albums={albums} tags={tags} />
       )}

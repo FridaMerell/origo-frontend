@@ -5,6 +5,7 @@ import { useUsers, getUserLabel } from "@/app/lib/user-context"
 import { GroupedList, groupItems } from "@/app/components/ui/GroupedList"
 import { Drawer } from "@/app/components/ui/Drawer"
 import UpdateForm from "@/app/verso/forms/update-form"
+import { PageHeader } from "@/app/verso/ui/PageHeader"
 import { formatDateLong } from "@/app/lib/formatters"
 import type { VersoUpdate } from "@/app/lib/dal"
 
@@ -21,17 +22,20 @@ export default function UpdatesView() {
 
   return (
     <div className="container flex min-w-0 flex-1 flex-col gap-5 py-5 sm:gap-6 sm:py-8">
-      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
-        <h1 className="m-0 font-display text-2xl font-semibold text-text">Uppdateringar</h1>
-        <Drawer
-          trigger="Lägg till uppdatering"
-          triggerSize="sm"
-          triggerClassName="self-start"
-          title="Ny uppdatering"
-        >
-          <UpdateForm />
-        </Drawer>
-      </div>
+      <PageHeader
+        title="Uppdateringar"
+        meta={`${updates.length} st`}
+        actions={
+          <Drawer
+            trigger="Lägg till uppdatering"
+            triggerSize="sm"
+            triggerClassName="justify-center"
+            title="Ny uppdatering"
+          >
+            <UpdateForm />
+          </Drawer>
+        }
+      />
 
       <GroupedList<VersoUpdate>
         groups={groups}

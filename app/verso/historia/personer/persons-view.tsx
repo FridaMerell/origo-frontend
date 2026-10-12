@@ -7,6 +7,7 @@ import { Card } from "@/app/components/ui/Card"
 import { Button } from "@/app/components/ui/Button"
 import { Tabs, type TabItem } from "@/app/components/ui/Tabs"
 import { BackLink } from "@/app/verso/ui/DetailPage"
+import { PageHeader } from "@/app/verso/ui/PageHeader"
 import { PersonForm, lifespan } from "@/app/verso/historia/person-form"
 import { PersonRelations, familyOf } from "@/app/verso/historia/person-relations"
 import { FamilyTree } from "@/app/verso/historia/personer/family-tree"
@@ -110,14 +111,15 @@ export default function PersonsView({
   return (
     <div className="container flex flex-1 flex-col gap-4 py-5 sm:py-8">
       <BackLink href="/historia">Historia</BackLink>
-      <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-display font-semibold">
-          Personer <span className="text-sm font-normal text-text-faint">{people.length}</span>
-        </h1>
-        <Button type="button" variant="primary" size="sm" onClick={() => setMode("new")}>
-          Ny person
-        </Button>
-      </div>
+      <PageHeader
+        title="Personer"
+        meta={`${people.length} st`}
+        actions={
+          <Button type="button" variant="primary" size="sm" className="justify-center" onClick={() => setMode("new")}>
+            Ny person
+          </Button>
+        }
+      />
 
       <div className="grid gap-5 md:grid-cols-4">
         <Card className="flex flex-col gap-3 !p-3 md:col-span-1">

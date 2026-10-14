@@ -540,37 +540,40 @@
 /* Caelus — Flux-identiteten "Origo Astralis". Följer systemets läge. Raka hörn.
    Identiteten har inga statusfärger, så danger/warning/success faller på textfärgen. */
 [data-theme="caelus"] {
-  --bg: #eceae3;
-  /* Norrskenets band på kartan: den enda färgen utanför bläck och papper. */
-  --aurora: #5e7468;
-  --surface: #f5f4ef;
-  --surface-2: #e3e1d9;
-  --surface-raised: #f5f4ef;
-  --border: #cfcdc4;
-  --border-strong: #1d1f33;
+  /* Ljust läge är ett kopparstick: varmt, ljust papper och nästan svart tryckfärg. Värmen sitter
+     i papperet; brun tryckfärg i svaga toner blir smutsig. */
+  --bg: #f5f0e5;
+  /* Norrskenets band på kartan: den enda färgen utanför bläck och papper. I ljust läge
+     norrskenets röda, från syret högst upp i ridån, dragen mot kvävets magenta. */
+  --aurora: #a3395f;
+  --surface: #faf7f0;
+  --surface-2: #ebe4d6;
+  --surface-raised: #faf7f0;
+  --border: #d9d0bf;
+  --border-strong: #1e1b18;
   --field-border: var(--text-muted);
-  --text: #1d1f33;
-  --text-muted: #585a6b;
-  --text-faint: #585a6b;
-  --accent: #1d1f33;
-  --accent-hover: #1d1f33;
-  --accent-active: #1d1f33;
-  --accent-contrast: #eceae3;
-  --accent-wash: #e3e1d9;
-  --primary: #1d1f33;
-  --primary-contrast: #eceae3;
-  --secondary: #585a6b;
-  --secondary-wash: #e3e1d9;
-  --danger: #1d1f33;
-  --danger-wash: #e3e1d9;
-  --warning: #1d1f33;
-  --warning-wash: #e3e1d9;
-  --success: #1d1f33;
-  --success-wash: #e3e1d9;
-  --link: #1d1f33;
-  --link-hover: #585a6b;
-  --focus-ring: #1d1f33;
-  --shadow-color: 29, 31, 51;
+  --text: #1e1b18;
+  --text-muted: #625b53;
+  --text-faint: #625b53;
+  --accent: #1e1b18;
+  --accent-hover: #1e1b18;
+  --accent-active: #1e1b18;
+  --accent-contrast: #f5f0e5;
+  --accent-wash: #ebe4d6;
+  --primary: #1e1b18;
+  --primary-contrast: #f5f0e5;
+  --secondary: #625b53;
+  --secondary-wash: #ebe4d6;
+  --danger: #1e1b18;
+  --danger-wash: #ebe4d6;
+  --warning: #1e1b18;
+  --warning-wash: #ebe4d6;
+  --success: #1e1b18;
+  --success-wash: #ebe4d6;
+  --link: #1e1b18;
+  --link-hover: #625b53;
+  --focus-ring: #1e1b18;
+  --shadow-color: 30, 27, 24;
   --radius-sm: 0px;
   --radius-md: 0px;
   --radius-lg: 0px;
@@ -580,7 +583,7 @@
 @media (prefers-color-scheme: dark) {
   [data-theme="caelus"]:not([data-mode="light"]) {
     --bg: #13152b;
-    --aurora: #a3b8ac;
+    --aurora: #a8cbb2;
     --surface: #1c1f38;
     --surface-2: #252946;
     --surface-raised: #1c1f38;
@@ -612,7 +615,7 @@
 }
 [data-theme="caelus"][data-mode="dark"] {
   --bg: #13152b;
-  --aurora: #a3b8ac;
+  --aurora: #a8cbb2;
   --surface: #1c1f38;
   --surface-2: #252946;
   --surface-raised: #1c1f38;

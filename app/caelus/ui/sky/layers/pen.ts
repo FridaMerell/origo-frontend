@@ -25,6 +25,10 @@ export type Frame = {
 	planetFocus: number
 	// 0…1: detsamma för norrskensfokus, som lyfter fram var norrsken kan synas.
 	auroraFocus: number
+	// 0…1: hur långt molnen har tonat in; de slås av och på i menyn.
+	cloudsShown: number
+	// 0…1: detsamma för meteorregnen.
+	meteorsShown: number
 	// 0…1: hur långt övrig text har tonats ner för en framlyft figur.
 	lifted: number
 }
@@ -39,6 +43,11 @@ export type Pen = Frame & {
 	paper: string
 	// Norrskenets färg.
 	aurora: string
+	// Om papperet är ljust. Svaga toner som är avvägda mot mörkt papper syns för lite mot ljust,
+	// och det som lyser i mörkret graveras i stället.
+	light: boolean
+	// Hur mycket starkare svaga linjer och skrafferingar ritas: 1 på mörkt papper.
+	contrast: number
 	family: string
 	// Om en projicerad punkt ligger på eller strax utanför kartan.
 	onScreen: (point: [number, number] | null) => point is [number, number]
@@ -52,6 +61,9 @@ export type Pen = Frame & {
 	hatch: (color: string, draw: () => void) => void
 	// Ritytans pixlar per kartans enhet.
 	ratio: number
+	// Var himlens nordpol står på kartan och hur himlen är vriden kring den, för skraffering som
+	// ska sitta fast på himlen. Null om polen inte går att projicera.
+	skyAnchor: { x: number; y: number; angle: number } | null
 	// Figurerna som är framlyfta av pekaren eller valet, och de övriga.
 	raised: Figure[]
 	plain: Figure[]
@@ -116,11 +128,16 @@ export function fillHatched(
 	width: number,
 	height: number,
 	draw: () => void,
+	// Var himlens nordpol står på kartan och hur himlen är vriden kring den (grader). Med den
+	// sitter skrafferingen fast på himlen och följer med när den rör sig.
+	anchor?: { x: number; y: number; angle: number } | null,
 ) {
 	const pattern = context.createPattern(hatchTile(color, ratio), "repeat")
 	if (!pattern) return
-	// Rutan är i skärmens pixlar; den skalas till kartans och vrids till skrafferingens vinkel.
-	pattern.setTransform(new DOMMatrix().rotateSelf(HATCH_ANGLE).scaleSelf(1 / ratio, 1 / ratio))
+	// Rutan är i skärmens pixlar; den skalas till kartans och vrids till skrafferingens vinkel,
+	// räknat från himlens nordpol och dess vridning.
+	const matrix = anchor ? new DOMMatrix().translateSelf(anchor.x, anchor.y).rotateSelf(anchor.angle) : new DOMMatrix()
+	pattern.setTransform(matrix.rotateSelf(HATCH_ANGLE).scaleSelf(1 / ratio, 1 / ratio))
 	context.save()
 	context.beginPath()
 	draw()
@@ -130,9 +147,42 @@ export function fillHatched(
 	context.restore()
 }
 
+/**
+ * En tom rityta i kartans storlek, i skärmens pixlar, med kartans enheter, för lager som sätts
+ * samman för sig innan de läggs på kartan. Ytan återanvänds och byter bara storlek när kartan
+ * gör det.
+ */
+export function prepare(canvas: HTMLCanvasElement | null, width: number, height: number, ratio: number) {
+	const surface = canvas ?? document.createElement("canvas")
+	const pixelsWide = Math.round(width * ratio)
+	const pixelsHigh = Math.round(height * ratio)
+	const context = surface.getContext("2d")!
+	if (surface.width !== pixelsWide || surface.height !== pixelsHigh) {
+		surface.width = pixelsWide
+		surface.height = pixelsHigh
+	} else {
+		context.setTransform(1, 0, 0, 1, 0, 0)
+		context.globalCompositeOperation = "source-over"
+		context.globalAlpha = 1
+		context.clearRect(0, 0, pixelsWide, pixelsHigh)
+	}
+	context.setTransform(ratio, 0, 0, ratio, 0, 0)
+	return { surface, context }
+}
+
 // Detaljnivån där namnen börjar tona in. Helt utzoomad är den ungefär 0,46 på en skrivbordsskärm
 // och 0,22 på en telefon, så där står inga namn; vid zoom 1 är den 1,3 respektive 0,6.
 const NAMED_FROM = 0.5
+
+// En färgs ljushet (0…1), för en färg skriven som #rrggbb eller rgb(…).
+function lightness(color: string) {
+	const channels = color.startsWith("#")
+		? [1, 3, 5].map(start => parseInt(color.slice(start, start + 2), 16))
+		: (color.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number)
+	if (channels.length < 3 || channels.some(Number.isNaN)) return 0
+	const [red, green, blue] = channels
+	return (0.299 * red + 0.587 * green + 0.114 * blue) / 255
+}
 
 export function mix(from: number, to: number, amount: number) {
 	return from + (to - from) * amount
@@ -179,6 +229,13 @@ export function createPen(canvas: HTMLCanvasElement, frame: Frame): Pen | null {
 	}
 
 	const detail = detailOf(view, width, height)
+	// Himlens nordpol och en punkt tio grader från den: där polen står och hur himlen är vriden.
+	const pole = projection(scene.toSky([0, 90]))
+	const beside = projection(scene.toSky([0, 80]))
+	const skyAnchor =
+		pole && beside ? { x: pole[0], y: pole[1], angle: (Math.atan2(beside[1] - pole[1], beside[0] - pole[0]) * 180) / Math.PI } : null
+	const paper = styles.getPropertyValue("--bg").trim()
+	const light = lightness(paper) > 0.5
 	let selection = 0
 	for (const level of levels.values()) selection = Math.max(selection, level.select)
 	const drawnFor = (id: string) => {
@@ -192,8 +249,10 @@ export function createPen(canvas: HTMLCanvasElement, frame: Frame): Pen | null {
 		projection,
 		path: geoPath(projection, context),
 		ink: styles.color,
-		paper: styles.getPropertyValue("--bg").trim(),
+		paper,
 		aurora: styles.getPropertyValue("--aurora").trim() || styles.color,
+		light,
+		contrast: light ? 1.6 : 1,
 		family: styles.fontFamily,
 		onScreen: (point): point is [number, number] =>
 			point !== null && point[0] > -40 && point[0] < width + 40 && point[1] > -40 && point[1] < height + 40,
@@ -201,8 +260,9 @@ export function createPen(canvas: HTMLCanvasElement, frame: Frame): Pen | null {
 		spacing: value => {
 			if ("letterSpacing" in context) context.letterSpacing = value
 		},
-		hatch: (color, draw) => fillHatched(context, color, ratio, width, height, draw),
+		hatch: (color, draw) => fillHatched(context, color, ratio, width, height, draw, skyAnchor),
 		ratio,
+		skyAnchor,
 		raised: scene.figures.filter(figure => levels.has(figure.id)),
 		plain: scene.figures.filter(figure => !levels.has(figure.id)),
 		strength: figure => {

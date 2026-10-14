@@ -22,12 +22,17 @@ const UPPER_HEIGHT = 200
 // Var hur många grader i azimut höjden räknas ut; också avståndet mellan skrafferingens streck.
 export const AURORA_STEP = 1
 
-// En riktning där norrsken kan synas: azimut, och mellan vilka höjder (grader) på himlen.
-export type AuroraBand = { azimuth: number; lower: number; upper: number }
+// En riktning där norrsken kan synas: azimut, och mellan vilka höjder (grader) på himlen. Bågen
+// är ovalens närmaste kant, där norrskenet står högst och tydligast: från ridåns nedre kant
+// (`arc`) upp till dess övre (`upper`). Längre bort syns resten av ovalen lägre, ner mot `lower`.
+export type AuroraBand = { azimuth: number; lower: number; arc: number; upper: number }
 export type Aurora = {
 	kp: number
 	// Riktningen mot den geomagnetiska polen, där norrskenet står högst.
 	bearing: number
+	// Magnetiska zenit: punkten på himlen dit fältlinjerna och därmed norrskenets strålar pekar
+	// uppåt, sedd från platsen [azimut, höjd]. Alla strålar strålar ihop mot den i perspektiv.
+	zenith: [number, number]
 	bands: AuroraBand[]
 }
 
@@ -74,7 +79,14 @@ export function auroraAt(kp: number, { latitude, longitude }: Position): Aurora 
 		// Närmast står norrskenets övre kant högst; längst bort står dess nedre kant lägst.
 		const upper = near === 0 ? 90 : elevation(near, UPPER_HEIGHT)
 		const lower = Math.max(0, elevation(far, LOWER_HEIGHT))
-		if (upper > lower) bands.push({ azimuth, lower, upper })
+		// Står platsen under ovalen finns ingen kant att se på avstånd: norrskenet kan stå över
+		// hela himlen.
+		const arc = near === 0 ? lower : Math.max(lower, elevation(near, LOWER_HEIGHT))
+		if (upper > lower) bands.push({ azimuth, lower, arc, upper })
 	}
-	return bands.length > 0 ? { kp, bearing, bands } : null
+	// Fältets lutning mot marken i en dipol, och åt vilket håll det pekar uppåt: bort från polen.
+	const inclination = Math.atan(2 * Math.tan(dipole)) / RADIAN
+	const away = (bearing + 180) % 360
+	const zenith: [number, number] = [away > 180 ? away - 360 : away, inclination]
+	return bands.length > 0 ? { kp, bearing, zenith, bands } : null
 }

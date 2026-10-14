@@ -16,8 +16,11 @@ import {
 	VectorFromSphere,
 } from "astronomy-engine"
 import { geoGraticule } from "d3-geo"
+import type { MeteorShower } from "@/app/lib/dal/caelus"
 import { NORSE_NAMES, NORSE_STAR_NAMES, SWEDISH_NAMES, type SkyCulture } from "../sky-cultures"
 import { auroraAt } from "./aurora"
+import { eventDays } from "./events"
+import { showersAt } from "./meteors"
 import { milkyWay, type MilkyWayData } from "./milky-way"
 import type { Catalogue, Constellation, Dial, Position, Scene, SceneStar, SkyPoint } from "./types"
 
@@ -67,7 +70,7 @@ function figureNames(constellation: Constellation, culture: SkyCulture) {
 let cachedDays: { year: number; days: Dial["days"] } | null = null
 
 // Kalenderskivan visar klockans tid och dag, i webbläsarens tidszon.
-function buildDial(now: Date): Dial {
+function buildDial(now: Date, position: Position, meteorShowers: MeteorShower[]): Dial {
 	const year = now.getFullYear()
 	if (cachedDays?.year !== year) {
 		const days = []
@@ -82,6 +85,7 @@ function buildDial(now: Date): Dial {
 		hours: now.getHours() + now.getMinutes() / 60,
 		days,
 		today: days.findIndex(day => day.month === now.getMonth() && day.day === now.getDate()),
+		events: eventDays(now, position, meteorShowers),
 	}
 }
 
@@ -98,6 +102,10 @@ export function buildScene(
 	kp: number | null,
 	// Vintergatans kontur; null tills den hämtats.
 	milkyWayData: MilkyWayData | null,
+	// Molnigheten vid tidpunkten (0…1), om prognosen når dit.
+	cloudCover: number | null,
+	// De årliga meteorregnen, från backend.
+	meteorShowers: MeteorShower[],
 ): Scene {
 	const time = MakeTime(now)
 	const observer = new Observer(position.latitude, position.longitude, 0)
@@ -153,7 +161,7 @@ export function buildScene(
 	const constellations =
 		culture === "norse" ? (catalogue?.norse.constellations ?? []) : (catalogue?.constellations ?? [])
 	return {
-		dial: buildDial(now),
+		dial: buildDial(now, position, meteorShowers),
 		stars,
 		starByIndex,
 		figures: constellations.map(constellation => ({
@@ -168,6 +176,10 @@ export function buildScene(
 		sunAt,
 		sunAltitude,
 		aurora: kp === null ? null : auroraAt(kp, position),
+		kp,
+		position,
+		cloudCover,
+		showers: showersAt(now, toSky, sunAltitude, meteorShowers),
 		milkyWay: () => (milkyWayShown ??= milkyWayData ? milkyWay(milkyWayData, toHorizon.rot) : []),
 		toSky,
 		figureAt:

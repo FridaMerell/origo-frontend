@@ -1,10 +1,12 @@
 import { drawAurora } from "./layers/aurora"
 import { drawBodies } from "./layers/bodies"
+import { drawClouds } from "./layers/clouds"
 import { drawDial } from "./layers/dial"
 import { drawFigures } from "./layers/figures"
 import { drawGrid } from "./layers/grid"
 import { drawGround } from "./layers/ground"
 import { drawNames } from "./layers/names"
+import { drawMeteors } from "./layers/meteors"
 import { drawMilkyWay } from "./layers/milky-way"
 import { createPen, type Frame } from "./layers/pen"
 import { drawMarks, drawStars } from "./layers/stars"
@@ -15,6 +17,8 @@ export type { Frame }
 export function drawScene(canvas: HTMLCanvasElement, frame: Frame) {
 	const pen = createPen(canvas, frame)
 	if (!pen) return
+	// Molnen ligger underst, så att de aldrig skymmer något.
+	drawClouds(pen)
 	drawMilkyWay(pen)
 	drawGrid(pen)
 	drawFigures(pen)
@@ -22,14 +26,15 @@ export function drawScene(canvas: HTMLCanvasElement, frame: Frame) {
 	drawMarks(pen)
 	drawNames(pen, labelled)
 	// Med planet- eller norrskensfokus läggs en slöja av papper över stjärnor, figurer och namn,
-	// så att det som lyfts fram står ut.
+	// så att det som lyfts fram står ut. Ljust papper bleker mer än mörkt, så slöjan är tunnare där.
 	const focus = Math.max(pen.planetFocus, pen.auroraFocus)
 	if (focus > 0) {
-		pen.context.globalAlpha = 0.65 * focus
+		pen.context.globalAlpha = (pen.light ? 0.35 : 0.65) * focus
 		pen.context.fillStyle = pen.paper
 		pen.context.fillRect(0, 0, pen.width, pen.height)
 	}
 	drawAurora(pen)
+	drawMeteors(pen)
 	drawBodies(pen)
 	// Marken täcker allt som gått ner under horisonten, och kalenderskivan ligger på marken.
 	drawGround(pen)

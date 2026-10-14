@@ -1,12 +1,18 @@
 "use client"
 
 import type { Body } from "astronomy-engine"
+import type { MeteorShower } from "@/app/lib/dal/caelus"
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react"
-import { AURORA_FOCUS_KEY, PLANET_FOCUS_KEY } from "./CaelusMenu"
+import { EVENTS_KEY } from "./CaelusMenu"
+import { AURORA_FOCUS_KEY, CLOUDS_KEY, METEORS_KEY, PLANET_FOCUS_KEY } from "./LayerMenu"
+import { useDarkMode } from "./CaelusTheme"
 import CultureSwitch from "./CultureSwitch"
+import EventsPanel from "./EventsPanel"
 import InfoPanel, { type PanelInfo } from "./InfoPanel"
 import { SKY_CULTURES, SWEDISH_NAMES, type SkyCulture } from "./sky-cultures"
 import { bodyInfo, figureInfo, starInfo, type SelectedStar, type StarDetails } from "./sky-info"
+import { cloudCoverAt, describeCloudCover, fetchCloudCover, type CloudStep } from "./sky/clouds"
+import { eventsAround, sameDay } from "./sky/events"
 import { createPainter, type Painter } from "./sky/painter"
 import { BODIES, buildScene } from "./sky/scene"
 import type { Catalogue, Position } from "./sky/types"
@@ -65,7 +71,7 @@ function twilight(sunAltitude: number) {
  * figur och stjärna) och räknar fram himlen; ritandet och allt som rör sig sköter målaren i
  * sky/painter.ts.
  */
-export default function SkyChart() {
+export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShower[] }) {
 	const wrapperRef = useRef<HTMLDivElement>(null)
 	const canvasRef = useRef<HTMLCanvasElement>(null)
 	const painterRef = useRef<Painter | null>(null)
@@ -89,6 +95,13 @@ export default function SkyChart() {
 	const auroraFocus = storedAurora === "on"
 	// Kp-index från NOAA, uppmätt och prognos i treTimmarsperioder; tomt tills det hämtats.
 	const [kpPeriods, setKpPeriods] = useState<KpPeriod[]>([])
+	// Molnen slås av och på i menyn. Prognosen kommer från SMHI och gäller platsen; tom tills den
+	// hämtats och utanför prognosområdet.
+	const [storedClouds] = useStored(CLOUDS_KEY)
+	const clouds = storedClouds !== "off"
+	const [cloudSteps, setCloudSteps] = useState<CloudStep[]>([])
+	const [storedMeteors] = useStored(METEORS_KEY)
+	const meteors = storedMeteors !== "off"
 	// Vintergatans kontur, som hämtas för sig så att kartan inte väntar på den.
 	const [milkyWayData, setMilkyWayData] = useState<MilkyWayData | null>(null)
 	// Figuren som pekas ut eller är vald; dess namn står under kartan.
@@ -101,6 +114,10 @@ export default function SkyChart() {
 	// Hämtas först när en stjärna öppnas.
 	const [details, setDetails] = useState<StarDetails[] | null>(null)
 	const detailsRequestedRef = useRef(false)
+	// Händelsepanelen, som fälls ut från menyn.
+	const [storedEvents, storeEvents] = useStored(EVENTS_KEY)
+	const eventsOpen = storedEvents === "open"
+	const setEventsOpen = (open: boolean) => storeEvents(open ? "open" : "closed")
 	const [locating, setLocating] = useState(false)
 	const [locationError, setLocationError] = useState<string | null>(null)
 
@@ -141,6 +158,38 @@ export default function SkyChart() {
 	}, [])
 
 	useEffect(() => {
+		painterRef.current?.setClouds(clouds)
+	}, [clouds])
+
+	useEffect(() => {
+		painterRef.current?.setMeteors(meteors)
+	}, [meteors])
+
+	// Kartan läser färgerna från temat när den ritar, så den ritas om när läget byts.
+	const dark = useDarkMode()
+	useEffect(() => {
+		painterRef.current?.redraw()
+	}, [dark])
+
+	// Molnprognosen hämtas för platsen och sedan en gång i timmen, så ofta SMHI gör en ny. Ett
+	// misslyckat försök lämnar den som redan finns.
+	useEffect(() => {
+		let current = true
+		const fetchClouds = () =>
+			fetchCloudCover(position)
+				.then(steps => {
+					if (current) setCloudSteps(steps)
+				})
+				.catch(() => {})
+		fetchClouds()
+		const timer = setInterval(fetchClouds, 60 * 60_000)
+		return () => {
+			current = false
+			clearInterval(timer)
+		}
+	}, [position])
+
+	useEffect(() => {
 		Promise.all([load("/data/stars.json"), load("/data/constellations.json"), load("/data/norse.json")])
 			.then(([stars, constellations, norse]) =>
 				setCatalogue({ stars: stars.stars, constellations: constellations.constellations, norse }),
@@ -155,9 +204,11 @@ export default function SkyChart() {
 	const time = chosenTime ?? now
 	const shown = useGlidingTime(time, scrubbing)
 	const kp = kpAt(kpPeriods, shown)
+	const cloudCover = cloudCoverAt(cloudSteps, shown)
 	const scene = useMemo(
-		() => (shown ? buildScene(shown, position, culture, catalogue, kp, milkyWayData) : null),
-		[shown, position, culture, catalogue, kp, milkyWayData],
+		() =>
+			shown ? buildScene(shown, position, culture, catalogue, kp, milkyWayData, cloudCover, meteorShowers) : null,
+		[shown, position, culture, catalogue, kp, milkyWayData, cloudCover, meteorShowers],
 	)
 	useEffect(() => {
 		if (scene) painterRef.current?.setScene(scene)
@@ -211,9 +262,14 @@ export default function SkyChart() {
 		return () => document.removeEventListener("keydown", onKeyDown)
 	})
 
+	// Om det senaste trycket på kartan var ett finger, en penna eller en mus.
+	const pointerTypeRef = useRef("mouse")
+
 	const onClick = (event: MouseEvent<HTMLCanvasElement>) => {
 		const painter = painterRef.current
 		if (!painter || painter.consumeTurn()) return
+		// Händelsepanelen och panelen om det som klickas fram ligger på samma ställe på en telefon.
+		if (eventsOpen) setEventsOpen(false)
 		const { offsetX, offsetY } = event.nativeEvent
 		// Solen, månen och planeterna ligger överst och har företräde framför stjärnorna under dem.
 		const body = painter.bodyAt(offsetX, offsetY)
@@ -221,6 +277,16 @@ export default function SkyChart() {
 			chooseStar(null)
 			setChosenFigure(null)
 			setChosenBody(body === chosenBody ? null : body)
+			return
+		}
+		// Med fingret finns ingen pekare som lyfter fram en stjärnbild, och ett finger träffar
+		// nästan alltid någon stjärna. Första trycket på en stjärnbild väljer den därför, med bild
+		// och panel; först inom en vald stjärnbild öppnar ett tryck på en stjärna stjärnan.
+		const id = painter.figureAt(offsetX, offsetY)
+		if (pointerTypeRef.current === "touch" && id !== null && id !== painter.selected) {
+			chooseStar(null)
+			setChosenBody(null)
+			chooseFigure(id)
 			return
 		}
 		const star = painter.starAt(offsetX, offsetY)
@@ -231,7 +297,6 @@ export default function SkyChart() {
 			if (star !== null) setChosenFigure(null)
 			return
 		}
-		const id = painter.figureAt(offsetX, offsetY)
 		chooseFigure(id === painter.selected ? null : id)
 	}
 
@@ -302,6 +367,25 @@ export default function SkyChart() {
 		return null
 	}, [selectedStar, chosenBody, time, position, culture, figure, catalogue])
 
+	// Händelserna räknas ut per år och plats; panelen visar dem kring kartans tid.
+	const year = time?.getFullYear() ?? null
+	const events = useMemo(() => (year === null ? [] : eventsAround(new Date(year, 0, 1), position, meteorShowers)),
+		[year, position, meteorShowers],
+	)
+	const todaysEvents = time ? events.filter(event => sameDay(event.time, time.getTime())) : []
+	const comingEvents = time
+		? events.filter(event => event.time > time.getTime() && !sameDay(event.time, time.getTime())).slice(0, 8)
+		: []
+
+	useEffect(() => {
+		if (!eventsOpen) return
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") storeEvents("closed")
+		}
+		document.addEventListener("keydown", onKeyDown)
+		return () => document.removeEventListener("keydown", onKeyDown)
+	}, [eventsOpen, storeEvents])
+
 	return (
 		<div className='flex min-h-0 flex-1 flex-col'>
 			<div ref={wrapperRef} className='relative min-h-0 flex-1 overflow-hidden'>
@@ -309,6 +393,9 @@ export default function SkyChart() {
 					ref={canvasRef}
 					role='img'
 					aria-label='Stjärnhimlen. Dra för att se dig omkring, zooma för att komma närmare, klicka på en stjärnbild, stjärna, planet, solen eller månen för att få veta mer om den.'
+					onPointerDown={event => {
+						pointerTypeRef.current = event.pointerType
+					}}
 					onPointerMove={onPointerMove}
 					onPointerLeave={() => hover(null)}
 					onClick={onClick}
@@ -341,7 +428,16 @@ export default function SkyChart() {
 						</span>
 					)}
 				</p>
-				<InfoPanel info={info} onClose={closePanel} />
+				{/* Medan händelsepanelen är utfälld får den platsen för sig. */}
+				<InfoPanel info={eventsOpen ? null : info} onClose={closePanel} />
+				<EventsPanel
+					open={eventsOpen}
+					today={todaysEvents}
+					showers={scene?.showers ?? []}
+					coming={comingEvents}
+					onChoose={chosen => setChosenTime(new Date(chosen))}
+					onClose={() => setEventsOpen(false)}
+				/>
 				{failed && (
 					<p className='absolute inset-0 flex items-center justify-center p-8 text-center text-base italic text-text-muted'>
 						Stjärnkatalogen kunde inte läsas in.
@@ -355,7 +451,9 @@ export default function SkyChart() {
 				onScrub={setScrubbing}>
 				{scene && (
 					<span className='text-xs'>
-						<span className='italic'>{twilight(scene.sunAltitude)}</span> · {formatPosition(position)}
+						<span className='italic'>{twilight(scene.sunAltitude)}</span>
+						{scene.cloudCover !== null && ` · ${describeCloudCover(scene.cloudCover)}`} ·{" "}
+						{formatPosition(position)}
 					</span>
 				)}
 				<button

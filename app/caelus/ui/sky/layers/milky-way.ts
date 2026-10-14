@@ -13,10 +13,10 @@ let cache: { key: string; scene: Scene; canvas: HTMLCanvasElement } | null = nul
  * en är lite tydligare än den utanför, så att skrafferingen tätnar mot kärnan. Utzoomad, när
  * kalenderskivan syns, tonar den bort.
  */
-export function drawMilkyWay({ context, projection, ink, scene, view, width, height, ratio }: Pen) {
+export function drawMilkyWay({ context, projection, ink, scene, view, width, height, ratio, skyAnchor, contrast }: Pen) {
 	const shown = 1 - dialShownAt(view.zoom)
 	if (shown <= 0.01) return
-	const key = [view.azimuth, view.altitude, view.zoom, width, height, ratio, ink].join(":")
+	const key = [view.azimuth, view.altitude, view.zoom, width, height, ratio, ink, contrast].join(":")
 	if (cache?.scene !== scene || cache.key !== key) {
 		const canvas = cache?.canvas ?? document.createElement("canvas")
 		canvas.width = Math.round(width * ratio)
@@ -26,8 +26,8 @@ export function drawMilkyWay({ context, projection, ink, scene, view, width, hei
 		surface.clearRect(0, 0, width, height)
 		const path = geoPath(projection, surface)
 		scene.milkyWay().forEach((polygons, level) => {
-			surface.globalAlpha = 0.1 + level * 0.05
-			fillHatched(surface, ink, ratio, width, height, () => path({ type: "MultiPolygon", coordinates: polygons }))
+			surface.globalAlpha = (0.1 + level * 0.05) * contrast
+			fillHatched(surface, ink, ratio, width, height, () => path({ type: "MultiPolygon", coordinates: polygons }), skyAnchor)
 		})
 		cache = { key, scene, canvas }
 	}

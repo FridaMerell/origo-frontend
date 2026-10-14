@@ -69,6 +69,17 @@ export function drawDial({ context, projection, scene, view, ink, family }: Pen)
 	}
 	context.stroke()
 
+	// Dagarna då något ovanligt händer på himlen har en prick vid datumringens ytterkant.
+	context.beginPath()
+	for (const index of scene.dial.events) {
+		const angle = dayAngle(index)
+		const radius = inner + band * 0.84
+		const size = Math.max(1.2, band * 0.065)
+		context.moveTo(x + Math.cos(angle) * radius + size, y + Math.sin(angle) * radius)
+		context.arc(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius, size, 0, Math.PI * 2)
+	}
+	context.fill()
+
 	// Visaren: sitter fast i söder, på gränsen mellan ringarna, och pekar både in på dagen och ut
 	// på klockslaget.
 	const reach = (band * 0.16) / middle

@@ -8,7 +8,9 @@ import { mix, type Pen } from "./pen"
  * eller är vald, och dess egna linjer träder då tillbaka för den.
  */
 export function drawFigures(pen: Pen) {
-	const { context, path, projection, scene, ink, art, raised, plain, strength, receded, outgoing, figureIntro } = pen
+	const { context, path, projection, scene, ink, art, raised, plain, strength, receded, outgoing, figureIntro, contrast } = pen
+	// Linjernas vanliga styrka.
+	const base = Math.min(1, 0.5 * contrast)
 
 	for (const figure of raised) {
 		const drawing = art.get(figure.id)
@@ -24,16 +26,16 @@ export function drawFigures(pen: Pen) {
 		context.stroke()
 	}
 	context.strokeStyle = ink
-	if (outgoing) stroke(outgoing.figures, 0.5 * outgoing.alpha, 0.8)
+	if (outgoing) stroke(outgoing.figures, base * outgoing.alpha, 0.8)
 	// Varje linje börjar om streckmönstret, så alla dras ut från sin första stjärna samtidigt.
 	const engraved = ease(figureIntro / 0.75)
 	if (engraved < 1) context.setLineDash([engraved * 900, 100_000])
-	stroke(plain, 0.5 * receded, 0.8)
+	stroke(plain, base * receded, 0.8)
 	for (const figure of raised) {
 		const covered = strength(figure) * (art.get(figure.id)?.arrived ?? 0)
 		stroke(
 			[figure],
-			mix(0.5 * receded, 1, strength(figure)) * (1 - 0.8 * covered),
+			mix(base * receded, 1, strength(figure)) * (1 - 0.8 * covered),
 			0.8 + 0.5 * strength(figure),
 		)
 	}

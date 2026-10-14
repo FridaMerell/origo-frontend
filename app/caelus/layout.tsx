@@ -1,7 +1,7 @@
 import { ReactNode, Suspense } from "react"
 import { Cormorant_Garamond } from "next/font/google"
 import { NavProgressBar } from "../lib/nav-progress"
-import { ThemeScope } from "../components/ui/ThemeScope"
+import CaelusTheme from "./ui/CaelusTheme"
 import PlateFrame from "./ui/PlateFrame"
 import Loading from "./loading"
 
@@ -20,14 +20,13 @@ export const metadata = {
 
 export default function CaelusLayout({ children }: { children: ReactNode }) {
 	return (
-		<ThemeScope
-			theme='caelus'
+		<CaelusTheme
 			className={`${cormorant.variable} flex min-h-screen flex-1 flex-col bg-bg font-body text-base text-text`}>
 			<NavProgressBar />
 			{/* Ramen står kvar även medan sidan läses in, så bara innehållet byts. */}
 			<PlateFrame>
 				<Suspense fallback={<Loading />}>{children}</Suspense>
 			</PlateFrame>
-		</ThemeScope>
+		</CaelusTheme>
 	)
 }

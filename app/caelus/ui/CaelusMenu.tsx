@@ -4,12 +4,11 @@ import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { logout } from "@/app/actions/auth"
 import { useUser } from "@/app/lib/user-context"
+import LayerMenu from "./LayerMenu"
 import { useStored } from "./use-stored"
 
-// Sparas i webbläsaren och läses av kartan, som lyfter fram solen, månen och planeterna
-// respektive var norrsken kan synas.
-export const PLANET_FOCUS_KEY = "caelus-planet-focus"
-export const AURORA_FOCUS_KEY = "caelus-aurora-focus"
+// Om händelsepanelen är utfälld; den öppnas från menyn och stängs i panelen.
+export const EVENTS_KEY = "caelus-events"
 
 const ITEM =
 	"block w-full px-4 py-2 text-left text-lg text-text no-underline hover:bg-text hover:text-bg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
@@ -17,10 +16,9 @@ const ITEM =
 export default function CaelusMenu() {
 	const user = useUser()
 	const [open, setOpen] = useState(false)
-	const [storedFocus, storeFocus] = useStored(PLANET_FOCUS_KEY)
-	const planetFocus = storedFocus === "on"
-	const [storedAurora, storeAurora] = useStored(AURORA_FOCUS_KEY)
-	const auroraFocus = storedAurora === "on"
+	// Om menyn visar sin egen lista med vad kartan visar i stället för sina länkar.
+	const [layers, setLayers] = useState(false)
+	const [, storeEvents] = useStored(EVENTS_KEY)
 	const rootRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
@@ -50,7 +48,11 @@ export default function CaelusMenu() {
 				aria-expanded={open}
 				aria-controls='caelus-menu'
 				aria-label={open ? "Stäng menyn" : "Öppna menyn"}
-				onClick={() => setOpen(previous => !previous)}
+				onClick={() => {
+					// Menyn öppnas alltid med sina länkar.
+					setLayers(false)
+					setOpen(previous => !previous)
+				}}
 				className='pointer-events-auto flex size-11 cursor-pointer flex-col items-center justify-center gap-1.5 text-text hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'>
 				{/* Strecken viks ihop till ett kryss när menyn är öppen. */}
 				<span
@@ -74,25 +76,35 @@ export default function CaelusMenu() {
 					className={`min-w-48 border border-text bg-bg py-1 transition-[opacity,translate] duration-300 motion-reduce:transition-none ${
 						open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
 					}`}>
+					{layers ? (
+					<>
+						<button type='button' onClick={() => setLayers(false)} className={`${ITEM} cursor-pointer text-text-muted`}>
+							‹ Meny
+						</button>
+						<LayerMenu item={ITEM} />
+					</>
+				) : (
+					<>
 					<Link href='/' onClick={() => setOpen(false)} className={ITEM}>
 						Stjärnhimlen
 					</Link>
-					<button
-						type='button'
-						aria-pressed={planetFocus}
-						onClick={() => storeFocus(planetFocus ? "off" : "on")}
-						className={`${ITEM} flex cursor-pointer items-baseline justify-between gap-4`}>
-						Planetfokus
-						<span className='text-sm uppercase tracking-[0.16em]'>{planetFocus ? "På" : "Av"}</span>
+					<button type='button' onClick={() => setLayers(true)} className={`${ITEM} cursor-pointer`}>
+						Visa ›
 					</button>
-					<button
-						type='button'
-						aria-pressed={auroraFocus}
-						onClick={() => storeAurora(auroraFocus ? "off" : "on")}
-						className={`${ITEM} flex cursor-pointer items-baseline justify-between gap-4`}>
-						Norrsken
-						<span className='text-sm uppercase tracking-[0.16em]'>{auroraFocus ? "På" : "Av"}</span>
-					</button>
+					{/* Händelsepanelen hör till kartan, så den öppnas där. */}
+					<Link
+						href='/'
+						onClick={() => {
+							storeEvents("open")
+							setOpen(false)
+						}}
+						className={ITEM}>
+						Händelser
+					</Link>
+					{/* /om är Origos gemensamma sida på alla domäner. */}
+					<Link href='/om-caelus' onClick={() => setOpen(false)} className={ITEM}>
+						Om
+					</Link>
 					{user ? (
 						<button
 							type='button'
@@ -108,6 +120,8 @@ export default function CaelusMenu() {
 							Logga in
 						</Link>
 					)}
+					</>
+				)}
 				</nav>
 		</div>
 	)

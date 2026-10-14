@@ -22,7 +22,8 @@ export default function PlateFrame({ children }: { children: ReactNode }) {
 				<span aria-hidden className={`${SCALE_Y} bg-right`} />
 				<div className='relative flex min-h-0 flex-col border border-text'>
 					<CaelusMenu />
-					<div className='flex min-h-0 flex-1 flex-col overflow-auto'>
+					{/* Scrollbaren tunn och i bläckets färg, utan ljus ränna. */}
+					<div className='flex min-h-0 flex-1 flex-col overflow-auto [scrollbar-color:var(--text)_transparent] [scrollbar-width:thin]'>
 						{children}
 					</div>
 				</div>

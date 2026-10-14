@@ -1,5 +1,8 @@
 import { select } from "d3-selection"
 import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomTransform } from "d3-zoom"
+import { auroraAt } from "./aurora"
+import { auroraMoving } from "./layers/aurora"
+import { meteorsWait } from "./layers/meteors"
 import { pickBody, pickFigure, pickStar } from "./pick"
 import { drawScene } from "./render"
 import type { Art, ArtFile, Figure, Level, Scene } from "./types"
@@ -19,6 +22,10 @@ const FIGURE_INTRO_MILLISECONDS = 1400
 const OUTGOING_MILLISECONDS = 450
 // Tidskonstanten för hur fort en figur lyfts fram och sjunker tillbaka.
 const LEVEL_MILLISECONDS = 90
+// Hur ofta kartan ritas om för norrskenets rörelse.
+const MOTION_MILLISECONDS = 90
+// Hur fort norrskenet glider till ett nytt Kp-värde, jämfört med när en figur lyfts fram.
+const KP_RATE = 0.2
 
 export type Painter = ReturnType<typeof createPainter>
 
@@ -52,6 +59,15 @@ export function createPainter(
 	// Och norrskensfokus.
 	let auroraFocus = false
 	let auroraLevel = 0
+	// Kp-värdet norrskenet ritas för just nu. Det glider mot himlens, så att norrskenet flyttar
+	// sig mjukt när tiden vrids över en gräns mellan två treTimmarsperioder.
+	let shownKp: number | null = null
+	// Molnen: om de visas, och hur långt de har tonat in.
+	let clouds = true
+	let cloudLevel = 1
+	// Och meteorregnen.
+	let meteors = true
+	let meteorLevel = 1
 	// Hur långt övrig text har tonats ner för en framlyft figur.
 	let liftLevel = 0
 	const levels = new Map<string, Level>()
@@ -60,6 +76,9 @@ export function createPainter(
 	const art = new Map<string, Art>()
 	const artRequested = new Set<string>()
 	let artIndex: Promise<Record<string, ArtFile>> | null = null
+
+	// Nästa bild för norrskenets rörelse, när ingenting annat rör sig.
+	let motion = 0
 
 	function redraw() {
 		cancelAnimationFrame(frame)
@@ -97,6 +116,8 @@ export function createPainter(
 		for (const drawing of art.values()) drawing.arrived = approach(drawing.arrived, 1, 0.5)
 		planetLevel = approach(planetLevel, planetFocus ? 1 : 0, 0.5)
 		auroraLevel = approach(auroraLevel, auroraFocus ? 1 : 0, 0.5)
+		cloudLevel = approach(cloudLevel, clouds ? 1 : 0, 0.5)
+		meteorLevel = approach(meteorLevel, meteors ? 1 : 0, 0.5)
 		// Övrig text tonas ner när en figur är vald, inte när den bara pekas ut: pekaren står
 		// alltid över någon stjärnbild, så då vore texten aldrig i fred. Den kommer tillbaka
 		// långsamt, så att ett byte från en vald figur till en annan inte hinner blinka.
@@ -112,8 +133,12 @@ export function createPainter(
 			if (at && next > 0) marks.push({ at, level: next })
 		}
 
+		shownKp = scene.kp === null ? null : shownKp === null ? scene.kp : approach(shownKp, scene.kp, KP_RATE)
+		const sky =
+			shownKp !== null && shownKp !== scene.kp ? { ...scene, aurora: auroraAt(shownKp, scene.position) } : scene
+
 		drawScene(canvas, {
-			scene,
+			scene: sky,
 			view,
 			width,
 			height,
@@ -125,9 +150,19 @@ export function createPainter(
 			art,
 			planetFocus: planetLevel,
 			auroraFocus: auroraLevel,
+			cloudsShown: cloudLevel,
+			meteorsShown: meteorLevel,
 			lifted: liftLevel,
 		})
 		if ((introStart !== null && (intro < 1 || figureIntro < 1)) || outgoing || settling) redraw()
+		// Norrskenet rör sig: medan det syns ritas kartan om ungefär elva gånger i sekunden, vilket
+		// räcker för en så långsam rörelse. En meteor som faller ritas varje bildruta, och annars
+		// väntar kartan tills nästa ska falla.
+		else {
+			const wait = Math.min(auroraMoving() ? MOTION_MILLISECONDS : Infinity, meteorsWait())
+			window.clearTimeout(motion)
+			if (wait < Infinity) motion = window.setTimeout(redraw, wait)
+		}
 	}
 
 	// Teckningen hämtas första gången dess stjärnbild pekas ut eller väljs, och förteckningen
@@ -194,7 +229,18 @@ export function createPainter(
 		time: number
 	} | null = null
 	let justTurned = false
+	// Fingrarna och pekarna som är nere just nu. Kommer ett andra finger är det ett nyp, inte en
+	// vridning: då släpps skivan och tiden går tillbaka dit den var.
+	const pointers = new Set<number>()
 	const onPointerDown = (event: PointerEvent) => {
+		pointers.add(event.pointerId)
+		if (pointers.size > 1) {
+			if (turning) {
+				onTurn(turning.from, false)
+				turning = null
+			}
+			return
+		}
 		const grip = dialAt(event.clientX, event.clientY)
 		if (!grip || !scene || event.button !== 0) return
 		canvas.setPointerCapture(event.pointerId)
@@ -231,7 +277,8 @@ export function createPainter(
 		}
 		onTurn(turning.time, true)
 	}
-	const onPointerEnd = () => {
+	const onPointerEnd = (event: PointerEvent) => {
+		pointers.delete(event.pointerId)
 		if (!turning) return
 		onTurn(turning.time, false)
 		turning = null
@@ -252,12 +299,18 @@ export function createPainter(
 			if (event.type === "wheel") return true
 			if ("ctrlKey" in event && event.ctrlKey) return false
 			if ("button" in event && event.button) return false
+			// Ett nyp zoomar alltid, också när ett finger råkar ligga på skivan.
+			if ("touches" in event && event.touches.length > 1) return true
 			const point = "touches" in event ? event.touches[0] : event
 			return !point || !dialAt(point.clientX, point.clientY)
 		})
 		.on("zoom", (event: D3ZoomEvent<HTMLCanvasElement, unknown>) => {
 			const transform = event.transform
-			if (event.sourceEvent?.type !== "wheel") {
+			// Hjul och nyp zoomar bara. d3-zoom flyttar samtidigt bilden så att punkten under
+			// fingrarna står still, men här skulle den förflyttningen bli en vriden himmel.
+			const source = event.sourceEvent as Event | null
+			const pinching = source !== null && "touches" in source && (source as TouchEvent).touches.length > 1
+			if (source?.type !== "wheel" && !pinching) {
 				const degrees = degreesPerPixel(width, height, transform.k)
 				view.azimuth = (view.azimuth - (transform.x - last.x) * degrees + 360) % 360
 				view.altitude += (transform.y - last.y) * degrees
@@ -269,6 +322,8 @@ export function createPainter(
 		})
 	const selection = select(canvas)
 	selection.call(behavior)
+	// Två tryck i följd väljer en stjärnbild och sedan en stjärna i den; de ska inte zooma.
+	selection.on("dblclick.zoom", null)
 
 	// Text som ritats innan typsnittet hunnit läsas in står kvar i reservtypsnittet annars.
 	document.fonts.ready.then(redraw)
@@ -322,6 +377,18 @@ export function createPainter(
 			auroraFocus = on
 			redraw()
 		},
+		/** Visar eller döljer molnen. */
+		setClouds(on: boolean) {
+			if (clouds === on) return
+			clouds = on
+			redraw()
+		},
+		/** Visar eller döljer meteorregnen. */
+		setMeteors(on: boolean) {
+			if (meteors === on) return
+			meteors = on
+			redraw()
+		},
 		get hovered() {
 			return hovered
 		},
@@ -354,6 +421,7 @@ export function createPainter(
 			canvas.removeEventListener("pointerup", onPointerEnd)
 			canvas.removeEventListener("pointercancel", onPointerEnd)
 			cancelAnimationFrame(frame)
+			window.clearTimeout(motion)
 		},
 	}
 }

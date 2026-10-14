@@ -1,5 +1,6 @@
 import type { Body } from "astronomy-engine"
 import type { Aurora } from "./aurora"
+import type { Shower } from "./meteors"
 
 // public/caelus/data/stars.json: HYG:s stjärnor ljusare än magnitud 6,5, ljusast först.
 export type StarRow = [
@@ -90,6 +91,8 @@ export type Dial = {
 	days: { month: number; day: number }[]
 	// Vilken av dagarna som är i dag; så långt är datumringen vriden.
 	today: number
+	// Dagarna då något ovanligt händer på himlen, som index i `days`.
+	events: number[]
 }
 
 // Himlen från en plats vid en tidpunkt, färdig att projicera och rita.
@@ -107,6 +110,14 @@ export type Scene = {
 	sunAltitude: number
 	// Var norrsken kan synas vid tidpunktens Kp-index; null utan Kp eller när det inte syns.
 	aurora: Aurora | null
+	// Kp-index vid tidpunkten och platsen himlen gäller, så att kartan kan låta norrskenet glida
+	// mellan två värden i stället för att hoppa.
+	kp: number | null
+	position: Position
+	// Hur stor del av himlen som täcks av moln (0…1) enligt prognosen; null utan prognos.
+	cloudCover: number | null
+	// Meteorregnen som är aktiva vid tidpunkten.
+	showers: Shower[]
 	// Vintergatans nivåer, den svagaste först; varje nivå är polygoner av ringar. Räknas ut
 	// första gången den behövs, eftersom den inte ritas utzoomat. Tom tills konturen hämtats.
 	milkyWay: () => SkyPoint[][][][]

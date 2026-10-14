@@ -220,26 +220,30 @@ export default function TimeControls({
 
 			{/* I vila: bara datum och klockslag. Raden tar fram och lägger undan linjalen. */}
 			<div className={ROW}>
-				<button
-					ref={toggleRef}
-					type='button'
-					aria-expanded={open}
-					aria-controls='caelus-time-ruler'
-					onClick={() => setOpen(previous => !previous)}
-					className='min-w-0 cursor-pointer truncate text-md text-text first-letter:uppercase hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring'>
-					{DAY_FORMAT.format(time)}
-					{year !== YEAR_FORMAT.format(new Date()) && ` ${year}`}
-					<span className='text-text-muted'> · </span>
-					{CLOCK_FORMAT.format(time)}
-				</button>
-				{!live && (
+				{/* På mobil har datum och klockslag alltid en egen rad, så att raden inte hoppar mellan
+				    en och två rader när datumets längd ändras. */}
+				<span className='flex min-w-0 items-baseline justify-center gap-x-4 max-sm:basis-full'>
 					<button
+						ref={toggleRef}
 						type='button'
-						onClick={() => onChange(null)}
-						className={`${LINK} text-xs`}>
-						Nu
+						aria-expanded={open}
+						aria-controls='caelus-time-ruler'
+						onClick={() => setOpen(previous => !previous)}
+						className='min-w-0 cursor-pointer truncate text-md text-text first-letter:uppercase hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring'>
+						{DAY_FORMAT.format(time)}
+						{year !== YEAR_FORMAT.format(new Date()) && ` ${year}`}
+						<span className='text-text-muted'> · </span>
+						{CLOCK_FORMAT.format(time)}
 					</button>
-				)}
+					{!live && (
+						<button
+							type='button'
+							onClick={() => onChange(null)}
+							className={`${LINK} text-xs`}>
+							Nu
+						</button>
+					)}
+				</span>
 				{children}
 			</div>
 		</div>

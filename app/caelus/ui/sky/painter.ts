@@ -93,14 +93,27 @@ export function createPainter(
 
 	// Nästa bild för norrskenets rörelse, när ingenting annat rör sig.
 	let motion = 0
+	// Om nästa bild måste ritas hel. Bilder som bara drivs av norrskenets och meteorernas rörelse
+	// återanvänder resten av kartan från förra bilden.
+	let full = true
+	// Om handen panorerar, zoomar eller vrider kalenderskivan just nu.
+	let interacting = false
 
 	function redraw() {
+		full = true
+		cancelAnimationFrame(frame)
+		frame = requestAnimationFrame(paint)
+	}
+
+	function redrawMotion() {
 		cancelAnimationFrame(frame)
 		frame = requestAnimationFrame(paint)
 	}
 
 	function paint(time: number) {
 		if (!scene || width === 0 || height === 0) return
+		const motionOnly = !full
+		full = false
 		const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 		const progress = (since: number | null, duration: number) =>
 			since === null ? 0 : still ? 1 : Math.min(1, Math.max(0, (time - since) / duration))
@@ -167,7 +180,8 @@ export function createPainter(
 			cloudsShown: cloudLevel,
 			meteorsShown: meteorLevel,
 			lifted: liftLevel,
-		})
+			moving: interacting,
+		}, motionOnly)
 		if ((introStart !== null && (intro < 1 || figureIntro < 1)) || outgoing || settling) redraw()
 		// Norrskenet rör sig: medan det syns ritas kartan om ungefär elva gånger i sekunden, vilket
 		// räcker för en så långsam rörelse. En meteor som faller ritas varje bildruta, och annars
@@ -175,7 +189,7 @@ export function createPainter(
 		else {
 			const wait = Math.min(auroraMoving() ? MOTION_MILLISECONDS : Infinity, meteorsWait())
 			window.clearTimeout(motion)
-			if (wait < Infinity) motion = window.setTimeout(redraw, wait)
+			if (wait < Infinity) motion = window.setTimeout(redrawMotion, wait)
 		}
 	}
 
@@ -252,12 +266,14 @@ export function createPainter(
 			if (turning) {
 				onTurn(turning.from, false)
 				turning = null
+				interacting = false
 			}
 			return
 		}
 		const grip = dialAt(event.clientX, event.clientY)
 		if (!grip || !scene || event.button !== 0) return
 		canvas.setPointerCapture(event.pointerId)
+		interacting = true
 		turning = {
 			ring: grip.ring,
 			days: scene.dial.days.length,
@@ -297,6 +313,8 @@ export function createPainter(
 		onTurn(turning.time, false)
 		turning = null
 		justTurned = true
+		interacting = false
+		redraw()
 	}
 	canvas.addEventListener("pointerdown", onPointerDown)
 	canvas.addEventListener("pointermove", onPointerMove)
@@ -336,6 +354,14 @@ export function createPainter(
 			view.zoom = transform.k
 			view.altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), view.altitude))
 			last = transform
+			redraw()
+		})
+		// Medan handen rör kartan ritas den glesare; när den släpper ritas den skarp igen.
+		.on("start", () => {
+			interacting = true
+		})
+		.on("end", () => {
+			interacting = false
 			redraw()
 		})
 	const selection = select(canvas)

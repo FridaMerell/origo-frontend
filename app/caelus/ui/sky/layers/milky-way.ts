@@ -1,4 +1,4 @@
-import { geoDistance, geoPath } from "d3-geo"
+import { geoPath } from "d3-geo"
 import type { Scene } from "../types"
 import { dialShownAt } from "../view"
 import { fillHatched, type Pen } from "./pen"
@@ -25,18 +25,9 @@ export function drawMilkyWay({ context, projection, ink, scene, view, width, hei
 		surface.setTransform(ratio, 0, 0, ratio, 0, 0)
 		surface.clearRect(0, 0, width, height)
 		const path = geoPath(projection, surface)
-		// En polygon som ligger helt bortom klippkanten, bakom betraktaren, ritar d3 som hela den
-		// synliga himlen om den råkar omsluta punkten rakt bakåt. Sådana polygoner syns ändå inte
-		// och lämnas därför bort.
-		const [lambda, phi] = projection.rotate()
-		const centre: [number, number] = [-lambda, -phi]
-		const reach = ((projection.clipAngle() ?? 180) * Math.PI) / 180
-		const seen = (polygon: [number, number][][]) =>
-			polygon.some(ring => ring.some(point => geoDistance(point, centre) < reach))
 		scene.milkyWay().forEach((polygons, level) => {
 			surface.globalAlpha = (0.16 + level * 0.07) * contrast
-			const shownPolygons = polygons.filter(seen)
-			fillHatched(surface, ink, ratio, width, height, () => path({ type: "MultiPolygon", coordinates: shownPolygons }), skyAnchor)
+			fillHatched(surface, ink, ratio, width, height, () => path({ type: "MultiPolygon", coordinates: polygons }), skyAnchor)
 		})
 		cache = { key, scene, canvas }
 	}

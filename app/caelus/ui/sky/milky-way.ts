@@ -1,4 +1,4 @@
-import { geoArea } from "d3-geo"
+import { geoArea, geoContains } from "d3-geo"
 import { wrap } from "./scene"
 import type { SkyPoint } from "./types"
 
@@ -28,12 +28,23 @@ type Polygon = { rings: Float64Array[]; reversed: boolean | null }
 // Nivåerna, den svagaste först.
 export type MilkyWayData = Polygon[][]
 
+// En ytterkant ska omsluta sina hål. I filen går den yttersta nivåns ytterkant åt fel håll, så
+// att bandets andra kant hamnar utanför den; då gissar d3 olika insida i olika blickriktningar
+// och fyller ibland allt utom bandet. En sådan ytterkant vänds.
+function enclosing(polygon: Ring[]): Ring[] {
+	if (polygon.length < 2) return polygon
+	const [outer, ...holes] = polygon
+	const largest = holes.reduce((best, hole) => (hole.length > best.length ? hole : best))
+	return geoContains({ type: "Polygon", coordinates: [outer] }, largest[0])
+		? polygon
+		: [outer.slice().reverse(), ...holes]
+}
+
 /** Bygger konturen ur filen. Görs en gång. */
 export function prepareMilkyWay(file: MilkyWayFile): MilkyWayData {
 	return file.features.map(feature =>
 		feature.geometry.coordinates.map(polygon => ({
-			rings: polygon
-				.filter(ring => ring.length >= SMALLEST_RING)
+			rings: enclosing(polygon.filter(ring => ring.length >= SMALLEST_RING))
 				.map(ring => {
 					const kept = ring.filter((_, index) => index % THINNING === 0)
 					kept.push(kept[0])

@@ -31,7 +31,14 @@ export type Frame = {
 	meteorsShown: number
 	// 0…1: hur långt övrig text har tonats ner för en framlyft figur.
 	lifted: number
+	// Om handen panorerar, zoomar eller vrider kalenderskivan just nu. Då ritas kartan med en pixel
+	// per punkt i stället för skärmens fulla täthet, så att den hinner följa handen; full skärpa
+	// kommer tillbaka när handen släpper.
+	moving: boolean
 }
+
+// Där en text redan står på kartan.
+export type Box = { left: number; right: number; top: number; bottom: number }
 
 // Det lagren delar under en bildruta: ritytan, projektionen, temats färger och det som räknats
 // fram en gång ur bildrutan.
@@ -91,6 +98,8 @@ export type Pen = Frame & {
 	// Hur långt stjärnornas respektive figurernas text har tonat in.
 	lettered: number
 	figuresLettered: number
+	// Texterna som står på kartan hittills, för `label`.
+	taken: Box[]
 }
 
 const LABEL_SIZE = 17
@@ -188,12 +197,15 @@ export function mix(from: number, to: number, amount: number) {
 	return from + (to - from) * amount
 }
 
-/** Gör i ordning ritytan för en bildruta. Null om webbläsaren inte ger någon rityta. */
-export function createPen(canvas: HTMLCanvasElement, frame: Frame): Pen | null {
+/**
+ * Gör i ordning ritytan för en bildruta. Null om webbläsaren inte ger någon rityta. `placed` är
+ * texter som redan står på kartan, när en del av den återanvänds från en tidigare bild.
+ */
+export function createPen(canvas: HTMLCanvasElement, frame: Frame, placed: Box[] = []): Pen | null {
 	const { scene, view, width, height, intro, figureIntro, levels } = frame
 	const context = canvas.getContext("2d")
 	if (!context) return null
-	const ratio = window.devicePixelRatio || 1
+	const ratio = frame.moving ? Math.min(1, window.devicePixelRatio || 1) : window.devicePixelRatio || 1
 	if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) {
 		canvas.width = Math.round(width * ratio)
 		canvas.height = Math.round(height * ratio)
@@ -207,7 +219,7 @@ export function createPen(canvas: HTMLCanvasElement, frame: Frame): Pen | null {
 	const styles = getComputedStyle(canvas)
 	const projection = makeProjection(view, width, height)
 
-	const taken: { left: number; right: number; top: number; bottom: number }[] = []
+	const taken: Box[] = [...placed]
 	const label = (text: string, x: number, y: number, always = false) => {
 		const textWidth = context.measureText(text).width
 		const left = context.textAlign === "center" ? x - textWidth / 2 : x
@@ -279,5 +291,6 @@ export function createPen(canvas: HTMLCanvasElement, frame: Frame): Pen | null {
 		starScale: Math.min(1.8, Math.max(0.7, Math.sqrt(detail))),
 		lettered: ease((intro - 0.6) / 0.4),
 		figuresLettered: ease((figureIntro - 0.45) / 0.55),
+		taken,
 	}
 }

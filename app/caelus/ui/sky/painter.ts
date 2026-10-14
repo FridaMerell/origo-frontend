@@ -26,6 +26,20 @@ const LEVEL_MILLISECONDS = 90
 const MOTION_MILLISECONDS = 90
 // Hur fort norrskenet glider till ett nytt Kp-värde, jämfört med när en figur lyfts fram.
 const KP_RATE = 0.2
+// Väderstrecken drar lätt i blicken medan man vrider: så många grader på var sida om vart och
+// ett av de fyra går himlen trögare, så att den gärna stannar på det.
+const MAGNET_DEGREES = 8
+
+// Blickriktningen för den riktning handen har vridit till. Mitt på ett väderstreck följer blicken
+// handen knappt alls; mot zonens kant allt fortare, och vid kanten lika fort som annars, så att
+// inget hack känns när den släpper.
+function magnetic(azimuth: number) {
+	const cardinal = Math.round(azimuth / 90) * 90
+	const offset = azimuth - cardinal
+	const share = Math.abs(offset) / MAGNET_DEGREES
+	if (share >= 1) return azimuth
+	return (cardinal + Math.sign(offset) * MAGNET_DEGREES * share * share * (2 - share) + 360) % 360
+}
 
 export type Painter = ReturnType<typeof createPainter>
 
@@ -292,6 +306,9 @@ export function createPainter(
 	// d3-zoom sköter mus, hjul och nyp. Förflyttningen blir en ny blickriktning i stället för
 	// en förskjutning av bilden, så horisonten ligger kvar vågrätt.
 	let last: ZoomTransform = zoomIdentity
+	// Riktningen handen har vridit blicken till. Blicken följer den, utom nära ett väderstreck,
+	// där den dras mot det (se `magnetic`).
+	let hand = view.azimuth
 	const behavior = zoom<HTMLCanvasElement, unknown>()
 		.scaleExtent(ZOOM_EXTENT)
 		// Som d3-zooms eget filter, men ett tag i kalenderskivan ska vrida den, inte panorera.
@@ -312,7 +329,8 @@ export function createPainter(
 			const pinching = source !== null && "touches" in source && (source as TouchEvent).touches.length > 1
 			if (source?.type !== "wheel" && !pinching) {
 				const degrees = degreesPerPixel(width, height, transform.k)
-				view.azimuth = (view.azimuth - (transform.x - last.x) * degrees + 360) % 360
+				hand = (hand - (transform.x - last.x) * degrees + 360) % 360
+				view.azimuth = magnetic(hand)
 				view.altitude += (transform.y - last.y) * degrees
 			}
 			view.zoom = transform.k

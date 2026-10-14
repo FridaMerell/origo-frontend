@@ -3,6 +3,8 @@
 // Browser-side Web Push helpers. The heavy lifting (storing subscriptions,
 // sending notifications) lives in the Django API — see app/actions/push.ts.
 
+import { resolveTenant } from "@/app/lib/tenant";
+
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
 /** VAPID keys are base64url; PushManager wants an ArrayBuffer view. (Next PWA guide.) */
@@ -82,9 +84,8 @@ export async function unsubscribeFromPush(): Promise<string | null> {
   return endpoint;
 }
 
-/** Subdomain (verso/flux/tempus/apsis) or "" on the bare root. */
+/** The tenant subdomain (one of TENANTS) or "" on the bare root. */
 export function currentTenant(): string {
   if (typeof window === "undefined") return "";
-  const sub = window.location.hostname.split(".")[0];
-  return ["verso", "flux", "tempus", "apsis"].includes(sub) ? sub : "";
+  return resolveTenant(window.location.hostname) ?? "";
 }

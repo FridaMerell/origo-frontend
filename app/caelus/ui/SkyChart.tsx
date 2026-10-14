@@ -23,8 +23,8 @@ import { useClock } from "./use-clock"
 import { useLast } from "./use-last"
 import { useStored } from "./use-stored"
 
-const UPPSALA: Position = { latitude: 59.8586, longitude: 17.6389 }
-const POSITION_KEY = "caelus-position"
+export const UPPSALA: Position = { latitude: 59.8586, longitude: 17.6389 }
+export const POSITION_KEY = "caelus-position"
 const CULTURE_KEY = "caelus-culture"
 // NOAA:s planetära Kp-index: en vecka bakåt (uppmätt och uppskattat) och tre dygn framåt
 // (prognos), i treTimmarsperioder. Tidsangivelserna är i UTC utan tidszon.
@@ -44,7 +44,7 @@ function load(url: string) {
 	return fetch(url).then(response => (response.ok ? response.json() : Promise.reject()))
 }
 
-function parsePosition(stored: string | null): Position | null {
+export function parsePosition(stored: string | null): Position | null {
 	try {
 		const value = JSON.parse(stored ?? "null")
 		return Number.isFinite(value?.latitude) && Number.isFinite(value?.longitude)

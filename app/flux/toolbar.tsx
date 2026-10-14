@@ -160,7 +160,7 @@ function ProjectSelector({ dropUp = false, compact = false }: { dropUp?: boolean
 
 function NotificationButton({ dropUp = false }: { dropUp?: boolean }) {
   return (
-    <NotificationMenu align={dropUp ? "left" : "right"} dropUp={dropUp}>
+    <NotificationMenu align={dropUp ? "left" : "right"} inline={dropUp}>
       {({ unreadCount, notificationLabel, toggle, isOpen }) => (
         <button type="button" onClick={toggle} className={`relative flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-text hover:bg-surface-2 ${isOpen ? "bg-surface-2" : ""}`}>
           <Bell size={16} aria-hidden />

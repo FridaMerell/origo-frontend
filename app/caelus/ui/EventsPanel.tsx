@@ -1,5 +1,7 @@
 "use client"
 
+import { PushControls } from "@/app/components/ui/PushControls"
+import { useUser } from "@/app/lib/user-context"
 import type { SkyEvent } from "./sky/events"
 import type { Shower } from "./sky/meteors"
 
@@ -39,6 +41,7 @@ export default function EventsPanel({
 	onChoose: (time: number) => void
 	onClose: () => void
 }) {
+	const user = useUser()
 	const row = (event: SkyEvent, when: string) => (
 		<div key={`${event.time}:${event.title}`} className='col-span-2 grid grid-cols-subgrid py-0.5'>
 			<dt className='italic text-text-muted'>{when}</dt>
@@ -89,6 +92,15 @@ export default function EventsPanel({
 			<dl className='mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 text-sm'>
 				{coming.map(event => row(event, DATE_FORMAT.format(event.time)))}
 			</dl>
+			{/* Varningarna för det som kommer når hit som pushnotiser. */}
+			{user && (
+				<div className='mt-4 flex flex-wrap gap-x-4 gap-y-1 empty:hidden'>
+					<PushControls
+						item='cursor-pointer text-sm text-text-muted underline underline-offset-4 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-default'
+						note='text-sm italic text-text-muted'
+					/>
+				</div>
+			)}
 		</section>
 	)
 }

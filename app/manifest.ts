@@ -10,6 +10,8 @@ type TenantManifest = {
   description: string
   background_color: string
   theme_color: string
+  // Separate maskable icon when the motif needs more scale than icon.png gives.
+  maskable_icon?: string
 }
 
 const TENANT_MANIFESTS: Record<TenantId, TenantManifest> = {
@@ -22,6 +24,7 @@ const TENANT_MANIFESTS: Record<TenantId, TenantManifest> = {
     description: "Flux – Origo",
     background_color: "#EEF3F5",
     theme_color: "#D85B32",
+    maskable_icon: "/flux/icon-maskable.png",
   },
   tempus: {
     description: "Tempus – Origo",
@@ -102,7 +105,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         purpose: "any",
       },
       {
-        src: `/${tenant}/icon.png`,
+        src: config.maskable_icon ?? `/${tenant}/icon.png`,
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

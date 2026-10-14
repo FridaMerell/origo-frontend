@@ -71,11 +71,11 @@ export function drawDial({ context, projection, scene, view, ink, family }: Pen)
 
 	// Dagarna då något ovanligt händer på himlen har en liten öppen ring nära datumringens
 	// ytterkant, graverad som planeternas symboler.
-	const mark = Math.max(1.6, band * 0.075)
+	const mark = Math.max(1.5, band * 0.055)
 	context.beginPath()
 	for (const index of scene.dial.events) {
 		const angle = dayAngle(index)
-		const at = middle - band * 0.17
+		const at = middle - band * 0.14
 		const markX = x + Math.cos(angle) * at
 		const markY = y + Math.sin(angle) * at
 		context.moveTo(markX + mark, markY)
@@ -96,13 +96,15 @@ export function drawDial({ context, projection, scene, view, ink, family }: Pen)
 
 	context.textAlign = "center"
 	context.textBaseline = "middle"
-	const size = Math.max(10, band * 0.52)
+	// Texten hålls liten och luftig mellan ringarna, så att den inte stöter i strecken eller
+	// händelsernas ringar.
+	const size = Math.max(9, band * 0.34)
 	context.font = `500 ${size}px ${family}`
 	days.forEach(({ month, day }, index) => {
-		if (day === 16) along(MONTHS[month].toUpperCase(), dayAngle(index), inner + band * 0.6, size * 0.12)
+		if (day === 16) along(MONTHS[month].toUpperCase(), dayAngle(index), inner + band * 0.5, size * 0.28)
 	})
-	context.font = `${Math.max(10, band * 0.56)}px ${family}`
+	context.font = `${Math.max(9, band * 0.34)}px ${family}`
 	for (let hour = 0; hour < 24; hour++) {
-		along(String(hour).padStart(2, "0"), hourAngle(hour), middle + band * 0.62, 0)
+		along(String(hour).padStart(2, "0"), hourAngle(hour), middle + band * 0.6, size * 0.06)
 	}
 }

@@ -45,7 +45,7 @@ export function drawGround({ context, path, projection, view, ink, paper, family
 		const point = projection([wrap(index * 45), -5 + 1.5 * dial])
 		if (!onScreen(point)) return
 		context.globalAlpha = cardinal ? 1 : 1 - dial
-		context.font = `${cardinal ? `500 ${20 - 4 * dial}px` : "italic 16px"} ${family}`
+		context.font = `${cardinal ? `500 ${20 - 7 * dial}px` : "italic 16px"} ${family}`
 		context.fillText(direction, point[0], point[1])
 	})
 	context.globalAlpha = 1

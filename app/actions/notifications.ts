@@ -50,10 +50,15 @@ function notificationFrom(value: unknown): NotificationPreview | null {
   if (typeof id !== "string" && typeof id !== "number") return null;
 
   const read = record.is_read ?? record.isRead ?? record.read;
+  // A notification has no title of its own: its message's first line is the title, as in the
+  // push notification, and the rest is the body.
+  const message = textFrom(record, ["body", "message", "description", "content", "text"]);
+  const [firstLine, ...rest] = message.trim().split("\n");
+  const title = textFrom(record, ["title", "heading", "subject"]);
   return {
     id: String(id),
-    title: textFrom(record, ["title", "heading", "subject"]) || "Notifikation",
-    body: textFrom(record, ["body", "message", "description", "content", "text"]),
+    title: title || firstLine || "Notifikation",
+    body: title ? message : rest.join("\n").trim(),
     createdAt: textFrom(record, ["created_at", "createdAt", "timestamp", "created"]) || null,
     isRead: read === true,
   };
@@ -97,12 +102,17 @@ async function notificationHeaders() {
   };
 }
 
-export async function getNotificationSummary(): Promise<NotificationSummary> {
+// Each app shows only its own notifications; "" (the root domain) shows all of them.
+function forDomain(path: string, domain: string) {
+  return domain ? `${path}?domain=${encodeURIComponent(domain)}` : path;
+}
+
+export async function getNotificationSummary(domain: string): Promise<NotificationSummary> {
   try {
     const headers = await notificationHeaders();
     if (!headers) return { unreadCount: 0, notifications: [] };
 
-    const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.notificationsSummary, {
+    const response = await fetchOrigoApi(forDomain(ACCOUNTS_ENDPOINTS.notificationsSummary, domain), {
       headers,
       cache: "no-store",
     });
@@ -149,12 +159,12 @@ export async function markNotificationAsRead(id: string): Promise<boolean> {
   }
 }
 
-export async function markAllNotificationsAsRead(): Promise<boolean> {
+export async function markAllNotificationsAsRead(domain: string): Promise<boolean> {
   try {
     const headers = await notificationHeaders();
     if (!headers) return false;
 
-    const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.notificationsReadAll, {
+    const response = await fetchOrigoApi(forDomain(ACCOUNTS_ENDPOINTS.notificationsReadAll, domain), {
       method: "POST",
       headers,
     });

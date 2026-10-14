@@ -65,13 +65,14 @@ export async function removePushSubscription(endpoint: string): Promise<PushActi
   return { ok: true };
 }
 
-/** Ask the API to push a test notification to the user's own devices. */
-export async function sendTestPush(): Promise<PushActionResult> {
+/** Ask the API to push a test notification to the user's devices in one app. */
+export async function sendTestPush(tenant: string): Promise<PushActionResult> {
   if (!(await getCurrentUser())) return { ok: false, error: "Du måste vara inloggad." };
 
   const response = await fetchOrigoApi(ACCOUNTS_ENDPOINTS.pushTest, {
     method: "POST",
     headers: await authedJsonHeaders(),
+    body: JSON.stringify({ tenant }),
   });
 
   if (!response.ok) {

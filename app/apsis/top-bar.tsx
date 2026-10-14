@@ -4,6 +4,7 @@ import { AppLink as Link } from "@/app/components/ui/AppLink";
 import { usePathname } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { Menu, MoonIcon, SunIcon } from "lucide-react";
+import { NotificationBell } from "@/app/components/ui/NotificationBell";
 import { Button } from "@/app/components/ui/Button";
 import { Drawer, useDrawerClose } from "@/app/components/ui/Drawer";
 import { useUser, formatUserName } from "@/app/lib/user-context";
@@ -46,14 +47,19 @@ function MobileMenu({ mode, onToggleMode }: TopBarProps) {
 
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-text-muted">{name ? `Inloggad som ${name}` : "Ej inloggad"}</span>
-        <button
-          type="button"
-          onClick={onToggleMode}
-          aria-label={mode === "dark" ? "Använd ljust läge" : "Använd mörkt läge"}
-          className="flex size-9 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent"
-        >
-          {mode === "dark" ? <SunIcon size={17} /> : <MoonIcon size={17} />}
-        </button>
+        <span className="flex items-center gap-1">
+          {user && (
+            <NotificationBell className="flex size-9 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent" />
+          )}
+          <button
+            type="button"
+            onClick={onToggleMode}
+            aria-label={mode === "dark" ? "Använd ljust läge" : "Använd mörkt läge"}
+            className="flex size-9 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent"
+          >
+            {mode === "dark" ? <SunIcon size={17} /> : <MoonIcon size={17} />}
+          </button>
+        </span>
       </div>
 
       {user ? (
@@ -127,6 +133,9 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
         >
           {mode === "dark" ? <SunIcon size={17} /> : <MoonIcon size={17} />}
         </button>
+        {user && (
+          <NotificationBell className="flex size-9 items-center justify-center text-text-muted hover:text-text" />
+        )}
         <span className="italic">{name ? `Inloggad som ${name}` : "Ej inloggad"}</span>
         {/* Written as text, like everything else on the sign, not as a filled button. */}
         <button

@@ -5,6 +5,8 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { XIcon } from "lucide-react"
+import { NotificationBell } from "@/app/components/ui/NotificationBell"
+import { useUser } from "@/app/lib/user-context"
 type TopBarProps = {
 	mode: "light" | "dark"
 	onToggleMode: () => void
@@ -48,6 +50,7 @@ const TABS = [
 ]
 export default function ({ mode, onToggleMode }: TopBarProps) {
 	const pathname = usePathname()
+	const user = useUser()
 	// Mobil: flikarna ryms inte i fältet och ligger i en sidopanel från höger.
 	const [menuOpen, setMenuOpen] = useState(false)
 	const closeRef = useRef<HTMLButtonElement>(null)
@@ -93,6 +96,9 @@ export default function ({ mode, onToggleMode }: TopBarProps) {
 					))}
 				</nav>
 				<nav className={'ml-auto flex items-center gap-2'} aria-label={"Konto och kontroller"}>
+					{user && (
+						<NotificationBell className='grid size-8 place-items-center rounded-md border border-border text-text-muted transition-colors hover:bg-foreground/5 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring' />
+					)}
 					<button
 						type='button'
 						onClick={onToggleMode}

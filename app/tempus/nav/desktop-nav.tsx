@@ -1,12 +1,12 @@
 import { useRouter } from "next/navigation"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { logout } from "@/app/actions/auth"
-import { NotificationMenu } from "@/app/components/ui/NotificationMenu"
 import type { User } from "@/app/lib/dal"
 import QuickObservation from "../observationer/quick-observation"
 import Logo from "../ui/Logo"
 import { FieldIcon, isActiveLink, mainLinks, moreLinks, primaryLinks } from "./nav-links"
 import { GeoAreaSelector } from "./geo-area-selector"
+import { NotificationMenu } from "@/app/components/ui/NotificationMenu"
 import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { Bell, ChevronDown, LogIn, LogOut, Menu, Moon, Search, Settings, Sun, X } from "lucide-react"
 
@@ -21,6 +21,33 @@ function ModeToggleContent({ mode }: { mode: "light" | "dark" | null }) {
       {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
     </>
+  )
+}
+
+// The menu row that opens the notifications, with the unread count on the bell.
+function NotificationsTrigger({
+  className,
+  unreadCount,
+  label,
+  onClick,
+}: {
+  className: string
+  unreadCount: number
+  label: string | number
+  onClick: () => void
+}) {
+  return (
+    <button type="button" onClick={onClick} className={className}>
+      <span className="relative">
+        <Bell size={18} />
+        {unreadCount > 0 && (
+          <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold text-accent-contrast ring-2 ring-surface">
+            {label}
+          </span>
+        )}
+      </span>
+      Notifikationer
+    </button>
   )
 }
 
@@ -223,16 +250,9 @@ export function DesktopNav({
                 className="absolute right-0 top-full z-50 mt-1 min-w-56 rounded-md border border-border bg-surface p-1 shadow-lg transition-[opacity,translate] duration-150 ease-(--ease-standard) starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
               >
                 {user ? (
-                  <NotificationMenu align="right">
+                  <NotificationMenu inline>
                     {({ unreadCount, notificationLabel, toggle }) => (
-                      <button
-                        type="button"
-                        onClick={toggle}
-                        className="flex h-11 w-full items-center justify-between gap-3 rounded-md px-3 text-left text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
-                      >
-                        <span className="flex items-center gap-3"><Bell size={18} />Notifikationer</span>
-                        {unreadCount > 0 ? <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-contrast">{notificationLabel}</span> : null}
-                      </button>
+                      <NotificationsTrigger className={MENU_ITEM_CLASS} unreadCount={unreadCount} label={notificationLabel} onClick={toggle} />
                     )}
                   </NotificationMenu>
                 ) : null}
@@ -287,7 +307,7 @@ export function DesktopNav({
             <section
               id="tempus-responsive-menu"
               aria-label="Kompaktmeny"
-              className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 max-h-[calc(100dvh-6rem)] overflow-y-auto rounded-lg border border-border bg-surface p-2 shadow-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-20 sm:top-[calc(100%-4px)] sm:w-80 xl:hidden"
+              className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-20 max-h-[calc(100dvh-6rem)] overflow-y-auto [scrollbar-color:var(--text-faint)_transparent] [scrollbar-width:thin] rounded-lg border border-border bg-surface p-2 shadow-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:right-20 sm:top-[calc(100%-4px)] sm:w-80 xl:hidden"
             >
               {/* Samma länkar i två varianter: bredare skärmar visar dem som egen sektion, mobil som "Fler sidor". */}
               <PrimaryLinks
@@ -331,19 +351,9 @@ export function DesktopNav({
                   <ModeToggleContent mode={mode} />
                 </button>
                 {user ? (
-                  <NotificationMenu dropUp align="left">
+                  <NotificationMenu inline>
                     {({ unreadCount, notificationLabel, toggle }) => (
-                      <button type="button" onClick={toggle} className={MENU_ITEM_CLASS}>
-                        <span className="relative">
-                          <Bell size={18} />
-                          {unreadCount > 0 && (
-                            <span className="absolute -right-2 -top-2 flex min-w-4 h-4 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-semibold text-accent-contrast ring-2 ring-surface">
-                              {notificationLabel}
-                            </span>
-                          )}
-                        </span>
-                        Notifikationer
-                      </button>
+                      <NotificationsTrigger className={MENU_ITEM_CLASS} unreadCount={unreadCount} label={notificationLabel} onClick={toggle} />
                     )}
                   </NotificationMenu>
                 ) : null}

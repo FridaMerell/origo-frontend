@@ -1,6 +1,7 @@
 import { Body } from "astronomy-engine"
 import { geoInterpolate } from "d3-geo"
 import type { SkyPoint } from "../types"
+import { dialShownAt } from "../view"
 import { mix, type Pen } from "./pen"
 
 /**
@@ -41,8 +42,9 @@ function drawMoonLight(
  * och stjärnor bakom. Med planetfokus blir de något större och har namn även utzoomat.
  */
 export function drawBodies(pen: Pen) {
-	const { context, projection, scene, ink, paper, family, onScreen, label, spacing, named, planetFocus } = pen
-	const scale = mix(1, 1.25, planetFocus)
+	const { context, projection, scene, view, ink, paper, family, onScreen, label, spacing, named, planetFocus } = pen
+	// Utzoomad, när kalenderskivan syns, är himlen liten och symbolerna krymper med den.
+	const scale = mix(1, 1.25, planetFocus) * mix(1, 0.7, dialShownAt(view.zoom))
 	// Namnen följer kartans övriga namn, utom med planetfokus, då de alltid står.
 	const lettered = Math.max(named, planetFocus)
 	context.globalAlpha = 1

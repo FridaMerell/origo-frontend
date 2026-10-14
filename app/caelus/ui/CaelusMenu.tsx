@@ -3,7 +3,9 @@
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import { logout } from "@/app/actions/auth"
+import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
 import { useUser } from "@/app/lib/user-context"
+import EventAlertToggle from "./EventAlertToggle"
 import LayerMenu from "./LayerMenu"
 import { useStored } from "./use-stored"
 
@@ -16,8 +18,8 @@ const ITEM =
 export default function CaelusMenu() {
 	const user = useUser()
 	const [open, setOpen] = useState(false)
-	// Om menyn visar sin egen lista med vad kartan visar i stället för sina länkar.
-	const [layers, setLayers] = useState(false)
+	// Vilken undermeny som visas i stället för menyns länkar: vad kartan visar, eller de andra apparna.
+	const [submenu, setSubmenu] = useState<"layers" | "apps" | null>(null)
 	const [, storeEvents] = useStored(EVENTS_KEY)
 	const rootRef = useRef<HTMLDivElement>(null)
 
@@ -50,7 +52,7 @@ export default function CaelusMenu() {
 				aria-label={open ? "Stäng menyn" : "Öppna menyn"}
 				onClick={() => {
 					// Menyn öppnas alltid med sina länkar.
-					setLayers(false)
+					setSubmenu(null)
 					setOpen(previous => !previous)
 				}}
 				className='pointer-events-auto flex size-11 cursor-pointer flex-col items-center justify-center gap-1.5 text-text hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'>
@@ -76,19 +78,28 @@ export default function CaelusMenu() {
 					className={`min-w-48 border border-text bg-bg py-1 transition-[opacity,translate] duration-300 motion-reduce:transition-none ${
 						open ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0"
 					}`}>
-					{layers ? (
+					{submenu ? (
 					<>
-						<button type='button' onClick={() => setLayers(false)} className={`${ITEM} cursor-pointer text-text-muted`}>
+						<button type='button' onClick={() => setSubmenu(null)} className={`${ITEM} cursor-pointer text-text-muted`}>
 							‹ Meny
 						</button>
-						<LayerMenu item={ITEM} />
+						{submenu === "layers" ? (
+							<LayerMenu item={ITEM} />
+						) : (
+							// Undermenyn visas först efter ett klick, så adresserna räknas i webbläsaren.
+							APP_LINKS.filter(site => site.id !== "caelus").map(site => (
+								<a key={site.id} href={appHref(site.id)} className={ITEM}>
+									{site.name}
+								</a>
+							))
+						)}
 					</>
 				) : (
 					<>
 					<Link href='/' onClick={() => setOpen(false)} className={ITEM}>
 						Stjärnhimlen
 					</Link>
-					<button type='button' onClick={() => setLayers(true)} className={`${ITEM} cursor-pointer`}>
+					<button type='button' onClick={() => setSubmenu("layers")} className={`${ITEM} cursor-pointer`}>
 						Visa ›
 					</button>
 					{/* Händelsepanelen hör till kartan, så den öppnas där. */}
@@ -101,10 +112,14 @@ export default function CaelusMenu() {
 						className={ITEM}>
 						Händelser
 					</Link>
+					{user && <EventAlertToggle item={ITEM} />}
 					{/* /om är Origos gemensamma sida på alla domäner. */}
 					<Link href='/om-caelus' onClick={() => setOpen(false)} className={ITEM}>
 						Om
 					</Link>
+					<button type='button' onClick={() => setSubmenu("apps")} className={`${ITEM} cursor-pointer`}>
+						Origo ›
+					</button>
 					{user ? (
 						<button
 							type='button'

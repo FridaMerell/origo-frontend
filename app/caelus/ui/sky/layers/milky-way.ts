@@ -34,7 +34,7 @@ export function drawMilkyWay({ context, projection, ink, scene, view, width, hei
 		const seen = (polygon: [number, number][][]) =>
 			polygon.some(ring => ring.some(point => geoDistance(point, centre) < reach))
 		scene.milkyWay().forEach((polygons, level) => {
-			surface.globalAlpha = (0.1 + level * 0.05) * contrast
+			surface.globalAlpha = (0.16 + level * 0.07) * contrast
 			const shownPolygons = polygons.filter(seen)
 			fillHatched(surface, ink, ratio, width, height, () => path({ type: "MultiPolygon", coordinates: shownPolygons }), skyAnchor)
 		})

@@ -31,10 +31,10 @@ const HEM = 0.07
 const HEM_LAYERS = 3
 // Linjerna: en per steg i azimut. Steget väljs i hela fördubblingar, så att linjerna behåller
 // sina platser när man zoomar.
-// På ljust papper blir hårfina, täta linjer i halvtoner en suddig yta, så där är de färre och
-// tydligare: [mörkt, ljust].
-const LINE_SPACING = [1.5, 3]
-const LINE_WIDTH = [0.28, 0.6]
+// Lika täta på båda papperen; på ljust papper något kraftigare, eftersom inget sken ligger under:
+// [mörkt, ljust].
+const LINE_SPACING = [1.5, 1.5]
+const LINE_WIDTH = [0.28, 0.4]
 // Ridån som föremål i rummet, i km: fotens höjd över marken (norrskenets nedre kant), hur högt
 // den reser sig, hur långt bort den som mest ritas, och hur mycket den veckar sig i djupled som
 // andel av avståndet. Där den buktar mot betraktaren är den också högre.

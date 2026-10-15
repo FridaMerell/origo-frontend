@@ -1,6 +1,7 @@
 "use client"
 
 import { MODE_KEY, useDarkMode } from "./CaelusTheme"
+import { toggleFollowing, useCanFollow, useFollowing } from "./sky/compass"
 import { useStored } from "./use-stored"
 
 // Sparas i webbläsaren och läses av kartan, som lyfter fram solen, månen och planeterna
@@ -20,18 +21,23 @@ function useToggle(key: string, onByDefault: boolean) {
 }
 
 /**
- * Vad kartan visar: planetfokus, norrsken, moln och meteorregn, slagna av och på. Menyns egen
+ * Vad kartan visar: planetfokus, norrsken, moln och meteorregn, och om blicken följer telefonen,
+ * slagna av och på. Menyns egen
  * lista, med menyns rader; `item` är radernas klasser.
  */
 export default function LayerMenu({ item }: { item: string }) {
 	// Mörkt läge följer systemet tills det väljs; valet sparas som ljust eller mörkt.
 	const dark = useDarkMode()
 	const [, storeMode] = useStored(MODE_KEY)
+	// Att följa telefonen finns bara där en telefon kan hållas upp mot himlen.
+	const canFollow = useCanFollow()
+	const following = useFollowing()
 	const toggles = [
 		{ label: "Planetfokus", toggle: useToggle(PLANET_FOCUS_KEY, false) },
 		{ label: "Norrsken", toggle: useToggle(AURORA_FOCUS_KEY, false) },
 		{ label: "Moln", toggle: useToggle(CLOUDS_KEY, true) },
 		{ label: "Meteorregn", toggle: useToggle(METEORS_KEY, true) },
+		...(canFollow ? [{ label: "Följ telefonen", toggle: [following.on, toggleFollowing] as const }] : []),
 		{ label: "Mörkt läge", toggle: [dark, () => storeMode(dark ? "light" : "dark")] as const },
 	]
 

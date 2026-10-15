@@ -12,6 +12,7 @@ import InfoPanel, { type PanelInfo } from "./InfoPanel"
 import { SKY_CULTURES, SWEDISH_NAMES, type SkyCulture } from "./sky-cultures"
 import { bodyInfo, figureInfo, starInfo, type SelectedStar, type StarDetails } from "./sky-info"
 import { cloudCoverAt, describeCloudCover, fetchCloudCover, type CloudStep } from "./sky/clouds"
+import { onDeviceDirection, stopFollowing, useFollowing } from "./sky/compass"
 import { eventsAround, sameDay } from "./sky/events"
 import { createPainter, type Painter } from "./sky/painter"
 import { BODIES, buildScene } from "./sky/scene"
@@ -120,6 +121,17 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const setEventsOpen = (open: boolean) => storeEvents(open ? "open" : "closed")
 	const [locating, setLocating] = useState(false)
 	const [locationError, setLocationError] = useState<string | null>(null)
+	// Om blicken följer telefonen slås av och på i menyn; felet står under kartan.
+	const { error: followError } = useFollowing()
+
+	useEffect(() => {
+		const unsubscribe = onDeviceDirection(direction => painterRef.current?.follow(direction))
+		// Givarna släpps när kartan lämnas.
+		return () => {
+			unsubscribe()
+			stopFollowing()
+		}
+	}, [])
 
 	useEffect(() => {
 		const painter = createPainter(canvasRef.current!, wrapperRef.current!, (turned, turning) => {
@@ -466,6 +478,11 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 				{locationError && (
 					<span role='alert' className='text-xs'>
 						{locationError}
+					</span>
+				)}
+				{followError && (
+					<span role='alert' className='text-xs'>
+						{followError}
 					</span>
 				)}
 			</TimeControls>

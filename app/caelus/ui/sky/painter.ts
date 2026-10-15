@@ -1,6 +1,7 @@
 import { select } from "d3-selection"
 import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomTransform } from "d3-zoom"
 import { auroraAt } from "./aurora"
+import type { Direction } from "./compass"
 import { auroraMoving } from "./layers/aurora"
 import { meteorsWait } from "./layers/meteors"
 import { pickBody, pickFigure, pickStar } from "./pick"
@@ -98,6 +99,10 @@ export function createPainter(
 	let full = true
 	// Om handen panorerar, zoomar eller vrider kalenderskivan just nu.
 	let interacting = false
+	// Om blicken följer telefonen. Då styr telefonen riktningen och handen bara zoomen.
+	let following = false
+	// Tills telefonen legat still en stund ritas kartan glesare, som när handen rör den.
+	let settle = 0
 
 	function redraw() {
 		full = true
@@ -226,7 +231,7 @@ export function createPainter(
 			placed = true
 			view.altitude = lowestAltitude(width, height, view.zoom, true)
 		}
-		view.altitude = Math.max(view.altitude, lowestAltitude(width, height, view.zoom))
+		if (!following) view.altitude = Math.max(view.altitude, lowestAltitude(width, height, view.zoom))
 		redraw()
 	})
 	observer.observe(wrapper)
@@ -345,14 +350,16 @@ export function createPainter(
 			// fingrarna står still, men här skulle den förflyttningen bli en vriden himmel.
 			const source = event.sourceEvent as Event | null
 			const pinching = source !== null && "touches" in source && (source as TouchEvent).touches.length > 1
-			if (source?.type !== "wheel" && !pinching) {
+			if (source?.type !== "wheel" && !pinching && !following) {
 				const degrees = degreesPerPixel(width, height, transform.k)
 				hand = (hand - (transform.x - last.x) * degrees + 360) % 360
 				view.azimuth = magnetic(hand)
 				view.altitude += (transform.y - last.y) * degrees
 			}
 			view.zoom = transform.k
-			view.altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), view.altitude))
+			if (!following) {
+				view.altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), view.altitude))
+			}
 			last = transform
 			redraw()
 		})
@@ -427,6 +434,35 @@ export function createPainter(
 			clouds = on
 			redraw()
 		},
+		/**
+		 * Blicken följer telefonen: dit den pekar, också under horisonten. Med null släpper den,
+		 * och handen tar över där telefonen pekade.
+		 */
+		follow(direction: Direction | null) {
+			if (direction === null) {
+				if (!following) return
+				following = false
+				window.clearTimeout(settle)
+				interacting = false
+				hand = view.azimuth
+				view.altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), view.altitude))
+				redraw()
+				return
+			}
+			following = true
+			// Små darrningar ritas inte om.
+			const turned = Math.abs(((direction.azimuth - view.azimuth + 540) % 360) - 180)
+			if (turned < 0.05 && Math.abs(direction.altitude - view.altitude) < 0.05) return
+			view.azimuth = direction.azimuth
+			view.altitude = direction.altitude
+			interacting = true
+			window.clearTimeout(settle)
+			settle = window.setTimeout(() => {
+				interacting = false
+				redraw()
+			}, 250)
+			redraw()
+		},
 		/** Visar eller döljer meteorregnen. */
 		setMeteors(on: boolean) {
 			if (meteors === on) return
@@ -466,6 +502,7 @@ export function createPainter(
 			canvas.removeEventListener("pointercancel", onPointerEnd)
 			cancelAnimationFrame(frame)
 			window.clearTimeout(motion)
+			window.clearTimeout(settle)
 		},
 	}
 }

@@ -12,6 +12,7 @@ import origoIcon from "../icon.png"
 import caelusIcon from "../caelus/icon.png"
 import {
 	ApsisDrawing,
+	CaelusDrawing,
 	FluxDrawing,
 	OpusDrawing,
 	TempusDrawing,
@@ -89,10 +90,11 @@ const SECTIONS: Section[] = [
 		icon: caelusIcon,
 		kind: "Himlakroppar, stjärntecken m.m",
 		paragraphs: [
-			"Fokus i Caelus är himlen, eftersom det är så ont om roliga fjärilar eller fåglar vintertid. Caelus är under utveckling, men hittills finns det stöd för stjärntecken med kalender, plats, och tidpunkt, i ett gäng olika kulturer",
-      "Utöver det finns det information om KP-index och molnighet så man vet om det är värt att titta ut.\nI pipen finns planer på att skicka notiser så man för en gångs skull kan se den orangea månen eller vad det nu är, meteorskurar, kometer och annat skoj."
+			"Fokus i Caelus är himlen, eftersom det är så ont om roliga fjärilar eller fåglar vintertid.",
+      "Det finns stöd för det man väntar sig. Kartor, stjärntecken, meteorskurar, norrsken, och när månen påstås göra något udda, även om det brukar vara båg.",
+			"Sen finns det litebonusfunktioner, som att vinkla telefonen och se det \"live\", att se vilket molntecke som väntas (så man slipper kolla ut i onödan), och olika stjärnhimmelkulturer."
 		],
-		drawing: <OrionChart />,
+		drawing: <CaelusDrawing />,
 	},
 ]
 

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react"
 import { loadChecklistRegisterPage } from "@/app/tempus/_actions/checklists"
-import { loadSpeciesDetail, type SpeciesDetail } from "@/app/tempus/_actions/species"
+import { loadSpeciesDetail, loadSpeciesItems, type SpeciesDetail } from "@/app/tempus/_actions/species"
 import type { TempusChecklistRegisterRow, TempusSpecies } from "@/app/lib/dal"
 import QuickObservation from "@/app/tempus/observationer/quick-observation"
 import { ChecklistSearchHeader } from "./checklist-search-header"
@@ -69,9 +69,9 @@ export default function ChecklistRegister({
   const [hasPrevious, setHasPrevious] = useState(initialHasPrevious)
   const [hasNext, setHasNext] = useState(initialHasNext)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [preset, setPreset] = useState<{ id: string; label: string; scientific: string; checklistItemId: string } | null>(
-    null,
-  )
+  const [preset, setPreset] = useState<
+    { id: string; label: string; scientific: string; stages: string[]; checklistItemId: string } | null
+  >(null)
   const [selectedRow, setSelectedRow] = useState<RegisterRow | null>(null)
   const [selectedData, setSelectedData] = useState<SpeciesDetail | null>(null)
   const [loadingCard, setLoadingCard] = useState(false)
@@ -162,14 +162,20 @@ export default function ChecklistRegister({
       .finally(() => setLoadingCard(false))
   }
 
+  // Checklistraden saknar artens livsstadier, så arten hämtas innan dialogen öppnas –
+  // samma uppgifter som när arten söks fram i dialogen.
   const checkRow = (row: RegisterRow) => {
     if (!row.species) return
-    setPreset({
-      id: row.species,
-      label: row.commonName,
-      scientific: row.scientificName ?? "",
-      checklistItemId: row.id,
-    })
+    void loadSpeciesItems([row.species])
+      .then((items) => items[0]?.stages ?? [])
+      .catch(() => [])
+      .then((stages) => setPreset({
+        id: row.species,
+        label: row.commonName,
+        scientific: row.scientificName ?? "",
+        stages,
+        checklistItemId: row.id,
+      }))
   }
 
   return (

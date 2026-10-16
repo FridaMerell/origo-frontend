@@ -188,7 +188,6 @@ export default function BirdnetLiveFeed({ devices }: { devices: BirdnetDevice[] 
     <section>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">BirdNET · ström</p>
           <h2 className="mt-1 font-display text-xl font-semibold">Liveflöde</h2>
         </div>
         <span
@@ -207,14 +206,14 @@ export default function BirdnetLiveFeed({ devices }: { devices: BirdnetDevice[] 
         <Card className="border-dashed px-6 py-10 text-center">
           <p className="font-display text-lg font-semibold">Ingen aktiv enhet</p>
           <p className="mt-2 text-sm text-text-muted">
-            Aktivera minst en BirdNET-enhet nedan för att ta emot detektioner.
+            Aktivera minst en BirdNET-enhet nedan för att ta emot kvitter.
           </p>
         </Card>
       ) : detections.length === 0 ? (
         <Card className="border-dashed px-6 py-10 text-center">
           <p className="font-display text-lg font-semibold">Väntar på fåglar</p>
           <p className="mt-2 text-sm text-text-muted">
-            Inga detektioner de senaste 24 timmarna. Nya dyker upp här automatiskt.
+            Inga fåglar har hörts senaste 24 timmarna. När nästa hörs dyker den upp här utan att du behöver göra något
           </p>
         </Card>
       ) : (

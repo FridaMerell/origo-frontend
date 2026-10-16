@@ -117,25 +117,6 @@ export default function BirdnetDeviceManager({
 
   return (
     <div className="mx-auto flex container flex-col gap-8   py-6   sm:py-10">
-      <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
-        <div className="flex flex-col gap-2">
-          <p className="font-mono text-[10px] uppercase tracking-[.16em] text-accent">BirdNET</p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-text sm:text-4xl">
-            Lyssningsenheter
-          </h1>
-          <p className="max-w-xl text-sm leading-relaxed text-text-muted">
-            Registrera enheter och styr vilka användare och hus de hör till.
-          </p>
-        </div>
-        <Card className="shrink-0 px-5 py-4">
-          <span className="font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">Enhetsstatus</span>
-          <strong className="mt-1 block font-display text-4xl font-semibold text-accent">
-            {activeCount} <span className="text-2xl text-text-faint">/ {devices.length}</span>
-          </strong>
-          <span className="text-sm text-text-muted">aktiva enheter</span>
-        </Card>
-      </header>
-
       {loadError ? (
         <Card className="border-l-4 border-l-danger px-5 py-4">
           <p className="font-mono text-[10px] uppercase tracking-[.16em] text-danger">Kunde inte läsa enheter</p>
@@ -146,7 +127,6 @@ export default function BirdnetDeviceManager({
       <section>
         <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[.16em] text-text-faint">BirdNET · konfiguration</p>
             <h2 className="mt-1 font-display text-xl font-semibold">Registrerade enheter</h2>
           </div>
           <button
@@ -160,13 +140,11 @@ export default function BirdnetDeviceManager({
         </div>
 
         {editor ? (
-          <Card className="mb-4 overflow-hidden border-t-4 border-t-accent p-0">
+          <Card className="mb-4 overflow-hidden rounded-none p-0">
             <form onSubmit={submit}>
               <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[.16em] text-accent">
-                    {editor.id ? "Befintlig enhet" : "Ny enhet"}
-                  </p>
+                 
                   <h3 className="mt-1 font-display text-xl font-semibold">
                     {editor.id ? editor.name : "Registrera BirdNET-enhet"}
                   </h3>

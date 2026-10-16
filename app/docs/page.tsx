@@ -5,7 +5,7 @@ import { DocShell } from "./doc-shell"
 export const metadata: Metadata = {
   title: "Dokumentation — Origo",
   description:
-    "Översikt över Origos appar och dess externa API med token-autentisering.",
+    "Översikt över Origos appar och deras externa API med token-autentisering.",
 }
 
 const DOC = `# Dokumentation
@@ -19,15 +19,19 @@ gemensam cookie-domän.
 - **Verso** – fastighetsnav för besök, projekt, ekonomi och dokument.
 - **Flux** – projekt, milstolpar, uppgifter, uppdateringar och dokument.
 - **Tempus** – arter, observationer, krysslistor, rutter och BirdNET-detektioner.
+- **Opus** – böcker med parallella utgåvor, anteckningar, ordlistor och glosförhör.
 - **Apsis** – en bildsamling av kyrkoabsider.
+- **Caelus** – stjärnkartor, stjärntecken, meteorskurar och norrsken.
 
 ## API-referens
 
 API-referensen beskriver de resurser som just nu finns publicerade för extern
 användning:
 
-- [**Tempus API**](/docs/tempus) – arter, checklistor och observationer.
-- [**Flux API**](/docs/flux) – projekt.
+- [**Tempus API**](/docs/tempus) – observationer, arter, checklistor, rutter,
+  platser och områden samt BirdNET.
+- [**Flux API**](/docs/flux) – projekt, milstolpar, uppgifter, uppdateringar,
+  dokument, modell och kodgenerering.
 
 ---
 

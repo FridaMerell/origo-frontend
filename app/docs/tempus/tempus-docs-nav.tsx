@@ -4,6 +4,9 @@ const items = [
   { href: "/docs/tempus", label: "Observationer" },
   { href: "/docs/tempus/arter", label: "Arter" },
   { href: "/docs/tempus/checklistor", label: "Checklistor" },
+  { href: "/docs/tempus/rutter", label: "Rutter" },
+  { href: "/docs/tempus/platser", label: "Platser och områden" },
+  { href: "/docs/tempus/birdnet", label: "BirdNET" },
 ]
 
 export function TempusDocsNav({ current }: { current: string }) {

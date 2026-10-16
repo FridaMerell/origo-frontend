@@ -6,7 +6,7 @@ import { TempusDocsNav } from "./tempus-docs-nav"
 export const metadata: Metadata = {
   title: "Tempus API — Origo-dokumentation",
   description:
-    "Externt API för Tempus: arter, checklistor och observationer. Kodexempel i http och C#, med token-autentisering.",
+    "Externt API för Tempus: observationer, arter och checklistor. Kodexempel i http och C#, med token-autentisering.",
 }
 
 const DOC = `# Tempus API
@@ -74,8 +74,10 @@ direkt.
 | \`checklist_items\` | string[] (uuid) | Krysslistrader observationen uppfyller |
 | \`checklist_names\` | string[] | Namn på berörda krysslistor (läses ut) |
 | \`observed_at\` | string (ISO 8601) | Tidpunkt. **Krävs** vid skapande |
-| \`location\` | GeoJSON Point \| \`{}\` | Position, eller tomt objekt |
-| \`count\` | number \| null | Antal individer (heltal ≥ 1) eller \`null\` |
+| \`location\` | GeoJSON Point \\| \`{}\` | Position, eller tomt objekt |
+| \`count\` | number \\| null | Antal individer (heltal ≥ 1) eller \`null\` |
+| \`life_stage\` | string | Livsstadium, helst ett av artens \`stages\` men fritext går också. Tom sträng om inget angetts |
+| \`locale\` | number \\| null | Id för platsen observationen hör till, eller \`null\` |
 | \`notes\` | string | Fritext |
 | \`created_at\` | string (ISO 8601) | Sätts av servern |
 
@@ -85,7 +87,9 @@ direkt.
 | --- | --- |
 | \`?species=<art-uuid>\` | Bara observationer av den arten |
 | \`?checklist_items=<uuid>\` | Bara observationer kopplade till den raden |
-| \`?page=<n>\` | Sidnummer |
+| \`?checklist=<checklista-uuid>\` | Bara observationer kopplade till den checklistan |
+| \`?ordering=-observed_at\` | Senaste först |
+| \`?page=<n>\`, \`?page_size=<n>\` | Paginering, högst 100 per sida |
 
 ### Lista observationer
 
@@ -112,9 +116,11 @@ Accept: application/json
       },
       "checklist_items": ["checklistpunkt-uuid"],
       "checklist_names": [],
+      "locale": null,
       "observed_at": "2026-05-01T06:30:00Z",
       "location": { "type": "Point", "coordinates": [18.0686, 59.3293] },
       "count": 3,
+      "life_stage": "",
       "notes": "Sjungande i alkärret",
       "created_at": "2026-05-01T07:12:44Z"
     }
@@ -135,6 +141,7 @@ Content-Type: application/json
   "observed_at": "2026-05-01T06:30:00Z",
   "location": { "type": "Point", "coordinates": [18.0686, 59.3293] },
   "count": 3,
+  "life_stage": "",
   "notes": "Sjungande i alkärret",
   "checklist_items": ["checklistpunkt-uuid"]
 }
@@ -156,15 +163,59 @@ Servern svarar \`201 Created\` med den skapade observationen. Fältet
   },
   "checklist_items": ["checklistpunkt-uuid"],
   "checklist_names": ["Stenmovägen"],
+  "locale": null,
   "observed_at": "2026-05-01T06:30:00Z",
   "location": { "type": "Point", "coordinates": [18.0686, 59.3293] },
   "count": 3,
+  "life_stage": "",
   "notes": "Sjungande i alkärret",
   "created_at": "2026-05-01T07:12:44Z"
 }
 \`\`\`
 
-### C#
+### Ändra och ta bort
+
+\`PATCH /api/tempus/observations/<id>/\` ändrar bara fälten du skickar.
+\`DELETE /api/tempus/observations/<id>/\` tar bort observationen.
+
+## Allas observationer
+
+\`GET /api/tempus/all-observations/\` listar observationer från alla
+användare, senaste först. Varje post har samma fält som ovan utom
+\`checklist_items\`, \`checklist_names\` och \`locale\`, och har i stället
+\`username\`, \`first_name\` och \`last_name\`. Läs en enskild med
+\`/api/tempus/all-observations/<id>/\`.
+
+## Observationer per kategori
+
+\`GET /api/tempus/observations/by-category/?locale=<plats-id>\` grupperar
+observationerna på en plats per artkategori:
+
+\`\`\`json
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [{
+    "category": {
+      "id": "kategori-uuid",
+      "label": "Fåglar",
+      "taxon_id": 2,
+      "image_url": null,
+      "is_primary": true
+    },
+    "obs_count": 12
+  }]
+}
+\`\`\`
+
+\`GET /api/tempus/observations/by-category/<kategori-uuid>/?locale=<plats-id>\`
+listar observationerna i en kategori. Svaret är paginerat och har även
+\`category\` och \`obs_count\` på toppnivå.
+
+---
+
+## C#
 
 \`\`\`csharp
 using System.Net.Http.Headers;
@@ -219,6 +270,7 @@ record Observation(
     [property: JsonPropertyName("species_detail")] SpeciesDetail SpeciesDetail,
     [property: JsonPropertyName("observed_at")] DateTimeOffset ObservedAt,
     [property: JsonPropertyName("count")] int? Count,
+    [property: JsonPropertyName("life_stage")] string LifeStage,
     [property: JsonPropertyName("notes")] string Notes);
 
 record SpeciesDetail(

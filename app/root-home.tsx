@@ -195,12 +195,12 @@ export default function RootHome() {
                 0,0
               </span>
               <p className='font-mono text-[11px] uppercase tracking-[0.18em] text-[#58636A]'>
-                Projektens rotnod och nollpunkt
+                Rotnoden för projektet
               </p>
               <h1 className='mt-3 text-5xl font-medium tracking-[-0.06em] sm:text-7xl'>
-                Ett inlogg.
-                <br />
-                Mycket dumt.
+                NOLL
+                <br/>
+                KOMMA NOLL
               </h1>
             </div>
             {!user && (

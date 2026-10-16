@@ -23,6 +23,7 @@
 --tracking-tight:0;--tracking-normal:.01em;--tracking-wide:.06em;
 }
 [data-theme="origo"]{
+--font-display:var(--font-geist-sans),'Geist',system-ui,sans-serif;--font-body:var(--font-geist-sans),'Geist',system-ui,sans-serif;
 --font-mono:'Geist Mono','Geist Mono Fallback',monospace;
 }
 [data-theme="opus"]{

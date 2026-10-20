@@ -1,5 +1,4 @@
 import Image from "next/image"
-import icon from "./icon.png"
 import logoLight from "./light.png"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -48,14 +47,19 @@ const TABS = [
 		label:'Fortsätt'
 	}
 ]
-export default function ({ mode, onToggleMode }: TopBarProps) {
+export default function TopBar({ mode, onToggleMode }: TopBarProps) {
 	const pathname = usePathname()
 	const user = useUser()
 	// Mobil: flikarna ryms inte i fältet och ligger i en sidopanel från höger.
 	const [menuOpen, setMenuOpen] = useState(false)
 	const closeRef = useRef<HTMLButtonElement>(null)
 
-	useEffect(() => setMenuOpen(false), [pathname])
+	// Navigating closes the menu.
+	const [menuPath, setMenuPath] = useState(pathname)
+	if (menuPath !== pathname) {
+		setMenuPath(pathname)
+		setMenuOpen(false)
+	}
 
 	useEffect(() => {
 		if (!menuOpen) return

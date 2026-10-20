@@ -106,8 +106,8 @@ export function DesktopNav({
   onOpenSpeciesSearch: () => void
 }) {
   const router = useRouter()
-  const more = useDismissableOpen<HTMLDivElement>()
-  const actions = useDismissableOpen<HTMLDivElement>()
+  const { open: moreOpen, setOpen: setMoreOpen, ref: moreRef } = useDismissableOpen<HTMLDivElement>()
+  const { open: actionsOpen, setOpen: setActionsOpen, ref: actionsRef } = useDismissableOpen<HTMLDivElement>()
 
   const handleLogout = async () => {
     await logout()
@@ -150,21 +150,21 @@ export function DesktopNav({
               </Link>
             )
           })}
-          <div ref={more.ref} className="relative">
+          <div ref={moreRef} className="relative">
             <button
               type="button"
-              aria-expanded={more.open}
+              aria-expanded={moreOpen}
               aria-controls="tempus-more-menu"
-              onClick={() => more.setOpen((current) => !current)}
-              className={`flex h-18 items-center gap-1 font-display text-[17px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-focus-ring ${more.open
+              onClick={() => setMoreOpen((current) => !current)}
+              className={`flex h-18 items-center gap-1 font-display text-[17px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-focus-ring ${moreOpen
                 ? "text-text"
                 : "text-text-muted hover:text-text"
                 }`}
             >
               Mer
-              <ChevronDown size={14} className={`transition-transform ${more.open ? "rotate-180" : ""}`} />
+              <ChevronDown size={14} className={`transition-transform ${moreOpen ? "rotate-180" : ""}`} />
             </button>
-            {more.open ? (
+            {moreOpen ? (
               <div
                 id="tempus-more-menu"
                 className="absolute left-0 top-full z-50 min-w-44 rounded-md border border-border bg-surface p-1 shadow-lg transition-[opacity,translate] duration-150 ease-(--ease-standard) starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
@@ -176,7 +176,7 @@ export function DesktopNav({
                       key={link.href}
                       href={link.href}
                       aria-current={active ? "page" : undefined}
-                      onClick={() => more.setOpen(false)}
+                      onClick={() => setMoreOpen(false)}
                       className={`group flex min-h-10 items-center gap-2 px-3 font-display text-[17px] no-underline transition-colors focus-visible:outline-2 focus-visible:outline-focus-ring ${active
                         ? "font-semibold text-text"
                         : "font-medium text-text hover:text-text"
@@ -232,19 +232,19 @@ export function DesktopNav({
           >
             {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <div ref={actions.ref} className="relative hidden border-l border-border pl-1 sm:block">
+          <div ref={actionsRef} className="relative hidden border-l border-border pl-1 sm:block">
             <button
               type="button"
-              aria-expanded={actions.open}
+              aria-expanded={actionsOpen}
               aria-controls="tempus-actions-menu"
               aria-label="Öppna konto och inställningar"
               title="Konto och inställningar"
-              onClick={() => actions.setOpen((current) => !current)}
+              onClick={() => setActionsOpen((current) => !current)}
               className="flex size-10 items-center justify-center text-text-muted transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             >
               <Settings size={18} />
             </button>
-            {actions.open ? (
+            {actionsOpen ? (
               <div
                 id="tempus-actions-menu"
                 className="absolute right-0 top-full z-50 mt-1 min-w-56 rounded-md border border-border bg-surface p-1 shadow-lg transition-[opacity,translate] duration-150 ease-(--ease-standard) starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
@@ -260,7 +260,7 @@ export function DesktopNav({
                   type="button"
                   onClick={() => {
                     onToggleMode()
-                    actions.setOpen(false)
+                    setActionsOpen(false)
                   }}
                   className={MENU_ITEM_CLASS}
                 >

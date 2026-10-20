@@ -8,16 +8,18 @@ export function useDismissableOpen<T extends HTMLElement>(options?: {
 }) {
   const [openState, setOpenState] = useState(false)
   const open = options?.open ?? openState
+  const onOpenChange = options?.onOpenChange
+  const onDismiss = options?.onDismiss
   const ref = useRef<T>(null)
   const setOpen = useCallback((next: boolean | ((current: boolean) => boolean)) => {
     const nextOpen = typeof next === "function" ? next(open) : next
     setOpenState(nextOpen)
-    options?.onOpenChange?.(nextOpen)
-  }, [open, options?.onOpenChange])
+    onOpenChange?.(nextOpen)
+  }, [open, onOpenChange])
 
   useEffect(() => {
     if (!open) return
-    const dismiss = options?.onDismiss ?? (() => setOpen(false))
+    const dismiss = onDismiss ?? (() => setOpen(false))
     const onClickOutside = (event: MouseEvent) => {
       if (!ref.current?.contains(event.target as Node)) dismiss()
     }
@@ -30,7 +32,7 @@ export function useDismissableOpen<T extends HTMLElement>(options?: {
       document.removeEventListener("mousedown", onClickOutside)
       document.removeEventListener("keydown", onKeyDown)
     }
-  }, [open, options?.onDismiss, setOpen])
+  }, [open, onDismiss, setOpen])
 
   return { open, setOpen, ref }
 }

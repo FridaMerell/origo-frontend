@@ -8,15 +8,14 @@ import type { RasterAssetKind } from "@/app/tempus/ui/geo-map-canvas/raster-asse
 export const ORIGO_TEXTURE_KINDS = ["agriculture", "coniferous-forest", "deciduous-forest", "mixed-forest", "grass", "wetland", "open", "alvar", "mountains", "water", "general"] as const
 export type OrigoTextureKind = typeof ORIGO_TEXTURE_KINDS[number]
 
-// Typed loosely (not against MapLibre's own expression types) since
-// `Record<string, unknown>` is enough to keep `any` out of ORIGO_KIND_FILL
-// below without modelling the full style-spec grammar.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const WATER_FILL_COLOR = "#c3d3d2"
 export const WATER_LINE_COLOR = "#5b8388"
 
-const FOREST_FILL_COLOR_EXPRESSION: any =["interpolate", ["linear"], ["zoom"], 6, "#d5d9bd", 12, "#e0e3c9", 16, "#e8e8d5"]
+const FOREST_FILL_COLOR_EXPRESSION = ["interpolate", ["linear"], ["zoom"], 6, "#d5d9bd", 12, "#e0e3c9", 16, "#e8e8d5"]
 
+// Typed loosely (not against MapLibre's own expression types) since
+// `Record<string, unknown>` is enough to keep `any` out of ORIGO_KIND_FILL
+// without modelling the full style-spec grammar.
 export const ORIGO_KIND_FILL: Partial<Record<OrigoTextureKind, Record<string, unknown>>> = {
   agriculture: { "fill-color": ["interpolate", ["linear"], ["zoom"], 11, "#eee8c8", 14, "#f2ead0"], "fill-opacity": .72 },
   "coniferous-forest": { "fill-color": FOREST_FILL_COLOR_EXPRESSION, "fill-opacity": .9 },

@@ -1,7 +1,7 @@
 "use client";
 
 import { AppLink as Link } from "@/app/components/ui/AppLink";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { Menu, MoonIcon, SunIcon } from "lucide-react";
 import { NotificationBell } from "@/app/components/ui/NotificationBell";
@@ -25,6 +25,7 @@ const TABS = [
 function MobileMenu({ mode, onToggleMode }: TopBarProps) {
   const close = useDrawerClose();
   const pathname = usePathname();
+  const router = useRouter();
   const user = useUser();
   const name = user ? formatUserName(user) : null;
 
@@ -67,7 +68,7 @@ function MobileMenu({ mode, onToggleMode }: TopBarProps) {
           variant="secondary"
           onClick={async () => {
             await logout();
-            window.location.href = "/login";
+            router.replace("/login");
           }}
         >
           Logga ut
@@ -75,9 +76,7 @@ function MobileMenu({ mode, onToggleMode }: TopBarProps) {
       ) : (
         <Button
           variant="secondary"
-          onClick={() => {
-            window.location.href = "/login";
-          }}
+          onClick={() => router.push("/login")}
         >
           Logga in
         </Button>
@@ -88,6 +87,7 @@ function MobileMenu({ mode, onToggleMode }: TopBarProps) {
 
 export default function TopBar({ mode, onToggleMode }: TopBarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const user = useUser();
   const name = user ? formatUserName(user) : null;
 
@@ -142,8 +142,12 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
           type="button"
           className="cursor-pointer whitespace-nowrap font-semibold text-text underline underline-offset-4 hover:text-accent"
           onClick={async () => {
-            if (user) await logout();
-            window.location.href = "/login";
+            if (user) {
+              await logout();
+              router.replace("/login");
+            } else {
+              router.push("/login");
+            }
           }}
         >
           {user ? "Logga ut" : "Logga in"}

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { speciesName } from "@/app/tempus/_state/tempus-context"
 import type { TempusSpecies } from "@/app/lib/dal"
 import { X } from "lucide-react"
+import { ObservationPhotoPicker, type PhotoMetadata } from "./observation-photos"
 
 export type ObservationRow = {
   key: string
@@ -11,6 +12,7 @@ export type ObservationRow = {
   count: string
   lifeStage: string
   notes: string
+  photos: File[]
 }
 
 export function ObservationRowList({
@@ -19,12 +21,16 @@ export function ObservationRowList({
   rowErrors,
   onUpdateRow,
   onRemoveRow,
+  onPhotoMetadata,
+  onPhotoError,
 }: {
   rows: ObservationRow[]
   selectedSpecies: Map<string, TempusSpecies>
   rowErrors: Record<string, string>
   onUpdateRow: (key: string, patch: Partial<ObservationRow>) => void
   onRemoveRow: (key: string) => void
+  onPhotoMetadata: (metadata: PhotoMetadata) => void
+  onPhotoError: (message: string) => void
 }) {
   const [customLifeStageRows, setCustomLifeStageRows] = useState<Set<string>>(() => new Set())
   const customLifeStageInputs = useRef(new Map<string, HTMLInputElement>())
@@ -80,7 +86,7 @@ export function ObservationRowList({
             const usesCustomLifeStage = customLifeStageRows.has(row.key) || Boolean(row.lifeStage && !stages.includes(row.lifeStage))
             return (
               <li key={row.key} className="grid grid-cols-[2rem_minmax(0,1fr)_2.5rem] border-b border-border font-display sm:grid-cols-[2.25rem_minmax(0,1.5fr)_6rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem]">
-                <span className="row-span-4 flex justify-end border-r border-border px-2 py-2 text-[10px] italic text-text-faint sm:row-span-1">
+                <span className="row-span-5 flex justify-end border-r border-border px-2 py-2 text-[10px] italic text-text-faint sm:row-span-2">
                   {index + 1}
                 </span>
                 <span className="min-w-0 border-r border-border px-3 py-1.5">
@@ -182,6 +188,14 @@ export function ObservationRowList({
                 >
                   <X size={14} />
                 </button>
+                <ObservationPhotoPicker
+                  files={row.photos}
+                  onChange={(photos) => onUpdateRow(row.key, { photos })}
+                  onMetadata={onPhotoMetadata}
+                  onError={onPhotoError}
+                  compact
+                  className="col-start-2 col-end-4 row-start-5 border-r border-t border-border px-3 py-1.5 sm:col-start-2 sm:col-end-7 sm:row-start-2"
+                />
                 {rowErrors[row.key] ? (
                   <p className="col-start-2 col-end-4 border-r border-t border-border px-3 py-1 text-[10px] text-danger sm:col-start-2 sm:col-end-7">
                     {rowErrors[row.key]}

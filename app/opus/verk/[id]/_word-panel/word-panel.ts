@@ -9,10 +9,10 @@ import type {
 	ReadingEntry,
 	ReadingGloss,
 } from "@/app/lib/dal/opus"
-import { createAnnotation, updateAnnotation } from "../../_actions/annotation-actions"
-import { createLexicalEntry, setEntryGlossaries, updateLexicalEntry } from "../../_actions/lexical-entry-actions"
-import { createLexicalForm, updateLexicalForm } from "../../_actions/lexical-form-actions"
-import { emptyGrammar, grammarOf, parseSynonyms, parseTags, sameWord, synonymText } from "../../ordlistor/lexical-forms"
+import { createAnnotation, updateAnnotation } from "../../../_actions/annotation-actions"
+import { createLexicalEntry, setEntryGlossaries, updateLexicalEntry } from "../../../_actions/lexical-entry-actions"
+import { createLexicalForm, updateLexicalForm } from "../../../_actions/lexical-form-actions"
+import { emptyGrammar, grammarOf, parseSynonyms, parseTags, sameWord, synonymText } from "../../../ordlistor/lexical-forms"
 
 /** Det ordpanelen öppnas för: en ny markering, en befintlig annotation eller ett känt ord i texten. */
 export type PanelTarget = {

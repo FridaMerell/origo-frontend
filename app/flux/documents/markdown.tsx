@@ -18,7 +18,10 @@ const markdownComponents = {
     if (lang && DIAGRAM_LANGS.has(lang)) return <>{children}</>
     return <pre {...props}>{children}</pre>
   },
-  code({ node: _node, className, children, ...props }: ComponentPropsWithoutRef<"code"> & { node?: unknown }) {
+  code({ className, children, ...rest }: ComponentPropsWithoutRef<"code"> & { node?: unknown }) {
+    // react-markdown passes its syntax-tree node along; it is not a DOM attribute.
+    const props = { ...rest }
+    delete props.node
     const language = /language-(\w+)/.exec(className ?? "")?.[1]
     const value = String(children).replace(/\n$/, "")
 

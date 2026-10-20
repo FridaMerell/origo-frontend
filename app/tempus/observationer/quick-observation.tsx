@@ -1,5 +1,5 @@
 import { Binoculars, Check, Loader2, Plus, X } from "lucide-react"
-import { useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition, type Ref } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
@@ -9,6 +9,7 @@ import { parseLatLon } from "@/app/tempus/formatters"
 import { PlacePicker } from "./quick-observation/place-picker"
 import { SpeciesPicker, type PresetChecklistItem, type PresetSpecies } from "./quick-observation/species-picker"
 import { LocaleField } from "@/app/tempus/locale-match"
+import { ObservationPhotoPicker, readPhotoMetadata, toDateTimeLocal, uploadObservationPhotos, type PhotoMetadata } from "./observation-photos"
 
 const INPUT_CLASS =
   "rounded border border-field-border bg-surface px-3 py-2.5 font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
@@ -123,17 +124,18 @@ function AddOptionalButton({ label, onClick }: { label: string; onClick: () => v
   )
 }
 
+/** Öppnar dialogen utifrån, med förvald art (och ev. checklistpost) och/eller bilder. */
+export type QuickObservationHandle = {
+  open: (preset: { species?: PresetSpecies; checklistItem?: PresetChecklistItem; photos?: File[] }) => void
+}
+
 export default function QuickObservation({
+  ref,
   hideTrigger = false,
-  species = null,
-  checklistItem = null,
-  onConsumed,
   onSaved,
 }: {
+  ref?: Ref<QuickObservationHandle>
   hideTrigger?: boolean
-  species?: PresetSpecies | null
-  checklistItem?: PresetChecklistItem | null
-  onConsumed?: () => void
   onSaved?: (checklistItemIds: string[], observationId?: string) => void
 } = {}) {
   const router = useRouter()
@@ -154,12 +156,14 @@ export default function QuickObservation({
   const [showPlace, setShowPlace] = useState(false)
   const [showComment, setShowComment] = useState(false)
   const [notes, setNotes] = useState("")
+  const [photos, setPhotos] = useState<File[]>([])
   const [keepCommentForNext, setKeepCommentForNext] = useState(false)
   const [checklistItems, setChecklistItems] = useState<PresetChecklistItem[]>([])
   const [selectedChecklistItemIds, setSelectedChecklistItemIds] = useState<string[]>([])
 
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
+  const [progress, setProgress] = useState<string | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const stages = useMemo(() => picked?.stages ?? [], [picked])
 
@@ -194,6 +198,7 @@ export default function QuickObservation({
     setQuery("")
     selectSpecies(null)
     setCount("1")
+    setPhotos([])
     setError(null)
     if (!keepComment) {
       setNotes("")
@@ -214,7 +219,7 @@ export default function QuickObservation({
     setShowPlace(false)
   }
 
-  const hasDraft = Boolean(query || picked || count !== "1" || lifeStage || lat || lon || notes || selectedChecklistItemIds.length > 0 || showTime || showPlace || showComment)
+  const hasDraft = Boolean(query || picked || count !== "1" || lifeStage || lat || lon || notes || photos.length > 0 || selectedChecklistItemIds.length > 0 || showTime || showPlace || showComment)
 
   const requestClose = () => {
     if (pending) return
@@ -253,22 +258,43 @@ export default function QuickObservation({
     return () => document.removeEventListener("keydown", onKey)
   })
 
-  const onConsumedRef = useRef(onConsumed)
-  useEffect(() => {
-    onConsumedRef.current = onConsumed
-  }, [onConsumed])
+  const applyPhotoMetadata = ({ takenAt, lat: photoLat, lon: photoLon }: PhotoMetadata) => {
+    if (takenAt) {
+      setObservedAt(toDateTimeLocal(takenAt))
+      setShowTime(true)
+    }
+    if (photoLat !== undefined && photoLon !== undefined) {
+      setLat(photoLat.toFixed(6))
+      setLon(photoLon.toFixed(6))
+      setShowPlace(true)
+    }
+  }
 
-  // Förvald art (och ev. checklistpost) utifrån: öppna dialogen direkt.
-  useEffect(() => {
-    if (!species) return
-    selectSpecies(species, checklistItem ? [checklistItem] : (species.checklistItems ?? []))
-    setQuery("")
-    setError(null)
-    setSaved(null)
-    setEntered(false)
-    setOpen(true)
-    onConsumedRef.current?.()
-  }, [species, checklistItem])
+  // Förvald art (och ev. checklistpost) och/eller bilder dragna in utifrån: öppna dialogen direkt.
+  // Bildernas tid och plats fylls i ur deras EXIF.
+  useImperativeHandle(ref, () => ({
+    open: ({ species, checklistItem, photos: presetPhotos }) => {
+      setError(null)
+      if (species) {
+        selectSpecies(species, checklistItem ? [checklistItem] : (species.checklistItems ?? []))
+        setQuery("")
+      }
+      if (presetPhotos) {
+        const images = presetPhotos.filter((file) => file.type.startsWith("image/"))
+        const skipped = presetPhotos.filter((file) => !file.type.startsWith("image/"))
+        setPhotos(images)
+        if (skipped.length > 0) {
+          setError(`Bara bilder kan läggas till. Hoppade över: ${skipped.map((file) => file.name).join(", ")}.`)
+        }
+        readPhotoMetadata(images)
+          .then(applyPhotoMetadata)
+          .catch(() => setError("Tid och position kunde inte läsas ur bilderna. Fyll i dem för hand."))
+      }
+      setSaved(null)
+      setEntered(false)
+      setOpen(true)
+    },
+  }))
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -303,26 +329,43 @@ export default function QuickObservation({
     const label = picked.label
 
     startTransition(async () => {
-      const result = await createObservation({
-        species: picked.id,
-        checklist_items: selectedChecklistItemIds,
-        observed_at: new Date(observedAt).toISOString(),
-        ...(location ? { location } : {}),
-        count: trimmed ? Number(trimmed) : null,
-        life_stage: lifeStage.trim(),
-        notes: notes.trim(),
-      })
+      setProgress("Sparar observationen…")
+      try {
+        const result = await createObservation({
+          species: picked.id,
+          checklist_items: selectedChecklistItemIds,
+          observed_at: new Date(observedAt).toISOString(),
+          ...(location ? { location } : {}),
+          count: trimmed ? Number(trimmed) : null,
+          life_stage: lifeStage.trim(),
+          notes: notes.trim(),
+        })
 
-      if (result.error) {
-        setError(result.error)
-        return
+        if (result.error) {
+          setError(result.error)
+          return
+        }
+
+        let photoError: string | null = null
+        if (photos.length > 0) {
+          photoError = result.observationId
+            ? await uploadObservationPhotos(result.observationId, [], photos, setProgress).catch(() => "Bilderna kunde inte laddas upp.")
+            : "Observationen sparades men dess id saknades i svaret, så bilderna kunde inte laddas upp."
+        }
+
+        router.refresh()
+        onSaved?.(selectedChecklistItemIds, result.observationId)
+        setSaved(`${label} sparad.`)
+        reset({ keepComment: keepCommentForNext })
+        if (photoError) {
+          setError(`${photoError} Observationen är sparad; lägg till bilderna från den.`)
+        }
+        focusSearch()
+      } catch {
+        setError("Observationen kunde inte sparas. Kontrollera anslutningen och försök igen.")
+      } finally {
+        setProgress(null)
       }
-
-      router.refresh()
-      onSaved?.(selectedChecklistItemIds, result.observationId)
-      setSaved(`${label} sparad.`)
-      reset({ keepComment: keepCommentForNext })
-      focusSearch()
     })
   }
 
@@ -513,6 +556,13 @@ export default function QuickObservation({
                   </div>
                 ) : null}
 
+                <ObservationPhotoPicker
+                  files={photos}
+                  onChange={setPhotos}
+                  onMetadata={applyPhotoMetadata}
+                  onError={setError}
+                />
+
                 {error ? (
                   <p className="rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">
                     {error}
@@ -521,7 +571,12 @@ export default function QuickObservation({
               </div>
 
               <div className="border-t border-border bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-                {saved ? (
+                {progress ? (
+                  <p className="mb-3 rounded bg-surface-2 px-3 py-2 text-sm text-text-muted" role="status">
+                    {progress}
+                  </p>
+                ) : null}
+                {!progress && saved ? (
                   <p className="mb-3 flex items-center gap-2 rounded bg-accent-wash px-3 py-2 text-sm text-accent" role="status">
                     <Check size={15} />
                     {saved} Lägg till nästa.

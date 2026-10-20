@@ -221,7 +221,7 @@ export function SwedenOutlineMapCanvas({ locale, points, selectedPoint, onMapCli
   // BACK just because a re-render briefly sees empty data (e.g. mid-zoom,
   // before the current fetch resolves) — that produced a visible flicker of
   // layers popping in and out.
-  const hasShownRealLandCover = useRef(false)
+  const [hasShownRealLandCover, setHasShownRealLandCover] = useState(false)
   const lastLayerFetchAt = useRef(0)
   const COUNTRY_SCALE_VISIBLE_KM = 100
   const viewportWidthKm = viewport
@@ -242,9 +242,8 @@ export function SwedenOutlineMapCanvas({ locale, points, selectedPoint, onMapCli
         (response) => { if (!controller.signal.aborted) { setBoundariesData({ type: "FeatureCollection", features: response.features }); setStatus(null) } },
         (error: unknown) => { if (!controller.signal.aborted) setStatus(errorMessage(error, "locale")) },
       )
-    } else {
-      setBoundariesData(null)
     }
+    // Below the boundaries' zoom the viewport effect below clears them.
     return () => controller.abort()
   }, [isCountryScale, localeGeometry, locale.id, showAdministrativeBoundaries, retry])
 
@@ -252,7 +251,7 @@ export function SwedenOutlineMapCanvas({ locale, points, selectedPoint, onMapCli
   const viewportExtendsBeyondLocale = !localeBounds || !viewport
     ? !localeBounds
     : viewport[2] - viewport[0] > (localeBounds[2] - localeBounds[0]) * 1.3 || viewport[3] - viewport[1] > (localeBounds[3] - localeBounds[1]) * 1.3
-  const overviewLandCover = outline.status === "ready" ? outline.overviewLandCover : []
+  const overviewLandCover = useMemo(() => outline.status === "ready" ? outline.overviewLandCover : [], [outline])
 
   useEffect(() => {
     if (!viewport) return
@@ -310,7 +309,7 @@ export function SwedenOutlineMapCanvas({ locale, points, selectedPoint, onMapCli
     }
     return [...groups.values()]
   }, [landCoverFeatures])
-  if (landCoverGroups.length > 0) hasShownRealLandCover.current = true
+  if (landCoverGroups.length > 0 && !hasShownRealLandCover) setHasShownRealLandCover(true)
   const overviewGroups = useMemo(() => {
     const groups = new Map<string, LandCoverClassification & { features: LandCoverMapFeature[] }>()
     for (const feature of overviewLandCover.filter((feature) => featureField(feature, "kind") === "land_cover")) {
@@ -376,7 +375,7 @@ export function SwedenOutlineMapCanvas({ locale, points, selectedPoint, onMapCli
     ...(outline.status !== "ready" || !isCountryScale ? [] : [{ id: "sweden-outline", features: [{ id: "sweden", geometry: outline.geometry }], fill: PALETTE.paperWarm, fillOpacity: 1, stroke: PALETTE.ink, strokeWidth: 1 }]),
     ...(outline.status !== "ready" || !isCountryScale ? [] : [{ id: "sweden-lakes", features: outline.lakes, fill: WATER_FILL, fillOpacity: 0.85, stroke: WATER_STROKE, strokeWidth: 0.75 }]),
     { id: "land-cover-lakes", features: geoFeatures(lakeFeatures), fill: WATER_FILL, fillOpacity: 0.85, stroke: WATER_STROKE, strokeWidth: 0.75 },
-    ...(isCountryScale || hasShownRealLandCover.current ? [] : overviewGroups.map(({ key, fill, features }) => {
+    ...(isCountryScale || hasShownRealLandCover ? [] : overviewGroups.map(({ key, fill, features }) => {
       return { id: `overview-fallback-${key}`, features: geoFeatures(features), fill, fillOpacity: 0.62, stroke: "none", strokeWidth: 0 }
     })),
     ...landCoverGroups.map(({ key, fill, stroke, features }) => {
@@ -390,8 +389,7 @@ export function SwedenOutlineMapCanvas({ locale, points, selectedPoint, onMapCli
       { id: "county", features: geoFeatures(administrativeFeatures.filter((feature) => featureField(feature, "kind") === "county")), stroke: "var(--accent)", strokeOpacity: 0.8, strokeWidth: 1.1 },
       { id: "administrative-other", features: geoFeatures(administrativeFeatures.filter((feature) => featureField(feature, "kind") !== "municipality" && featureField(feature, "kind") !== "county")), stroke: "var(--text-muted)", strokeWidth: 1 },
     ] : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [outline, isCountryScale, lakeFeatures, overviewGroups, landCoverGroups, wetlandGroups, showAdministrativeBoundaries, administrativeFeatures])
+  ], [outline, isCountryScale, lakeFeatures, hasShownRealLandCover, overviewGroups, landCoverGroups, wetlandGroups, showAdministrativeBoundaries, administrativeFeatures])
 
   return <div className="flex h-full min-h-0 flex-col">
     {effectiveInitialView ? <GeoMapCanvas

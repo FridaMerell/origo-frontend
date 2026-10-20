@@ -86,10 +86,18 @@ export function useBirdnetStream({
   const [connected, setConnected] = useState(false)
   const seen = useRef<Set<string>>(new Set())
 
-  useEffect(() => {
+  // Turning the stream off drops what it has received.
+  const [wasEnabled, setWasEnabled] = useState(enabled)
+  if (enabled !== wasEnabled) {
+    setWasEnabled(enabled)
     if (!enabled) {
       setDetections([])
       setConnected(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!enabled) {
       seen.current = new Set()
       return
     }

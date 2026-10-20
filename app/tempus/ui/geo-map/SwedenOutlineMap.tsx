@@ -276,9 +276,8 @@ export function SwedenOutlineMap({ locale, points, selectedPoint, onMapClick, on
         (response) => { if (!controller.signal.aborted) { setBoundariesData({ type: "FeatureCollection", features: response.features }); setStatus(null) } },
         (error: unknown) => { if (!controller.signal.aborted) setStatus(errorMessage(error, "locale")) },
       )
-    } else {
-      setBoundariesData(null)
     }
+    // Below the boundaries' zoom the viewport effect below clears them.
     return () => controller.abort()
   }, [isCountryScale, localeGeometry, locale.id, showAdministrativeBoundaries, retry])
 
@@ -290,7 +289,7 @@ export function SwedenOutlineMap({ locale, points, selectedPoint, onMapClick, on
   const viewportExtendsBeyondLocale = !localeBounds || !viewport
     ? !localeBounds
     : viewport[2] - viewport[0] > (localeBounds[2] - localeBounds[0]) * 1.3 || viewport[3] - viewport[1] > (localeBounds[3] - localeBounds[1]) * 1.3
-  const overviewLandCover = outline.status === "ready" ? outline.overviewLandCover : []
+  const overviewLandCover = useMemo(() => outline.status === "ready" ? outline.overviewLandCover : [], [outline])
 
   useEffect(() => {
     if (!viewport) return

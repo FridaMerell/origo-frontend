@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { SidebarContent, type SidebarProps } from "@/app/verso/sidebar"
 import Logo from "@/app/verso/ui/Logo"
@@ -11,10 +12,10 @@ export default function MobileNav({ mode, onToggleMode }: SidebarProps) {
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-surface px-3 py-2 md:hidden">
-      <a href="/" className="flex items-center font-display text-lg font-semibold text-accent">
+      <Link href="/" className="flex items-center font-display text-lg font-semibold text-accent">
         <Logo height={32} />
         <span className="ml-1">Verso</span>
-      </a>
+      </Link>
       <button
         type="button"
         aria-label="Öppna meny"

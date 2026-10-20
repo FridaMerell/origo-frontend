@@ -1,6 +1,6 @@
 import { ReactNode } from "react"
 
-export default function ({ children }: { children?: ReactNode }) {
+export default function Divider({ children }: { children?: ReactNode }) {
 	return (
 		<div className='mt-8 flex items-center text-text-muted'>
 			<div className='h-px flex-1 bg-foreground/20' />

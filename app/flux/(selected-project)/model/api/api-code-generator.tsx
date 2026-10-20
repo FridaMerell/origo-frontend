@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { FileCode2, LoaderCircle } from "lucide-react"
 import type { FluxApiOperation, FluxResource, FluxScaffold, FluxScaffoldTarget } from "@/app/lib/dal"
 import { useModelData, useScaffold } from "../model-data-provider"
@@ -53,7 +53,6 @@ export function ApiCodeGenerator({
   const data = useModelData()
   const [target, setTarget] = useState(initialTarget)
   const [file, setFile] = useState(initialFile)
-  const [showFullFile, setShowFullFile] = useState(!focusName)
   const requestFiles = focusFiles?.[target]
   const { scaffold, loading } = useScaffold(target, requestFiles)
   const files = scaffold ? (requestFiles ? scaffold.files : relevantFiles(target, scaffold.files, resource, operation)) : []
@@ -63,9 +62,12 @@ export function ApiCodeGenerator({
       ? extractTypeScriptDeclaration(selectedFile.content, focusName)
       : undefined
 
-  useEffect(() => {
-    setShowFullFile(!snippet)
-  }, [selectedFile?.path, snippet])
+  // Each file (and declaration) opens on the declaration when there is one,
+  // otherwise on the whole file; the toggle applies to that file only.
+  const fullFileKey = `${selectedFile?.path ?? ""}\n${snippet ?? ""}`
+  const [fullFile, setFullFile] = useState({ key: fullFileKey, show: !snippet })
+  const showFullFile = fullFile.key === fullFileKey ? fullFile.show : !snippet
+  const setShowFullFile = (next: (current: boolean) => boolean) => setFullFile({ key: fullFileKey, show: next(showFullFile) })
 
   const chooseTarget = (next: FluxScaffoldTarget) => {
     setTarget(next)

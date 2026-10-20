@@ -52,9 +52,6 @@ const SHEETS = [
 const SHEET_TOTAL = SHEETS.reduce((total, sheet) => total + sheet.strength, 0)
 // Över hur många steg i azimut (grader) ridån sjunker mot horisonten och blir lägre i ändarna.
 const TAPER = 35
-// Där draperiet ses från kanten packas strålarna tätt: från så mycket vändning läggs en extra
-// linje in.
-const EDGE_ON = 0.6
 // Två punkter på ridån längre isär än så på kartan hör inte ihop: där har en del av ridån
 // hamnat utanför det kartan kan visa.
 const GAP = 150

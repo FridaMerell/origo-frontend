@@ -4,7 +4,6 @@ import { useEffect, useState, type ReactNode } from "react"
 import { loadChecklistObservationPoints } from "@/app/tempus/_actions/checklists"
 import { SwedenMap, type SwedenMapPoint } from "@/app/tempus/ui/biotope-map/SwedenMap"
 import { Expand, X } from "lucide-react"
-import Loading from "../../loading"
 
 export default function ObservationMapDialog({
   children,

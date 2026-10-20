@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Biotope } from "../ui/biotope-map"
+import { useState } from "react"
 import { Button } from "@/app/components/ui/Button"
 import { Chip } from "@/app/components/ui/Chip"
 import { X } from "lucide-react"
@@ -65,10 +64,6 @@ const BIOTOPES = [
 	"Småvatten",
 ]
 
-const SelectLocation = () => {
-	return <></>
-}
-
 const SelectLandscapeType = ({
 	onSelect,
 }: {
@@ -92,30 +87,27 @@ const SelectLandscapeType = ({
 }
 
 const SelectBiotopes = ({
+	biotopes,
 	setBiotopes,
 }: {
+	biotopes: string[]
 	setBiotopes: (biotopes: string[]) => void
 }) => {
-	const [localBiotopes, setLocalBiotopes] = useState<string[]>([])
-
-	useEffect(() => {
-		setBiotopes(localBiotopes)
-	}, [localBiotopes])
-
 	return (
 		<div className={"flex gap-2 flex-wrap"}>
 			{BIOTOPES.map(biotope => {
 				return (
 					<Chip
+						key={biotope}
 						style={{ cursor: "pointer" }}
 						variant={
-							localBiotopes.includes(biotope) ? "neutral-active" : "neutral"
+							biotopes.includes(biotope) ? "neutral-active" : "neutral"
 						}
 						onClick={() => {
-							if (localBiotopes.includes(biotope)) {
-								setLocalBiotopes(localBiotopes.filter(b => b != biotope))
+							if (biotopes.includes(biotope)) {
+								setBiotopes(biotopes.filter(b => b != biotope))
 							} else {
-								setLocalBiotopes([...localBiotopes, biotope])
+								setBiotopes([...biotopes, biotope])
 							}
 						}}>
 						{biotope}
@@ -135,19 +127,13 @@ export default function PageView() {
 	const [location, setLocation] = useState<Location | null>(null)
 	const [landscapeType, setLandscapeType] = useState<string | null>(null)
 	const [biotopes, setBiotopes] = useState<string[]>([])
-	const [taxonomyInterests, setTaxonomyInterests] = useState<string[]>([])
-	const [time, setTime] = useState<Date | null>(new Date())
-	const [loading, setLoading] = useState(false)
-	const [results, setResults] = useState()
 
 	return (
 		<div
 			className={
 				"flex flex-col gap-6 bg-surface border border-border p-4 rounded my-5"
 			}>
-			{results ? (
-				<></>
-			) : (
+			{/* Nothing fetches suggestions yet; the results take the form's place once something does. */}
 				<>
 					<header className={"flex flex-col gap-2"}>
 						
@@ -224,14 +210,13 @@ export default function PageView() {
 							</div>
 							<h2 className={"font-display"}>Biotoper</h2>
 						</header>
-						<SelectBiotopes setBiotopes={setBiotopes} />
+						<SelectBiotopes biotopes={biotopes} setBiotopes={setBiotopes} />
 					</div>
 <hr className={'border-border'}/>
           <div>
             <Button>Sök</Button>
           </div>
 				</>
-			)}
 		</div>
 	)
 }

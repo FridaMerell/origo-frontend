@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { type ReactNode } from "react"
 import { usePathname } from "next/navigation"
 import Toolbar from "./toolbar"
 import { TaskPanel } from "./tasks/task-panel"
 import { ThemeScope } from "@/app/components/ui/ThemeScope"
+import { useStoredMode } from "@/app/components/ui/use-stored-mode"
 
 const STORAGE_KEY = "flux-mode"
 
@@ -13,22 +14,13 @@ export default function FluxShell({
 }: {
   children: ReactNode
 }) {
-  const [mode, setMode] = useState<"light" | "dark" | null>(null)
+  const [mode, setMode] = useStoredMode(STORAGE_KEY, "light")
   const pathname = usePathname()
   const isLoginRoute = pathname === "/login"
   const isTimelineRoute = pathname === "/timeline"
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    setMode(stored === "dark" || stored === "light" ? stored : "light")
-  }, [])
-
   const toggleMode = () => {
-    setMode((prev) => {
-      const next = prev === "dark" ? "light" : "dark"
-      localStorage.setItem(STORAGE_KEY, next)
-      return next
-    })
+    setMode(mode === "dark" ? "light" : "dark")
   }
 
   if (isLoginRoute) {

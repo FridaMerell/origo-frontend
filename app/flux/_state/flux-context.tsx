@@ -97,7 +97,7 @@ export function FluxDataProvider({
   const [currentMilestones, setCurrentMilestones] = useState(milestones);
   const [currentUpdates, setCurrentUpdates] = useState(updates);
   const [currentDocuments, setCurrentDocuments] = useState(documents);
-  const [currentUsers, setCurrentUsers] = useState(users);
+  const [currentUsers] = useState(users);
   const usersById = useMemo(() => new Map(currentUsers.map((user) => [user.id, user])), [currentUsers]);
 
   const selectProject = useCallback(async (id: string) => {

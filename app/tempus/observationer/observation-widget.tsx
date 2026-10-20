@@ -6,6 +6,7 @@ import { Chip } from "@/app/components/ui/Chip"
 import type { TempusObservation, TempusSpecies } from "@/app/lib/dal"
 import { BiotopeMap, biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import { LocaleLabel } from "@/app/tempus/locale-label"
+import { ObservationPhotoList } from "./observation-photos"
 
 function formatDateTime(value: string | null) {
   if (!value) return null
@@ -167,6 +168,13 @@ export default function ObservationWidget({
             {observation.notes || "—"}
           </p>
         </div>
+
+        {observation.photos?.length ? (
+          <div className="border-x border-b border-border px-3 py-2 font-display">
+            <p className="text-[9px] italic text-text-faint">Bilder</p>
+            <ObservationPhotoList photos={observation.photos} className="mt-1.5" />
+          </div>
+        ) : null}
       </section>
     </article>
   )

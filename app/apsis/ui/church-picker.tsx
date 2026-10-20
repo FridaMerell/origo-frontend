@@ -21,26 +21,27 @@ export function ChurchPicker({
   onClear: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<ApsisPlace[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
+  // The latest search's answer; a search shorter than two characters shows none.
+  const [result, setResult] = useState<{ hits: ApsisPlace[]; message: string | null }>({ hits: [], message: null });
   const requestId = useRef(0);
+  const q = query.trim();
+  const searching = q.length >= 2;
+  const hits = searching ? result.hits : [];
+  const message = searching ? result.message : null;
 
   useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setHits([]);
-      setMessage(null);
-      return;
-    }
+    if (!searching) return;
     const current = ++requestId.current;
     const timer = setTimeout(async () => {
-      const result = await searchApsisPlaces(q);
+      const found = await searchApsisPlaces(q);
       if (current !== requestId.current) return;
-      setHits(result.hits);
-      setMessage(result.error ?? (result.hits.length === 0 ? "Inga kyrkor hittades." : null));
+      setResult({
+        hits: found.hits,
+        message: found.error ?? (found.hits.length === 0 ? "Inga kyrkor hittades." : null),
+      });
     }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [q, searching]);
 
   return (
     <div className="flex flex-col gap-1 text-sm text-text-muted">

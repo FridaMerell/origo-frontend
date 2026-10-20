@@ -37,7 +37,7 @@ export function LoginForm({
       setError("root", { message: result.error })
       return
     }
-    window.location.href = redirectToAfterLogin
+    window.location.assign(redirectToAfterLogin)
   })
 
   const usesTenantTheme = variant === "tenant"

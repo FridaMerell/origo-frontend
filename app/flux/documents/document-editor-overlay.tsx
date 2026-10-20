@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { createDocument, updateDocument } from "./_actions/documents"
 import { Button } from "@/app/components/ui/Button"
 import { DownloadIcon, XIcon } from "lucide-react"
@@ -71,7 +71,7 @@ export function DocumentEditorOverlay({
     handleSubmit,
     setError,
     setValue,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FluxDocumentFormValues>({
     resolver: zodResolver(fluxDocumentFormSchema),
@@ -84,8 +84,8 @@ export function DocumentEditorOverlay({
       task: document?.task ?? null,
     },
   })
-  const title = watch("title")
-  const kind = watch("kind")
+  const title = useWatch({ control, name: "title" })
+  const kind = useWatch({ control, name: "kind" })
 
   const changeKind = (next: "markdown" | "decision") => {
     setValue("kind", next)

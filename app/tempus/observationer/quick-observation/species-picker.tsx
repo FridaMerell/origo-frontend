@@ -38,7 +38,6 @@ export function SpeciesPicker({
   const [debouncedQuery, setDebouncedQuery] = useState(query)
   const selectedRef = useRef<HTMLDivElement>(null)
   const activeOptionRef = useRef<HTMLButtonElement>(null)
-  const [activeIndex, setActiveIndex] = useState(-1)
   const isDebouncing = query !== debouncedQuery
 
   useEffect(() => {
@@ -64,9 +63,12 @@ export function SpeciesPicker({
     enabled: debouncedQuery.trim().length >= 2 && !picked,
   })
 
-  useEffect(() => {
-    setActiveIndex(-1)
-  }, [debouncedQuery, matches.length])
+  // The marked option belongs to one set of results; a new search or another
+  // number of results starts unmarked again.
+  const resultsKey = `${debouncedQuery}\n${matches.length}`
+  const [active, setActive] = useState({ resultsKey, index: -1 })
+  const activeIndex = active.resultsKey === resultsKey ? active.index : -1
+  const setActiveIndex = (next: (index: number) => number) => setActive({ resultsKey, index: next(activeIndex) })
 
   useEffect(() => {
     activeOptionRef.current?.scrollIntoView({ block: "nearest" })

@@ -30,6 +30,9 @@ export type TempusObservation = {
   count: number | null
   life_stage: string
   notes: string
+  // R2 paths under tempus/<user>/<taxon>/<observation>/, read through /api/files.
+  // Each thumbnail lies beside its photo with "-thumb" before the extension.
+  photos: string[]
   created_at: string
   species_categories?: TempusObservationCategory[]
 }

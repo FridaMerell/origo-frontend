@@ -1,5 +1,5 @@
 import type { IdentityColor, IdentityThemeModes } from "@/app/lib/dal"
-import { normalizeColor, parseColor } from "./color-parse"
+import { parseColor } from "./color-parse"
 import type { IdentityFormValues } from "./identity-form"
 
 export type ImportedTheme = {

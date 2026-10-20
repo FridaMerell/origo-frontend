@@ -1,40 +1,32 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import TopBar from "./top-bar";
-import { APP_LINKS, appHref } from "@/app/lib/tenant-links";
+import { APP_LINKS } from "@/app/lib/tenant-links";
 import { ORIGO_VERSION } from "@/app/lib/config";
 import { ThemeScope } from "@/app/components/ui/ThemeScope";
+import { useAppHrefs } from "@/app/components/ui/use-app-hrefs";
+import { useStoredMode } from "@/app/components/ui/use-stored-mode";
 
 const STORAGE_KEY = "apsis-mode";
 
 export default function ApsisShell({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<"light" | "dark" | null>(null);
-  const [siteHrefs, setSiteHrefs] = useState<Record<string, string>>({});
+  const [mode, setMode] = useStoredMode(STORAGE_KEY);
+  const siteHrefs = useAppHrefs();
   const pathname = usePathname();
   const isLoginRoute = pathname === "/login";
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    setMode(stored === "dark" || stored === "light" ? stored : null);
-    setSiteHrefs(
-      Object.fromEntries(APP_LINKS.map((app) => [app.id, appHref(app.id)])),
-    );
-  }, []);
-
   const toggleMode = () => {
-    setMode((previous) => {
-      const next = previous
-        ? previous === "dark"
+    setMode(
+      mode
+        ? mode === "dark"
           ? "light"
           : "dark"
         : window.matchMedia("(prefers-color-scheme: dark)").matches
           ? "light"
-          : "dark";
-      localStorage.setItem(STORAGE_KEY, next);
-      return next;
-    });
+          : "dark",
+    );
   };
 
   if (isLoginRoute) {

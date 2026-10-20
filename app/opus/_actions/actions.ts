@@ -96,7 +96,6 @@ import type {
 	ReadingProgressOverview,
 	WorkReadingResponse,
 } from "@/app/lib/dal/opus"
-import { TENANTS } from "@/app/lib/tenant"
 
 const API_BASE = '/api/opus'
 

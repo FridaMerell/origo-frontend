@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
 import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
-import { deleteObservation, updateObservation } from "@/app/tempus/_actions/observations"
+import { deleteObservation, setObservationPhotos, updateObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import type { TempusObservation } from "@/app/lib/dal"
 import { stageShortcutIndex } from "../quick-observation"
+import { ObservationPhotoList, ObservationPhotoPicker, uploadObservationPhotos } from "../observation-photos"
 
 function toLocalInput(iso: string) {
   const date = new Date(iso)
@@ -31,6 +32,8 @@ export default function ObservationEditor({
   const [editing, setEditing] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
+  const [photoProgress, setPhotoProgress] = useState<string | null>(null)
   const { requestConfirm, dialog } = useConfirmDialog()
 
   const savedPoint =
@@ -131,6 +134,44 @@ export default function ObservationEditor({
       }
       setEditing(false)
       router.refresh()
+    })
+  }
+
+  const addPhotos = async (files: File[]) => {
+    setError(null)
+    setUploadingPhotos(true)
+    try {
+      const uploadError = await uploadObservationPhotos(observation.id, observation.photos ?? [], files, setPhotoProgress)
+      if (uploadError) setError(uploadError)
+    } catch {
+      setError("Bilderna kunde inte laddas upp. Försök igen.")
+    } finally {
+      setUploadingPhotos(false)
+      setPhotoProgress(null)
+      router.refresh()
+    }
+  }
+
+  const removePhoto = (photo: string) => {
+    requestConfirm({
+      title: "Ta bort bild",
+      message: "Ta bort bilden från observationen?",
+      confirmLabel: "Ta bort",
+      destructive: true,
+      onConfirm: () => {
+        setError(null)
+        startTransition(async () => {
+          const result = await setObservationPhotos(
+            observation.id,
+            (observation.photos ?? []).filter((current) => current !== photo),
+          )
+          if (result.error) {
+            setError(result.error)
+            return
+          }
+          router.refresh()
+        })
+      },
     })
   }
 
@@ -299,6 +340,22 @@ export default function ObservationEditor({
             className="mt-0.5 min-h-14 resize-y rounded-none border border-field-border bg-surface-raised px-2.5 py-1.5 font-body text-xs not-italic leading-5 text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
           />
         </label>
+
+        <div className="border-b border-r border-border px-3 py-2 sm:col-span-2 sm:px-4">
+          <p className="font-display text-[9px] italic text-text-faint">
+            Bilder <span>(sparas direkt)</span>
+          </p>
+          <ObservationPhotoList
+            photos={observation.photos ?? []}
+            onRemove={uploadingPhotos || pending ? undefined : removePhoto}
+            className="mt-1.5"
+          />
+          {uploadingPhotos ? (
+            <p className="mt-1.5 text-xs text-text-muted" role="status">{photoProgress ?? "Laddar upp bilder…"}</p>
+          ) : (
+            <ObservationPhotoPicker files={[]} onChange={addPhotos} onError={setError} compact className="mt-1.5" />
+          )}
+        </div>
       </div>
 
       {error ? <p className="border-b border-border bg-danger-wash px-4 py-2 text-xs text-danger">{error}</p> : null}

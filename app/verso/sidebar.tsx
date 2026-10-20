@@ -2,12 +2,12 @@
 
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { usePathname } from "next/navigation"
-import { useState, useEffect } from "react"
 import { BellIcon, CalendarIcon, ChevronDownIcon, ImageIcon, ListTodoIcon, ReceiptIcon, RulerIcon, ScrollTextIcon } from "lucide-react"
 import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { useFacilities } from "@/app/verso/_state/verso-context"
 import { ORIGO_VERSION } from "@/app/lib/config"
-import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
+import { APP_LINKS } from "@/app/lib/tenant-links"
+import { useAppHrefs } from "@/app/components/ui/use-app-hrefs"
 import Logo from "@/app/verso/ui/Logo"
 import { Profile } from "@/app/components/ui/Profile"
 
@@ -101,24 +101,18 @@ export function SidebarContent({
 }: SidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname()
   const { facilities } = useFacilities()
-  const [appHrefs, setAppHrefs] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    setAppHrefs(
-      Object.fromEntries(APP_LINKS.map((app) => [app.id, appHref(app.id)])),
-    )
-  }, [])
+  const appHrefs = useAppHrefs()
 
   return (
     <div className="flex h-full flex-col gap-0.5 font-body text-text">
       <div className="px-2.5 pb-6 pt-3 ">
-        <a href="/" className="font-display text-2xl font-semibold text-accent flex items-center ">
+        <Link href="/" className="font-display text-2xl font-semibold text-accent flex items-center ">
           <Logo height={75} />
           <div className="flex flex-col ml-1 gap-0">
             <span className="leading-5">Verso</span>
             <span className="font-body text-xs ml-1.5">ORIGO {ORIGO_VERSION}</span>
           </div>
-        </a>
+        </Link>
 
         <div className="mt-2 text-sm text-text-muted">
           {

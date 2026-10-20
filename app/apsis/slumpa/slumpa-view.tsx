@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { Button } from "@/app/components/ui/Button";
 import { ShuffleIcon } from "lucide-react";
 import { getApsisPlace } from "@/app/actions/apsis";
@@ -16,7 +16,9 @@ import { WeatherVane } from "@/app/apsis/ui/WeatherVane";
 // A line's place in the order the church's lines arrive in.
 const step = (index: number) => ({ "--i": index }) as CSSProperties;
 
-const photoClass = "absolute inset-0 size-full object-cover object-[50%_70%]";
+const subscribeToNothing = () => () => {};
+
+const photoClass ="absolute inset-0 size-full object-cover object-[50%_70%]";
 
 /**
  * One church drawn at random, as a sign of its own: the photo with its
@@ -35,7 +37,13 @@ const photoClass = "absolute inset-0 size-full object-cover object-[50%_70%]";
  */
 export default function SlumpaView({ places }: { places: Record<string, ApsisPlace> }) {
   const posts = useApsisPosts();
-  const [id, setId] = useState<number | null>(null);
+  // The first draw is made in the browser: a draw on the server would not
+  // match the browser's, so the server (and hydration) shows no church yet.
+  const inBrowser = useSyncExternalStore(subscribeToNothing, () => true, () => false);
+  const [drawnId, setId] = useState<number | null>(() =>
+    posts.length > 0 ? posts[Math.floor(Math.random() * posts.length)].id : null,
+  );
+  const id = inBrowser ? drawnId : null;
   // The photo that has arrived, by URL, so a new draw starts out as waiting.
   const [loadedUrl, setLoadedUrl] = useState<string | null>(null);
   // The photo of the draw before, kept under the new one.
@@ -50,12 +58,6 @@ export default function SlumpaView({ places }: { places: Record<string, ApsisPla
     setPreviousUrl(loadedUrl);
     setId(pool[Math.floor(Math.random() * pool.length)].id);
   };
-
-  useEffect(() => {
-    if (id === null && posts.length > 0) {
-      setId(posts[Math.floor(Math.random() * posts.length)].id);
-    }
-  }, [id, posts]);
 
   const post = posts.find((candidate) => candidate.id === id) ?? null;
   const placeId = post?.svenska_kyrkan_place_id ?? "";

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useEffectEvent } from "react"
 import type { Map as MaplibreMap } from "maplibre-gl"
 
 // Runs `callback` once immediately, then again at most once per animation
@@ -8,8 +8,7 @@ import type { Map as MaplibreMap } from "maplibre-gl"
 // frame (e.g. "move" firing continuously during an animation) only trigger
 // one callback run, not one per event.
 export function useMapFrame(map: MaplibreMap, events: readonly string[], callback: () => void) {
-  const callbackRef = useRef(callback)
-  callbackRef.current = callback
+  const onFrame = useEffectEvent(callback)
   const eventsKey = events.join(",")
 
   useEffect(() => {
@@ -18,7 +17,7 @@ export function useMapFrame(map: MaplibreMap, events: readonly string[], callbac
       if (frame !== null) return
       frame = requestAnimationFrame(() => {
         frame = null
-        callbackRef.current()
+        onFrame()
       })
     }
     schedule()
@@ -28,6 +27,5 @@ export function useMapFrame(map: MaplibreMap, events: readonly string[], callbac
       if (frame !== null) cancelAnimationFrame(frame)
       for (const event of eventList) map.off(event, schedule)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, eventsKey])
 }

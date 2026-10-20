@@ -3,7 +3,7 @@
 import { ReadingAnnotation } from "@/app/lib/dal/opus"
 import { useState, useId } from "react"
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ExpandIcon, PencilIcon, Trash2Icon } from "lucide-react"
-import { TextAreaField } from "../../forms/Fields/Fields"
+import { TextAreaField } from "../../../forms/Fields/Fields"
 
 type AnnotationEntry = {
 	annotation: ReadingAnnotation

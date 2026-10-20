@@ -1,6 +1,7 @@
 "use client"
 
 import { LogOut } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Avatar } from "./Avatar"
 import { NotificationMenu } from "./NotificationMenu"
 import { logout } from "@/app/actions/auth"
@@ -8,6 +9,7 @@ import { useUser, formatUserName } from "@/app/lib/user-context"
 
 export function Profile() {
   const user = useUser()
+  const router = useRouter()
   const name = user ? formatUserName(user) : "Okänd"
 
   return (
@@ -19,7 +21,7 @@ export function Profile() {
           type="button"
           onClick={async () => {
             await logout();
-            window.location.href = "/login";
+            router.replace("/login");
           }}
           className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-sm text-text hover:bg-accent-wash hover:text-accent"
         >

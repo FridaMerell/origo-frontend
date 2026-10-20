@@ -74,16 +74,20 @@ export function Modal({
     onOpenChange(false);
   }
 
-  const dismissable = useDismissableOpen<HTMLDivElement>({
+  const { ref: dismissableRef } = useDismissableOpen<HTMLDivElement>({
     open,
     onDismiss: requestClose,
   });
 
+  // A closed modal starts from its hidden state again, so reopening animates in.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open) setEntered(false);
+  }
+
   useEffect(() => {
-    if (!open) {
-      setEntered(false);
-      return;
-    }
+    if (!open) return;
 
     previouslyFocusedRef.current = document.activeElement instanceof HTMLElement
       ? document.activeElement
@@ -147,7 +151,7 @@ export function Modal({
               <div
                 ref={(node) => {
                   dialogRef.current = node;
-                  dismissable.ref.current = node;
+                  dismissableRef.current = node;
                 }}
                 role="dialog"
                 aria-modal="true"

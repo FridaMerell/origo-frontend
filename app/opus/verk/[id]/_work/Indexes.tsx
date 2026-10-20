@@ -7,18 +7,12 @@ import { Button } from "@/app/components/ui/Button"
 import { Chip } from "@/app/components/ui/Chip"
 import { Drawer, useDrawerClose } from "@/app/components/ui/Drawer"
 import { EditionReadingStatus, type ImportOptions } from "@/app/lib/dal/opus"
-import { addEmptyChapter, deleteEdition, reorderEditionChapters } from "../../_actions/editions"
-import { requestUnitNavigation } from "../../_state/unit-navigation"
-import { FileField, SelectField, TextField } from "../../forms/Fields/Fields"
-import ImportPreview, { appendEditionFile, DEFAULT_IMPORT_OPTIONS, importEditionFile } from "../../forms/ImportPreview"
-import Menu from "./Menu"
-
-const BAR_CLASS: Record<string, string> = {
-	primary: "bg-primary",
-	secondary: "bg-secondary",
-	accent: "bg-accent",
-	foreground: "bg-foreground",
-}
+import { addEmptyChapter, deleteEdition, reorderEditionChapters } from "../../../_actions/editions"
+import { requestUnitNavigation } from "../../../_state/unit-navigation"
+import { FileField, SelectField, TextField } from "../../../forms/Fields/Fields"
+import ImportPreview, { appendEditionFile, DEFAULT_IMPORT_OPTIONS, importEditionFile } from "../../../forms/ImportPreview"
+import Menu from "../_ui/Menu"
+import { BAR_CLASS } from "../_ui/editions"
 
 type Chapter = EditionReadingStatus["chapters"][number]
 
@@ -391,7 +385,7 @@ function EditionPanel({
 	)
 }
 
-export default function ({
+export default function Indexes({
 	workId,
 	edition,
 	color,

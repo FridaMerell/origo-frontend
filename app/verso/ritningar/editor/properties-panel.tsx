@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Trash2 } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
@@ -21,12 +21,9 @@ function NumberField({
   onDone: () => void
   min?: number
 }) {
-  const [text, setText] = useState(String(Number(value.toFixed(3))))
+  const formatted = String(Number(value.toFixed(3)))
+  const [text, setText] = useState(formatted)
   const [focused, setFocused] = useState(false)
-
-  useEffect(() => {
-    if (!focused) setText(String(Number(value.toFixed(3))))
-  }, [value, focused])
 
   return (
     <Field label={label}>
@@ -34,8 +31,11 @@ function NumberField({
         type="text"
         inputMode="decimal"
         className={fieldInputClass}
-        value={text}
-        onFocus={() => setFocused(true)}
+        value={focused ? text : formatted}
+        onFocus={() => {
+          setText(formatted)
+          setFocused(true)
+        }}
         onBlur={() => {
           setFocused(false)
           onDone()

@@ -1,10 +1,12 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { useUser } from "@/app/lib/user-context";
 
 export function TenantHome({ tenantName }: { tenantName: string }) {
   const user = useUser();
+  const router = useRouter();
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-16 py-32">
@@ -20,7 +22,7 @@ export function TenantHome({ tenantName }: { tenantName: string }) {
             type="button"
             onClick={async () => {
               await logout();
-              window.location.href = "/login";
+              router.replace("/login");
             }}
             className="text-text underline"
           >

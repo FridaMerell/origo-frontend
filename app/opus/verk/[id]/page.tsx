@@ -4,14 +4,15 @@ import { listBookmarks, listWorkBookmarks } from "../../_actions/bookmark-action
 import "./page.css"
 import { Work } from "@/app/lib/dal/opus"
 import React from "react"
-import AlignmentBootstrap from "./AlignmentBootstrap"
-import ParallelReader from "./ParallelReader"
+import AlignmentBootstrap from "./_work/AlignmentBootstrap"
+import ParallelReader from "./_reader/ParallelReader"
 import { OpusReadingProvider } from "../../_state/opus-context"
-import Indexes from "./Indexes"
-import BookmarksList from "./BookmarksList"
-import AddEdition from "./AddEdition"
-import DeleteWork from "./DeleteWork"
-import KeepPositionToggle from "./KeepPositionToggle"
+import Indexes from "./_work/Indexes"
+import BookmarksList from "./_work/BookmarksList"
+import AddEdition from "./_work/AddEdition"
+import DeleteWork from "./_work/DeleteWork"
+import KeepPositionToggle from "./_work/KeepPositionToggle"
+import { EDITION_COLORS, PAGE_SIZE } from "./_ui/editions"
 import { getCurrentUser } from "@/app/lib/dal"
 import { notFound } from "next/navigation"
 import { revalidatePath } from "next/cache"
@@ -31,11 +32,7 @@ export async function generateMetadata({
 	}
 }
 
-const COLORS = ["primary", "secondary", "accent", "foreground"]
-/** Rader per sida; måste vara samma som PAGE_SIZE i ParallelReader. */
-const FIRST_ROWS = 10
-
-export default async function ({
+export default async function WorkPage({
 	params,
 	searchParams,
 }: {
@@ -63,7 +60,7 @@ export default async function ({
 	// inte av textenheternas position — annars hamnar editions med olika indelning fel mot varandra.
 	const alignmentSet = alignmentSets[0] ?? null
 	const matrix = alignmentSet
-		? await alignmentSetApi.matrix(alignmentSet.id, 0, FIRST_ROWS, focusUnit ? undefined : "reading", focusUnit)
+		? await alignmentSetApi.matrix(alignmentSet.id, 0, PAGE_SIZE, focusUnit ? undefined : "reading", focusUnit)
 		: null
 	// Bokmärken hör till en edition (den första kolumnen, samma referens som läspositionen).
 	const referenceEditionId = matrix?.versions[0]?.text_version
@@ -85,7 +82,7 @@ export default async function ({
 		reading.editions.length > 0 &&
 		(!matrix || reading.editions.some(edition => !matrix.versions.some(version => version.text_version === edition.id)))
 
-	let meta = []
+	const meta = []
 
 	if (work.contributors.length > 0) {
 		meta.push(
@@ -122,7 +119,7 @@ export default async function ({
 				</h1>
 				<div className={"mt-6 flex flex-wrap items-center gap-2"}>
 					{reading.editions.map((edition, i) => {
-						return <Indexes workId={work.id} edition={edition} key={i} color={COLORS[i]} hasText={hasText(i)} />
+						return <Indexes workId={work.id} edition={edition} key={i} color={EDITION_COLORS[i]} hasText={hasText(i)} />
 					})}
 					<BookmarksList bookmarks={workBookmarks} />
 					<AddEdition workId={work.id} />

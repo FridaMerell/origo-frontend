@@ -1,7 +1,7 @@
 "use client"
 
-import { useRef, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useRef, useState, type FormEvent } from "react"
+import { useForm, useWatch } from "react-hook-form"
 import { usePathname } from "next/navigation"
 import { zodResolver } from "@/app/components/form/zodResolver"
 import { createPhoto } from "./_actions/photo"
@@ -55,17 +55,18 @@ export function PhotoUploadForm({
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<PhotoFormValues>({
     resolver: zodResolver(photoFormSchema),
     defaultValues: { title: "", description: "", venture: defaultVenture ?? "", task: "", stage: "", albums: defaultAlbums ?? [], tags: [], date_precision: "day", place: "", source: "", transcription: "", credit: "", people: [], taken_at: "" },
   })
   const submit = useSubmitAction(setError)
-  const hasVenture = Boolean(watch("venture"))
-  const isHistory = inHistoryAlbum(watch("albums"), albums)
+  const hasVenture = Boolean(useWatch({ control, name: "venture" }))
+  const isHistory = inHistoryAlbum(useWatch({ control, name: "albums" }), albums)
 
-  const onSubmit = handleSubmit(async (rawData) => {
+  // Built when the form is submitted, since uploading reads the chosen files from the input.
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => handleSubmit(async (rawData) => {
     // Before/during/after only makes sense for a project's progress photos.
     const staged = hasVenture ? rawData : { ...rawData, stage: "" as const }
     // History details are filled in on /historia, never here.
@@ -120,7 +121,7 @@ export function PhotoUploadForm({
       return
     }
     closeDrawer()
-  })
+  })(event)
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3">

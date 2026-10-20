@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect } from "react"
+import { useEffect, useEffectEvent } from "react"
 import type { Id } from "@/app/lib/dal/opus"
 
 /**
@@ -15,10 +15,10 @@ export function requestUnitNavigation(unitId: Id) {
 }
 
 export function useUnitNavigationListener(onNavigate: (unitId: Id) => void) {
-	const handler = useCallback(onNavigate, [onNavigate])
+	const navigate = useEffectEvent(onNavigate)
 	useEffect(() => {
-		const listener = (event: Event) => handler((event as CustomEvent<Id>).detail)
+		const listener = (event: Event) => navigate((event as CustomEvent<Id>).detail)
 		window.addEventListener(EVENT_NAME, listener)
 		return () => window.removeEventListener(EVENT_NAME, listener)
-	}, [handler])
+	}, [])
 }

@@ -63,7 +63,11 @@ export function IdentityBrandIntro({ identity }: { identity: FluxIdentity }) {
     <section className="overflow-hidden rounded-xl border" style={{ backgroundColor: background, borderColor: border, color: text, fontFamily: bodyFont }}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-3 sm:px-7" style={{ borderColor: border }}>
         <div className="flex min-w-0 items-center gap-3">
-          {logo && <img src={assetSrc(logo.url)} alt="" className="max-h-7 max-w-28 object-contain" />}
+          {logo && (
+            // Same as asset-file-field: uploaded assets keep their own size and aspect ratio.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={assetSrc(logo.url)} alt="" className="max-h-7 max-w-28 object-contain" />
+          )}
           <span className="truncate text-sm font-semibold" style={{ color: text }}>{title}</span>
         </div>
         {modes.length > 1 && (
@@ -86,7 +90,12 @@ export function IdentityBrandIntro({ identity }: { identity: FluxIdentity }) {
 
       <div className="grid gap-8 px-5 py-10 sm:px-7 lg:grid-cols-[minmax(0,1.2fr)_minmax(18rem,.8fr)] lg:px-10 lg:py-14">
         <div className="flex flex-col items-start justify-center gap-5">
-          {logo && <div className="flex h-32 w-72 items-center rounded-lg border p-6" style={{ borderColor: border, backgroundColor: surface }}><img src={assetSrc(logo.url)} alt={`${title} logotyp`} className="max-h-full max-w-full object-contain" /></div>}
+          {logo && (
+            <div className="flex h-32 w-72 items-center rounded-lg border p-6" style={{ borderColor: border, backgroundColor: surface }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={assetSrc(logo.url)} alt={`${title} logotyp`} className="max-h-full max-w-full object-contain" />
+            </div>
+          )}
           <p className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: accent }}>{identity.tagline || "Visuell identitet"}</p>
           <h2 className="text-4xl font-semibold leading-none tracking-tight sm:text-5xl" style={{ color: text, fontFamily: headingFont }}>{title}</h2>
           <p className="max-w-2xl text-base leading-7 sm:text-lg" style={{ color: muted }}>{description}</p>
@@ -179,6 +188,7 @@ export function IdentityBrandIntro({ identity }: { identity: FluxIdentity }) {
           {media.length > 0 ? media.map((asset) => (
             <figure key={asset.url} className="overflow-hidden rounded-lg border" style={{ borderColor: border, backgroundColor: background }}>
               <div className="flex h-36 items-center justify-center p-4" style={{ backgroundColor: asset.mode === "dark" ? "#161616" : surface }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={assetSrc(asset.url)} alt={asset.usage || asset.name} className="max-h-full max-w-full object-contain" />
               </div>
               <figcaption className="p-3"><p className="truncate text-sm font-semibold">{asset.name}</p><p className="mt-1 text-xs" style={{ color: muted }}>{asset.usage || "Visuellt innehåll"}</p></figcaption>

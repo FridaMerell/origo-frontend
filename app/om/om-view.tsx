@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import Image, { type StaticImageData } from "next/image"
-import { appHref, type AppLinkId } from "@/app/lib/tenant-links"
+import Link from "next/link"
+import { useAppHrefs } from "@/app/components/ui/use-app-hrefs"
 import apsisIcon from "../apsis/icon.png"
 import fluxIcon from "../flux/icon.png"
 import opusIcon from "../opus/icon.png"
@@ -18,7 +19,6 @@ import {
 	TempusDrawing,
 	VersoDrawing,
 } from "./drawings"
-import OrionChart from "../caelus/ui/OrionChart"
 
 type Section = {
 	name: string
@@ -131,22 +131,18 @@ export default function OmView() {
 	const [menuOpen, setMenuOpen] = useState(false)
 	// Links into the apps swap the sub-domain on the current host, so they can
 	// only be built in the browser.
-	const [hrefs, setHrefs] = useState<Record<string, string>>({})
-	useEffect(() => {
-		setHrefs(
-			Object.fromEntries(
-				SECTIONS.map(section => {
-					const id = section.name.toLowerCase() as AppLinkId
-					return [id, appHref(id)]
-				}),
-			),
-		)
-	}, [])
+	const hrefs = useAppHrefs()
 
 	// The menu is mounted a moment before it is shown, and kept mounted while
 	// it animates out, so both directions can transition.
 	const [menuMounted, setMenuMounted] = useState(false)
 	const [menuShown, setMenuShown] = useState(false)
+	const [menuWasOpen, setMenuWasOpen] = useState(menuOpen)
+	if (menuOpen !== menuWasOpen) {
+		setMenuWasOpen(menuOpen)
+		if (menuOpen) setMenuMounted(true)
+		else setMenuShown(false)
+	}
 	const current = progress.reached.lastIndexOf(true)
 
 	useEffect(() => {
@@ -160,7 +156,6 @@ export default function OmView() {
 
 	useEffect(() => {
 		if (menuOpen) {
-			setMenuMounted(true)
 			let inner = 0
 			const outer = window.requestAnimationFrame(() => {
 				inner = window.requestAnimationFrame(() => setMenuShown(true))
@@ -170,7 +165,6 @@ export default function OmView() {
 				window.cancelAnimationFrame(inner)
 			}
 		}
-		setMenuShown(false)
 		const timer = window.setTimeout(() => setMenuMounted(false), 380)
 		return () => window.clearTimeout(timer)
 	}, [menuOpen])
@@ -267,11 +261,11 @@ export default function OmView() {
 					<span className='font-mono text-[11px] font-medium uppercase tracking-[0.18em]'>
 						ORIGO / OM
 					</span>
-					<a
+					<Link
 						href='/'
 						className='font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
 						Till startsidan
-					</a>
+					</Link>
 				</header>
 
 				<div ref={wrapperRef} className='relative mt-10'>
@@ -575,11 +569,11 @@ export default function OmView() {
 							<li
 								className={sheetItem(SECTIONS.length + 2).className}
 								style={sheetItem(SECTIONS.length + 2).style}>
-								<a
+								<Link
 									href='/'
 									className='flex items-center gap-4 px-5 py-4 font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4'>
 									Till startsidan
-								</a>
+								</Link>
 							</li>
 						</ul>
 					</nav>

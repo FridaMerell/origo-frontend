@@ -27,6 +27,15 @@ const newEdition = (title = ""): DraftEdition => ({
 	importOptions: DEFAULT_IMPORT_OPTIONS,
 })
 
+/** The edition as the create route takes it: without the file and its import options. */
+const toTextVersion = ({ title, language, customLanguage, edition, source }: DraftEdition): NewTextVersion => ({
+	title,
+	language,
+	customLanguage,
+	edition,
+	source,
+})
+
 function titleFromFile(file: File) {
 	return file.name.replace(/\.[^/.]+$/, "").replace(/[_-]+/g, " ").trim() || file.name
 }
@@ -49,15 +58,23 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 	const [error, setError] = useState<string>()
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
+	// Every opening starts from an empty form while the shelves are fetched again.
+	const [wasOpen, setWasOpen] = useState(false)
+	if (open !== wasOpen) {
+		setWasOpen(open)
+		if (open) {
+			setStep(1)
+			setWork({ title: "", author: "", year: "", isPrivate: false, shelves: [] })
+			setEditions([])
+			setNewShelfName("")
+			setShelvesError(undefined)
+			setError(undefined)
+			setIsLoadingShelves(true)
+		}
+	}
+
 	useEffect(() => {
 		if (!open) return
-		setStep(1)
-		setWork({ title: "", author: "", year: "", isPrivate: false, shelves: [] })
-		setEditions([])
-		setNewShelfName("")
-		setShelvesError(undefined)
-		setError(undefined)
-		setIsLoadingShelves(true)
 		void fetch("/api/opus/shelves/")
 			.then(response => response.ok ? response.json() as Promise<Shelf[]> : Promise.reject())
 			.then(setShelves)
@@ -122,7 +139,7 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 		const response = await fetch("/api/opus/works/create-with-editions/", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ work, editions: editions.map(({ file, importOptions, ...edition }) => edition) }),
+			body: JSON.stringify({ work, editions: editions.map(toTextVersion) }),
 		})
 		return (await response.json()) as { editions?: { id: number; title: string }[]; error?: string }
 	}

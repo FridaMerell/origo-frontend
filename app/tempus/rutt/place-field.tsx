@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useEffectEvent, useRef } from "react"
 import { useMapsLibrary } from "@vis.gl/react-google-maps"
 
 type LonLat = [number, number]
@@ -24,10 +24,8 @@ export function PlaceField({
   const places = useMapsLibrary("places")
   const mountRef = useRef<HTMLDivElement>(null)
   const autocompleteRef = useRef<google.maps.places.PlaceAutocompleteElement>(null)
-  const onResolvedRef = useRef(onResolved)
-  const onClearedRef = useRef(onCleared)
-  onResolvedRef.current = onResolved
-  onClearedRef.current = onCleared
+  const resolve = useEffectEvent(onResolved)
+  const clear = useEffectEvent(onCleared)
 
   useEffect(() => {
     if (!places || !mountRef.current) return
@@ -48,10 +46,10 @@ export function PlaceField({
       if (!point) return
       const description = place.formattedAddress || place.displayName || ""
       autocomplete.value = description
-      onResolvedRef.current({ description, location: [point.lng(), point.lat()] })
+      resolve({ description, location: [point.lng(), point.lat()] })
     }
     const handleInput = () => {
-      if (!autocomplete.value.trim()) onClearedRef.current()
+      if (!autocomplete.value.trim()) clear()
     }
 
     autocomplete.addEventListener("gmp-select", handleSelect, { signal: listenerController.signal })

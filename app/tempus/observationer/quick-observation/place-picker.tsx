@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react"
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
 import { GOOGLE_MAPS_API_KEY } from "@/app/lib/config"
@@ -8,10 +8,9 @@ import { X } from "lucide-react"
 type SavedPlace = { name: string; lat: string; lon: string }
 const PLACES_KEY = "tempus:observation-places"
 
-function loadPlaces(): SavedPlace[] {
-  if (typeof window === "undefined") return []
+function parsePlaces(raw: string | null): SavedPlace[] {
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(PLACES_KEY) ?? "[]")
+    const parsed = JSON.parse(raw ?? "[]")
     if (!Array.isArray(parsed)) return []
     return parsed.filter(
       (p): p is SavedPlace =>
@@ -25,6 +24,47 @@ function loadPlaces(): SavedPlace[] {
   }
 }
 
+// The saved places live in localStorage, read through useSyncExternalStore:
+// the server and the first client render see none, and every picker updates
+// when the list changes (here or in another tab).
+const NO_PLACES: SavedPlace[] = []
+const placesListeners = new Set<() => void>()
+let placesSnapshot: { raw: string | null; places: SavedPlace[] } = { raw: null, places: NO_PLACES }
+
+function readPlacesRaw() {
+  try {
+    return window.localStorage.getItem(PLACES_KEY)
+  } catch {
+    return null
+  }
+}
+
+function getPlaces() {
+  const raw = readPlacesRaw()
+  if (raw !== placesSnapshot.raw) placesSnapshot = { raw, places: parsePlaces(raw) }
+  return placesSnapshot.places
+}
+
+function subscribePlaces(listener: () => void) {
+  placesListeners.add(listener)
+  window.addEventListener("storage", listener)
+  return () => {
+    placesListeners.delete(listener)
+    window.removeEventListener("storage", listener)
+  }
+}
+
+/** Saves the list; false when the browser would not store it. */
+function storePlaces(next: SavedPlace[]) {
+  try {
+    window.localStorage.setItem(PLACES_KEY, JSON.stringify(next))
+  } catch {
+    return false
+  }
+  placesListeners.forEach((listener) => listener())
+  return true
+}
+
 /** Google Places Autocomplete input, biased to Sweden; resolves to lat/lon. */
 function PlaceSearch({
   onPick,
@@ -33,8 +73,7 @@ function PlaceSearch({
 }) {
   const places = useMapsLibrary("places")
   const inputRef = useRef<HTMLInputElement>(null)
-  const onPickRef = useRef(onPick)
-  onPickRef.current = onPick
+  const pick = useEffectEvent(onPick)
 
   useEffect(() => {
     if (!places || !inputRef.current) return
@@ -45,7 +84,7 @@ function PlaceSearch({
     const listener = autocomplete.addListener("place_changed", () => {
       const point = autocomplete.getPlace().geometry?.location
       if (!point) return
-      onPickRef.current({ lat: point.lat().toFixed(6), lon: point.lng().toFixed(6) })
+      pick({ lat: point.lat().toFixed(6), lon: point.lng().toFixed(6) })
     })
     return () => listener.remove()
   }, [places])
@@ -76,24 +115,17 @@ export function PlacePicker({
   onClearError: () => void
   onError: (message: string) => void
 }) {
-  const [places, setPlaces] = useState<SavedPlace[]>([])
+  const places = useSyncExternalStore(subscribePlaces, getPlaces, () => NO_PLACES)
   const [placeName, setPlaceName] = useState("")
   const [manualCoords, setManualCoords] = useState(false)
   const [savingPlace, setSavingPlace] = useState(false)
   const hasCoords = Boolean(lat.trim() && lon.trim())
   const [editingPlace, setEditingPlace] = useState(() => !hasCoords)
 
-  useEffect(() => {
-    setPlaces(loadPlaces())
-  }, [])
-
   const persistPlaces = (next: SavedPlace[]) => {
-    setPlaces(next)
-    try {
-      window.localStorage.setItem(PLACES_KEY, JSON.stringify(next))
-    } catch {
-      // ignore quota/availability errors
-    }
+    if (storePlaces(next)) return true
+    onError("Platserna kunde inte sparas i webbläsaren.")
+    return false
   }
 
   const savePlace = () => {
@@ -105,12 +137,13 @@ export function PlacePicker({
       return
     }
     const { lat: latNum, lon: lonNum } = parsedCoords
-    persistPlaces(
+    const stored = persistPlaces(
       [
         { name, lat: String(latNum), lon: String(lonNum) },
         ...places.filter((p) => p.name !== name),
       ].slice(0, 12),
     )
+    if (!stored) return
     setPlaceName("")
     setSavingPlace(false)
   }

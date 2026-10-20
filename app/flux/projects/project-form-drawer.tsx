@@ -28,7 +28,8 @@ export function ProjectFormDrawer({
   const { addProject, replaceProject } = useFluxProjectActions()
   const user = useUser()
   const users = Array.from(useFluxUsers().values())
-  const defaultMembers = project?.members ?? (user ? [user.id] : [])
+  const userId = user?.id
+  const defaultMembers = project?.members ?? (userId !== undefined ? [userId] : [])
   const uploadedFiles = useUploadedFiles(project?.files, project?.id ?? null)
   const {
     register,
@@ -70,11 +71,11 @@ export function ProjectFormDrawer({
     reset({
       name: project?.name ?? "",
       description: project?.description ?? "",
-      members: defaultMembers,
+      members: project?.members ?? (userId !== undefined ? [userId] : []),
       include_identity: project?.include_identity ?? false,
       identity: project?.identity ?? null,
     })
-  }, [open, project, reset])
+  }, [open, project, reset, userId])
 
   const onSubmit = handleSubmit(async (data) => {
     const result = project

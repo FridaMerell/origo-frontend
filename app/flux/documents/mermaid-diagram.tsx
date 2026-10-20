@@ -89,7 +89,6 @@ function styleErLabels(root: SVGSVGElement, t: Theme) {
 
 /** Add a rounded outline without clipping Mermaid's text labels. */
 function roundErEntities(root: SVGSVGElement, t: Theme) {
-  const svgNs = "http://www.w3.org/2000/svg"
   root.querySelectorAll<SVGGElement>("g.node").forEach((node) => {
     const outer = node.querySelector<SVGPathElement>("path.outer-path")
     if (!outer || node.dataset.rounded) return
@@ -169,7 +168,7 @@ export function MermaidDiagram({ chart }: { chart: string }) {
     return () => {
       active = false
     }
-  }, [chart, id])
+  }, [chart, id, isEr])
 
   // Rounding needs the SVG mounted (getBBox), so it runs after the markup lands.
   useEffect(() => {

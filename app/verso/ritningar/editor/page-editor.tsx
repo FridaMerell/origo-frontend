@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useReducer, useRef, useState } from "react"
+import { useCallback, useEffect, useEffectEvent, useReducer, useRef, useState } from "react"
 import {
   Circle,
   Grid3x3,
@@ -189,21 +189,21 @@ export function PageEditor({
     [pageSize]
   )
 
+  // The first measured size also fits the page into view.
+  const onResize = useEffectEvent((next: { w: number; h: number }) => {
+    setSize(next)
+    if (view === null) fit(next)
+  })
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap) return
     const observer = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect
-      if (width > 0 && height > 0) setSize({ w: width, h: height })
+      if (width > 0 && height > 0) onResize({ w: width, h: height })
     })
     observer.observe(wrap)
     return () => observer.disconnect()
   }, [])
-
-  const hasView = view !== null
-  useEffect(() => {
-    if (size && !hasView) fit(size)
-  }, [size, hasView, fit])
 
   // Wheel must be non-passive to prevent the page from scrolling while zooming.
   useEffect(() => {

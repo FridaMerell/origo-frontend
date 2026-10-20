@@ -5,7 +5,8 @@ import Image, { type StaticImageData } from "next/image"
 import { logout } from "@/app/actions/auth"
 import { LoginForm } from "@/app/login/login-form"
 import { useUser } from "@/app/lib/user-context"
-import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
+import { APP_LINKS } from "@/app/lib/tenant-links"
+import { useAppHrefs } from "@/app/components/ui/use-app-hrefs"
 import apsisIcon from "./apsis/icon.png"
 import fluxIcon from "./flux/icon.png"
 import tempusIcon from "./tempus/icon.png"
@@ -54,18 +55,13 @@ const APP_SCREENSHOTS: Record<string, string> = {}
 
 export default function RootHome() {
   const user = useUser()
-  const [hrefs, setHrefs] = useState<Record<string, string>>({})
+  const hrefs = useAppHrefs()
   const [preview, setPreview] = useState<{
     id: string
     x: number
     y: number
   } | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
-  useEffect(() => {
-    setHrefs(
-      Object.fromEntries(APP_LINKS.map(app => [app.id, appHref(app.id)])),
-    )
-  }, [])
   useEffect(() => {
     if (!menuOpen) return
     const onKeyDown = (event: KeyboardEvent) => {

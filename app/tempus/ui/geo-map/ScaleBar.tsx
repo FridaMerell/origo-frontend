@@ -56,7 +56,6 @@ function historicalScale(lat: number, zoom: number): { meters: number; label: st
 }
 
 function modernScale(lat: number, zoom: number): { meters: number; label: string } {
-  const maxMeters = MAX_BAR_WIDTH * metersPerMapUnit(lat, zoom)
   const meters = niceMetersForWidth(lat, zoom)
   return { meters, label: meters >= 1000 ? `${meters / 1000} km` : `${meters} m` }
 }

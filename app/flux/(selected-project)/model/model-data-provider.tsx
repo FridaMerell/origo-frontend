@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import type { FluxDesign, FluxScaffold, FluxScaffoldTarget } from "@/app/lib/dal"
 import { loadScaffold } from "./api/_actions/scaffold"
 
@@ -21,18 +21,19 @@ export function ModelDataProvider({ data, children }: { data: ModelData | null; 
   // target tabs without leaving the page). That's fine as long as each entry only asks for the
   // specific file(s) a view actually needs (pass `files`) rather than a whole target's file bundle,
   // which is what makes a cache miss on every navigation cheap instead of a real problem to solve.
-  const cache = useMemo(() => new Map<string, Promise<FluxScaffold | null>>(), [data])
+  const cache = useRef<{ data: ModelData | null; scaffolds: Map<string, Promise<FluxScaffold | null>> }>({ data: null, scaffolds: new Map() })
 
   const getScaffold = useCallback((target: FluxScaffoldTarget, files?: string[]) => {
     if (!data) return Promise.resolve(null)
+    if (cache.current.data !== data) cache.current = { data, scaffolds: new Map() }
     const key = files?.length ? `${target}:${files.join(",")}` : target
-    let pending = cache.get(key)
+    let pending = cache.current.scaffolds.get(key)
     if (!pending) {
       pending = loadScaffold(data.projectId, target, files).catch(() => null)
-      cache.set(key, pending)
+      cache.current.scaffolds.set(key, pending)
     }
     return pending
-  }, [cache, data])
+  }, [data])
 
   const value = useMemo(() => ({ data, getScaffold }), [data, getScaffold])
 

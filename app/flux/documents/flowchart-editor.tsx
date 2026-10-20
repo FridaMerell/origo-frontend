@@ -101,7 +101,7 @@ function EditorInner({
       pending.current = null
     }, 250)
     return () => clearTimeout(timer)
-  }, [nodes, edges, onChange])
+  }, [nodes, edges, onChange, initial.nodes.length])
   useEffect(() => () => {
     if (pending.current != null) onChange(pending.current)
   }, [onChange])

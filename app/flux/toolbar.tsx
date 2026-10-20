@@ -1,7 +1,7 @@
 "use client"
 
 import { AppLink as Link } from "@/app/components/ui/AppLink"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Button } from "@/app/components/ui/Button"
@@ -97,10 +97,11 @@ function UserSummaryRow({ userName }: { userName: string }) {
 }
 
 function LogoutButton({ className }: { className: string }) {
+  const router = useRouter()
   return (
     <button
       type="button"
-      onClick={() => void logout().then(() => { window.location.href = "/login" })}
+      onClick={() => void logout().then(() => router.replace("/login"))}
       className={className}
     >
       Logga ut

@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, type CSSProperties, useContext, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { createContext, type CSSProperties, useContext, useLayoutEffect, useRef, useState } from "react"
 import {
   Handle,
   type NodeProps,
@@ -56,10 +56,6 @@ export function ShapeNode({ id, data, selected }: NodeProps) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(label)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (!editing) setDraft(label)
-  }, [label, editing])
 
   useLayoutEffect(() => {
     if (editing) {

@@ -1,39 +1,31 @@
 "use client"
 import { usePathname } from "next/navigation"
-import { ReactNode, useEffect, useState } from "react"
+import { ReactNode } from "react"
 import TopBar from "./TopBar"
-import { APP_LINKS, appHref } from "../lib/tenant-links"
+import { APP_LINKS } from "../lib/tenant-links"
 import { ORIGO_VERSION } from "../lib/config"
 import { ThemeScope } from "../components/ui/ThemeScope"
+import { useAppHrefs } from "../components/ui/use-app-hrefs"
+import { useStoredMode } from "../components/ui/use-stored-mode"
 
 const STORAGE_KEY = "opus-mode"
 
 const OpusShell = ({ children }: { children: ReactNode }) => {
-	const [mode, setMode] = useState<"light" | "dark" | null>(null)
+	const [mode, setMode] = useStoredMode(STORAGE_KEY, "light")
 	const pathname = usePathname()
 	const isLoginRoute = pathname === "/login"
-	const [siteHrefs, setSiteHrefs] = useState<Record<string, string>>({})
-
-	useEffect(() => {
-		const stored = localStorage.getItem(STORAGE_KEY)
-		setMode(stored === "dark" || stored === "light" ? stored : "light")
-		setSiteHrefs(
-			Object.fromEntries(APP_LINKS.map(app => [app.id, appHref(app.id)])),
-		)
-	}, [])
+	const siteHrefs = useAppHrefs()
 
 	const toggleMode = () => {
-		setMode(previous => {
-			const next = previous
-				? previous === "dark"
+		setMode(
+			mode
+				? mode === "dark"
 					? "light"
 					: "dark"
 				: window.matchMedia("(prefers-color-scheme: dark)").matches
 					? "light"
-					: "dark"
-			localStorage.setItem(STORAGE_KEY, next)
-			return next
-		})
+					: "dark",
+		)
 	}
 	if (isLoginRoute) {
 		return (

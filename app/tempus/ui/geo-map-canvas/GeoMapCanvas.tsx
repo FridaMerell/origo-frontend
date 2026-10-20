@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import { buildEdgeFade, EDGE_FADE_DISTANCE_PX, ringsBounds, type ScreenRing } from "@/app/tempus/ui/geo-map/biotope-texture"
 import type { GlyphAssetKind } from "@/app/tempus/ui/geo-map-canvas/glyph-assets"
 import { getImage, RASTER_ASSETS } from "@/app/tempus/ui/geo-map-canvas/raster-assets"
@@ -188,7 +188,7 @@ export function GeoMapCanvas({ initialView, focusGeometry, layers, textureLayers
   const [canvasSize, setCanvasSize] = useState({ width: WIDTH, height: HEIGHT })
   // Skalstockens referenslatitud låses till startvyn (se ScaleBar/SVG-kartan)
   // — annars hoppar både längd och etikett vid varje pan trots oförändrad zoom.
-  const scaleLatitude = useRef(initialView.center[1]).current
+  const [scaleLatitude] = useState(initialView.center[1])
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const drag = useRef<{ x: number; y: number; moved: boolean } | null>(null)
   // Panorering under drag rör sig via denna ref, INTE via `setView` — att
@@ -212,8 +212,12 @@ export function GeoMapCanvas({ initialView, focusGeometry, layers, textureLayers
   const visibleHeight = Math.min(HEIGHT, WIDTH / canvasAspectRatio)
   const visibleX = (WIDTH - visibleWidth) / 2
   const visibleY = (HEIGHT - visibleHeight) / 2
+  // Read by drawing and pointer handling outside render; updated before any
+  // effect that draws runs.
   const visibleFrame = useRef({ x: visibleX, y: visibleY, width: visibleWidth, height: visibleHeight })
-  visibleFrame.current = { x: visibleX, y: visibleY, width: visibleWidth, height: visibleHeight }
+  useLayoutEffect(() => {
+    visibleFrame.current = { x: visibleX, y: visibleY, width: visibleWidth, height: visibleHeight }
+  }, [visibleX, visibleY, visibleWidth, visibleHeight])
 
   // --- Per-frame draw: bitmap blit (pan) + the small, cheap overlay
   // (focus outline, markers, points) that must track the live pan offset.

@@ -1,6 +1,6 @@
 import type { SelectHTMLAttributes } from "react"
 
-export default function ({
+export default function Select({
 	children,
 	...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {

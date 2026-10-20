@@ -52,12 +52,14 @@ function usePageSections(path: string) {
   useEffect(() => {
     const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-model-section]"))
     const found = elements.map((element) => ({ id: element.id, label: element.dataset.modelSection ?? "" })).filter((section) => section.id && section.label)
-    setSections(found)
-    if (found.length === 0) return
 
+    // The page's sections and the one in view are read in an animation frame:
+    // first for the new page, then once per frame while it scrolls or resizes.
     let frame = 0
     const update = () => {
       frame = 0
+      setSections(found)
+      if (found.length === 0) return
       if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) {
         setActiveId(found[found.length - 1].id)
         return
@@ -76,7 +78,8 @@ function usePageSections(path: string) {
       if (!frame) frame = window.requestAnimationFrame(update)
     }
 
-    update()
+    onScroll()
+    if (found.length === 0) return () => window.cancelAnimationFrame(frame)
     window.addEventListener("scroll", onScroll, { passive: true })
     window.addEventListener("resize", onScroll)
     return () => {
@@ -160,7 +163,12 @@ export function ModelNav({ counts, index }: { counts: ModelNavCounts; index: Mod
   const activeItems = activeArea.key === "overview" || activeArea.key === "delivery" ? [] : index[activeArea.key]
   const activeSection = sections.find((section) => section.id === activeId)
 
-  useEffect(() => setOpen(false), [path])
+  // Navigating closes the menu.
+  const [openPath, setOpenPath] = useState(path)
+  if (openPath !== path) {
+    setOpenPath(path)
+    setOpen(false)
+  }
 
   return (
     <>

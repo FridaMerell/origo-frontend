@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react"
 import { createPortal } from "react-dom"
 import { Printer } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
@@ -9,6 +9,8 @@ import type { Drawing, DrawingPage } from "@/app/lib/dal"
 import { DrawingSheet, PAPERS, type PerSheet } from "./drawing-sheet"
 
 const PX_PER_MM = 96 / 25.4
+
+const subscribeToNothing = () => () => {}
 
 export function PrintView({
   drawing,
@@ -24,7 +26,15 @@ export function PrintView({
   const [landscape, setLandscape] = useState(true)
   const [perSheet, setPerSheet] = useState<PerSheet>(pages.length > 1 ? 2 : 1)
   const [previewWidth, setPreviewWidth] = useState(0)
-  const [printRoot, setPrintRoot] = useState<HTMLElement | null>(null)
+  // A separate node under <body> lets print CSS hide the whole app and print only the sheets.
+  // It exists only in the browser, and the sheets are portaled into it once the page has hydrated.
+  const [printRoot] = useState(() => {
+    if (typeof document === "undefined") return null
+    const node = document.createElement("div")
+    node.id = "print-root"
+    return node
+  })
+  const hydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false)
   const previewRef = useRef<HTMLDivElement>(null)
 
   const chosen = useMemo(() => pages.filter((p) => selected.has(p.id)), [pages, selected])
@@ -33,16 +43,13 @@ export function PrintView({
   const sheetH = landscape ? PAPERS[paper].height : PAPERS[paper].width
   const previewScale = previewWidth > 0 ? Math.min(1, previewWidth / (sheetW * PX_PER_MM)) : 0.5
 
-  // A separate node under <body> lets print CSS hide the whole app and print only the sheets.
   useEffect(() => {
-    const node = document.createElement("div")
-    node.id = "print-root"
-    document.body.appendChild(node)
-    setPrintRoot(node)
+    if (!printRoot) return
+    document.body.appendChild(printRoot)
     return () => {
-      node.remove()
+      printRoot.remove()
     }
-  }, [])
+  }, [printRoot])
 
   useEffect(() => {
     const el = previewRef.current
@@ -156,7 +163,7 @@ export function PrintView({
         ))}
       </div>
 
-      {printRoot && createPortal(sheets, printRoot)}
+      {hydrated && printRoot && createPortal(sheets, printRoot)}
     </div>
   )
 }

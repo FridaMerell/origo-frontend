@@ -4,9 +4,9 @@ import { useState } from "react"
 import { BookmarkIcon, ChevronRightIcon, Trash2Icon } from "lucide-react"
 import { Chip } from "@/app/components/ui/Chip"
 import { Drawer, useDrawerClose } from "@/app/components/ui/Drawer"
-import type { WorkBookmark } from "../../_actions/bookmark-actions"
-import { removeBookmark } from "../../_actions/bookmark-actions"
-import { requestUnitNavigation } from "../../_state/unit-navigation"
+import type { WorkBookmark } from "../../../_actions/bookmark-actions"
+import { removeBookmark } from "../../../_actions/bookmark-actions"
+import { requestUnitNavigation } from "../../../_state/unit-navigation"
 
 function BookmarkRows({ bookmarks }: { bookmarks: WorkBookmark[] }) {
 	const closeDrawer = useDrawerClose()

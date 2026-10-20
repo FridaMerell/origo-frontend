@@ -16,6 +16,10 @@ import {
   type SwedenMapFeature,
 } from "@/app/tempus/ui/biotope-map"
 import { biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
+import { getTempusAllObservationsPage } from "@/app/lib/dal/tempus/observations"
+import { formatDateLongOrNull } from "@/app/lib/formatters"
+import { formatUserName } from "@/app/lib/format-user-name"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import FollowButton from "./FollowButton"
 import PhenogramPanel from "./PhenogramPanel"
 
@@ -42,8 +46,13 @@ const HabitatChips = ({ items }: { items: TempusHabitat[] }) => (
   </div>
 )
 
-const Page = async ({ params }: { params: Promise<{ label: string; id: string }> }) => {
+const Page = async ({ params, searchParams }: {
+  params: Promise<{ label: string; id: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) => {
   const { label: rawLabel, id } = await params
+  const { p } = await searchParams
+  const observationPage = typeof p === "string" && parseInt(p) > 0 ? parseInt(p) : 1
   const label = decodeURIComponent(rawLabel)
   const fromHomeOverview = label === "foljda" || label === "oversikt"
   const [geoAreas, cookieStore] = await Promise.all([
@@ -55,11 +64,17 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
     ? null
     : geoAreas.find((geoArea) => geoArea.id === selectedId) ?? geoAreas[0] ?? null
 
-  const [species, category] = await Promise.all([
+  const [species, category, observations] = await Promise.all([
     getTempusSpeciesItem(id),
     fromHomeOverview ? Promise.resolve(null) : getTempusSpeciesCategoryItem(label),
+    // `id` is the Dyntaxa taxon id, which the observation filter accepts.
+    getTempusAllObservationsPage({ species: id, page: observationPage, page_size: 10 }),
   ])
   if (!species) notFound()
+
+  const observationPages = Math.max(1, Math.ceil(observations.count / (observations.pageSize ?? 10)))
+  const observationHref = (targetPage: number) =>
+    `${targetPage > 1 ? `?p=${targetPage}` : "?"}#observationer`
 
   const selectedMapAreas: SwedenMapFeature[] = selectedGeoArea?.geometry
     ? [
@@ -91,7 +106,7 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
         <div className="flex flex-col gap-1">
           <Link
             href={label === "oversikt" ? "/?view=all" : fromHomeOverview ? "/" : `/taxa/${encodeURIComponent(label)}`}
-            className="w-fit font-mono text-xs uppercase tracking-wide text-text-muted hover:text-text"
+            className="w-fit text-sm text-text-muted hover:text-text"
           >
             ← {label === "oversikt" ? "Alla arter" : fromHomeOverview ? "Säsongsöversikt" : category?.label ?? "Okänd kategori"}
           </Link>
@@ -129,7 +144,7 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
         <dl className="relative z-10 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2 w-max">
           {facts.map(([term, value]) => (
             <div key={term} className="flex flex-col gap-0.5">
-              <dt className="font-mono text-[10px] uppercase tracking-wide text-text-faint">{term}</dt>
+              <dt className="text-sm text-text-muted">{term}</dt>
               <dd className="text-sm text-text">{value}</dd>
             </div>
           ))}
@@ -137,7 +152,7 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
       </Card>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">Aktivitet</h2>
+        <h2 className="font-display text-xl font-semibold tracking-tight">Aktivitet</h2>
         <Card className="flex flex-col md:flex-row gap-3 items-end">
           <div className="md:w-2/3 flex-col flex justify-space gap-10">
             <PhenogramPanel
@@ -147,10 +162,10 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
             />
             <hr className="my-3 border-text-muted" />
             <section className="flex flex-col gap-3">
-              <h2 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">Livsmiljö</h2>
+              <h2 className="font-display text-lg font-semibold tracking-tight">Livsmiljö</h2>
               {species.landscape_types?.length > 0 && (
                 <div className="flex flex-col gap-1.5">
-                  <h3 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">
+                  <h3 className="text-sm text-text-muted">
                     Landskapstyper
                   </h3>
                   <HabitatChips items={species.landscape_types} />
@@ -158,7 +173,7 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
               )}
               {species.biotopes?.length > 0 && (
                 <div className="flex flex-col gap-1.5">
-                  <h3 className="font-mono text-[10px] uppercase tracking-wide text-text-faint">
+                  <h3 className="text-sm text-text-muted">
                     Biotoper
                   </h3>
                   <HabitatChips items={species.biotopes.length >6 ? species.biotopes.slice(0, 6) : species.biotopes} />
@@ -175,6 +190,77 @@ const Page = async ({ params }: { params: Promise<{ label: string; id: string }>
         </Card>
 
       </section >
+
+      <section id="observationer" className="flex flex-col gap-3">
+        <h2 className="font-display text-xl font-semibold tracking-tight">Observationer</h2>
+        <Card className="flex flex-col p-0">
+          {observations.results.length === 0 ? (
+            <p className="p-4.5 text-sm text-text-muted">
+              Ingen har observerat {speciesName(species)} än.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-6 border-b border-border px-4.5 py-3 text-sm text-text-muted sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+                <span>Datum</span>
+                <span className="max-sm:hidden">Person</span>
+                <span className="max-sm:hidden">Livsstadium</span>
+                <span className="text-right">Antal</span>
+              </div>
+              <ul>
+                {observations.results.map((observation) => (
+                  <li key={observation.id} className="border-b border-border last:border-b-0">
+                    <Link
+                      href={`/observationer/${observation.id}`}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 gap-y-0.5 px-4.5 py-3 text-sm text-text no-underline transition-colors hover:bg-surface-2/40 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
+                    >
+                      <span className="min-w-0 truncate">{formatDateLongOrNull(observation.observed_at) ?? "—"}</span>
+                      <span className="min-w-0 truncate max-sm:hidden">{formatUserName(observation)}</span>
+                      <span className="min-w-0 truncate max-sm:hidden">{observation.life_stage || "—"}</span>
+                      <span className="col-span-2 row-start-2 min-w-0 truncate text-text-muted sm:hidden">
+                        {formatUserName(observation)}
+                        {observation.life_stage ? ` · ${observation.life_stage}` : null}
+                      </span>
+                      <span className="col-start-2 row-start-1 text-right tabular-nums sm:col-start-auto sm:row-start-auto">
+                        {observation.count ?? "—"}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </Card>
+
+        {(observations.next || observations.previous) && (
+          <nav className="flex items-center justify-between" aria-label="Sidnavigering för observationer">
+            {observations.previous ? (
+              <Link
+                href={observationHref(observationPage - 1)}
+                className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
+              >
+                <ChevronLeft size={16} />
+                Föregående
+              </Link>
+            ) : (
+              <span />
+            )}
+            <span className="text-sm text-text-muted">
+              Sida {observationPage} av {observationPages}
+            </span>
+            {observations.next ? (
+              <Link
+                href={observationHref(observationPage + 1)}
+                className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
+              >
+                Nästa
+                <ChevronRight size={16} />
+              </Link>
+            ) : (
+              <span />
+            )}
+          </nav>
+        )}
+      </section>
 
     </div >
   )

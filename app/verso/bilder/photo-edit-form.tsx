@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { usePathname } from "next/navigation"
 import { zodResolver } from "@/app/components/form/zodResolver"
 import { deletePhoto, setAlbumCover, updatePhoto } from "./_actions/photo"
@@ -33,7 +33,7 @@ export function PhotoEditForm({
     register,
     handleSubmit,
     setError,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<PhotoFormValues>({
     resolver: zodResolver(photoFormSchema),
@@ -55,7 +55,7 @@ export function PhotoEditForm({
     },
   })
   const submit = useSubmitAction(setError)
-  const hasVenture = Boolean(watch("venture"))
+  const hasVenture = Boolean(useWatch({ control, name: "venture" }))
 
   const onSubmit = handleSubmit((data) => {
     const staged = hasVenture ? data : { ...data, stage: "" as const, task: "" }

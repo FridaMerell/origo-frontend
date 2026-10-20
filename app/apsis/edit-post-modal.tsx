@@ -71,7 +71,7 @@ export function EditPostModal({
     return () => {
       cancelled = true;
     };
-  }, [post.svenska_kyrkan_place_id]);
+  }, [post.svenska_kyrkan_place_id, post.name]);
 
   const selectChurch = (place: ApsisPlace) => {
     setChurch({ id: place.id, name: place.name, detail: churchDetail(place) });

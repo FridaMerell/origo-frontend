@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
@@ -59,12 +60,12 @@ export default function PrivacyPage() {
           <span className="font-mono text-[11px] font-medium uppercase tracking-[0.18em]">
             ORIGO / INTEGRITET
           </span>
-          <a
+          <Link
             href="/"
             className="font-mono text-[11px] uppercase tracking-[0.12em] underline underline-offset-4"
           >
             Till startsidan
-          </a>
+          </Link>
         </header>
 
         <div className="mt-16 grid gap-12 lg:grid-cols-[2fr_3fr] lg:gap-24">

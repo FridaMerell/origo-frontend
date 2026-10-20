@@ -56,7 +56,6 @@ export default function BirdnetDeviceManager({
   const [editor, setEditor] = useState<EditorState | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const activeCount = devices.filter((device) => device.is_active).length
 
   const selectedHouse = houses.find((house) => house.id === editor?.house) ?? null
   const selectableUsers = useMemo(() => {

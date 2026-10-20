@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { z } from "zod"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
 import { getCurrentUser } from "@/app/lib/dal/auth"
@@ -106,10 +107,33 @@ export async function updateObservation(
   }
   if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
 
+  // partial() still fills in the schema's defaults (count: null, notes: "", ...);
+  // send only the fields the caller passed so a PATCH never blanks the others.
+  const changes = Object.fromEntries(Object.entries(parsed.data).filter(([key]) => key in input))
   const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.observations}${id}/`, {
     method: "PATCH",
     headers: await authedJsonHeaders(),
-    body: JSON.stringify(parsed.data),
+    body: JSON.stringify(changes),
+  })
+  if (!response.ok) {
+    return { error: await responseErrorMessage(response) }
+  }
+  revalidatePath("/observationer")
+  return { success: true, observationId: id }
+}
+
+const observationPhotosSchema = z.array(z.string().url())
+
+/** Replaces the observation's photo paths (see /api/upload) and nothing else. */
+export async function setObservationPhotos(id: string, photos: string[]): Promise<ObservationResult> {
+  const parsed = observationPhotosSchema.safeParse(photos)
+  if (!parsed.success) return { error: "Bildernas sökvägar är ogiltiga." }
+  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
+
+  const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.observations}${id}/`, {
+    method: "PATCH",
+    headers: await authedJsonHeaders(),
+    body: JSON.stringify({ photos: parsed.data }),
   })
   if (!response.ok) {
     return { error: await responseErrorMessage(response) }

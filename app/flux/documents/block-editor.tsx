@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useRef } from "react"
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react"
 import { Button } from "@/app/components/ui/Button"
 import {
   ChevronDownIcon,
@@ -91,10 +91,14 @@ export function BlockEditor({
   blocks: DocumentBlock[]
   onChange: (blocks: DocumentBlock[]) => void
 }) {
+  // The callbacks below stay the same between renders (so the blocks need not
+  // re-render) and read the latest blocks and onChange through these refs.
   const blocksRef = useRef(blocks)
-  blocksRef.current = blocks
   const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
+  useLayoutEffect(() => {
+    blocksRef.current = blocks
+    onChangeRef.current = onChange
+  })
 
   const updateBlock = useCallback((id: string, content: string) => {
     const current = blocksRef.current

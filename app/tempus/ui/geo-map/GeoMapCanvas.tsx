@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react"
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react"
 import type { GeoGeometry, GeoPosition } from "@/app/lib/land-cover"
 import { buildBiotopeTexture, type BiotopeTextureKind, type ScreenRing } from "@/app/tempus/ui/geo-map/biotope-texture"
 import { CompassRose } from "@/app/tempus/ui/geo-map/CompassRose"
@@ -144,7 +144,7 @@ export function GeoMapCanvas({ initialView, focusGeometry, layers, textureLayers
   // markskala med latitud, men att låta skalan följa varje pan gör att både
   // längd och etikett hoppar trots oförändrad zoom. Referensen är därför
   // låst till kartans startvy; skalstocken ändras endast när användaren zoomar.
-  const scaleLatitude = useRef(initialView.center[1]).current
+  const [scaleLatitude] = useState(initialView.center[1])
   // `center` is memoized (not just recomputed inline) because the viewport-
   // change effect below depends on it by reference — without memoizing, a
   // fresh array every render would re-fire that effect on every render, not
@@ -154,7 +154,7 @@ export function GeoMapCanvas({ initialView, focusGeometry, layers, textureLayers
     const [x, y] = worldPoint(point, tileZoom)
     return [WIDTH / 2 + x - center[0], HEIGHT / 2 + y - center[1]]
   }
-  const unproject = (x: number, y: number): GeoPosition => positionFromWorld(center[0] + x - WIDTH / 2, center[1] + y - HEIGHT / 2, tileZoom)
+  const unproject = useCallback((x: number, y: number): GeoPosition => positionFromWorld(center[0] + x - WIDTH / 2, center[1] + y - HEIGHT / 2, tileZoom), [center, tileZoom])
   // Marktäckestexturen (brusfält, marching squares, symbolströning) är för
   // dyr att bygga om varje bildruta under en drag/pan — den behöver bara
   // räknas om när själva zoomnivån eller lagren ändras. Bygg den därför i ett
@@ -221,8 +221,11 @@ export function GeoMapCanvas({ initialView, focusGeometry, layers, textureLayers
   const visibleHeight = Math.min(HEIGHT, WIDTH / canvasAspectRatio)
   const visibleX = (WIDTH - visibleWidth) / 2
   const visibleY = (HEIGHT - visibleHeight) / 2
+  // Read by pointer handling outside render.
   const visibleFrame = useRef({ x: visibleX, y: visibleY, width: visibleWidth, height: visibleHeight })
-  visibleFrame.current = { x: visibleX, y: visibleY, width: visibleWidth, height: visibleHeight }
+  useLayoutEffect(() => {
+    visibleFrame.current = { x: visibleX, y: visibleY, width: visibleWidth, height: visibleHeight }
+  }, [visibleX, visibleY, visibleWidth, visibleHeight])
 
   // --- Viewport reporting ----------------------------------------------------
   useEffect(() => {
@@ -234,7 +237,7 @@ export function GeoMapCanvas({ initialView, focusGeometry, layers, textureLayers
     const [minLng, maxLat] = unproject(0, 0)
     const [maxLng, minLat] = unproject(WIDTH, HEIGHT)
     onViewportChange([minLng, minLat, maxLng, maxLat])
-  }, [view, center, onViewportChange, tileZoom])
+  }, [onViewportChange, unproject])
   useEffect(() => { onZoomChange?.(tileZoom) }, [onZoomChange, tileZoom])
 
   // --- Zoom & pan ------------------------------------------------------------
@@ -266,10 +269,11 @@ export function GeoMapCanvas({ initialView, focusGeometry, layers, textureLayers
   // React's synthetic onWheel is attached passively, so event.preventDefault()
   // there cannot stop the page from scrolling. Attach a native, non-passive
   // listener instead so scrolling over the map only zooms it.
+  const zoomOnWheel = useEffectEvent((event: globalThis.WheelEvent) => zoom(event.deltaY < 0 ? 1 : -1, eventPointFromClient(event.clientX, event.clientY)))
   useEffect(() => {
     const node = svgRef.current
     if (!node) return
-    const handleWheel = (event: globalThis.WheelEvent) => { event.preventDefault(); zoom(event.deltaY < 0 ? 1 : -1, eventPointFromClient(event.clientX, event.clientY)) }
+    const handleWheel = (event: globalThis.WheelEvent) => { event.preventDefault(); zoomOnWheel(event) }
     node.addEventListener("wheel", handleWheel, { passive: false })
     return () => node.removeEventListener("wheel", handleWheel)
   }, [])

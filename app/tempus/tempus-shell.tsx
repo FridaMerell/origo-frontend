@@ -1,41 +1,33 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { type ReactNode } from "react"
 import { flushSync } from "react-dom"
 import { usePathname } from "next/navigation"
 import Nav from "./nav"
-import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
+import { APP_LINKS } from "@/app/lib/tenant-links"
 import { ThemeScope } from "@/app/components/ui/ThemeScope"
+import { useAppHrefs } from "@/app/components/ui/use-app-hrefs"
+import { useStoredMode } from "@/app/components/ui/use-stored-mode"
 
 const STORAGE_KEY = "tempus-mode"
 
 export default function TempusShell({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<"light" | "dark" | null>(null)
-  const [siteHrefs, setSiteHrefs] = useState<Record<string, string>>({})
+  const [mode, setMode] = useStoredMode(STORAGE_KEY)
+  const siteHrefs = useAppHrefs()
   const pathname = usePathname()
   const isLoginRoute = pathname === "/login"
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    setMode(stored === "dark" || stored === "light" ? stored : null)
-    setSiteHrefs(
-      Object.fromEntries(APP_LINKS.map((app) => [app.id, appHref(app.id)])),
-    )
-  }, [])
-
   const toggleMode = () => {
     const apply = () =>
-      setMode((previous) => {
-        const next = previous
-          ? previous === "dark"
+      setMode(
+        mode
+          ? mode === "dark"
             ? "light"
             : "dark"
           : window.matchMedia("(prefers-color-scheme: dark)").matches
             ? "light"
-            : "dark"
-        localStorage.setItem(STORAGE_KEY, next)
-        return next
-      })
+            : "dark",
+      )
     // The browser cross-fades the two modes; where it cannot, or with reduced
     // motion, the mode switches at once as before.
     if (document.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {

@@ -90,13 +90,13 @@ export function PhenogramSummary({ phenogram }: { phenogram: TempusPhenogram }) 
       <dl className="grid grid-cols-2 gap-x-8 gap-y-3 sm:grid-cols-4">
         {facts.map(([term, value]) => (
           <div key={term} className="flex flex-col gap-0.5">
-            <dt className="font-mono text-[10px] uppercase tracking-wide text-text-faint">{term}</dt>
+            <dt className="text-sm text-text-muted">{term}</dt>
             <dd className="text-sm text-text">{value}</dd>
           </div>
         ))}
       </dl>
 
-      <figcaption className="font-mono text-[10px] uppercase leading-relaxed tracking-wide text-text-faint">
+      <figcaption className="text-sm leading-relaxed text-text-muted">
         {(record_count ?? 0).toLocaleString("sv-SE")} fynd{record_limit_hit ? " (tak nått)" : ""} ·{" "}
         {years_present} år · topp vecka {peak_week} · aktiv vecka {activity_window?.start_week}–
         {activity_window?.end_week} · säkerhet {percent(confidence)} · utjämning {smooth_weeks} v

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/app/components/ui/Button"
 import { PlusIcon, TableIcon, Trash2Icon, XIcon } from "lucide-react"
 import {
@@ -25,7 +25,9 @@ export function DbSchemaEditor({ value, onChange }: { value: string; onChange: (
   })
 
   const onChangeRef = useRef(onChange)
-  onChangeRef.current = onChange
+  useLayoutEffect(() => {
+    onChangeRef.current = onChange
+  })
   const commit = useCallback((next: DbSchema) => {
     setSchema(next)
     onChangeRef.current(schemaToMermaid(next))

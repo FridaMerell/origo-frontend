@@ -3,7 +3,7 @@ import { followSpecies, unfollowSpecies } from "@/app/tempus/_actions/species"
 import { Button } from "@/app/components/ui/Button"
 import { useToast } from "@/app/components/ui/ToastProvider"
 import { useRouter } from "next/navigation"
-import { useEffect, useState, useTransition } from "react"
+import { useState, useTransition } from "react"
 import { Check, ChevronDown } from "lucide-react"
 
 const FollowButton = ({ initial, initialNotify, taxa, props }: { initial: boolean, initialNotify: boolean, taxa: string, props?: React.ComponentProps<typeof Button> }) => {
@@ -14,10 +14,13 @@ const FollowButton = ({ initial, initialNotify, taxa, props }: { initial: boolea
   const router = useRouter()
   const { toast } = useToast()
 
-  useEffect(() => {
+  // New values from the server (after router.refresh) replace the local ones.
+  const [synced, setSynced] = useState({ initial, initialNotify })
+  if (synced.initial !== initial || synced.initialNotify !== initialNotify) {
+    setSynced({ initial, initialNotify })
     setIsFollowing(initial)
     setNotify(initialNotify)
-  }, [initial, initialNotify])
+  }
 
   const toggle = () => {
     const next = !isFollowing

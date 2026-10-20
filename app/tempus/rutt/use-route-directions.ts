@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
+import { useEffect, useEffectEvent, useMemo } from "react"
 import { useMapsLibrary } from "@vis.gl/react-google-maps"
 import type { RouteLineString } from "@/app/lib/schemas"
 
@@ -44,8 +44,9 @@ export function useDirections(
   },
 ) {
   const routesLibrary = useMapsLibrary("routes")
-  const handlersRef = useRef(handlers)
-  handlersRef.current = handlers
+  const onPending = useEffectEvent(() => handlers.onPending())
+  const onResult = useEffectEvent((route: PlannedRoute) => handlers.onResult(route))
+  const onError = useEffectEvent((message: string) => handlers.onError(message))
 
   const stops = useMemo(
     () => waypoints.filter((point): point is NonNullable<Endpoint> => point != null),
@@ -56,7 +57,7 @@ export function useDirections(
     if (!routesLibrary) return
     if (!origin || !destination) return
 
-    handlersRef.current.onPending()
+    onPending()
     let cancelled = false
     routesLibrary.Route
       .computeRoutes({
@@ -73,10 +74,10 @@ export function useDirections(
         const route = response.routes?.[0]
         const path = route?.path ?? []
         if (!route || path.length < 2) {
-          handlersRef.current.onError("Rutten saknar geometri. Prova andra punkter.")
+          onError("Rutten saknar geometri. Prova andra punkter.")
           return
         }
-        handlersRef.current.onResult({
+        onResult({
           geometry: { type: "LineString", coordinates: thin(path) },
           distanceMetres: route.distanceMeters ?? 0,
           durationSeconds: Math.round((route.durationMillis ?? 0) / 1000),
@@ -89,7 +90,7 @@ export function useDirections(
           typeof error === "object" && error && "code" in error
             ? String((error as { code: unknown }).code)
             : ""
-        handlersRef.current.onError(
+        onError(
           status === "ZERO_RESULTS"
             ? "Ingen körväg hittades mellan punkterna."
             : "Kunde inte hämta rutten från Google. Försök igen.",

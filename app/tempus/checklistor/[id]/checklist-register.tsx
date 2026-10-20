@@ -4,7 +4,7 @@ import { useRef, useState } from "react"
 import { loadChecklistRegisterPage } from "@/app/tempus/_actions/checklists"
 import { loadSpeciesDetail, loadSpeciesItems, type SpeciesDetail } from "@/app/tempus/_actions/species"
 import type { TempusChecklistRegisterRow, TempusSpecies } from "@/app/lib/dal"
-import QuickObservation from "@/app/tempus/observationer/quick-observation"
+import QuickObservation, { type QuickObservationHandle } from "@/app/tempus/observationer/quick-observation"
 import { ChecklistSearchHeader } from "./checklist-search-header"
 import { ChecklistRowList } from "./checklist-row-list"
 import { SpeciesDetailDialog } from "./species-detail-dialog"
@@ -69,9 +69,7 @@ export default function ChecklistRegister({
   const [hasPrevious, setHasPrevious] = useState(initialHasPrevious)
   const [hasNext, setHasNext] = useState(initialHasNext)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [preset, setPreset] = useState<
-    { id: string; label: string; scientific: string; stages: string[]; checklistItemId: string } | null
-  >(null)
+  const quickObservation = useRef<QuickObservationHandle>(null)
   const [selectedRow, setSelectedRow] = useState<RegisterRow | null>(null)
   const [selectedData, setSelectedData] = useState<SpeciesDetail | null>(null)
   const [loadingCard, setLoadingCard] = useState(false)
@@ -169,12 +167,14 @@ export default function ChecklistRegister({
     void loadSpeciesItems([row.species])
       .then((items) => items[0]?.stages ?? [])
       .catch(() => [])
-      .then((stages) => setPreset({
-        id: row.species,
-        label: row.commonName,
-        scientific: row.scientificName ?? "",
-        stages,
-        checklistItemId: row.id,
+      .then((stages) => quickObservation.current?.open({
+        species: {
+          id: row.species,
+          label: row.commonName,
+          scientific: row.scientificName ?? "",
+          stages,
+        },
+        checklistItem: { id: row.id, checklistId, name: checklistName },
       }))
   }
 
@@ -205,10 +205,8 @@ export default function ChecklistRegister({
       ) : null}
 
       <QuickObservation
+        ref={quickObservation}
         hideTrigger
-        species={preset}
-        checklistItem={preset ? { id: preset.checklistItemId, checklistId, name: checklistName } : null}
-        onConsumed={() => setPreset(null)}
         onSaved={(checklistItemIds, observationId) => {
           const observedIds = new Set(checklistItemIds)
           const updateRows = (current: RegisterRow[]) => current.map((row) =>

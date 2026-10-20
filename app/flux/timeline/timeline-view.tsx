@@ -5,7 +5,6 @@ import { Badge } from "@/app/components/ui/Badge";
 import { useState } from "react";
 
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
-import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import {
   fluxUserName,
   useFluxMilestones,

@@ -4,8 +4,8 @@ import { useEffect, useState } from "react"
 import { XIcon } from "lucide-react"
 import { Drawer } from "@/app/components/ui/Drawer"
 import type { AlignmentMatrix, AutoMatchChaptersResult, Id } from "@/app/lib/dal/opus"
-import { alignTexts } from "../../_actions/alignment-actions"
-import { SelectField } from "../../forms/Fields/Fields"
+import { alignTexts } from "../../../_actions/alignment-actions"
+import { SelectField } from "../../../forms/Fields/Fields"
 
 export type EditionInfo = { id: Id; title: string; language: string; chapters: { id: Id; label: string }[] }
 export type SyncColumn = { versionId: Id; editionId: Id; title: string }
@@ -71,14 +71,22 @@ export default function ChapterSync({
 	const groups = staged.map(entry => entry.items)
 
 	// Förhandsgranskning: torrkörning av hela listan varje gång den ändras.
-	useEffect(() => {
+	// En tom lista har ingen plan; annars granskas den nya listan.
+	const [previewed, setPreviewed] = useState({ staged, setId })
+	if (previewed.staged !== staged || previewed.setId !== setId) {
+		setPreviewed({ staged, setId })
 		if (staged.length === 0) {
 			setPlan(null)
 			setProblem(null)
-			return
+			setPreviewing(false)
+		} else {
+			setPreviewing(true)
 		}
+	}
+
+	useEffect(() => {
+		if (staged.length === 0) return
 		let cancelled = false
-		setPreviewing(true)
 		alignTexts(setId, staged.map(entry => entry.items), { offset: 0, limit: 1 }, true)
 			.then(matrix => {
 				if (cancelled) return

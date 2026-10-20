@@ -48,6 +48,8 @@ const Page = async () => {
                   <div className="flex h-full flex-col">
                     {category.image_url ? (
                       <div className="relative aspect-[4/3] overflow-hidden border-b border-border bg-surface-2">
+                        {/* Category images come from any host, which next/image would need listed in remotePatterns. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={category.image_url}
                           alt={category.label}

@@ -42,38 +42,36 @@ export default function AddSpeciesPanel({
   const existing = useMemo(() => new Set(existingDyntaxaIds), [existingDyntaxaIds])
 
   const [query, setQuery] = useState("")
-  const [searching, setSearching] = useState(false)
-  const [hits, setHits] = useState<TempusTaxonHit[]>([])
+  // The latest answer and the search it answers; it is searching until the
+  // answer matches the current search.
+  const [result, setResult] = useState<{ search: string; hits: TempusTaxonHit[] }>({ search: "", hits: [] })
   const [staged, setStaged] = useState<TempusTaxonHit[]>([])
   const [message, setMessage] = useState<string | null>(null)
   const [errors, setErrors] = useState<string[]>([])
   const [registering, startRegister] = useTransition()
 
   const requestId = useRef(0)
+  const trimmedQuery = query.trim()
+  const search = trimmedQuery.length >= 2 ? `${underTaxonId ?? ""}:${trimmedQuery}` : null
+  const searching = search !== null && result.search !== search
+  const hits = search !== null ? result.hits : []
 
   useEffect(() => {
-    const q = query.trim()
-    if (q.length < 2) {
-      setHits([])
-      setSearching(false)
-      return
-    }
-    setSearching(true)
+    if (search === null) return
     const current = ++requestId.current
     const timer = setTimeout(async () => {
-      const result = await searchTaxa(q, underTaxonId)
+      const found = await searchTaxa(trimmedQuery, underTaxonId)
       if (current !== requestId.current) return
-      setSearching(false)
-      if (result.error) {
-        setMessage(result.error)
-        setHits([])
+      if (found.error) {
+        setMessage(found.error)
+        setResult({ search, hits: [] })
         return
       }
       setMessage(null)
-      setHits(result.hits)
+      setResult({ search, hits: found.hits })
     }, 300)
     return () => clearTimeout(timer)
-  }, [query, underTaxonId])
+  }, [search, trimmedQuery, underTaxonId])
 
   const visibleHits = hits.filter(
     (hit) =>
@@ -92,7 +90,7 @@ export default function AddSpeciesPanel({
       prev.some((s) => s.taxon_id === hit.taxon_id) ? prev : [...prev, hit],
     )
     setQuery("")
-    setHits([])
+    setResult({ search: "", hits: [] })
   }
 
   const removeStaged = (id: number) =>

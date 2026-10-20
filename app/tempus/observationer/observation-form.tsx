@@ -13,6 +13,8 @@ import { ObservationSpeciesSearch } from "./observation-species-search"
 import { ObservationRowList, type ObservationRow } from "./observation-row-list"
 import { Check, Loader2 } from "lucide-react"
 import { LocaleMatch } from "@/app/tempus/locale-match"
+import { toDateTimeLocal, uploadObservationPhotos } from "./observation-photos"
+import { speciesName } from "@/app/tempus/_state/tempus-context"
 
 let rowSeq = 0
 function rowKey() {
@@ -44,6 +46,7 @@ export default function ObservationForm() {
   const [rows, setRows] = useState<ObservationRow[]>([])
   const [selectedSpecies, setSelectedSpecies] = useState<Map<string, TempusSpecies>>(() => new Map())
   const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState<string | null>(null)
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({})
   const deferredQuery = useDeferredValue(query)
 
@@ -69,7 +72,7 @@ export default function ObservationForm() {
     if (stagedIds.has(item.id)) return
     setRows((current) => [
       ...current,
-      { key: rowKey(), speciesId: item.id, count: "1", lifeStage: defaultLifeStage(item.stages), notes: "" },
+      { key: rowKey(), speciesId: item.id, count: "1", lifeStage: defaultLifeStage(item.stages), notes: "", photos: [] },
     ])
     setSelectedSpecies((current) => new Map(current).set(item.id, item))
     setQuery("")
@@ -114,42 +117,79 @@ export default function ObservationForm() {
     const observedAtIso = new Date(observedAt).toISOString()
 
     startTransition(async () => {
-      const result = await createObservationsBatch(
-        rows.map((row) => ({
-          species: row.speciesId,
-          checklist_items: [],
-          observed_at: observedAtIso,
-          ...(location ? { location } : {}),
-          count: row.count.trim() ? Number(row.count.trim()) : null,
-          life_stage: row.lifeStage.trim(),
-          notes: row.notes.trim(),
-        })),
-      )
-
-      if (result.error) {
-        setError(result.error)
-        return
+      setProgress(rows.length === 1 ? "Sparar observationen…" : `Sparar ${rows.length} observationer…`)
+      try {
+        await saveRows(location, observedAtIso)
+      } catch {
+        setError("Observationerna kunde inte sparas. Kontrollera anslutningen och försök igen.")
+      } finally {
+        setProgress(null)
       }
-
-      const failed = result.results.filter((entry) => !entry.ok)
-      if (failed.length === 0) {
-        router.push("/observationer")
-        return
-      }
-
-      const okKeys = new Set(
-        result.results.filter((entry) => entry.ok).map((entry) => rows[entry.index]?.key),
-      )
-      setRows((current) => current.filter((row) => !okKeys.has(row.key)))
-      setRowErrors(
-        Object.fromEntries(
-          failed.map((entry) => [rows[entry.index]?.key ?? "", entry.error ?? "Kunde inte sparas."]),
-        ),
-      )
-      setError(
-        `${result.created} sparades, ${failed.length} misslyckades.`,
-      )
     })
+  }
+
+  const saveRows = async (
+    location: { type: "Point"; coordinates: [number, number] } | undefined,
+    observedAtIso: string,
+  ) => {
+    const result = await createObservationsBatch(
+      rows.map((row) => ({
+        species: row.speciesId,
+        checklist_items: [],
+        observed_at: observedAtIso,
+        ...(location ? { location } : {}),
+        count: row.count.trim() ? Number(row.count.trim()) : null,
+        life_stage: row.lifeStage.trim(),
+        notes: row.notes.trim(),
+      })),
+    )
+
+    if (result.error) {
+      setError(result.error)
+      return
+    }
+
+    // Bilderna kan bara laddas upp när observationen finns, eftersom de sparas i dess mapp.
+    // En art i taget, så att statusraden kan säga vilken art som pågår.
+    const photoErrors: string[] = []
+    for (const entry of result.results) {
+      const row = rows[entry.index]
+      if (!entry.ok || !row || row.photos.length === 0) continue
+      const species = selectedSpecies.get(row.speciesId)
+      const label = species ? speciesName(species) : "okänd art"
+      const message = entry.observationId
+        ? await uploadObservationPhotos(entry.observationId, [], row.photos, (step) => setProgress(`${label}: ${step}`))
+          .catch(() => "Bilderna kunde inte laddas upp.")
+        : "Observationens id saknades i svaret, så bilderna kunde inte laddas upp."
+      if (message) photoErrors.push(`${label}: ${message}`)
+    }
+    const photoMessage = photoErrors.length > 0
+      ? ` Bilder: ${photoErrors.join(" ")} Lägg till dem från respektive observation.`
+      : ""
+
+    const failed = result.results.filter((entry) => !entry.ok)
+    if (failed.length === 0 && photoErrors.length === 0) {
+      router.push("/observationer")
+      return
+    }
+    if (failed.length === 0) {
+      setRows([])
+      setError(`Observationerna sparades.${photoMessage}`)
+      return
+    }
+
+    const okKeys = new Set(
+      result.results.filter((entry) => entry.ok).map((entry) => rows[entry.index]?.key),
+    )
+    setRows((current) => current.filter((row) => !okKeys.has(row.key)))
+    setRowErrors(
+      Object.fromEntries(
+        failed.map((entry) => [rows[entry.index]?.key ?? "", entry.error ?? "Kunde inte sparas."]),
+      ),
+    )
+    setError(
+      `${result.created} sparades, ${failed.length} misslyckades.${photoMessage}`,
+    )
   }
 
   return (
@@ -221,6 +261,14 @@ export default function ObservationForm() {
             rowErrors={rowErrors}
             onUpdateRow={updateRow}
             onRemoveRow={removeRow}
+            onPhotoError={setError}
+            onPhotoMetadata={({ takenAt, lat: photoLat, lon: photoLon }) => {
+              if (takenAt) setObservedAt(toDateTimeLocal(takenAt))
+              if (photoLat !== undefined && photoLon !== undefined) {
+                setLat(photoLat.toFixed(6))
+                setLon(photoLon.toFixed(6))
+              }
+            }}
           />
         </article>
 
@@ -246,6 +294,9 @@ export default function ObservationForm() {
             >
               Rensa
             </button>
+          ) : null}
+          {progress ? (
+            <p className="text-sm text-text-muted" role="status">{progress}</p>
           ) : null}
         </div>
       </form>

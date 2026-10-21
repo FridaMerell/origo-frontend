@@ -11,9 +11,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "heroku-postbuild": "next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/",
-    "heroku-cleanup": "rm -rf node_modules",
-    "start": "next start",
+    "heroku-postbuild": "next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/",    "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:forms": "vitest run app/components/form app/lib/schemas.test.ts"

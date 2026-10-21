@@ -93,15 +93,15 @@ export function InterestingSpots({ initialData = null, allowLocation = false, la
         {error ? <p className="mt-4 text-sm text-danger" role="alert">{error}</p> : null}
         {!loading && !error && data && data.spots.length === 0 ? <p className={note}>Inga intressanta platser hittades i närheten.</p> : null}
         {!loading && !error && visibleSpots.length > 0 ? <>
-          <ol className="border-t border-border">
+          <ol className="border-t border-[#b9a779]/60">
             {visibleSpots.map((spot, index) => {
               const highlights = spot.highlights.map(highlightLabel).filter((highlight): highlight is string => Boolean(highlight))
               const notableRecent = detailLabels(spot.notable_recent)
               const topSpecies = detailLabels(spot.top_species)
               const expanded = expandedRanks.has(spot.rank)
-              return <li key={`${spot.rank}-${spot.locality}`} style={{ "--i": index } as CSSProperties} className="tempus-row tempus-row-in grid grid-cols-[2rem_minmax(0,1fr)] border-b border-border pb-2.5 pt-[9px] sm:grid-cols-[2.5rem_minmax(0,1fr)_5.5rem]">
-                <span className="pt-1.5 font-mono text-xs text-text-faint">{String(spot.rank).padStart(2, "0")}</span>
-                <div className="min-w-0 sm:pr-3.5 text-base leading-[1.42]">
+              return <li key={`${spot.rank}-${spot.locality}`} style={{ "--i": index } as CSSProperties} className="tempus-row tempus-row-in grid grid-cols-[3rem_minmax(0,1fr)] border-b border-[#b9a779]/60 sm:grid-cols-[3rem_minmax(0,1fr)_6rem]">
+                <span className="row-span-2 border-r border-[#b9a779]/60 pt-3.5 text-center font-display text-base font-bold italic text-text-muted sm:row-span-1">{spot.rank}.</span>
+                <div className="min-w-0 px-4 pt-3 text-base leading-[1.42] sm:pb-3">
                   <p className="text-left [hyphens:auto] sm:text-justify">
                     <span className="font-display text-[1.1875rem] italic">{spot.locality}</span>
                     {". "}
@@ -117,7 +117,7 @@ export function InterestingSpots({ initialData = null, allowLocation = false, la
                     {highlights.length === 0 && notableRecent.length === 0 && topSpecies.length === 0 ? <p>Inga ytterligare detaljer tillgängliga.</p> : null}
                   </div> : null}
                 </div>
-                <span className="col-start-2 whitespace-nowrap pt-1 font-mono text-xs text-text-muted sm:col-start-3 sm:border-l sm:border-border sm:pt-1.5 sm:text-right">{formatDistance(spot.distance_m)}</span>
+                <span className="col-start-2 whitespace-nowrap px-4 pb-3 pt-1 font-display text-sm italic text-text-muted sm:col-start-3 sm:border-l sm:border-[#b9a779]/60 sm:px-3 sm:pt-3.5 sm:text-right">{formatDistance(spot.distance_m)}</span>
               </li>
             })}
           </ol>

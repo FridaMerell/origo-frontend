@@ -125,6 +125,7 @@ export type LocaleLandCoverFetch =
       land_cover: { type: "FeatureCollection"; features: LandCoverMapFeature[] }
       hydrography?: { type: "FeatureCollection"; features: HydrographyFeature[] }
       roads?: { type: "FeatureCollection"; features: RoadFeature[] }
+      buildings?: { type: "FeatureCollection"; features: BuildingFeature[] }
     }
   | {
       locale: number
@@ -151,6 +152,14 @@ export type RoadFeature = {
   kind: "road"
   properties: Record<string, unknown>
   geometry: GeoLineString | GeoMultiLineString
+}
+
+export type BuildingFeature = {
+  collection: string
+  feature_id: string | number | null
+  kind: "building"
+  properties: Record<string, unknown>
+  geometry: GeoPolygon | GeoMultiPolygon
 }
 
 export class LandCoverLookupError extends Error {

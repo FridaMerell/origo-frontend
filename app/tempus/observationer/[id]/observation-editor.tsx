@@ -231,10 +231,7 @@ export default function ObservationEditor({
   return (
     <div className="overflow-hidden rounded-card border border-border bg-surface shadow-card">
       <header className="flex items-center justify-between border-b border-border px-4 py-2 sm:px-5">
-        <div>
-          <p className="font-mono text-[9px] uppercase tracking-[.14em] text-text-faint">Ändringsblad</p>
-          <h2 className="font-display text-sm font-medium italic">Redigera observationsuppgifter</h2>
-        </div>
+        <h2 className="font-display text-sm font-medium italic">Redigera observationsuppgifter</h2>
         <button
           type="button"
           onClick={cancelEditing}
@@ -246,8 +243,8 @@ export default function ObservationEditor({
         </button>
       </header>
 
-      <div className="grid border-l border-border sm:grid-cols-[1.25fr_.65fr]">
-        <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:px-4">
+      <div className="grid sm:grid-cols-[1.25fr_.65fr]">
+        <label className="flex flex-col border-b border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:border-r sm:px-4">
           Tidpunkt
           <input
             type="datetime-local"
@@ -258,7 +255,7 @@ export default function ObservationEditor({
         </label>
 
         {hasLifeStageChoices ? (
-          <div className="border-b border-r border-border px-3 py-2 sm:px-4">
+          <div className="border-b border-border px-3 py-2 sm:row-span-2 sm:px-4">
             <p className="font-display text-[9px] italic text-text-faint">Livsstadie <span>(valfritt)</span></p>
             <div className="mt-1 flex flex-wrap gap-1" role="group" aria-label="Livsstadie">
               {stages.map((stage, index) => (
@@ -294,7 +291,7 @@ export default function ObservationEditor({
           </div>
         ) : null}
 
-        <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:px-4">
+        <label className={`flex flex-col border-b border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:px-4 ${hasLifeStageChoices ? "sm:border-r" : ""}`}>
           Antal
           <input
             inputMode="numeric"
@@ -305,7 +302,7 @@ export default function ObservationEditor({
           />
         </label>
 
-        <div className="border-b border-r border-border px-3 py-2 sm:col-span-2 sm:px-4">
+        <div className="border-b border-border px-3 py-2 sm:col-span-2 sm:px-4">
           <p className="font-display text-[9px] italic text-text-faint">
             Position <span>(valfritt)</span>
           </p>
@@ -333,6 +330,7 @@ export default function ObservationEditor({
             <CurrentLocationButton
               label="Min position"
               size="sm"
+              variant="paper-bordered"
               className="h-8 rounded-none text-xs"
               onLocate={({ latitude, longitude }) => {
                 setLat(latitude.toFixed(6))
@@ -343,7 +341,7 @@ export default function ObservationEditor({
           </div>
         </div>
 
-        <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:col-span-2 sm:px-4">
+        <label className="flex flex-col border-b border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:col-span-2 sm:px-4">
           Plats
           <select
             value={localeId}
@@ -360,7 +358,7 @@ export default function ObservationEditor({
           ) : null}
         </label>
 
-        <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:col-span-2 sm:px-4">
+        <label className="flex flex-col border-b border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:col-span-2 sm:px-4">
           Särskild anteckning
           <textarea
             value={notes}
@@ -370,7 +368,7 @@ export default function ObservationEditor({
           />
         </label>
 
-        <div className="border-b border-r border-border px-3 py-2 sm:col-span-2 sm:px-4">
+        <div className="border-b border-border px-3 py-2 sm:col-span-2 sm:px-4">
           <p className="font-display text-[9px] italic text-text-faint">
             Bilder <span>(sparas direkt)</span>
           </p>

@@ -148,6 +148,19 @@ const Page = async ({ params, searchParams }: {
               <dd className="text-sm text-text">{value}</dd>
             </div>
           ))}
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-sm text-text-muted">Kategorier</dt>
+            <dd className="text-sm text-text">
+              {species.categories.length === 0 ? "—" : species.categories.map((speciesCategory, index) => (
+                <span key={speciesCategory.taxon_id ?? speciesCategory.label}>
+                  {index > 0 ? ", " : null}
+                  {speciesCategory.taxon_id ? (
+                    <Link href={`/taxa/${speciesCategory.taxon_id}`}>{speciesCategory.label}</Link>
+                  ) : speciesCategory.label}
+                </span>
+              ))}
+            </dd>
+          </div>
         </dl>
       </Card>
 

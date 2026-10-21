@@ -32,6 +32,7 @@ export type TempusSpecies = {
   parent_dyntaxa_taxon_id: number | null
   is_active: boolean
   stages: string[]
+  categories: { taxon_id: number | null; label: string }[]
   // Raw Dyntaxa taxon record — vernacular names, redlistCategory, category,
   // status, etc. Opaque; the UI does not read into it.
   api_data: Record<string, unknown> | null

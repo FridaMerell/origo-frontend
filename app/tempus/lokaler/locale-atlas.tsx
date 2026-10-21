@@ -76,8 +76,10 @@ export function LocaleAtlas({
 
   return (
     <section aria-label="Karta över platsen" className="text-[#342b20]">
-      <div className="md:grid md:grid-cols-[minmax(0,1fr)_14rem] md:items-start">
-        <div className="relative h-[72svh] min-h-128 border border-[#857354] bg-surface p-1 sm:h-[min(64rem,82svh)] sm:min-h-168">
+      {/* Kartan och dess förklaring på samma blad, inom samma ram, som i en
+          geometrisk jordebok: Notarum Explicatio står i kartans egen marginal. */}
+      <div className="border border-[#857354] lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="relative h-[72svh] min-h-128 sm:h-[min(64rem,82svh)] sm:min-h-168">
           <LocaleAtlasMap
             key={locale.id}
             locale={locale}

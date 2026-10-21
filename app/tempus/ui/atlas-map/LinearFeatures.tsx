@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import type { Map as MaplibreMap } from "maplibre-gl"
-import type { HydrographyFeature, RoadFeature } from "@/app/lib/land-cover"
+import type { BuildingFeature, HydrographyFeature, RoadFeature } from "@/app/lib/land-cover"
 import { WATER_FILL_COLOR, WATER_LINE_COLOR } from "./land-cover-kinds"
 
 type Position = readonly [number, number]
@@ -39,7 +39,7 @@ function getWaterImage(onReady: () => void): HTMLImageElement | null {
   return null
 }
 
-function linesOf(geometry: HydrographyFeature["geometry"] | RoadFeature["geometry"]): Path[] {
+function linesOf(geometry: HydrographyFeature["geometry"] | RoadFeature["geometry"] | BuildingFeature["geometry"]): Path[] {
   if (geometry.type === "LineString") return [geometry.coordinates]
   if (geometry.type === "MultiLineString") return [...geometry.coordinates]
   if (geometry.type === "Polygon") return [...geometry.coordinates]
@@ -67,7 +67,7 @@ function strokePaths(context: CanvasRenderingContext2D, map: MaplibreMap, paths:
 }
 
 /**
- * Water and roads from the same land-cover/fetch/ response as everything else
+ * Water, roads and buildings from the same land-cover/fetch/ response as everything else
  * on the atlas. Drawn on its own canvas above the raster-texture canvas
  * (JordebokRasterTextures) rather than as MapLibre layers, because that
  * canvas sits over the whole MapLibre canvas — anything MapLibre drew would
@@ -78,7 +78,7 @@ function strokePaths(context: CanvasRenderingContext2D, map: MaplibreMap, paths:
  * again once the movement ends. Projecting every vertex of every road and
  * shoreline on every frame was what made zooming heavy.
  */
-export function LinearFeatures({ map, hydrography, roads }: { map: MaplibreMap; hydrography: readonly HydrographyFeature[]; roads: readonly RoadFeature[] }) {
+export function LinearFeatures({ map, hydrography, roads, buildings }: { map: MaplibreMap; hydrography: readonly HydrographyFeature[]; roads: readonly RoadFeature[]; buildings: readonly BuildingFeature[] }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
@@ -136,6 +136,12 @@ export function LinearFeatures({ map, hydrography, roads }: { map: MaplibreMap; 
       const roadPaths = roads.flatMap((feature) => linesOf(feature.geometry))
       strokePaths(context, map, roadPaths, ROAD_CASING_COLOR, roadWidth + 1.6)
       strokePaths(context, map, roadPaths, ROAD_FILL_COLOR, roadWidth)
+
+      if (buildings.length) {
+        tracePaths(context, map, buildings.flatMap((feature) => linesOf(feature.geometry)), true)
+        context.fillStyle = ROAD_CASING_COLOR
+        context.fill("evenodd")
+      }
     }
 
     function schedule() {
@@ -182,7 +188,7 @@ export function LinearFeatures({ map, hydrography, roads }: { map: MaplibreMap; 
       map.off("moveend", finishMove)
       map.off("resize", schedule)
     }
-  }, [map, hydrography, roads])
+  }, [map, hydrography, roads, buildings])
 
   return <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[2] h-full w-full" style={{ transformOrigin: "0 0" }} />
 }

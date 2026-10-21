@@ -31,6 +31,10 @@ type LocaleAtlasPanelProps = {
   onObservationSelect: (id: string) => void
 }
 
+// Kartans marginal, som texten bredvid kartan i en geometrisk jordebok. Allt i
+// den — kategorier, observationer, checklistor — skrivs i samma linjerade
+// uppställning: littera, text och tal i var sin kolumn (ExplicatioRow), under
+// samma centrerade rubrik (ExplicatioHeading).
 export function LocaleAtlasPanel({
   checklistsPage,
   categoryPage,
@@ -48,8 +52,8 @@ export function LocaleAtlasPanel({
   onObservationSelect,
 }: LocaleAtlasPanelProps) {
   return (
-    <aside className="border-y border-[#857354] px-0 py-3 md:my-0 md:py-0">
-      <section className="font-display italic leading-6" aria-label="Notarum Explicatio">
+    <aside className="border-t border-[#857354] lg:border-l lg:border-t-0">
+      <section aria-label="Notarum Explicatio">
         {observationsOpen ? (
           <ObservationList
             category={activeCategory}
@@ -97,9 +101,7 @@ function CategoryPicker({
 
   return (
     <>
-      <h3 className="border-b border-[#857354] px-4 pb-2 pt-3 text-left text-lg font-medium tracking-[.05em]">
-        Notarum Explicatio
-      </h3>
+      <ExplicatioHeading>Notarum Explicatio</ExplicatioHeading>
 
       {categoryPage === null ? (
         <PanelMessage>Hämtar observationer…</PanelMessage>
@@ -107,29 +109,27 @@ function CategoryPicker({
         <PanelMessage>Inga observationskategorier är registrerade för platsen.</PanelMessage>
       ) : (
         <nav aria-label="Välj observationskategori">
-          <ol className="border-b border-[#b9a779]/60">
+          <ol>
             {categories.map(({ category, obs_count: observationCount }, index) => {
               const categoryIndex = (pageNumber - 1) * LOCALE_ATLAS_PAGE_SIZE.categories + index
               const label = legendLabel(categoryIndex)
               const isActive = category.id === activeCategory?.id
 
               return (
-                <li key={category.id} className="border-t border-[#b9a779]/60 first:border-t-0">
+                <li key={category.id}>
                   <button
                     type="button"
                     onClick={() => onSelect(category, label)}
                     aria-pressed={isActive}
-                    className="grid w-full grid-cols-[2rem_minmax(0,1fr)] text-left text-sm focus-visible:outline focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
+                    className="group block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent"
                   >
-                    <span className={`flex min-h-11 items-start justify-center border-r border-[#b9a779]/60 pt-2 font-display font-bold italic ${isActive ? "text-[#9b4d35]" : "text-text-muted"}`}>
-                      {label}.
-                    </span>
-                    <span className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-2 px-3 py-2">
-                      <span className={isActive ? "font-medium text-[#342b20]" : ""}>{category.label}</span>
-                      <span className="text-xs text-text-muted">
-                        {observationCount} {observationCount === 1 ? "observation" : "observationer"}
-                      </span>
-                    </span>
+                    <ExplicatioRow
+                      littera={`${label}.`}
+                      active={isActive}
+                      amount={`${observationCount} obs.`}
+                    >
+                      <span className={`group-hover:text-accent ${isActive ? "text-[#342b20]" : ""}`}>{category.label}</span>
+                    </ExplicatioRow>
                   </button>
                 </li>
               )
@@ -174,17 +174,14 @@ function ObservationList({
 
   return (
     <>
-      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 border-b border-[#857354] px-4 py-2 text-sm">
-        <button type="button" onClick={onClose} className="font-display italic text-text-muted hover:text-accent">
-          ← Kategorier
-        </button>
-        <span className="min-w-0 text-right font-medium">{title}</span>
-      </div>
-
-      <div className="grid grid-cols-[minmax(0,1fr)_2.85rem] border-b border-[#857354] px-4 py-1 font-display text-[0.65rem] uppercase tracking-[.08em] text-text-muted">
-        <span>Art</span>
-        <span className="text-right">Nr.</span>
-      </div>
+      <ExplicatioHeading>{title}</ExplicatioHeading>
+      <button
+        type="button"
+        onClick={onClose}
+        className="flex min-h-11 w-full items-center border-b border-[#b9a779]/60 px-4 font-display text-sm italic text-text-muted hover:text-accent"
+      >
+        ← Notarum Explicatio
+      </button>
 
       {observationsPage === null ? (
         <PanelMessage>Hämtar observationer…</PanelMessage>
@@ -229,32 +226,28 @@ function ObservationRow({
   onSelect: (id: string) => void
 }) {
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_2.85rem] border-b border-[#b9a779]/60">
-      <div className="min-w-0 px-4 py-1.5">
+    <li>
+      <ExplicatioRow littera={label} active amount={observation.count ? `${observation.count} ex.` : ""}>
         <button
           type="button"
           onClick={() => onSelect(observation.id)}
           aria-pressed={selected}
-          className={`min-w-0 text-left focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-accent ${selected ? "text-accent" : ""}`}
+          className={`text-left hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${selected ? "text-accent" : ""}`}
         >
           {observation.species_detail.swedish_name || "Okänd art"}
         </button>
-        <p className="mt-0.5 text-xs text-text-muted">
+        <span className="mt-0.5 block text-sm text-text-muted">
           {formatDateLongOrNull(observation.observed_at) ?? "utan datum"}
-          {observation.count ? `, ${observation.count} ex` : ""}
-        </p>
+        </span>
         {selected ? (
-          <div className="mt-2 border-l border-accent pl-2 text-xs text-text-muted">
-            <p className="mb-1">{observation.notes || "Ingen anteckning."}</p>
-            <Link href={`/observationer/${observation.id}`} className="text-text hover:text-accent">
+          <span className="tempus-detail-in mt-2 block border-l border-accent pl-3 text-sm text-text-muted">
+            <span className="mb-1 block">{observation.notes || "Ingen anteckning."}</span>
+            <Link href={`/observationer/${observation.id}`} className="text-text underline underline-offset-4 hover:text-accent">
               Notis
             </Link>
-          </div>
+          </span>
         ) : null}
-      </div>
-      <span className="flex justify-end border-l border-[#b9a779]/60 px-2 pt-2 font-display text-base font-bold italic text-[#9b4d35]">
-        {label}
-      </span>
+      </ExplicatioRow>
     </li>
   )
 }
@@ -262,18 +255,20 @@ function ObservationRow({
 function ChecklistList({ checklists }: { checklists: TempusChecklist[] }) {
   return (
     <section>
-      <h3 className="border-t border-[#857354] px-4 pb-2 pt-3 font-display text-lg font-medium italic tracking-[.05em]">
-        Checklistor
-      </h3>
+      <ExplicatioHeading>Checklistor</ExplicatioHeading>
       {checklists.length === 0 ? (
         <PanelMessage>Inga checklistor är registrerade för platsen.</PanelMessage>
       ) : (
-        <ol className="divide-y divide-[#b9a779]/60 px-4 py-3 font-display text-base italic leading-6">
+        <ol>
           {checklists.map((checklist, index) => (
-            <li key={checklist.id} className="py-2 first:pt-0 last:pb-0">
-              <Link href={`/checklistor/${checklist.id}`} className="hover:text-accent">
-                {String(index + 1).padStart(2, "0")} · {checklist.name}
-                <span className="text-sm text-text-muted">, {checklist.species_count ?? checklist.item_count ?? 0} arter</span>
+            <li key={checklist.id}>
+              <Link href={`/checklistor/${checklist.id}`} className="group block">
+                <ExplicatioRow
+                  littera={`${index + 1}.`}
+                  amount={`${checklist.species_count ?? checklist.item_count ?? 0} arter`}
+                >
+                  <span className="group-hover:text-accent">{checklist.name}</span>
+                </ExplicatioRow>
               </Link>
             </li>
           ))}
@@ -283,8 +278,45 @@ function ChecklistList({ checklists }: { checklists: TempusChecklist[] }) {
   )
 }
 
+// Rubriken står mitt i spalten mellan två linjer, som rubrikerna i en
+// jordeboks textspalt.
+function ExplicatioHeading({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="break-words border-y border-[#857354] px-4 py-3.5 text-center font-display text-[1.3125rem] font-medium italic tracking-[.05em] first:border-t-0">
+      {children}
+    </h2>
+  )
+}
+
+// En rad i marginalen: littera | text | tal, åtskilda av lodräta linjer.
+function ExplicatioRow({
+  littera,
+  amount,
+  active = false,
+  children,
+}: {
+  littera: string
+  amount: string
+  active?: boolean
+  children: ReactNode
+}) {
+  return (
+    <span className="grid grid-cols-[3rem_minmax(0,1fr)_4.75rem] border-b border-[#b9a779]/60">
+      <span className={`border-r border-[#b9a779]/60 px-1 pt-3 text-center font-display text-base font-bold italic ${active ? "text-[#9b4d35]" : "text-text-muted"}`}>
+        {littera}
+      </span>
+      <span className="min-w-0 px-4 py-3 font-display text-[1.125rem] italic leading-snug">
+        {children}
+      </span>
+      <span className="border-l border-[#b9a779]/60 px-3 pt-3.5 text-right font-display text-sm italic text-text-muted">
+        {amount}
+      </span>
+    </span>
+  )
+}
+
 function PanelMessage({ children }: { children: ReactNode }) {
-  return <p className="px-4 py-3 text-sm text-text-muted">{children}</p>
+  return <p className="border-b border-[#b9a779]/60 px-4 py-4 font-display text-base italic text-text-muted">{children}</p>
 }
 
 function legendLabel(index: number) {

@@ -24,13 +24,23 @@ export type RasterSet = {
 const sourceSprite = (src: string, crop: SourceCrop): RasterSprite => ({ src, width: crop.width, height: crop.height, crop })
 const sprite = (crop: SourceCrop): RasterSprite => sourceSprite(jordebokReference.src, crop)
 const transparentSprite = (src: string, width: number, height: number): RasterSprite => ({ src, width, height, crop: { x: 0, y: 0, width, height }, preserveAlpha: true })
-const numberedFiles = (stem: string) => Array.from({ length: 8 }, (_, index) => `${stem}-${String(index + 1).padStart(2, "0")}.png`)
+// Every PNG in ./assets/, picked up by the glob — dropping a new file in is
+// enough. No `query: "?url"`: that is Vite's syntax, and in the deployed build
+// it left every entry unusable, so every set fell back to the legend crops.
+// Without it each value is the same StaticImageData ({ src }) a plain
+// `import x from "./x.png"` gives, like jordebokReference above.
+const localPngFiles = import.meta.glob<{ src: string }>("./assets/*.png", { eager: true, import: "default" })
+const localPngNames = Object.keys(localPngFiles).map((path) => path.slice("./assets/".length))
 
-// This is the only asset register to maintain. Add a filename to the matching
-// list when you add a new raster; missing files retain the reference fallback.
+// A whole series by its stem: every "<stem>-<anything>.png", however many
+// files there are.
+const series = (stem: string) => localPngNames.filter((name) => name.startsWith(`${stem}-`))
+
+// Series follow the files on disk. Only the forest lists are hand-picked: the
+// conifer set leaves out stray copies, and mixed forest borrows from both.
 const RASTER_FILE_MANIFEST = {
-  agriculture: { overview: numberedFiles("field-overview"), detail: numberedFiles("field-detail") },
-  coniferousForest: { overview: numberedFiles("conifer-overview"), detail: [
+  agriculture: { overview: series("field-overview"), detail: series("field-detail") },
+  coniferousForest: { overview: series("conifer-overview"), detail: [
     "conifer-detail-01.png",
     "conifer-detail-02.png",
     "conifer-detail-03.png",
@@ -40,7 +50,7 @@ const RASTER_FILE_MANIFEST = {
     "conifer-detail-7.png",
     "conifer-detail-8.png",
   ]},
-  mixedForest: { overview: numberedFiles("mixed-forest-overview"), detail: [
+  mixedForest: { overview: series("mixed-forest-overview"), detail: [
     "deciduous-detail-01.png",
     "deciduous-detail-02.png",
     "deciduous-detail-03.png",
@@ -50,24 +60,18 @@ const RASTER_FILE_MANIFEST = {
     "conifer-detail-7.png",
     "conifer-detail-8.png",
   ] },
-  deciduousForest: { overview: numberedFiles("deciduous-overview"), detail: numberedFiles("deciduous-detail") },
-  grass: { overview: numberedFiles("meadow-overview"), detail: numberedFiles("meadow-detail") },
-  wetland: { overview: numberedFiles("wetland-overview"), detail: numberedFiles("wetland-detail") },
-  open: { overview: numberedFiles("open-overview"), detail: numberedFiles("open-detail") },
-  general: { overview: numberedFiles("general-overview"), detail: numberedFiles("general-detail") },
-  building: { overview: numberedFiles("building-overview"), detail: numberedFiles("building-detail") },
-} as const
+  deciduousForest: { overview: series("deciduous-overview"), detail: series("deciduous-detail") },
+  grass: { overview: series("meadow-overview"), detail: series("meadow-detail") },
+  wetland: { overview: series("wetland-overview"), detail: series("wetland-detail") },
+  open: { overview: series("open-overview"), detail: series("open-detail") },
+  general: { overview: series("general-overview"), detail: series("general-detail") },
+  building: { overview: series("building-overview"), detail: series("building-detail") },
+}
 
-const localPngFiles = import.meta.glob("./assets/*.png", { eager: true, query: "?url", import: "default" })
 function registeredSprites(filenames: readonly string[], width: number, height: number, fallback: readonly RasterSprite[]) {
   const sprites = filenames.flatMap((filename) => {
-    const asset = localPngFiles[`./assets/${filename}`]
-    const url = typeof asset === "string"
-      ? asset
-      : asset && typeof asset === "object" && "src" in asset && typeof asset.src === "string"
-        ? asset.src
-        : null
-    return url ? [transparentSprite(url, width, height)] : []
+    const src = localPngFiles[`./assets/${filename}`]?.src
+    return src ? [transparentSprite(src, width, height)] : []
   })
   return sprites.length ? sprites : fallback
 }

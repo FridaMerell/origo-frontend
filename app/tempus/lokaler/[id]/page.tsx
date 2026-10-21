@@ -81,14 +81,12 @@ export default async function LocaleDetailPage({ params, searchParams }: PagePro
         <h1 className="break-words pb-3 pt-1 text-center font-display text-[clamp(1.75rem,6.5vw,3rem)] font-medium italic leading-[1.1] tracking-[.04em] text-text sm:pb-4 sm:tracking-[.08em]">
           {locale.name}
         </h1>
-        <div className="sm:mx-1.5">
-          <LocaleAtlas
-            locale={locale}
-            checklistsPage={checklistsPage}
-            observationPage={observationPage}
-          />
-        </div>
-        <div className="mt-6 sm:mx-1.5 sm:mt-8">
+        <LocaleAtlas
+          locale={locale}
+          checklistsPage={checklistsPage}
+          observationPage={observationPage}
+        />
+        <div className="mt-12 sm:mt-16">
           <InterestingSpots
             ledger
             initialData={interestingSpots}

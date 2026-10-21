@@ -415,7 +415,7 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
   return <div className="relative h-full min-h-0 overflow-hidden bg-[#fbf8f0]">
     <div ref={node} className="h-full w-full" aria-label={`Karta över ${locale.name}`} />
     {mapInstance ? <JordebokRasterTextures map={mapInstance} features={rasterPolygons} /> : null}
-    {mapInstance && landCoverFetch?.status === "succeeded" ? <LinearFeatures map={mapInstance} hydrography={landCoverFetch.hydrography?.features ?? NO_LINEAR_FEATURES} roads={landCoverFetch.roads?.features ?? NO_LINEAR_FEATURES} /> : null}
+    {mapInstance && landCoverFetch?.status === "succeeded" ? <LinearFeatures map={mapInstance} hydrography={landCoverFetch.hydrography?.features ?? NO_LINEAR_FEATURES} roads={landCoverFetch.roads?.features ?? NO_LINEAR_FEATURES} buildings={landCoverFetch.buildings?.features ?? NO_LINEAR_FEATURES} /> : null}
     {mapInstance ? <ObservationLabels map={mapInstance} points={points} selectedPoint={selectedPoint} /> : null}
     {mapInstance ? <ZoomControl map={mapInstance} /> : null}
     <LayerPanel layers={layers} onChange={setLayers} />

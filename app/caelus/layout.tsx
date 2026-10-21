@@ -1,17 +1,9 @@
 import { ReactNode, Suspense } from "react"
-import { Cormorant_Garamond } from "next/font/google"
 import { NavProgressBar } from "../lib/nav-progress"
+import { TENANT_FONTS } from "../lib/tenant-fonts"
 import CaelusTheme from "./ui/CaelusTheme"
 import PlateFrame from "./ui/PlateFrame"
 import Loading from "./loading"
-
-const cormorant = Cormorant_Garamond({
-	variable: "--font-caelus-cormorant",
-	subsets: ["latin", "latin-ext"],
-	weight: ["400", "500", "600"],
-	style: ["normal", "italic"],
-	display: "swap",
-})
 
 export const metadata = {
 	title: "Caelus | Origo",
@@ -21,7 +13,7 @@ export const metadata = {
 export default function CaelusLayout({ children }: { children: ReactNode }) {
 	return (
 		<CaelusTheme
-			className={`${cormorant.variable} flex min-h-screen flex-1 flex-col bg-bg font-body text-base text-text`}>
+			className={`${TENANT_FONTS.caelus} flex min-h-screen flex-1 flex-col bg-bg font-body text-base text-text`}>
 			<NavProgressBar />
 			{/* Ramen står kvar även medan sidan läses in, så bara innehållet byts. */}
 			<PlateFrame>

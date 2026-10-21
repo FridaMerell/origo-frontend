@@ -101,6 +101,15 @@ export const getTempusObservationCategoryPage = cache(
   },
 )
 
+// Every category the current user has observed species in, with counts.
+export const getTempusObservedCategoryPage = cache(
+  async (): Promise<TempusObservationCategoryPage> => {
+    const query = paginationQuery(undefined, 100, 100)
+    const page = await fetchTempusPage<TempusObservationCategorySummary>(TEMPUS_ENDPOINTS.observationsByCategory, query)
+    return { ...page, pageSize: query.page_size }
+  },
+)
+
 export const getTempusCategoryObservationsPage = cache(
   async (
     categoryId: string,

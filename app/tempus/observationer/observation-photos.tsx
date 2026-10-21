@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react"
 import { X } from "lucide-react"
 import { twMerge } from "tailwind-merge"
 import { fileProxyUrl } from "@/app/lib/files"
+import { Lightbox } from "@/app/components/ui/Gallery"
 import { compressImage, type CompressedImage } from "@/app/lib/image-thumbnail"
 import { setObservationPhotos } from "@/app/tempus/_actions/observations"
 
@@ -219,7 +220,7 @@ export function ObservationPhotoPicker({
   )
 }
 
-/** The observation's thumbnails; each opens the full image. Renders nothing without photos. */
+/** The observation's thumbnails; each opens the full image in the shared lightbox. Renders nothing without photos. */
 export function ObservationPhotoList({
   photos,
   onRemove,
@@ -229,21 +230,32 @@ export function ObservationPhotoList({
   onRemove?: (photo: string) => void
   className?: string
 }) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   if (photos.length === 0) return null
   return (
-    <ul className={twMerge("flex flex-wrap gap-2", className)}>
-      {photos.map((photo, index) => (
-        <li key={photo}>
-          {/* The bucket is private, so files are streamed through /api/files. */}
-          <PhotoTile
-            src={fileProxyUrl(thumbnailPath(photo))}
-            href={fileProxyUrl(photo)}
-            label={`Bild ${index + 1}`}
-            onRemove={onRemove ? () => onRemove(photo) : undefined}
-          />
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className={twMerge("flex flex-wrap gap-2", className)}>
+        {photos.map((photo, index) => (
+          <li key={photo}>
+            {/* The bucket is private, so files are streamed through /api/files. */}
+            <PhotoTile
+              src={fileProxyUrl(thumbnailPath(photo))}
+              label={`Bild ${index + 1}`}
+              onOpen={() => setLightboxIndex(index)}
+              onRemove={onRemove ? () => onRemove(photo) : undefined}
+            />
+          </li>
+        ))}
+      </ul>
+      {lightboxIndex !== null && lightboxIndex < photos.length ? (
+        <Lightbox
+          images={photos}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+        />
+      ) : null}
+    </>
   )
 }
 
@@ -254,14 +266,14 @@ export function ObservationPhotoList({
 function PhotoTile({
   src,
   file,
-  href,
+  onOpen,
   label,
   compact = false,
   onRemove,
 }: {
   src?: string
   file?: File
-  href?: string
+  onOpen?: () => void
   label: string
   compact?: boolean
   onRemove?: () => void
@@ -278,10 +290,10 @@ function PhotoTile({
   ) : null
   return (
     <div className={twMerge("relative overflow-hidden border border-border bg-surface-2", compact ? "size-12" : "size-24 sm:size-28")}>
-      {href ? (
-        <a href={href} target="_blank" rel="noopener noreferrer" className="block size-full">
+      {onOpen ? (
+        <button type="button" onClick={onOpen} aria-label={`Visa ${label}`} className="block size-full">
           {image}
-        </a>
+        </button>
       ) : (
         image
       )}

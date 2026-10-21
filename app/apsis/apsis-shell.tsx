@@ -7,12 +7,11 @@ import { APP_LINKS } from "@/app/lib/tenant-links";
 import { ORIGO_VERSION } from "@/app/lib/config";
 import { ThemeScope } from "@/app/components/ui/ThemeScope";
 import { useAppHrefs } from "@/app/components/ui/use-app-hrefs";
-import { useStoredMode } from "@/app/components/ui/use-stored-mode";
+import { useStoredMode, type ColorMode } from "@/app/components/ui/use-stored-mode";
+import { MODE_KEYS } from "@/app/components/ui/mode-keys";
 
-const STORAGE_KEY = "apsis-mode";
-
-export default function ApsisShell({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useStoredMode(STORAGE_KEY);
+export default function ApsisShell({ initialMode, children }: { initialMode: ColorMode | null; children: ReactNode }) {
+  const [mode, setMode] = useStoredMode(MODE_KEYS.apsis, null, initialMode);
   const siteHrefs = useAppHrefs();
   const pathname = usePathname();
   const isLoginRoute = pathname === "/login";

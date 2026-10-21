@@ -6,26 +6,17 @@ import { APP_LINKS } from "../lib/tenant-links"
 import { ORIGO_VERSION } from "../lib/config"
 import { ThemeScope } from "../components/ui/ThemeScope"
 import { useAppHrefs } from "../components/ui/use-app-hrefs"
-import { useStoredMode } from "../components/ui/use-stored-mode"
+import { useStoredMode, type ColorMode } from "../components/ui/use-stored-mode"
+import { MODE_KEYS } from "../components/ui/mode-keys"
 
-const STORAGE_KEY = "opus-mode"
-
-const OpusShell = ({ children }: { children: ReactNode }) => {
-	const [mode, setMode] = useStoredMode(STORAGE_KEY, "light")
+const OpusShell = ({ initialMode, children }: { initialMode: ColorMode | null; children: ReactNode }) => {
+	const [mode, setMode] = useStoredMode(MODE_KEYS.opus, "light", initialMode)
 	const pathname = usePathname()
 	const isLoginRoute = pathname === "/login"
 	const siteHrefs = useAppHrefs()
 
 	const toggleMode = () => {
-		setMode(
-			mode
-				? mode === "dark"
-					? "light"
-					: "dark"
-				: window.matchMedia("(prefers-color-scheme: dark)").matches
-					? "light"
-					: "dark",
-		)
+		setMode(mode === "dark" ? "light" : "dark")
 	}
 	if (isLoginRoute) {
 		return (

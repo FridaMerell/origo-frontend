@@ -1,99 +1,249 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Chip } from "@/app/components/ui/Chip"
-import { getTempusObservations } from "@/app/lib/dal/tempus/observations"
-import { getTempusSpeciesItems } from "@/app/lib/dal/tempus/species"
+import { redirect } from "next/navigation"
+import { getTempusChecklistsPage } from "@/app/lib/dal/tempus/checklists"
+import { getTempusObservationsPage, getTempusObservedCategoryPage } from "@/app/lib/dal/tempus/observations"
+import { getTempusSpeciesItem, getTempusSpeciesItems } from "@/app/lib/dal/tempus/species"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
 import { LocaleLabel } from "@/app/tempus/locale-label"
+import { BiotopeMap } from "@/app/tempus/ui/biotope-map/BiotopeMap"
+import { ObservationFilter, ObservationOrder } from "./observation-filter"
+import { REGISTER_COLUMNS as COLUMNS, type OBSERVATION_FILTER_PARAMS, type ObservationFilterValues } from "./observation-filter-params"
+
+const OBSERVATIONS_PER_PAGE = 25
+// Species picked in one filter; more than this is cut off.
+const MAX_FILTER_SPECIES = 20
+
+const STEP = "font-display italic text-accent no-underline hover:text-accent-hover"
+
+const speciesName = (s: { swedish_name?: string; scientific_name: string }) =>
+  s.swedish_name || s.scientific_name
 
 export const metadata: Metadata = {
   title: "Observationer | Tempus",
   description: "Dina artobservationer.",
 }
 
-export default async function ObservationsPage() {
-  const observations = await getTempusObservations({ ordering: "-observed_at" })
-  const speciesIds = [...new Set(observations.map((observation) => observation.species))]
-  const species = await getTempusSpeciesItems(speciesIds)
+type SearchParams = Partial<Record<(typeof OBSERVATION_FILTER_PARAMS)[keyof typeof OBSERVATION_FILTER_PARAMS] | "sida", string>>
+
+type PageProps = { searchParams: Promise<SearchParams> }
+
+function readPageNumber(value: string | undefined) {
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
+}
+
+const isDate = (value: string | undefined): value is string => Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
+const isUuid = (value: string | undefined): value is string =>
+  Boolean(value && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value))
+
+export default async function ObservationsPage({ searchParams }: PageProps) {
+  const params = await searchParams
+  const page = readPageNumber(params.sida)
+  const taxonIds = [...new Set((params.art ?? "").split(",").filter((part) => /^\d+$/.test(part)))].slice(0, MAX_FILTER_SPECIES)
+  const filter = {
+    category: isUuid(params.grupp) ? params.grupp : "",
+    locale: params.plats && /^\d+$/.test(params.plats) ? params.plats : "",
+    checklist: isUuid(params.lista) ? params.lista : "",
+    from: isDate(params.fran) ? params.fran : "",
+    to: isDate(params.till) ? params.till : "",
+    lifeStage: params.stadium?.trim() ?? "",
+    photos: params.bilder === "ja" || params.bilder === "nej" ? params.bilder : "",
+    order: params.ordning === "aldst" ? "aldst" : "",
+  } as const
+
+  const [observations, pickedSpecies, categoryPage, checklistPage] = await Promise.all([
+    getTempusObservationsPage({
+      species: taxonIds.join(",") || undefined,
+      category: filter.category || undefined,
+      locale: filter.locale || undefined,
+      checklist: filter.checklist || undefined,
+      observed_from: filter.from || undefined,
+      observed_to: filter.to || undefined,
+      life_stage: filter.lifeStage || undefined,
+      has_photos: filter.photos ? filter.photos === "ja" : undefined,
+      ordering: filter.order ? "observed_at" : "-observed_at",
+      page,
+      page_size: OBSERVATIONS_PER_PAGE,
+    }),
+    Promise.all(taxonIds.map((taxonId) => getTempusSpeciesItem(taxonId))),
+    getTempusObservedCategoryPage(),
+    getTempusChecklistsPage({ page_size: 100 }),
+  ])
+
+  const hrefFor = (target: number) => {
+    const next = new URLSearchParams()
+    for (const [key, value] of Object.entries(params)) {
+      if (key !== "sida" && typeof value === "string" && value) next.set(key, value)
+    }
+    if (target > 1) next.set("sida", String(target))
+    const text = next.toString()
+    return text ? `/observationer?${text}` : "/observationer"
+  }
+
+  // A page past the end (after deleting the last observations on it, or an
+  // edited URL) answers 404 from the API; go back to the first page instead.
+  if (page > 1 && observations.results.length === 0) redirect(hrefFor(1))
+
+  const species = await getTempusSpeciesItems(observations.results.map((observation) => observation.species))
   const speciesById = new Map(species.map((item) => [item.id, item]))
+  const pageSize = observations.pageSize ?? OBSERVATIONS_PER_PAGE
+  const pageCount = Math.max(1, Math.ceil(observations.count / pageSize))
+
+  const values: ObservationFilterValues = {
+    ...filter,
+    species: taxonIds.map((taxonId, index) => {
+      const item = pickedSpecies[index]
+      return { taxonId: Number(taxonId), label: item ? speciesName(item) : `Dyntaxa ${taxonId}` }
+    }),
+  }
+  const filtered = values.species.length > 0 || Object.values(filter).some(Boolean)
 
   return (
-    <div className="container mx-auto flex flex-col gap-4 py-5 max-sm:px-4 sm:py-7">
-      <header className="flex flex-wrap items-end justify-between gap-6 border-b border-border pb-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            Dina observationer
-          </h1>
-          <p className="mt-1 text-sm text-text-muted">Dina registrerade fynd.</p>
-        </div>
-        <Link
-          href="/observationer/ny"
-          className="inline-flex items-center gap-2 rounded-none border border-border bg-transparent px-4 py-2.5 font-display text-sm font-medium italic tracking-wide text-accent no-underline hover:text-accent-hover"
-        >
-          Ny observation
-        </Link>
-      </header>
-
-      {observations.length === 0 ? (
-        <section className="flex flex-col items-center gap-3 border-y border-border py-14 text-center">
-          <p className="text-sm text-text-muted">Du har inga observationer än.</p>
-          <Link href="/observationer/ny" className="text-sm font-medium text-accent hover:text-accent-hover">
-            Registrera din första observation
-          </Link>
-        </section>
-      ) : (
-        <section>
-          <div className="flex items-baseline justify-between border-b border-border pb-3">
-            <h2 className="font-display text-lg font-semibold">Senaste fynd</h2>
-            <p className="font-mono text-[10px] uppercase tracking-[.16em] text-text-muted">
-              {observations.length} poster
-            </p>
+    <div className="container mx-auto py-5 max-sm:px-3 sm:py-7">
+      <article className="rounded-card border border-border bg-surface text-text shadow-card">
+        <header className="px-4 pt-3 sm:px-5">
+          <div className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
+            <span>Observationsförteckning</span>
+            <span>
+              {observations.count} {observations.count === 1 ? "post" : "poster"}
+              {filtered ? " i urvalet" : ""}
+            </span>
           </div>
 
-          <div className="hidden grid-cols-3 items-center gap-3 border-b border-border/70 py-2 font-mono text-[10px] uppercase tracking-[.16em] text-text-faint sm:grid">
-            <span>Art</span>
-            <span>Datum och anteckning</span>
-            <span className="text-right">Antal</span>
-            <span />
+          <div className={`grid border-b border-border ${COLUMNS}`}>
+            <div className="flex min-h-24 flex-col items-center justify-center px-3 py-3 text-center sm:col-span-4 sm:py-4">
+              <h1 className="font-display text-2xl font-medium italic tracking-wide sm:text-3xl">Dina observationer</h1>
+              <p className="mt-1 font-display text-xs italic leading-5 text-text-muted">Alla fynd du har fört in, med det senaste överst.</p>
+              <Link
+                href="/observationer/ny"
+                className="mt-2 font-display text-xs italic text-accent underline decoration-accent/40 underline-offset-4 hover:text-accent-hover"
+              >
+                För in en ny observation
+              </Link>
+            </div>
+            <div className="relative min-h-24 overflow-hidden border-t border-border bg-surface-2/25 sm:col-span-3 sm:border-l sm:border-t-0">
+              <BiotopeMap
+                seed="Dina observationer"
+                detail={7}
+                relief={6}
+                waterStrength={4}
+                featureAmount={3}
+                compass
+                preserveAspectRatio="xMidYMid slice"
+                className="absolute inset-0 h-full w-full opacity-45"
+              />
+              <div className="absolute inset-0 bg-linear-to-t from-surface/75 via-transparent to-transparent" />
+              <span className="absolute bottom-1.5 left-2 font-display text-[9px] italic text-text-muted">Biotopskiss</span>
+            </div>
+          </div>
+        </header>
+
+        <section className="px-4 pb-4 sm:px-5 sm:pb-5">
+          <ObservationFilter
+            key={JSON.stringify(params)}
+            values={values}
+            categories={categoryPage.results.map((row) => ({ id: row.category.id, label: row.category.label, count: row.obs_count }))}
+            checklists={checklistPage.results.map((checklist) => ({ id: checklist.id, name: checklist.name }))}
+          />
+
+          <div className="flex items-center justify-between border-b border-l border-r border-border font-display text-[9px] italic text-text-muted sm:hidden">
+            <span className="px-3 py-1.5">{filtered ? "Urval" : "Senaste fynd"}</span>
+            <ObservationOrder order={filter.order} />
           </div>
 
-          <ul className="divide-y divide-border border-b border-border">
-            {observations.map((observation) => {
-              const match = speciesById.get(observation.species)
-              const observedAt = formatDateLongOrNull(observation.observed_at)
-              const checklistNames = [...new Set(observation.checklist_names)]
-              return (
-                <li key={observation.id}>
-                  <Link
-                    href={`/observationer/${observation.id}`}
-                    className="group grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-3.5 no-underline transition-colors hover:bg-accent-wash/20 sm:grid-cols-3 sm:py-4"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate font-display text-base font-semibold tracking-tight text-text sm:text-lg">
-                        {match ? match.swedish_name || match.scientific_name : "Okänd art"}
-                      </span>
-                    </span>
-                    <span className="col-span-2 row-start-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] tracking-wide text-text-muted sm:col-span-1 sm:row-start-auto">
-                      <span>{observedAt ?? "Utan datum"}</span>
-                      {observation.locale ? <LocaleLabel localeId={observation.locale} chip /> : null}
-                      {checklistNames.map((name) => (
-                        <Chip key={name} variant="neutral" className="px-2 py-0.5 text-[10px]">
-                          {name}
-                        </Chip>
-                      ))}
-                    </span>
-                    {observation.count ? (
-                      <span className="shrink-0 text-right font-mono text-xs text-text-muted">
-                        {observation.count} ex
-                      </span>
-                    ) : null}
+          <div className={`hidden border-l border-border font-display text-[9px] italic text-text-muted sm:grid ${COLUMNS}`}>
+            <span className="border-b border-r border-border px-2 py-1.5 text-center">Nr</span>
+            <span className="border-b border-r border-border px-3 py-1.5">Artens namn</span>
+            <ObservationOrder order={filter.order} className="border-b border-r border-border" />
+            <span className="border-b border-r border-border px-3 py-1.5">Plats och checklista</span>
+            <span className="border-b border-r border-border px-3 py-1.5">Stadium</span>
+            <span className="border-b border-r border-border px-2 py-1.5 text-center">Bilder</span>
+            <span className="border-b border-r border-border px-2 py-1.5 text-center">Antal</span>
+          </div>
+
+          {observations.results.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 border-x border-b border-border px-3 py-12 text-center font-display text-sm italic text-text-muted">
+              {filtered ? (
+                <p>Inga observationer matchar urvalet.</p>
+              ) : (
+                <>
+                  <p>Förteckningen är tom.</p>
+                  <Link href="/observationer/ny" className="text-accent underline decoration-accent/40 underline-offset-4 hover:text-accent-hover">
+                    För in din första observation
                   </Link>
-                </li>
-              )
-            })}
-          </ul>
+                </>
+              )}
+            </div>
+          ) : (
+            <ol className="border-l border-border">
+              {observations.results.map((observation, index) => {
+                const match = speciesById.get(observation.species)
+                const name = match ? speciesName(match) : observation.species_detail.swedish_name || "Okänd art"
+                const observedAt = formatDateLongOrNull(observation.observed_at)
+                const checklistNames = [...new Set(observation.checklist_names)]
+                return (
+                  <li key={observation.id}>
+                    <Link
+                      href={`/observationer/${observation.id}`}
+                      aria-label={`Visa observation av ${name}`}
+                      className={`grid grid-cols-[2rem_minmax(0,1fr)_3.5rem] border-b border-border font-display text-text no-underline transition-colors hover:bg-accent-wash/20 ${COLUMNS}`}
+                    >
+                      <span className="row-span-2 flex justify-end border-r border-border px-2 py-2 text-[10px] italic text-text-faint sm:row-span-1">
+                        {(page - 1) * pageSize + index + 1}
+                      </span>
+                      <span className="min-w-0 border-r border-border px-3 py-2">
+                        <span className="block truncate text-sm italic">{name}</span>
+                        {match && match.scientific_name !== name ? (
+                          <span className="block truncate text-[10px] italic text-text-muted">{match.scientific_name}</span>
+                        ) : null}
+                        {observation.notes ? (
+                          <span className="mt-0.5 block truncate text-[11px] italic text-text-muted">{observation.notes}</span>
+                        ) : null}
+                      </span>
+                      <span className="col-start-2 row-start-2 min-w-0 border-r border-t border-border px-3 py-1.5 text-xs italic text-text-muted sm:col-start-auto sm:row-start-auto sm:border-t-0 sm:py-2 sm:text-text">
+                        {observedAt ?? "—"}
+                      </span>
+                      <span className="hidden min-w-0 border-r border-border px-3 py-2 text-xs italic sm:block">
+                        {observation.locale ? <span className="block truncate"><LocaleLabel localeId={observation.locale} /></span> : null}
+                        {checklistNames.length > 0 ? (
+                          <span className="block truncate text-text-muted">{checklistNames.join(", ")}</span>
+                        ) : null}
+                        {!observation.locale && checklistNames.length === 0 ? <span className="text-text-faint">—</span> : null}
+                      </span>
+                      <span className="hidden min-w-0 truncate border-r border-border px-3 py-2 text-xs italic sm:block">
+                        {observation.life_stage || <span className="text-text-faint">—</span>}
+                      </span>
+                      <span className="hidden border-r border-border px-2 py-2 text-center text-xs italic tabular-nums sm:block">
+                        {observation.photos?.length || <span className="text-text-faint">—</span>}
+                      </span>
+                      <span className="col-start-3 row-span-2 row-start-1 flex items-start justify-center border-r border-border px-2 py-2 text-sm italic tabular-nums sm:col-start-auto sm:row-span-1 sm:row-start-auto">
+                        {observation.count ?? "—"}
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
+
+          {pageCount > 1 ? (
+            <nav aria-label="Observationer, sidor" className="mt-3 flex items-center justify-between text-xs">
+              {page > 1 ? (
+                <Link href={hrefFor(page - 1)} className={STEP}>‹ Föregående</Link>
+              ) : (
+                <span className="font-display italic text-text-faint">‹ Föregående</span>
+              )}
+              <span className="font-display italic text-text-muted">Blad {page} av {pageCount}</span>
+              {page < pageCount ? (
+                <Link href={hrefFor(page + 1)} className={STEP}>Nästa ›</Link>
+              ) : (
+                <span className="font-display italic text-text-faint">Nästa ›</span>
+              )}
+            </nav>
+          ) : null}
         </section>
-      )}
+      </article>
     </div>
   )
 }

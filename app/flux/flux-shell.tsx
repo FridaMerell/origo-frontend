@@ -5,16 +5,17 @@ import { usePathname } from "next/navigation"
 import Toolbar from "./toolbar"
 import { TaskPanel } from "./tasks/task-panel"
 import { ThemeScope } from "@/app/components/ui/ThemeScope"
-import { useStoredMode } from "@/app/components/ui/use-stored-mode"
-
-const STORAGE_KEY = "flux-mode"
+import { useStoredMode, type ColorMode } from "@/app/components/ui/use-stored-mode"
+import { MODE_KEYS } from "@/app/components/ui/mode-keys"
 
 export default function FluxShell({
+  initialMode,
   children,
 }: {
+  initialMode: ColorMode | null
   children: ReactNode
 }) {
-  const [mode, setMode] = useStoredMode(STORAGE_KEY, "light")
+  const [mode, setMode] = useStoredMode(MODE_KEYS.flux, "light", initialMode)
   const pathname = usePathname()
   const isLoginRoute = pathname === "/login"
   const isTimelineRoute = pathname === "/timeline"

@@ -270,8 +270,21 @@ export default function QuickObservation({
     }
   }
 
+  /** Bifogar de dragna bilderna (efter eller i stället för de som redan finns) och fyller i tid och plats ur deras EXIF. */
+  const attachPhotos = (files: File[], { replace = false } = {}) => {
+    const images = files.filter((file) => file.type.startsWith("image/"))
+    const skipped = files.filter((file) => !file.type.startsWith("image/"))
+    setPhotos((current) => (replace ? images : [...current, ...images]))
+    if (skipped.length > 0) {
+      setError(`Bara bilder kan läggas till. Hoppade över: ${skipped.map((file) => file.name).join(", ")}.`)
+    }
+    if (images.length === 0) return
+    readPhotoMetadata(images)
+      .then(applyPhotoMetadata)
+      .catch(() => setError("Tid och position kunde inte läsas ur bilderna. Fyll i dem för hand."))
+  }
+
   // Förvald art (och ev. checklistpost) och/eller bilder dragna in utifrån: öppna dialogen direkt.
-  // Bildernas tid och plats fylls i ur deras EXIF.
   useImperativeHandle(ref, () => ({
     open: ({ species, checklistItem, photos: presetPhotos }) => {
       setError(null)
@@ -279,17 +292,7 @@ export default function QuickObservation({
         selectSpecies(species, checklistItem ? [checklistItem] : (species.checklistItems ?? []))
         setQuery("")
       }
-      if (presetPhotos) {
-        const images = presetPhotos.filter((file) => file.type.startsWith("image/"))
-        const skipped = presetPhotos.filter((file) => !file.type.startsWith("image/"))
-        setPhotos(images)
-        if (skipped.length > 0) {
-          setError(`Bara bilder kan läggas till. Hoppade över: ${skipped.map((file) => file.name).join(", ")}.`)
-        }
-        readPhotoMetadata(images)
-          .then(applyPhotoMetadata)
-          .catch(() => setError("Tid och position kunde inte läsas ur bilderna. Fyll i dem för hand."))
-      }
+      if (presetPhotos) attachPhotos(presetPhotos, { replace: true })
       setSaved(null)
       setEntered(false)
       setOpen(true)
@@ -402,6 +405,13 @@ export default function QuickObservation({
           }}
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) requestClose()
+          }}
+          // Så länge ingen art är vald kan bilder släppas var som helst i dialogen.
+          // Bildväljarens egen släppyta tar hand om sina bilder själv (defaultPrevented).
+          onDrop={(event) => {
+            if (event.defaultPrevented || picked || !event.dataTransfer.types.includes("Files")) return
+            event.preventDefault()
+            attachPhotos(Array.from(event.dataTransfer.files))
           }}
         >
           <div

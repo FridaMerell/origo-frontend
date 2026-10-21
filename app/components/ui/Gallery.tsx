@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, Paperclip, X } from "lucide-react"
 
 const IMAGE_EXTENSION = /\.(png|jpe?g|gif|webp|avif|svg)$/i;
 
-function Lightbox({
+export function Lightbox({
   images,
   index,
   onClose,

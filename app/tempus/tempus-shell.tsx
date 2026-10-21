@@ -7,12 +7,11 @@ import Nav from "./nav"
 import { APP_LINKS } from "@/app/lib/tenant-links"
 import { ThemeScope } from "@/app/components/ui/ThemeScope"
 import { useAppHrefs } from "@/app/components/ui/use-app-hrefs"
-import { useStoredMode } from "@/app/components/ui/use-stored-mode"
+import { useStoredMode, type ColorMode } from "@/app/components/ui/use-stored-mode"
+import { MODE_KEYS } from "@/app/components/ui/mode-keys"
 
-const STORAGE_KEY = "tempus-mode"
-
-export default function TempusShell({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useStoredMode(STORAGE_KEY)
+export default function TempusShell({ initialMode, children }: { initialMode: ColorMode | null; children: ReactNode }) {
+  const [mode, setMode] = useStoredMode(MODE_KEYS.tempus, null, initialMode)
   const siteHrefs = useAppHrefs()
   const pathname = usePathname()
   const isLoginRoute = pathname === "/login"

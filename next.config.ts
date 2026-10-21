@@ -2,6 +2,12 @@ import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Deploys run .next/standalone so the image doesn't carry the full node_modules.
+  output: "standalone",
+  outputFileTracingIncludes: {
+    // Read with fs at runtime, which file tracing can't see.
+    "/favicon.ico": ["./app/icon.png"],
+  },
   // *.localhost: the in-app browser pane treats loopback hosts as the project's own dev
   // server, while *.origo.test (a private-network host) gets a permission prompt per action.
   allowedDevOrigins: ["verso.origo.test","flux.origo.test","tempus.origo.test","apsis.origo.test","origo.test", "opus.origo.test", "caelus.origo.test", "*.localhost"],

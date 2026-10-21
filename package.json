@@ -6,12 +6,12 @@
     "node": "24.x"
   },
   "cacheDirectories": [
-    "node_modules",
     ".next/cache"
   ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "heroku-postbuild": "next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/ && rm -rf node_modules",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",

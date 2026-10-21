@@ -7,6 +7,7 @@ import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton
 import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { deleteObservation, setObservationPhotos, updateObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
+import { useObservationLocale } from "@/app/tempus/locale-match"
 import type { TempusObservation } from "@/app/lib/dal"
 import { stageShortcutIndex } from "../quick-observation"
 import { ObservationPhotoList, ObservationPhotoPicker, uploadObservationPhotos } from "../observation-photos"
@@ -40,11 +41,17 @@ export default function ObservationEditor({
     observation.location && "coordinates" in observation.location
       ? observation.location.coordinates
       : null
+  const savedLat = savedPoint ? String(savedPoint[1]) : ""
+  const savedLon = savedPoint ? String(savedPoint[0]) : ""
+  const savedLocaleId = String(observation.locale ?? "")
+  // En sparad plats som positionen ger ändå följer positionen; annars är den ett eget val.
+  const { localeId: savedPositionLocaleId } = useObservationLocale(savedLat, savedLon, null)
   // Fältens startvärden kommer från den sparade observationen.
   const initialValues = () => ({
     observedAt: toLocalInput(observation.observed_at),
-    lat: savedPoint ? String(savedPoint[1]) : "",
-    lon: savedPoint ? String(savedPoint[0]) : "",
+    lat: savedLat,
+    lon: savedLon,
+    localeChoice: savedLocaleId === savedPositionLocaleId ? null : savedLocaleId,
     count: observation.count ? String(observation.count) : "",
     lifeStage: observation.life_stage ?? "",
     notes: observation.notes ?? "",
@@ -54,6 +61,8 @@ export default function ObservationEditor({
   const [observedAt, setObservedAt] = useState(() => initialValues().observedAt)
   const [lat, setLat] = useState(() => initialValues().lat)
   const [lon, setLon] = useState(() => initialValues().lon)
+  const [localeChoice, setLocaleChoice] = useState(() => initialValues().localeChoice)
+  const { locales, localeId, outside } = useObservationLocale(lat, lon, localeChoice)
   const [count, setCount] = useState(() => initialValues().count)
   const [lifeStage, setLifeStage] = useState(() => initialValues().lifeStage)
   const [notes, setNotes] = useState(() => initialValues().notes)
@@ -78,6 +87,7 @@ export default function ObservationEditor({
     setObservedAt(initial.observedAt)
     setLat(initial.lat)
     setLon(initial.lon)
+    setLocaleChoice(initial.localeChoice)
     setCount(initial.count)
     setLifeStage(initial.lifeStage)
     setNotes(initial.notes)
@@ -124,6 +134,7 @@ export default function ObservationEditor({
         ...(latNum !== null && lonNum !== null
           ? { location: { type: "Point" as const, coordinates: [lonNum, latNum] as [number, number] } }
           : {}),
+        locale: localeId ? Number(localeId) : null,
         count: count.trim() ? Number(count.trim()) : null,
         life_stage: lifeStage.trim(),
         notes: notes.trim(),
@@ -320,6 +331,7 @@ export default function ObservationEditor({
               />
             </label>
             <CurrentLocationButton
+              label="Min position"
               size="sm"
               className="h-8 rounded-none text-xs"
               onLocate={({ latitude, longitude }) => {
@@ -330,6 +342,23 @@ export default function ObservationEditor({
             />
           </div>
         </div>
+
+        <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:col-span-2 sm:px-4">
+          Plats
+          <select
+            value={localeId}
+            onChange={(event) => setLocaleChoice(event.target.value)}
+            className="mt-0.5 h-8 rounded-none border border-field-border bg-surface-raised px-2.5 font-body text-xs not-italic text-text focus:border-accent focus:outline-none"
+          >
+            <option value="">Ingen plats</option>
+            {locales.map((locale) => <option key={locale.id} value={locale.id}>{locale.name}</option>)}
+          </select>
+          {outside ? (
+            <span className="mt-1 font-body text-xs not-italic text-text-muted">
+              Positionen ligger utanför platsen, men observationen räknas till den.
+            </span>
+          ) : null}
+        </label>
 
         <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint sm:col-span-2 sm:px-4">
           Särskild anteckning

@@ -8,7 +8,7 @@ import { createObservation } from "@/app/tempus/_actions/observations"
 import { parseLatLon } from "@/app/tempus/formatters"
 import { PlacePicker } from "./quick-observation/place-picker"
 import { SpeciesPicker, type PresetChecklistItem, type PresetSpecies } from "./quick-observation/species-picker"
-import { LocaleField } from "@/app/tempus/locale-match"
+import { LocaleField, useObservationLocale } from "@/app/tempus/locale-match"
 import { ObservationPhotoPicker, readPhotoMetadata, toDateTimeLocal, uploadObservationPhotos, type PhotoMetadata } from "./observation-photos"
 
 const INPUT_CLASS =
@@ -143,6 +143,7 @@ export default function QuickObservation({
 
   const [open, setOpen] = useState(false)
   const [entered, setEntered] = useState(false)
+  const [closing, setClosing] = useState(false)
 
   const [query, setQuery] = useState("")
   const [picked, setPicked] = useState<PresetSpecies | null>(null)
@@ -152,6 +153,9 @@ export default function QuickObservation({
   const [observedAt, setObservedAt] = useState(nowLocal())
   const [lat, setLat] = useState("")
   const [lon, setLon] = useState("")
+  // null följer positionen; ett val gäller även om positionen ligger strax utanför platsen.
+  const [localeChoice, setLocaleChoice] = useState<string | null>(null)
+  const { localeId } = useObservationLocale(lat, lon, localeChoice)
   const [showTime, setShowTime] = useState(false)
   const [showPlace, setShowPlace] = useState(false)
   const [showComment, setShowComment] = useState(false)
@@ -207,19 +211,26 @@ export default function QuickObservation({
     }
   }
 
+  // Stängningen spelar först ut-effekten; finishClose tar bort dialogen när den är klar.
   const close = () => {
     setEntered(false)
+    setClosing(true)
+  }
+
+  const finishClose = () => {
+    setClosing(false)
     setOpen(false)
     setSaved(null)
     reset()
     setObservedAt(nowLocal())
     setLat("")
     setLon("")
+    setLocaleChoice(null)
     setShowTime(false)
     setShowPlace(false)
   }
 
-  const hasDraft = Boolean(query || picked || count !== "1" || lifeStage || lat || lon || notes || photos.length > 0 || selectedChecklistItemIds.length > 0 || showTime || showPlace || showComment)
+  const hasDraft = Boolean(query || picked || count !== "1" || lifeStage || lat || lon || localeChoice !== null || notes || photos.length > 0 || selectedChecklistItemIds.length > 0 || showTime || showPlace || showComment)
 
   const requestClose = () => {
     if (pending) return
@@ -231,28 +242,28 @@ export default function QuickObservation({
   }
 
   useEffect(() => {
-    if (!open) return
+    if (!closing) return
+    const id = setTimeout(finishClose, 200)
+    return () => clearTimeout(id)
+  })
+
+  useEffect(() => {
+    if (!open || closing) return
     const id = requestAnimationFrame(() => setEntered(true))
     const focus = setTimeout(() => searchRef.current?.focus(), 120)
     return () => {
       cancelAnimationFrame(id)
       clearTimeout(focus)
     }
-  }, [open])
+  }, [open, closing])
 
-  // Escape: först ångra valet av art, sedan stäng. Prenumerationen sätts om vid varje render
-  // så att requestClose alltid ser aktuellt utkast (hasDraft/pending).
+  // Escape stänger direkt, som krysset. Är bekräftelserutan öppen stänger den sig själv.
+  // Prenumerationen sätts om vid varje render så att pending och confirmingCancel är aktuella.
   useEffect(() => {
     if (!open) return
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return
-      if (picked) {
-        selectSpecies(null)
-        setError(null)
-        focusSearch()
-        return
-      }
-      requestClose()
+      if (event.key !== "Escape" || confirmingCancel || pending || closing) return
+      close()
     }
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
@@ -270,7 +281,7 @@ export default function QuickObservation({
     }
   }
 
-  /** Bifogar de dragna bilderna (efter eller i stället för de som redan finns) och fyller i tid och plats ur deras EXIF. */
+  /** Bifogar de dragna bilderna (efter eller i stället för de som redan finns) och fyller i tid och position ur deras EXIF. */
   const attachPhotos = (files: File[], { replace = false } = {}) => {
     const images = files.filter((file) => file.type.startsWith("image/"))
     const skipped = files.filter((file) => !file.type.startsWith("image/"))
@@ -294,6 +305,7 @@ export default function QuickObservation({
       }
       if (presetPhotos) attachPhotos(presetPhotos, { replace: true })
       setSaved(null)
+      setClosing(false)
       setEntered(false)
       setOpen(true)
     },
@@ -339,6 +351,7 @@ export default function QuickObservation({
           checklist_items: selectedChecklistItemIds,
           observed_at: new Date(observedAt).toISOString(),
           ...(location ? { location } : {}),
+          locale: localeId ? Number(localeId) : null,
           count: trimmed ? Number(trimmed) : null,
           life_stage: lifeStage.trim(),
           notes: notes.trim(),
@@ -384,6 +397,7 @@ export default function QuickObservation({
         <button
           type="button"
           onClick={() => {
+            setClosing(false)
             setEntered(false)
             setOpen(true)
           }}
@@ -397,7 +411,7 @@ export default function QuickObservation({
 
       {open ? createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 transition-opacity sm:items-center"
+          className={`fixed inset-0 z-50 flex items-end justify-center bg-black/60 transition-opacity sm:items-center ${closing ? "pointer-events-none" : ""}`}
           style={{
             transitionDuration: "var(--duration-normal)",
             transitionTimingFunction: "var(--ease-standard)",
@@ -419,10 +433,11 @@ export default function QuickObservation({
             aria-modal="true"
             aria-label="Snabbregistrera observation"
             className="flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-t-2xl bg-surface shadow-lg transition-transform sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl"
+            // Poppar upp med en liten översväng och krymper tillbaka när den stängs.
             style={{
-              transitionDuration: "var(--duration-normal)",
-              transitionTimingFunction: "var(--ease-standard)",
-              transform: entered ? "translateY(0)" : "translateY(2rem)",
+              transitionDuration: entered ? "220ms" : "var(--duration-normal)",
+              transitionTimingFunction: entered ? "cubic-bezier(.34,1.56,.64,1)" : "var(--ease-standard)",
+              transform: entered ? "translateY(0) scale(1)" : "translateY(1rem) scale(0.9)",
             }}
           >
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -432,7 +447,9 @@ export default function QuickObservation({
               </h2>
               <button
                 type="button"
-                onClick={requestClose}
+                onClick={() => {
+                  if (!pending) close()
+                }}
                 aria-label="Stäng"
                 className="text-text-muted hover:text-text"
               >
@@ -514,7 +531,9 @@ export default function QuickObservation({
                 <LocaleField
                   lat={lat}
                   lon={lon}
-                  onChange={({ lat: nextLat, lon: nextLon }) => {
+                  choice={localeChoice}
+                  onChoose={setLocaleChoice}
+                  onPositionChange={({ lat: nextLat, lon: nextLon }) => {
                     setLat(nextLat)
                     setLon(nextLon)
                     setShowPlace(true)

@@ -522,6 +522,8 @@ export const observationFormSchema = z.object({
   checklist_items: z.array(z.string().uuid()).default([]),
   observed_at: z.string().min(1, "Tidpunkt krävs."),
   location: observationPointSchema.or(z.object({}).strict()).optional(),
+  // Omitted, the backend derives the locale from the position.
+  locale: z.number().int().positive("Välj en giltig plats.").nullable().optional(),
   count: z.number().int().positive("Antal måste vara minst 1.").nullable().default(null),
   // No stage chosen is sent as null, which the model stores; an empty string is not valid there.
   life_stage: z.string().trim().nullable().default(null).transform((value) => value || null),

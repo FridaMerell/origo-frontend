@@ -256,11 +256,11 @@ export default function ChecklistBuilder({
 									</Label>
 
 									<Label>
-										Lokal <Optional>t.ex. &quot;Stenmovägen&quot;, valfritt</Optional>
+										Plats <Optional>t.ex. &quot;Stenmovägen&quot;, valfritt</Optional>
 										<Select
 											value={localeId}
 											onChange={event => setLocaleId(event.target.value)}>
-											<option value=''>Ingen lokal</option>
+											<option value=''>Ingen plats</option>
 											{locales.map(locale => (
 												<option key={locale.id} value={locale.id}>
 													{locale.name}

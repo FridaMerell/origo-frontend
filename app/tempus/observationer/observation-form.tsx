@@ -229,6 +229,7 @@ export default function ObservationForm() {
                     className="h-9 min-w-0 flex-1 basis-28 rounded border border-field-border bg-surface px-2.5 text-xs text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
                   />
                   <CurrentLocationButton
+                    label="Min position"
                     size="sm"
                     className="h-9"
                     onLocate={({ latitude, longitude }) => {

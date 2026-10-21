@@ -93,7 +93,7 @@ function PlaceSearch({
     <input
       ref={inputRef}
       type="search"
-      placeholder="Sök plats"
+      placeholder="Sök adress"
       autoComplete="off"
       className="h-10 w-full rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
     />
@@ -124,7 +124,7 @@ export function PlacePicker({
 
   const persistPlaces = (next: SavedPlace[]) => {
     if (storePlaces(next)) return true
-    onError("Platserna kunde inte sparas i webbläsaren.")
+    onError("Punkterna kunde inte sparas i webbläsaren.")
     return false
   }
 
@@ -196,6 +196,7 @@ export function PlacePicker({
 
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <CurrentLocationButton
+                label="Min position"
                 size="sm"
                 className="h-10"
                 onLocate={({ latitude, longitude }) => selectPlace({ lat: latitude.toFixed(6), lon: longitude.toFixed(6) })}
@@ -243,7 +244,7 @@ export function PlacePicker({
 
             {hasCoords ? (
               <button type="button" onClick={() => setEditingPlace(false)} className="self-start text-sm text-text-muted hover:text-text">
-                Klar med plats
+                Klar med position
               </button>
             ) : null}
           </>
@@ -255,7 +256,7 @@ export function PlacePicker({
             onClick={() => setSavingPlace(true)}
             className="self-start rounded border border-field-border px-3 py-1.5 text-sm text-text-muted hover:text-text"
           >
-            Spara som plats
+            Spara som punkt
           </button>
         ) : null}
 
@@ -264,7 +265,7 @@ export function PlacePicker({
             <input
               value={placeName}
               onChange={(event) => setPlaceName(event.target.value)}
-              placeholder="Namnge platsen"
+              placeholder="Namnge punkten"
               className="h-9 min-w-0 flex-1 basis-40 rounded border border-field-border bg-surface px-3 text-sm text-text placeholder:text-text-faint focus:border-accent focus:outline-none"
             />
             <button
@@ -273,7 +274,7 @@ export function PlacePicker({
               disabled={!placeName.trim()}
               className="h-9 shrink-0 rounded border border-field-border px-3 text-sm text-text-muted hover:text-text disabled:text-text-faint"
             >
-              Spara plats
+              Spara punkt
             </button>
             <button
               type="button"

@@ -29,6 +29,10 @@ export type TempusLocale = {
   name: string
   geometry: Extract<TempusGeoAreaGeometry, { type: "MultiPolygon" }> | null
   user: number
+  // Locales are public unless the owner marks them private.
+  is_private: boolean
+  // Only the owner may change or delete a locale; decided by the backend.
+  editable: boolean
 }
 
 export const TEMPUS_GEO_AREAS_TAG = "tempus-geo-areas"

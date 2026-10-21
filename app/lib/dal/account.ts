@@ -36,6 +36,7 @@ export const getInvitations = cache(
 // One entry in the user's own action history. The response shape of
 // GET /api/accounts/activity/ is read defensively (same approach as
 // actions/notifications.ts), so every field except `id` may be empty.
+// `id` is the list key, built from the row's app, kind and pk.
 export type ActivityItem = {
   id: string
   action: string
@@ -56,10 +57,12 @@ function activityFrom(value: unknown, index: number): ActivityItem | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null
   const record = value as Record<string, unknown>
   const id = record.id
+  // The feed is a union of several tables, so a row's pk is only unique
+  // together with its app and kind.
   return {
     id:
       typeof id === "string" || typeof id === "number"
-        ? String(id)
+        ? `${textFrom(record, ["app"])}-${textFrom(record, ["kind"])}-${id}`
         : `activity-${index}`,
     action: textFrom(record, ["action", "verb", "type", "kind", "event"]),
     description: textFrom(record, [
@@ -77,7 +80,14 @@ function activityFrom(value: unknown, index: number): ActivityItem | null {
       "label",
     ]),
     createdAt:
-      textFrom(record, ["created_at", "createdAt", "timestamp", "created", "time"]) ||
+      textFrom(record, [
+        "occurred_at",
+        "created_at",
+        "createdAt",
+        "timestamp",
+        "created",
+        "time",
+      ]) ||
       null,
   }
 }

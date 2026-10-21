@@ -184,8 +184,11 @@ export function ObservationFilter({
   return (
     <div className="border-l border-border">
       <div className={`grid grid-cols-2 ${REGISTER_COLUMNS}`}>
-        <div className={`${CELL} relative col-span-2 flex items-center gap-2 pl-3`}>
-          <Search size={14} className="shrink-0 text-text-faint" />
+        <div className={`${CELL} relative col-span-2 flex items-center`}>
+          {/* The icon stands in the Nr column, so typed text starts where the species names do. */}
+          <span className="flex w-8 shrink-0 items-center justify-center self-stretch border-r border-border text-text-faint sm:w-11">
+            <Search size={14} />
+          </span>
           <input
             type="search"
             value={query}
@@ -197,9 +200,9 @@ export function ObservationFilter({
               }
               if (event.key === "Escape") setQuery("")
             }}
-            placeholder="Filtrera på art"
+            placeholder="Sök art"
             aria-label="Filtrera på art"
-            className="h-10 w-full min-w-0 bg-transparent font-display text-sm italic text-text placeholder:text-text-faint focus:outline-none"
+            className="h-10 w-full min-w-0 bg-transparent px-3 font-display text-sm italic text-text placeholder:text-text-faint focus:outline-none"
           />
           <FilterMenu label="Artgrupp" value={categoryLabel} alignRight triggerClassName="h-10 shrink-0 px-3 text-sm">
             {(close) => (

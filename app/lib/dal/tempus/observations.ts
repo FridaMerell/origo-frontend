@@ -52,7 +52,8 @@ export type TempusObservationCategorySummary = {
 
 export type TempusObservationCategoryPage = TempusPage<TempusObservationCategorySummary>
 
-export type TempusCategoryObservationsPage = TempusPage<TempusObservation> & {
+// A locale's observations from every user.
+export type TempusCategoryObservationsPage = TempusPage<TempusPublicObservation & { species_categories?: TempusObservationCategory[] }> & {
   category: TempusObservationCategory | null
   obs_count: number
 }
@@ -96,7 +97,7 @@ export const getTempusObservationCategoryPage = cache(
     params?: TempusListParams,
   ): Promise<TempusObservationCategoryPage> => {
     const query = paginationQuery({ ...params, locale }, 25, 100)
-    const page = await fetchTempusPage<TempusObservationCategorySummary>(TEMPUS_ENDPOINTS.observationsByCategory, query)
+    const page = await fetchTempusPage<TempusObservationCategorySummary>(TEMPUS_ENDPOINTS.allObservationsByCategory, query)
     return { ...page, pageSize: query.page_size }
   },
 )
@@ -118,7 +119,7 @@ export const getTempusCategoryObservationsPage = cache(
   ): Promise<TempusCategoryObservationsPage> => {
     const query = paginationQuery({ ...params, locale }, 8, 100)
     const response = await fetchItem<TempusCategoryObservationsPage>(
-      `${TEMPUS_ENDPOINTS.observationsByCategory}${encodeURIComponent(categoryId)}/${buildQuery(query)}`,
+      `${TEMPUS_ENDPOINTS.allObservationsByCategory}${encodeURIComponent(categoryId)}/${buildQuery(query)}`,
     )
     if (!response || !Array.isArray(response.results)) {
       return { results: [], count: 0, next: null, previous: null, category: null, obs_count: 0, pageSize: query.page_size }

@@ -63,9 +63,9 @@ export default function LocalesView() {
                       {locale.name}
                     </Link>
                   </h3>
-                  <p className="mt-0.5 text-sm text-text-muted">Sparat geografiskt område</p>
+                  <p className="mt-0.5 text-sm text-text-muted">{locale.is_private ? "Privat område" : "Sparat geografiskt område"}</p>
                 </div>
-                <div className="flex items-center gap-2 sm:justify-self-end">
+                {locale.editable ? <div className="flex items-center gap-2 sm:justify-self-end">
                   <Link
                     href={`/lokaler/${locale.id}/redigera`}
                     className="inline-flex items-center px-3 py-1.5 font-display text-sm font-medium italic tracking-wide text-accent underline underline-offset-4 hover:text-accent-hover"
@@ -80,7 +80,7 @@ export default function LocalesView() {
                   >
                     {removingId === locale.id ? "Tar bort…" : "Ta bort"}
                   </button>
-                </div>
+                </div> : null}
               </li>
             ))}
           </ul>

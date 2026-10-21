@@ -523,7 +523,8 @@ export const observationFormSchema = z.object({
   observed_at: z.string().min(1, "Tidpunkt krävs."),
   location: observationPointSchema.or(z.object({}).strict()).optional(),
   count: z.number().int().positive("Antal måste vara minst 1.").nullable().default(null),
-  life_stage: z.string().trim().default(""),
+  // No stage chosen is sent as null, which the model stores; an empty string is not valid there.
+  life_stage: z.string().trim().nullable().default(null).transform((value) => value || null),
   notes: z.string().trim().default(""),
 })
 export type ObservationFormValues = z.infer<typeof observationFormSchema>

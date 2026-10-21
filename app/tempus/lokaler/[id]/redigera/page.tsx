@@ -15,7 +15,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function EditLocalePage({ params }: PageProps) {
   const { id } = await params
   const locale = await getTempusLocaleItem(id)
-  if (!locale) notFound()
+  // Other users' public locales can be read but only the owner may edit.
+  if (!locale || !locale.editable) notFound()
 
   return (
     <main className="container flex flex-col gap-4 py-5 max-sm:px-4 sm:py-7">

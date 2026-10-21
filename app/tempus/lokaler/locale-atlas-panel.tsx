@@ -5,10 +5,10 @@ import type { ReactNode } from "react"
 import type {
   TempusCategoryObservationsPage,
   TempusChecklist,
-  TempusObservation,
   TempusObservationCategory,
   TempusObservationCategoryPage,
   TempusPage,
+  TempusPublicObservation,
 } from "@/app/lib/dal"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
 import { LOCALE_ATLAS_PAGE_SIZE } from "./locale-atlas-config"
@@ -223,7 +223,7 @@ function ObservationRow({
   selected,
   onSelect,
 }: {
-  observation: TempusObservation
+  observation: TempusPublicObservation
   label: string
   selected: boolean
   onSelect: (id: string) => void

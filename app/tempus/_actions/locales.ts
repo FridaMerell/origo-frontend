@@ -23,6 +23,7 @@ const localeIdSchema = z.coerce.number().int().positive()
 export type CreateLocaleInput = {
   name: string
   geometry: TempusLocale["geometry"]
+  is_private: boolean
 }
 
 export async function createLocale(input: CreateLocaleInput): Promise<{ success?: boolean; error?: string }> {
@@ -35,7 +36,7 @@ export async function createLocale(input: CreateLocaleInput): Promise<{ success?
   const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.locales, {
     method: "POST",
     headers: await authedJsonHeaders(),
-    body: JSON.stringify({ name, geometry: geometry.data }),
+    body: JSON.stringify({ name, geometry: geometry.data, is_private: input.is_private === true }),
   })
   if (!response.ok) {
     return { error: await responseErrorMessage(response) }
@@ -58,7 +59,7 @@ export async function updateLocale(id: string | number, input: CreateLocaleInput
   const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.locales}${localeId.data}/`, {
     method: "PATCH",
     headers: await authedJsonHeaders(),
-    body: JSON.stringify({ name, geometry: geometry.data }),
+    body: JSON.stringify({ name, geometry: geometry.data, is_private: input.is_private === true }),
   })
   if (!response.ok) {
     return { error: await responseErrorMessage(response) }

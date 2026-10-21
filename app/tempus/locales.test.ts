@@ -6,6 +6,8 @@ const locale: TempusLocale = {
   id: 1,
   name: "Testlokal",
   user: 1,
+  is_private: false,
+  editable: true,
   geometry: {
     type: "MultiPolygon",
     coordinates: [[[

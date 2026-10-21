@@ -4,7 +4,6 @@ import { redirect } from "next/navigation"
 import { getTempusChecklistsPage } from "@/app/lib/dal/tempus/checklists"
 import { getTempusObservationsPage, getTempusObservedCategoryPage } from "@/app/lib/dal/tempus/observations"
 import { getTempusSpeciesItem, getTempusSpeciesItems } from "@/app/lib/dal/tempus/species"
-import { formatDateLongOrNull } from "@/app/lib/formatters"
 import { LocaleLabel } from "@/app/tempus/locale-label"
 import { BiotopeMap } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import { ObservationFilter, ObservationOrder } from "./observation-filter"
@@ -14,7 +13,10 @@ const OBSERVATIONS_PER_PAGE = 25
 // Species picked in one filter; more than this is cut off.
 const MAX_FILTER_SPECIES = 20
 
-const STEP = "font-display italic text-accent no-underline hover:text-accent-hover"
+// Every register cell: its content centred in the row, one text size.
+const ROW_CELL = "flex min-w-0 flex-col justify-center gap-0.5 border-r border-border py-2.5 text-sm italic"
+const HEAD_CELL = "flex h-8 items-center border-b border-r border-border"
+const STEP ="font-display italic text-accent no-underline hover:text-accent-hover"
 
 const speciesName = (s: { swedish_name?: string; scientific_name: string }) =>
   s.swedish_name || s.scientific_name
@@ -27,6 +29,15 @@ export const metadata: Metadata = {
 type SearchParams = Partial<Record<(typeof OBSERVATION_FILTER_PARAMS)[keyof typeof OBSERVATION_FILTER_PARAMS] | "sida", string>>
 
 type PageProps = { searchParams: Promise<SearchParams> }
+
+// "27 sep. 2026": short enough to stay on one line in the time column.
+function formatShortDate(value: string | null) {
+  if (!value) return null
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })
+}
 
 function readPageNumber(value: string | undefined) {
   const parsed = Number(value)
@@ -153,13 +164,13 @@ export default async function ObservationsPage({ searchParams }: PageProps) {
           </div>
 
           <div className={`hidden border-l border-border font-display text-[9px] italic text-text-muted sm:grid ${COLUMNS}`}>
-            <span className="border-b border-r border-border px-2 py-1.5 text-center">Nr</span>
-            <span className="border-b border-r border-border px-3 py-1.5">Artens namn</span>
-            <ObservationOrder order={filter.order} className="border-b border-r border-border" />
-            <span className="border-b border-r border-border px-3 py-1.5">Plats och checklista</span>
-            <span className="border-b border-r border-border px-3 py-1.5">Stadium</span>
-            <span className="border-b border-r border-border px-2 py-1.5 text-center">Bilder</span>
-            <span className="border-b border-r border-border px-2 py-1.5 text-center">Antal</span>
+            <span className={`${HEAD_CELL} justify-center px-1`}>Nr</span>
+            <span className={`${HEAD_CELL} px-3`}>Artens namn</span>
+            <ObservationOrder order={filter.order} className="h-8 border-b border-r border-border" />
+            <span className={`${HEAD_CELL} px-3`}>Plats och checklista</span>
+            <span className={`${HEAD_CELL} px-3`}>Stadium</span>
+            <span className={`${HEAD_CELL} justify-center px-1`}>Bilder</span>
+            <span className={`${HEAD_CELL} justify-center px-1`}>Antal</span>
           </div>
 
           {observations.results.length === 0 ? (
@@ -180,44 +191,44 @@ export default async function ObservationsPage({ searchParams }: PageProps) {
               {observations.results.map((observation, index) => {
                 const match = speciesById.get(observation.species)
                 const name = match ? speciesName(match) : observation.species_detail.swedish_name || "Okänd art"
-                const observedAt = formatDateLongOrNull(observation.observed_at)
+                const observedAt = formatShortDate(observation.observed_at)
                 const checklistNames = [...new Set(observation.checklist_names)]
                 return (
                   <li key={observation.id}>
                     <Link
                       href={`/observationer/${observation.id}`}
                       aria-label={`Visa observation av ${name}`}
-                      className={`grid grid-cols-[2rem_minmax(0,1fr)_3.5rem] border-b border-border font-display text-text no-underline transition-colors hover:bg-accent-wash/20 ${COLUMNS}`}
+                      className={`grid min-h-12 grid-cols-[2rem_minmax(0,1fr)_3.5rem] border-b border-border font-display text-text no-underline transition-colors hover:bg-accent-wash/20 ${COLUMNS}`}
                     >
-                      <span className="row-span-2 flex justify-end border-r border-border px-2 py-2 text-[10px] italic text-text-faint sm:row-span-1">
+                      <span className={`${ROW_CELL} row-span-2 items-center px-1 text-xs text-text-faint sm:row-span-1`}>
                         {(page - 1) * pageSize + index + 1}
                       </span>
-                      <span className="min-w-0 border-r border-border px-3 py-2">
-                        <span className="block truncate text-sm italic">{name}</span>
+                      <span className={`${ROW_CELL} px-3`}>
+                        <span className="truncate pr-0.5">{name}</span>
                         {match && match.scientific_name !== name ? (
-                          <span className="block truncate text-[10px] italic text-text-muted">{match.scientific_name}</span>
+                          <span className="truncate pr-0.5 text-xs text-text-muted">{match.scientific_name}</span>
                         ) : null}
                         {observation.notes ? (
-                          <span className="mt-0.5 block truncate text-[11px] italic text-text-muted">{observation.notes}</span>
+                          <span className="truncate pr-0.5 text-xs text-text-muted">{observation.notes}</span>
                         ) : null}
                       </span>
-                      <span className="col-start-2 row-start-2 min-w-0 border-r border-t border-border px-3 py-1.5 text-xs italic text-text-muted sm:col-start-auto sm:row-start-auto sm:border-t-0 sm:py-2 sm:text-text">
-                        {observedAt ?? "—"}
+                      <span className={`${ROW_CELL} col-start-2 row-start-2 border-t px-3 text-text-muted sm:col-start-auto sm:row-start-auto sm:border-t-0 sm:text-text`}>
+                        <span className="truncate pr-0.5">{observedAt ?? "—"}</span>
                       </span>
-                      <span className="hidden min-w-0 border-r border-border px-3 py-2 text-xs italic sm:block">
-                        {observation.locale ? <span className="block truncate"><LocaleLabel localeId={observation.locale} /></span> : null}
+                      <span className={`${ROW_CELL} hidden px-3 sm:flex`}>
+                        {observation.locale ? <span className="truncate pr-0.5"><LocaleLabel localeId={observation.locale} /></span> : null}
                         {checklistNames.length > 0 ? (
-                          <span className="block truncate text-text-muted">{checklistNames.join(", ")}</span>
+                          <span className={`truncate pr-0.5 ${observation.locale ? "text-xs text-text-muted" : ""}`}>{checklistNames.join(", ")}</span>
                         ) : null}
                         {!observation.locale && checklistNames.length === 0 ? <span className="text-text-faint">—</span> : null}
                       </span>
-                      <span className="hidden min-w-0 truncate border-r border-border px-3 py-2 text-xs italic sm:block">
-                        {observation.life_stage || <span className="text-text-faint">—</span>}
+                      <span className={`${ROW_CELL} hidden px-3 sm:flex`}>
+                        <span className="truncate pr-0.5">{observation.life_stage || <span className="text-text-faint">—</span>}</span>
                       </span>
-                      <span className="hidden border-r border-border px-2 py-2 text-center text-xs italic tabular-nums sm:block">
+                      <span className={`${ROW_CELL} hidden items-center px-1 tabular-nums sm:flex`}>
                         {observation.photos?.length || <span className="text-text-faint">—</span>}
                       </span>
-                      <span className="col-start-3 row-span-2 row-start-1 flex items-start justify-center border-r border-border px-2 py-2 text-sm italic tabular-nums sm:col-start-auto sm:row-span-1 sm:row-start-auto">
+                      <span className={`${ROW_CELL} col-start-3 row-span-2 row-start-1 items-center px-1 tabular-nums sm:col-start-auto sm:row-span-1 sm:row-start-auto`}>
                         {observation.count ?? "—"}
                       </span>
                     </Link>

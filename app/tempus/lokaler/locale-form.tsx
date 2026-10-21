@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { createLocale, updateLocale, type CreateLocaleInput } from "@/app/tempus/_actions/locales"
 import type { TempusLocale } from "@/app/lib/dal/tempus/geo"
-import { TitleField } from "@/app/tempus/forms/Fields"
+import { Checkbox, TitleField } from "@/app/tempus/forms/Fields"
 import type { GeoJsonPolygonGeometry } from "@/app/tempus/ui/biotope-map/SwedenMap"
 import { LocaleMapEditor } from "./locale-map-editor"
 
@@ -24,6 +24,7 @@ export default function LocaleForm({ initial }: { initial?: TempusLocale | null 
   const extraPolygons = initial?.geometry?.coordinates.slice(1) ?? []
   const [name, setName] = useState(initial?.name ?? "")
   const [geometry, setGeometry] = useState<GeoJsonPolygonGeometry | null>(initialGeometry)
+  const [isPrivate, setIsPrivate] = useState(initial?.is_private ?? false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -34,6 +35,7 @@ export default function LocaleForm({ initial }: { initial?: TempusLocale | null 
     const payload: CreateLocaleInput = {
       name,
       geometry: geometry ? { type: "MultiPolygon", coordinates: [geometry.coordinates, ...extraPolygons] } : null,
+      is_private: isPrivate,
     }
     const result = initial
       ? await updateLocale(initial.id, payload)
@@ -65,6 +67,9 @@ export default function LocaleForm({ initial }: { initial?: TempusLocale | null 
           Platsen har fler ytor än den här kartan kan visa — endast den första ytan går att redigera här, resten sparas oförändrade.
         </p>
       ) : null}
+      <Checkbox checked={isPrivate} onChange={(event) => setIsPrivate(event.target.checked)} disabled={pending}>
+        Privat plats – bara du ser platsen. Annars är den synlig för alla.
+      </Checkbox>
       {error ? <p className="rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">{error}</p> : null}
       <Button type="submit" variant="paper-bordered" className="w-fit" disabled={pending || !name.trim() || !geometry}>
         {pending ? "Sparar…" : initial ? "Spara ändringar" : "Skapa plats"}

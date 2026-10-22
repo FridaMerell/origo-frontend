@@ -136,6 +136,70 @@ export const getTempusCategoryObservationsPage = cache(
   },
 )
 
+// The current user's year, in Swedish local time. Without observations that
+// year only the totals (all zero) and `years` are present.
+export type TempusYearSpecies = {
+  id: string
+  dyntaxa_taxon_id: number
+  swedish_name: string
+  scientific_name: string
+  significance: number | null
+  // Bare IUCN code (NT, VU, EN, CR, RE, DD), or "" when not red-listed.
+  red_list_category: string
+  observation_count: number
+  first_observed_at: string
+  // Never observed by the user before this year.
+  is_new: boolean
+  // The latest photo of the species this year, an R2 path.
+  photo: string | null
+}
+
+export type TempusYearPhoto = {
+  observation_id: string
+  photo: string
+  species_id: string
+  swedish_name: string
+  scientific_name: string
+  observed_at: string
+  locale_name: string | null
+}
+
+export type TempusYearPoint = { coordinates: [number, number]; locale_name: string | null }
+
+export type TempusYearSummary = {
+  year: number
+  // Every year the user has observations in, newest first.
+  years: number[]
+  observation_count: number
+  species_count: number
+  locale_count: number
+  months?: number[]
+  first_observation?: {
+    id: string
+    species_id: string
+    swedish_name: string
+    scientific_name: string
+    observed_at: string
+    locale_name: string | null
+  }
+  // In the order they were first seen during the year.
+  species?: TempusYearSpecies[]
+  new_species_count?: number
+  red_listed_count?: number
+  rarest?: TempusYearSpecies | null
+  // The most significant species' photos first, at most 12.
+  photos?: TempusYearPhoto[]
+  // Distinct observed positions.
+  points?: [number, number][]
+  extremes?: { south: TempusYearPoint; north: TempusYearPoint; distance_km: number } | null
+  top_locale?: { id: number; name: string; observation_count: number } | null
+}
+
+export const getTempusYearSummary = cache(
+  (year: number): Promise<TempusYearSummary | null> =>
+    fetchItem(`${TEMPUS_ENDPOINTS.observationsYearSummary}${buildQuery({ year })}`)
+)
+
 export const getTempusObservationItem = cache(
   (id: string): Promise<TempusObservation | null> =>
     fetchItem(`${TEMPUS_ENDPOINTS.observations}${id}/`)

@@ -3,7 +3,7 @@ import { cookies } from "next/headers"
 import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
 import { getCurrentUser } from "@/app/lib/dal/auth"
 import { getTempusGeoAreas } from "@/app/lib/dal/tempus/geo"
-import { getTempusAllObservationsPage } from "@/app/lib/dal/tempus/observations"
+import { getTempusAllObservationsPage, getTempusYearSummary } from "@/app/lib/dal/tempus/observations"
 import { formatDateLong } from "@/app/lib/formatters"
 import HomeView from "./home-view"
 import { areaPosition } from "./home/area-position"
@@ -14,6 +14,7 @@ import { overviewResources } from "./home/resources"
 import { RouteOverview, formatRouteDate } from "./home/route-overview"
 import { readSeed } from "./home/seed"
 import { parseSelection } from "./home/selection"
+import { yearBannerYear } from "./home/year-banner"
 
 export const metadata: Metadata = {
   title: "Tempus | Origo",
@@ -39,6 +40,15 @@ export default async function TempusPage({
   const routeRequest = getNextRouteOverview()
   const [params, user, cookieStore] = await Promise.all([searchParams, getCurrentUser(), cookies()])
   const isGuest = !user
+  const today = new Date()
+  // The year summary needs a session. Outside its weeks the banner can be
+  // previewed with ?visa-arsbanner, in development only. Its months are only
+  // fetched while it shows.
+  const bannerPreview = process.env.NODE_ENV !== "production" && "visa-arsbanner" in params
+  const yearBanner = isGuest
+    ? null
+    : yearBannerYear(today) ?? (bannerPreview ? Number(today.toLocaleDateString("en-CA", { timeZone: "Europe/Stockholm", year: "numeric" })) : null)
+  const yearBannerRequest = yearBanner ? getTempusYearSummary(yearBanner) : null
   const observationPageParam = Number([params.obs].flat()[0])
   const observationPage = Number.isInteger(observationPageParam) && observationPageParam > 0 ? observationPageParam : 1
   const selection = parseSelection((name) => [params[name]].flat()[0], isGuest)
@@ -55,11 +65,12 @@ export default async function TempusPage({
     : geoAreas.find((candidate) => candidate.id === storedId) ?? geoAreas[0] ?? null
   const geoAreaId = geoArea?.id ?? null
   // A stored area that no longer exists falls back to the default.
-  const [seed, route, observations] = await Promise.all([
+  const [seed, route, observations, yearSummary] = await Promise.all([
     earlySeed && geoAreaId === earlyAreaId ? earlySeed : seedFor(geoAreaId),
     routeRequest,
     // The endpoint needs a signed-in user.
     isGuest ? null : getTempusAllObservationsPage({ page: observationPage, page_size: OBSERVATIONS_PAGE_SIZE }),
+    yearBannerRequest,
   ])
   const observationPageCount = Math.max(1, Math.ceil((observations?.count ?? 0) / OBSERVATIONS_PAGE_SIZE))
   // A page of observations keeps the rest of the page's choices in the address.
@@ -67,7 +78,6 @@ export default async function TempusPage({
   for (const [name, value] of Object.entries(params)) {
     if (name !== "obs" && typeof value === "string") otherParams.set(name, value)
   }
-  const today = new Date()
 
   return (
     <OverviewProvider geoAreaId={geoAreaId} isGuest={isGuest} seed={seed}>
@@ -89,6 +99,7 @@ export default async function TempusPage({
           ) : null
         }
         observationCount={observations?.count ?? 0}
+        yearBanner={yearBanner ? { year: yearBanner, months: yearSummary?.months ?? null } : null}
         nextRoute={route ? { name: route.route.name, date: formatRouteDate(route.route.planned_date) } : null}
       />
     </OverviewProvider>

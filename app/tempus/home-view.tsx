@@ -11,6 +11,7 @@ import { SeasonOverviewHeader } from "./home/season-overview-header"
 import { SeasonWindows } from "./home/season-windows"
 import { RailMark, SECTION_RULE, type RailNote } from "./home/sheet-rail"
 import { LABEL } from "./home/styles"
+import { YearBanner } from "./home/year-banner"
 
 type SheetSection = { key: string; note: RailNote; content: ReactNode }
 
@@ -34,6 +35,7 @@ export default function HomeView({
   nextRoute,
   observations,
   observationCount,
+  yearBanner,
 }: {
   areaName: string
   // The area's centre as coordinates, when it has a shape.
@@ -48,6 +50,9 @@ export default function HomeView({
   // The latest observations from every user, rendered on the server, and how many there are.
   observations: ReactNode
   observationCount: number
+  // The year whose summary the banner under the title strip announces, with
+  // its observations per month when they could be read, or null.
+  yearBanner: { year: number; months: number[] | null } | null
 }) {
   const { isGuest, selection } = useOverview()
   const data = useHomeData()
@@ -110,6 +115,8 @@ export default function HomeView({
           vecka {week}
         </span>
       </div>
+
+      {yearBanner ? <YearBanner year={yearBanner.year} months={yearBanner.months} /> : null}
 
       {/* The margin's width and the gap beside it are fixed, so the content's
           edges do not move. Sections are parted by one rule across the whole

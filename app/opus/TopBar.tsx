@@ -87,8 +87,8 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
 				<div className={"shrink-0 sm:pe-5"}>
 					<Logo mode={mode} />
 				</div>
-				<span className='hidden h-7 w-px bg-border sm:block' />
-				<nav className={"hidden items-center gap-1 sm:flex sm:pl-5"}>
+				<span className='hidden h-7 w-px bg-border lg:block' />
+				<nav className={"hidden items-center gap-1 lg:flex lg:pl-5"}>
 					{TABS.map((tab, i) => (
 						<Link
 						key={i}
@@ -140,7 +140,7 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
 						aria-expanded={menuOpen}
 						aria-haspopup='dialog'
 						aria-label='Öppna menyn'
-						className='grid size-8 place-items-center rounded-md border border-border text-text-muted transition-colors hover:bg-foreground/5 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:hidden cursor-pointer'>
+						className='grid size-8 place-items-center rounded-md border border-border text-text-muted transition-colors hover:bg-foreground/5 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring lg:hidden cursor-pointer'>
 						<svg viewBox='0 0 24 24' className='size-4' fill='none' stroke='currentColor' strokeWidth='1.6' strokeLinecap='round'>
 							<path d='M4 9h16M4 15h16' />
 						</svg>
@@ -154,7 +154,7 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
 		 * men är inert och klickgenomsläpplig när den är stängd.
 		 */}
 		<div
-			className='fixed z-50 sm:hidden'
+			className='fixed z-50 lg:hidden'
 			style={{ inset: 0, pointerEvents: menuOpen ? "auto" : "none" }}
 			inert={!menuOpen}>
 			<div

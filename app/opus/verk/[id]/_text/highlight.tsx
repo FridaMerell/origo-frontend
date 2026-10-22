@@ -15,12 +15,15 @@ function TermCard({
 	form,
 	explanation,
 	hint,
+	shift = 0,
 }: {
 	text: string
 	entry: ReadingAnnotation["lexical_entry"]
 	form?: ReadingGloss["form"]
 	explanation: string
 	hint?: string
+	/** Hur långt rutan flyttas i sidled från ordets vänsterkant för att hållas innanför fönstret. */
+	shift?: number
 }) {
 	const modernForm = entry?.inflection_data?.modern_form
 	const synonyms = (entry?.synonyms ?? []).map(synonym => synonym.text)
@@ -33,7 +36,8 @@ function TermCard({
 	return (
 		<span
 			data-term-card
-			className="pointer-events-none absolute left-0 top-full z-30 mt-2 w-60 rounded-md bg-bg p-3 text-left text-[13px] font-normal text-text opacity-0 shadow-xl ring-1 ring-text/15 transition-opacity group-hover/term:opacity-100 group-focus-within/term:opacity-100">
+			style={{ left: shift }}
+			className="pointer-events-none absolute top-full z-30 mt-2 hidden w-60 max-w-[calc(100vw-24px)] rounded-md bg-bg p-3 text-left text-[13px] font-normal text-text shadow-xl ring-1 ring-text/15 transition-opacity starting:opacity-0 group-hover/term:block group-focus-within/term:block">
 			<span className="block text-[10px] uppercase tracking-[0.2em] text-text-muted">
 				Ordlista
 			</span>
@@ -65,6 +69,32 @@ function TermCard({
 			{connotation && <span className="mt-0.5 block text-xs text-text">{connotation}</span>}
 			{explanation && <span className="mt-1 block text-text">{explanation}</span>}
 			{hint && <span className="mt-2 block text-[11px] text-text-muted">{hint}</span>}
+		</span>
+	)
+}
+
+/** Minsta avstånd mellan ordlisterutan och fönstrets kant, och rutans bredd (w-60). */
+const EDGE = 12
+const CARD_WIDTH = 240
+
+/**
+ * Ett ord med ordlisteruta. Rutan är dold (display: none) tills den visas, så att den inte gör
+ * sidan bredare, och flyttas då i sidled så att den hålls innanför fönstret.
+ */
+function Term({ children, ...card }: { children: React.ReactNode } & React.ComponentProps<typeof TermCard>) {
+	const [shift, setShift] = React.useState(0)
+
+	function place(event: React.SyntheticEvent<HTMLSpanElement>) {
+		const word = event.currentTarget.getBoundingClientRect()
+		const viewport = document.documentElement.clientWidth
+		const width = Math.min(CARD_WIDTH, viewport - 2 * EDGE)
+		setShift(Math.max(EDGE - word.left, Math.min(0, viewport - EDGE - width - word.left)))
+	}
+
+	return (
+		<span className="group/term relative inline-block" onPointerEnter={place} onFocus={place}>
+			{children}
+			<TermCard {...card} shift={shift} />
 		</span>
 	)
 }
@@ -141,15 +171,14 @@ export function highlightContent(
 			)
 			nodes.push(
 				isDefinition ? (
-					<span key={`${span.start}-${span.end}-term`} className="group/term relative inline-block">
+					<Term
+						key={`${span.start}-${span.end}-term`}
+						text={text}
+						entry={annotation.lexical_entry}
+						explanation={explanationOf(annotation)}
+						hint="Klicka för att redigera">
 						{mark}
-						<TermCard
-							text={text}
-							entry={annotation.lexical_entry}
-							explanation={explanationOf(annotation)}
-							hint="Klicka för att redigera"
-						/>
-					</span>
+					</Term>
 				) : (
 					mark
 				),
@@ -157,7 +186,13 @@ export function highlightContent(
 		} else if (gloss) {
 			const editable = canEditGloss(gloss)
 			nodes.push(
-				<span key={`${span.start}-${span.end}-term`} className="group/term relative inline-block">
+				<Term
+					key={`${span.start}-${span.end}-term`}
+					text={text}
+					entry={gloss.lexical_entry}
+					form={gloss.form}
+					explanation={gloss.lexical_entry.definition}
+					hint={editable ? "Klicka för att redigera" : undefined}>
 					<mark
 						tabIndex={0}
 						onClick={editable ? event => onEditGloss(gloss, event.currentTarget) : undefined}
@@ -167,14 +202,7 @@ export function highlightContent(
 						className={editable ? `cursor-pointer ${TERM_MARK_CLASS}` : TERM_MARK_CLASS}>
 						{text}
 					</mark>
-					<TermCard
-						text={text}
-						entry={gloss.lexical_entry}
-						form={gloss.form}
-						explanation={gloss.lexical_entry.definition}
-						hint={editable ? "Klicka för att redigera" : undefined}
-					/>
-				</span>,
+				</Term>,
 			)
 		}
 		cursor = span.end

@@ -277,7 +277,9 @@ export default function ParallelReader({
 				<MobileRows
 					rows={matrix.rows}
 					columns={columns}
+					busy={busy}
 					renderBookmark={bookmarkButton}
+					onAction={handleAction}
 					onChanged={reload}
 					onDeleteNote={handleDeleteAnnotation}
 					onEditNote={handleEditAnnotation}

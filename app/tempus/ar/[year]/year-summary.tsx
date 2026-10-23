@@ -402,8 +402,8 @@ function Opening({ summary }: { summary: TempusYearSummary }) {
       const handle = window.requestIdleCallback(draw, { timeout: 2000 })
       return () => window.cancelIdleCallback(handle)
     }
-    const handle = window.setTimeout(draw, 200)
-    return () => window.clearTimeout(handle)
+    const handle = setTimeout(draw, 200)
+    return () => clearTimeout(handle)
   }, [drawn])
 
   const lean = (event: ReactPointerEvent<HTMLElement>) => {

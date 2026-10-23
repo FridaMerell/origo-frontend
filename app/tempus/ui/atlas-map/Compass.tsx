@@ -1,11 +1,16 @@
 "use client"
 
+import type { CSSProperties } from "react"
+
 // Purely decorative — the map never rotates (dragRotate is off), so this
 // always points the same way. It's here for the antique-map look, not for
 // orientation.
 export type CompassProps = {
   className?: string
   size?: number
+  // Style for the rose alone (the eight points), which turns about the
+  // compass's centre; the ring, the fleur-de-lis and the crown stay put.
+  needleStyle?: CSSProperties
 }
 
 // Avrundat, så att server och webbläsare skriver ut samma koordinater: sin/cos
@@ -16,7 +21,7 @@ const fixed = (value: number) => Math.round(value * 100) / 100
  * Gammal kartkompass: åttauddig ros med fleur-de-lis mot norr,
  * graverad i sepiabläck på ett avskärmat halvgenomskinligt fält.
  */
-export function Compass({ className = "absolute bottom-[4.5rem] right-5 z-20", size = 96 }: CompassProps) {
+export function Compass({ className = "absolute bottom-[4.5rem] right-5 z-20", size = 96, needleStyle }: CompassProps) {
   const c = size / 2
   const rOuter = c - 3
   const rLong = c - 12
@@ -47,6 +52,7 @@ export function Compass({ className = "absolute bottom-[4.5rem] right-5 z-20", s
       })}
       {/* åtta uddar: huvududdar långa, mellanuddar kortare.
           Varje udd är två halvor — en mörk, en ljus — för den graverade looken. */}
+      <g style={{ transformBox: "view-box", transformOrigin: `${c}px ${c}px`, ...needleStyle }}>
       {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
         const isMain = deg % 90 === 0
         const r = isMain ? rLong : rShort
@@ -69,6 +75,7 @@ export function Compass({ className = "absolute bottom-[4.5rem] right-5 z-20", s
         )
       })}
       <circle cx={c} cy={c} r="2.2" fill="#4a3a26" />
+      </g>
       {/* fleur-de-lis mot norr */}
       <g transform={`translate(${c} ${c - rLong - 9}) scale(${size / 96})`} fill="#4a3a26">
         <path d="M0,-7 C1.6,-4.6 2.2,-3.2 2.2,-1.8 C2.2,-0.4 1.2,0.6 0,0.6 C-1.2,0.6 -2.2,-0.4 -2.2,-1.8 C-2.2,-3.2 -1.6,-4.6 0,-7 Z" />

@@ -22,6 +22,7 @@ import { formatUserName } from "@/app/lib/format-user-name"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import FollowButton from "./FollowButton"
 import PhenogramPanel from "./PhenogramPanel"
+import SpeciesPhotos from "./SpeciesPhotos"
 
 const speciesName = (s: { swedish_name?: string; scientific_name: string }) =>
   s.swedish_name || s.scientific_name
@@ -64,11 +65,12 @@ const Page = async ({ params, searchParams }: {
     ? null
     : geoAreas.find((geoArea) => geoArea.id === selectedId) ?? geoAreas[0] ?? null
 
-  const [species, category, observations] = await Promise.all([
+  const [species, category, observations, photoObservations] = await Promise.all([
     getTempusSpeciesItem(id),
     fromHomeOverview ? Promise.resolve(null) : getTempusSpeciesCategoryItem(label),
     // `id` is the Dyntaxa taxon id, which the observation filter accepts.
     getTempusAllObservationsPage({ species: id, page: observationPage, page_size: 10 }),
+    getTempusAllObservationsPage({ species: id, has_photos: "true", page_size: 12 }),
   ])
   if (!species) notFound()
 
@@ -203,6 +205,17 @@ const Page = async ({ params, searchParams }: {
         </Card>
 
       </section >
+
+      {photoObservations.results.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-xl font-semibold tracking-tight">Bilder</h2>
+          <SpeciesPhotos
+            observations={photoObservations.results}
+            name={speciesName(species)}
+            scientificName={species.swedish_name && species.scientific_name !== species.swedish_name ? species.scientific_name : undefined}
+          />
+        </section>
+      )}
 
       <section id="observationer" className="flex flex-col gap-3">
         <h2 className="font-display text-xl font-semibold tracking-tight">Observationer</h2>

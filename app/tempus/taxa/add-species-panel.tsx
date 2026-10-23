@@ -1,237 +1,107 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { Button } from "@/app/components/ui/Button"
 import { registerSpeciesBatch, searchTaxa } from "@/app/tempus/_actions/species"
 import type { TempusTaxonHit } from "@/app/lib/dal"
-import { X } from "lucide-react"
-
-const taxonName = (hit: TempusTaxonHit) => hit.swedish_name || hit.scientific_name
 
 type Props = {
   categoryId: string
   categoryLabel: string
-  existingDyntaxaIds: number[]
   underTaxonId: number | null
+  query: string
+  existingDyntaxaIds: number[]
 }
 
-function TaxonMeta({ hit }: { hit: TempusTaxonHit }) {
-  return (
-    <>
-      <span className="font-medium">{taxonName(hit)}</span>
-      {hit.swedish_name && hit.scientific_name && (
-        <em className="ml-2 font-mono text-xs text-text-muted">{hit.scientific_name}</em>
-      )}
-      {hit.taxon_rank && (
-        <span className="ml-2 font-mono text-[10px] uppercase tracking-wide text-text-faint">
-          {hit.taxon_rank}
-        </span>
-      )}
-    </>
-  )
-}
+type RowState = { status: "pending" | "queued" } | { status: "error"; error: string }
 
+/** Artfakta hits for the page's search that are not in the category yet. */
 export default function AddSpeciesPanel({
   categoryId,
   categoryLabel,
-  existingDyntaxaIds,
   underTaxonId,
+  query,
+  existingDyntaxaIds,
 }: Props) {
-  const router = useRouter()
-  const existing = useMemo(() => new Set(existingDyntaxaIds), [existingDyntaxaIds])
-
-  const [query, setQuery] = useState("")
-  // The latest answer and the search it answers; it is searching until the
-  // answer matches the current search.
-  const [result, setResult] = useState<{ search: string; hits: TempusTaxonHit[] }>({ search: "", hits: [] })
-  const [staged, setStaged] = useState<TempusTaxonHit[]>([])
-  const [message, setMessage] = useState<string | null>(null)
-  const [errors, setErrors] = useState<string[]>([])
-  const [registering, startRegister] = useTransition()
-
-  const requestId = useRef(0)
-  const trimmedQuery = query.trim()
-  const search = trimmedQuery.length >= 2 ? `${underTaxonId ?? ""}:${trimmedQuery}` : null
-  const searching = search !== null && result.search !== search
-  const hits = search !== null ? result.hits : []
+  // The latest answer and the query it answers; it is searching until the
+  // answer matches the current query.
+  const [result, setResult] = useState<{ query: string; hits: TempusTaxonHit[]; error?: string }>({ query: "", hits: [] })
+  const [rows, setRows] = useState<Record<number, RowState>>({})
 
   useEffect(() => {
-    if (search === null) return
-    const current = ++requestId.current
-    const timer = setTimeout(async () => {
-      const found = await searchTaxa(trimmedQuery, underTaxonId)
-      if (current !== requestId.current) return
-      if (found.error) {
-        setMessage(found.error)
-        setResult({ search, hits: [] })
-        return
-      }
-      setMessage(null)
-      setResult({ search, hits: found.hits })
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [search, trimmedQuery, underTaxonId])
-
-  const visibleHits = hits.filter(
-    (hit) =>
-      !existing.has(hit.taxon_id) &&
-      !staged.some((s) => s.taxon_id === hit.taxon_id),
-  )
-
-  const stage = (hit: TempusTaxonHit | undefined) => {
-    if (!hit) return
-    setMessage(null)
-    if (existing.has(hit.taxon_id)) {
-      setMessage(`${taxonName(hit)} finns redan i ${categoryLabel}.`)
-      return
-    }
-    setStaged((prev) =>
-      prev.some((s) => s.taxon_id === hit.taxon_id) ? prev : [...prev, hit],
-    )
-    setQuery("")
-    setResult({ search: "", hits: [] })
-  }
-
-  const removeStaged = (id: number) =>
-    setStaged((prev) => prev.filter((s) => s.taxon_id !== id))
-
-  const register = () => {
-    setErrors([])
-    setMessage(null)
-    startRegister(async () => {
-      const result = await registerSpeciesBatch(
-        categoryId,
-        staged.map((s) => s.taxon_id),
-      )
-      if (result.error) {
-        setErrors([result.error])
-        return
-      }
-      const okIds = new Set(
-        result.results.filter((r) => r.ok).map((r) => r.taxon_id),
-      )
-      const failed = result.results.filter((r) => !r.ok)
-      setStaged((prev) => prev.filter((s) => !okIds.has(s.taxon_id)))
-      if (failed.length > 0) {
-        setErrors(
-          failed.map((f) => {
-            const hit = staged.find((s) => s.taxon_id === f.taxon_id)
-            return `${hit ? taxonName(hit) : f.taxon_id}: ${f.error ?? "kunde inte registreras"}`
-          }),
-        )
-      } else {
-        setMessage(`${okIds.size} ${okIds.size === 1 ? "art" : "arter"} registrerade.`)
-      }
-      if (okIds.size > 0) router.refresh()
+    let cancelled = false
+    searchTaxa(query, underTaxonId).then((found) => {
+      if (!cancelled) setResult({ query, hits: found.hits, error: found.error })
     })
+    return () => {
+      cancelled = true
+    }
+  }, [query, underTaxonId])
+
+  const searching = result.query !== query
+  const hits = searching
+    ? []
+    : result.hits.filter((hit) => !existingDyntaxaIds.includes(hit.taxon_id))
+
+  const add = async (taxonId: number) => {
+    setRows((prev) => ({ ...prev, [taxonId]: { status: "pending" } }))
+    const outcome = await registerSpeciesBatch(categoryId, [taxonId])
+    setRows((prev) => ({
+      ...prev,
+      [taxonId]: outcome.error ? { status: "error", error: outcome.error } : { status: "queued" },
+    }))
   }
 
-  const showEmpty = query.trim().length >= 2 && !searching && visibleHits.length === 0
+  if (!searching && !result.error && hits.length === 0) return null
 
   return (
-    <div className="flex flex-col gap-3 rounded-card border border-dashed border-border p-4">
-      <span className="font-mono text-[10px] uppercase tracking-[.14em] text-secondary">
-        Hittar du inte arten?
-      </span>
+    <section className="flex flex-col gap-1">
+      <h2 className="font-display text-xl font-semibold">Inte i {categoryLabel} än</h2>
+      <p className="text-sm text-text-muted">
+        Från Artfakta. Tillagda arter hämtas i bakgrunden och får fenogram när importen är klar.
+      </p>
 
-      {staged.length > 0 && (
-        <ul className="flex flex-col gap-1.5">
-          {staged.map((hit) => (
-            <li
-              key={hit.taxon_id}
-              className="flex items-center justify-between gap-3 rounded border border-border bg-surface px-3 py-2 text-sm"
-            >
-              <span className="min-w-0 truncate">
-                <TaxonMeta hit={hit} />
-              </span>
-              <button
-                type="button"
-                onClick={() => removeStaged(hit.taxon_id)}
-                aria-label={`Ta bort ${taxonName(hit)}`}
-                className="shrink-0 text-text-muted hover:text-text"
-              >
-                <X size={14} />
-              </button>
-            </li>
-          ))}
-        </ul>
+      {searching ? (
+        <p className="py-2 text-xs text-text-muted">Hämtar arter…</p>
+      ) : result.error ? (
+        <p className="rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">{result.error}</p>
+      ) : (
+        <dl>
+          {hits.map((hit) => {
+            const row = rows[hit.taxon_id]
+            return (
+              <div key={hit.taxon_id} className="border-b border-field-border py-2">
+                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                  <div className="grid min-w-0 grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-4">
+                    <span className="font-display text-md capitalize">
+                      {hit.swedish_name || hit.scientific_name}
+                    </span>
+                    <span className="min-w-0 truncate font-mono text-sm italic text-text-muted">
+                      {hit.swedish_name ? hit.scientific_name : ""}
+                    </span>
+                  </div>
+                  {row?.status === "queued" ? (
+                    <span className="text-sm text-text-muted" role="status">I importkön</span>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => add(hit.taxon_id)}
+                      disabled={row?.status === "pending"}
+                      className="h-10 min-h-0 rounded-md border border-accent bg-surface px-3 !text-accent hover:bg-accent-wash"
+                    >
+                      {row?.status === "pending" ? "Lägger till…" : "Lägg till"}
+                    </Button>
+                  )}
+                </div>
+                {row?.status === "error" && (
+                  <p className="mt-2 rounded bg-danger-wash px-3 py-2 text-sm text-danger" role="alert">{row.error}</p>
+                )}
+              </div>
+            )
+          })}
+        </dl>
       )}
-
-      <form
-        className="flex flex-col gap-2 sm:flex-row"
-        onSubmit={(event) => {
-          event.preventDefault()
-          stage(visibleHits[0])
-        }}
-      >
-        <input
-          type="text"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Ange artnamn att hämta från artdatabasen"
-          className="flex-1 rounded border border-field-border bg-surface px-3 py-2 text-text placeholder:text-text-faint"
-        />
-        <Button
-          variant="paper-bordered"
-          type="submit"
-          className="shrink-0 whitespace-nowrap"
-          disabled={searching || visibleHits.length === 0}
-        >
-          {searching ? "Söker…" : "Hämta art"}
-        </Button>
-      </form>
-
-      {(searching || visibleHits.length > 0 || showEmpty) && (
-        <ul className="flex flex-col overflow-hidden rounded border border-border">
-          {searching && visibleHits.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-text-muted">Söker…</li>
-          ) : showEmpty ? (
-            <li className="px-3 py-2 text-sm text-text-muted">
-              Inga träffar för &quot;{query.trim()}&quot;.
-            </li>
-          ) : (
-            visibleHits.map((hit) => (
-              <li key={hit.taxon_id}>
-                <button
-                  type="button"
-                  onClick={() => stage(hit)}
-                  className="block w-full border-b border-border px-3 py-2 text-left text-sm last:border-b-0 hover:bg-accent-wash hover:text-accent"
-                >
-                  <TaxonMeta hit={hit} />
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      )}
-
-      {message && <p className="text-sm text-text-muted">{message}</p>}
-      {errors.length > 0 && (
-        <ul className="flex flex-col gap-1 text-sm text-danger">
-          {errors.map((error, index) => (
-            <li key={index}>{error}</li>
-          ))}
-        </ul>
-      )}
-
-      {staged.length > 0 && (
-        <div className="flex items-center gap-3">
-          <Button type="button" variant="paper-bordered" onClick={register} disabled={registering}>
-            {registering
-              ? "Registrerar…"
-              : `Registrera ${staged.length} ${staged.length === 1 ? "art" : "arter"}`}
-          </Button>
-          <button
-            type="button"
-            onClick={() => setStaged([])}
-            disabled={registering}
-            className="text-sm text-text-muted hover:text-text disabled:opacity-50"
-          >
-            Rensa
-          </button>
-        </div>
-      )}
-    </div>
+    </section>
   )
 }

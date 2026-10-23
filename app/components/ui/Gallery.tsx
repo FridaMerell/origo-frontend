@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type PointerEvent, type ReactNode } from "react";
 import Image from "next/image";
 import { fileProxyUrl, normalizeFileUrls, type FileLike } from "@/app/lib/files";
 import { ChevronLeft, ChevronRight, Paperclip, X } from "lucide-react"
@@ -12,11 +12,15 @@ export function Lightbox({
   index,
   onClose,
   onNavigate,
+  captions,
 }: {
   images: string[]
   index: number
   onClose: () => void
   onNavigate: (index: number) => void
+  // One caption per image; when given, the photo gets a full dark stage with
+  // the caption, counter and arrows below or beside it.
+  captions?: ReactNode[]
 }) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -29,6 +33,69 @@ export function Lightbox({
   }, [index, images.length, onClose, onNavigate]);
 
   const url = images[index];
+  const previous = () => onNavigate((index - 1 + images.length) % images.length)
+  const next = () => onNavigate((index + 1) % images.length)
+  const closeOnBackdrop = (event: PointerEvent) => {
+    if (event.target === event.currentTarget) onClose()
+  }
+
+  if (captions) {
+    return (
+      <div
+        className="fixed inset-0 z-50 grid grid-rows-[minmax(0,1fr)_auto] gap-4 bg-[rgb(14,11,8)] pt-14 pb-4 sm:px-16 sm:pt-16 sm:pb-8"
+        onPointerDown={closeOnBackdrop}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Stäng"
+          className="absolute right-2 top-2 p-2 text-white/70 hover:text-white sm:right-4 sm:top-4"
+        >
+          <X size={24} />
+        </button>
+
+        <div className="relative flex min-h-0 items-center justify-center" onPointerDown={closeOnBackdrop}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={fileProxyUrl(url)} alt="" className="max-h-full max-w-full object-contain" />
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={previous}
+                aria-label="Föregående"
+                className="absolute -left-14 p-2 text-white/70 hover:text-white max-sm:hidden"
+              >
+                <ChevronLeft size={28} />
+              </button>
+              <button
+                type="button"
+                onClick={next}
+                aria-label="Nästa"
+                className="absolute -right-14 p-2 text-white/70 hover:text-white max-sm:hidden"
+              >
+                <ChevronRight size={28} />
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-end justify-between gap-4 px-4 text-white sm:px-0">
+          <div className="min-w-0">{captions[index]}</div>
+          {images.length > 1 && (
+            <div className="flex shrink-0 items-center gap-1 text-sm tabular-nums text-white/60">
+              <span className="mr-1">{index + 1} / {images.length}</span>
+              <button type="button" onClick={previous} aria-label="Föregående" className="p-2 text-white/70 hover:text-white sm:hidden">
+                <ChevronLeft size={24} />
+              </button>
+              <button type="button" onClick={next} aria-label="Nästa" className="p-2 text-white/70 hover:text-white sm:hidden">
+                <ChevronRight size={24} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div

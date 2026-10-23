@@ -16,7 +16,6 @@ import {
   type TempusTaxonHit,
 } from "@/app/tempus/_data/species"
 import {
-  registerSpeciesFormSchema,
   speciesCategoryFormSchema,
   type SpeciesCategoryFormValues,
 } from "@/app/lib/schemas"
@@ -152,7 +151,7 @@ export async function searchTaxa(query: string, underTaxonId?: number | null): P
   return { hits: (Array.isArray(raw) ? raw : []).map(normalizeTaxonHit).filter((hit) => hit.taxon_id > 0) }
 }
 
-export type RegisterSpeciesResult = { results: Array<{ taxon_id: number; ok: boolean; error?: string }>; error?: string }
+export type RegisterSpeciesResult = { queued: number; error?: string }
 export type ImportSpeciesChecklistState = { success?: boolean; message?: string; error?: string }
 
 export async function importSpeciesChecklist(
@@ -185,28 +184,17 @@ export async function importSpeciesChecklist(
 
 export async function registerSpeciesBatch(speciesCategory: string, taxonIds: number[]): Promise<RegisterSpeciesResult> {
   const ids = [...new Set(taxonIds.filter((id) => Number.isInteger(id) && id > 0))]
-  if (ids.length === 0) return { results: [], error: "Inga arter att registrera." }
-  if (!(await getCurrentUser())) return { results: [], error: "Du måste vara inloggad." }
-  const headers = await authedJsonHeaders()
-  const results: RegisterSpeciesResult["results"] = []
-  for (const taxon_id of ids) {
-    const parsed = registerSpeciesFormSchema.safeParse({ species_category: speciesCategory, dyntaxa_taxon_id: taxon_id })
-    if (!parsed.success) {
-      results.push({ taxon_id, ok: false, error: "Ogiltig art eller kategori." })
-      continue
-    }
-    const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesRegister, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ species_category: parsed.data.species_category, dyntaxa_taxon_id: parsed.data.dyntaxa_taxon_id }),
-    })
-    if (response.ok) results.push({ taxon_id, ok: true })
-    else {
-      results.push({ taxon_id, ok: false, error: await responseErrorMessage(response) })
-    }
-  }
-  if (results.some((result) => result.ok)) revalidatePath("/taxa")
-  return { results }
+  if (!speciesCategory.trim()) return { queued: 0, error: "Artkategorin saknas." }
+  if (ids.length === 0) return { queued: 0, error: "Inga arter att registrera." }
+  if (!(await getCurrentUser())) return { queued: 0, error: "Du måste vara inloggad." }
+  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesRegisterBatch, {
+    method: "POST",
+    headers: await authedJsonHeaders(),
+    body: JSON.stringify({ species_category: speciesCategory, dyntaxa_taxon_ids: ids }),
+  })
+  if (!response.ok) return { queued: 0, error: await responseErrorMessage(response) }
+  const body = (await response.json().catch(() => ({}))) as { queued?: number }
+  return { queued: body.queued ?? ids.length }
 }
 
 type FollowSpeciesOptions = { priority?: number; notificationsEnabled?: boolean }

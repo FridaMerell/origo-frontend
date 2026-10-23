@@ -3,6 +3,7 @@ import Link from "next/link"
 import FollowButton from "./[id]/FollowButton"
 import TaxonSearch from "./taxon-search"
 import ImportSpeciesChecklistForm from "../import-species-checklist-form"
+import AddSpeciesPanel from "../add-species-panel"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const Page = async ({ params, searchParams }: {
@@ -85,6 +86,17 @@ const Page = async ({ params, searchParams }: {
           </div>
         ))}
       </dl>
+
+      {search && (
+        <AddSpeciesPanel
+          key={search}
+          categoryId={category.id}
+          categoryLabel={category.label}
+          underTaxonId={category.taxon_id}
+          query={search}
+          existingDyntaxaIds={species.map((sp) => sp.dyntaxa_taxon_id)}
+        />
+      )}
 
       {(next || previous) && (
         <nav className="flex items-center justify-between" aria-label="Sidnavigering">

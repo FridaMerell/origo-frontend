@@ -49,7 +49,12 @@ const TENANT_MANIFESTS: Record<TenantId, TenantManifest> = {
 
 }
 
-export default async function manifest(): Promise<MetadataRoute.Manifest> {
+// Next's manifest type doesn't include `handle_links` yet.
+type Manifest = MetadataRoute.Manifest & {
+  handle_links?: "auto" | "preferred" | "not-preferred"
+}
+
+export default async function manifest(): Promise<Manifest> {
   const requestHeaders = await headers()
   const hostname = requestHeaders.get("host")?.split(":")[0] ?? ""
   const tenant = resolveTenant(hostname)
@@ -65,6 +70,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
       start_url: "/",
       scope: "/",
       display: "standalone",
+      handle_links: "preferred",
       background_color: "#FAF8EF",
       theme_color: "#A4410D",
       icons: [
@@ -95,6 +101,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     start_url: "/",
     scope: "/",
     display: "standalone",
+    handle_links: "preferred",
     background_color: config.background_color,
     theme_color: config.theme_color,
     icons: [

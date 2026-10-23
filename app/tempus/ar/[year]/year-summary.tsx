@@ -1,7 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from "react"
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactElement,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  type RefObject,
+} from "react"
 import { Lightbox } from "@/app/components/ui/Gallery"
 import type { TempusYearPhoto, TempusYearSpecies, TempusYearSummary } from "@/app/lib/dal/tempus/observations"
 import { fileProxyUrl } from "@/app/lib/files"
@@ -124,6 +135,13 @@ const formatDay = (value: string) =>
   new Date(value).toLocaleDateString("sv-SE", { day: "numeric", month: "long", timeZone: "Europe/Stockholm" })
 const speciesName = (species: { swedish_name: string; scientific_name: string }) =>
   species.swedish_name || species.scientific_name
+// The species page as the start page links it, and an observation's own page.
+const speciesHref = (dyntaxaTaxonId: number) => `/taxa/oversikt/${dyntaxaTaxonId}`
+const observationHref = (observationId: string) => `/observationer/${observationId}`
+// A species link reached through a Tempus species id; null if the species is not in the year's list.
+type SpeciesLink = (speciesId: string) => string | null
+// Names and dates that lead somewhere keep their colour; the line draws in under the pointer.
+const LINK = `text-current no-underline ${UNDERLINE}`
 
 /**
  * Writes how far a chapter has scrolled (0..1) to its --p without re-rendering,
@@ -238,6 +256,11 @@ export function YearSummary({ summary }: { summary: TempusYearSummary }) {
   const photos = summary.photos ?? []
   const species = summary.species ?? []
   const area = useRef<HTMLDivElement>(null)
+  const taxonById = new Map(species.map((item) => [item.id, item.dyntaxa_taxon_id]))
+  const speciesLink: SpeciesLink = (speciesId) => {
+    const taxonId = taxonById.get(speciesId)
+    return taxonId ? speciesHref(taxonId) : null
+  }
 
   return (
     <div className="overflow-x-clip">
@@ -246,13 +269,15 @@ export function YearSummary({ summary }: { summary: TempusYearSummary }) {
       <Opening summary={summary} />
       {summary.observation_count > 0 ? (
         <>
-          {photos[0] ? <LeadPhoto photo={photos[0]} onOpen={() => openPhotos(photos.map((item) => item.photo), 0)} /> : null}
+          {photos[0] ? (
+            <LeadPhoto photo={photos[0]} speciesLink={speciesLink} onOpen={() => openPhotos(photos.map((item) => item.photo), 0)} />
+          ) : null}
           {summary.points?.length ? <MapChapter summary={summary} /> : null}
-          {summary.months ? <MonthsChapter summary={summary} /> : null}
+          {summary.months ? <MonthsChapter summary={summary} speciesLink={speciesLink} /> : null}
           {summary.new_species_count ? <NewSpeciesChapter summary={summary} /> : null}
-          {photos.length > 1 ? <PhotoStrip photos={photos} onOpen={openPhotos} /> : null}
+          {photos.length > 1 ? <PhotoStrip photos={photos} speciesLink={speciesLink} onOpen={openPhotos} /> : null}
           {summary.rarest ? (
-            <RarestChapter rarest={summary.rarest} redListedCount={summary.red_listed_count ?? 0} onOpen={openPhotos} />
+            <RarestChapter rarest={summary.rarest} species={species} redListedCount={summary.red_listed_count ?? 0} onOpen={openPhotos} />
           ) : null}
           <Register species={species} />
         </>
@@ -282,13 +307,104 @@ export function YearSummary({ summary }: { summary: TempusYearSummary }) {
   )
 }
 
+// The opening sketch's landscapes, in the order a click steps through them.
+const OPENING_BIOTOPES: Biotope[] = ["lakes", "rivers", "seashore", "marsh", "agricultural", "meadow", "mountains", "boreal"]
+const BIOTOPE_LABELS: Record<Biotope, string> = {
+  lakes: "sjöar",
+  rivers: "rinnande vatten",
+  seashore: "havsstrand",
+  marsh: "våtmark",
+  agricultural: "odlingslandskap",
+  meadow: "ängar",
+  mountains: "fjäll",
+  boreal: "skog",
+}
+const BIOTOPE_REVEAL_MS = 1100
+
 // The year fills the screen over a biotope sketch drawn from it; the totals
 // rise in beneath it as the page starts to move. With a mouse the year leans a
-// little towards the pointer, slowly, and settles back when it leaves.
+// little towards the pointer, slowly, and settles back when it leaves. A click
+// anywhere on it draws the next landscape in, in a circle that widens from
+// where it was clicked, with a pulse of ink running out ahead of it. Clicks
+// never wait for the last change to finish.
 function Opening({ summary }: { summary: TempusYearSummary }) {
   const ref = useScrollProgress<HTMLElement>("pinned")
   const year = useRef<HTMLSpanElement>(null)
   const empty = summary.observation_count === 0
+  const [biotope, setBiotope] = useState<Biotope>(OPENING_BIOTOPES[0])
+  const [reveal, setReveal] = useState<{ biotope: Biotope; x: number; y: number; open: boolean } | null>(null)
+  // Each change spins the compass rose two turns; it overshoots north a little and settles.
+  const [spins, setSpins] = useState(0)
+  // A click while a landscape is still opening counts from that one.
+  const showing = reveal?.biotope ?? biotope
+  const following = OPENING_BIOTOPES[(OPENING_BIOTOPES.indexOf(showing) + 1) % OPENING_BIOTOPES.length]
+
+  const changeLandscape = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    // A click never waits: the landscape still opening is finished at once and
+    // the next one opens from the new click.
+    if (reveal) setBiotope(reveal.biotope)
+    // Clicked before it was drawn in the background: draw it now.
+    setDrawn((list) => (list.includes(following) ? list : [...list, following]))
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setBiotope(following)
+      return
+    }
+    setSpins((count) => count + 1)
+    const box = event.currentTarget.getBoundingClientRect()
+    // A keyboard press has no pointer position; it opens from the middle.
+    const fromPointer = event.detail > 0
+    const x = fromPointer ? event.clientX - box.left : box.width / 2
+    const y = fromPointer ? event.clientY - box.top : box.height / 2
+    setReveal({ biotope: following, x, y, open: false })
+    // Let the closed circle paint once so the opening is a transition.
+    requestAnimationFrame(() => requestAnimationFrame(() => setReveal((current) => (current ? { ...current, open: true } : current))))
+  }
+  const settleLandscape = () => {
+    if (!reveal) return
+    setBiotope(reveal.biotope)
+    setReveal(null)
+  }
+  // Generating a sketch is the slow part, so each landscape's is made once and
+  // kept: the same element is handed back on every render, and React leaves it
+  // alone while the needle spins or the circle opens.
+  const seed = `Tempus ${summary.year}`
+  const maps = useMemo(
+    () =>
+      Object.fromEntries(
+        OPENING_BIOTOPES.map((item) => [
+          item,
+          <BiotopeMap
+            key={item}
+            seed={seed}
+            biotope={item}
+            detail={7}
+            relief={6}
+            waterStrength={4}
+            featureAmount={3}
+            compass={false}
+            preserveAspectRatio="xMidYMid slice"
+            aria-hidden="true"
+            className="absolute inset-0 size-full!"
+          />,
+        ]),
+      ) as Record<Biotope, ReactElement>,
+    [seed],
+  )
+  // The landscapes drawn so far. The others are drawn one at a time while the
+  // browser is idle, in the order a click reaches them, as hidden layers, so a
+  // click only has to show one.
+  const [drawn, setDrawn] = useState<Biotope[]>([OPENING_BIOTOPES[0]])
+  useEffect(() => {
+    const missing = OPENING_BIOTOPES.find((item) => !drawn.includes(item))
+    if (!missing) return
+    const draw = () => setDrawn((list) => (list.includes(missing) ? list : [...list, missing]))
+    if ("requestIdleCallback" in window) {
+      const handle = window.requestIdleCallback(draw, { timeout: 2000 })
+      return () => window.cancelIdleCallback(handle)
+    }
+    const handle = window.setTimeout(draw, 200)
+    return () => window.clearTimeout(handle)
+  }, [drawn])
 
   const lean = (event: ReactPointerEvent<HTMLElement>) => {
     const element = year.current
@@ -307,20 +423,78 @@ function Opening({ summary }: { summary: TempusYearSummary }) {
   return (
     <section ref={ref} className={`${PROGRESS} ${empty ? "" : "h-[200vh]"}`}>
       <div className={FRAME} onPointerMove={lean} onPointerLeave={settle}>
-        <BiotopeMap
-          seed={`Tempus ${summary.year}`}
-          biotope="lakes"
-          detail={7}
-          relief={6}
-          waterStrength={4}
-          featureAmount={3}
-          compass={false}
-          preserveAspectRatio="xMidYMid slice"
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 size-full! opacity-[calc(0.18_+_var(--p)*0.27)] scale-[calc(1.12_-_var(--p)*0.12)]"
+        <div className="pointer-events-none absolute inset-0 opacity-[calc(0.35_+_var(--p)*0.3)] scale-[calc(1.12_-_var(--p)*0.12)]">
+          {drawn.map((item) => {
+            const revealing = reveal?.biotope === item
+            return (
+              <div
+                key={item}
+                className={`absolute inset-0 ${revealing ? "z-10 transition-[clip-path] ease-[cubic-bezier(.2,.7,.2,1)]" : ""} ${
+                  item === biotope || revealing ? "" : "invisible"
+                }`}
+                style={
+                  revealing && reveal
+                    ? {
+                        clipPath: `circle(${reveal.open ? "150%" : "0px"} at ${reveal.x}px ${reveal.y}px)`,
+                        transitionDuration: `${BIOTOPE_REVEAL_MS}ms`,
+                      }
+                    : undefined
+                }
+                onTransitionEnd={revealing ? settleLandscape : undefined}
+              >
+                {maps[item]}
+              </div>
+            )
+          })}
+        </div>
+        {reveal ? (
+          <>
+            {/* The pulse: a faint ink wave from the click, and two rings, the second a beat behind.
+                Keyed by the click, so a new click starts a new pulse instead of shrinking the last. */}
+            <span
+              key={`wave-${spins}`}
+              aria-hidden="true"
+              className="pointer-events-none absolute size-[60vmax] -translate-1/2 rounded-full bg-[radial-gradient(circle,var(--text)_0%,transparent_70%)] transition-[scale,opacity] ease-out"
+              style={{
+                left: reveal.x,
+                top: reveal.y,
+                scale: reveal.open ? "1" : "0",
+                opacity: reveal.open ? 0 : 0.22,
+                transitionDuration: `${BIOTOPE_REVEAL_MS * 0.7}ms`,
+              }}
+            />
+            {[0, 160].map((delay) => (
+              <span
+                key={`ring-${spins}-${delay}`}
+                aria-hidden="true"
+                className="pointer-events-none absolute size-[300vmax] -translate-1/2 rounded-full border-2 border-text transition-[scale,opacity] ease-[cubic-bezier(.2,.7,.2,1)]"
+                style={{
+                  left: reveal.x,
+                  top: reveal.y,
+                  scale: reveal.open ? "1" : "0",
+                  opacity: reveal.open ? 0 : 1,
+                  transitionDuration: `${BIOTOPE_REVEAL_MS}ms`,
+                  transitionDelay: `${delay}ms`,
+                }}
+              />
+            ))}
+          </>
+        ) : null}
+        <button
+          type="button"
+          onClick={changeLandscape}
+          aria-label={`Byt kartmotiv till ${BIOTOPE_LABELS[following]}`}
+          className="absolute inset-0 cursor-pointer"
         />
-        <Compass size={112} className={`pointer-events-none absolute bottom-6 right-4 z-10 sm:bottom-10 sm:right-10 lg:bottom-14 lg:right-16 ${COMPASS_FADE}`} />
-        <div className="container relative mx-auto flex flex-1 flex-col justify-center max-sm:px-4">
+        <Compass
+          size={112}
+          className="pointer-events-none absolute bottom-6 right-4 z-10 sm:bottom-10 sm:right-10 lg:bottom-14 lg:right-16"
+          needleStyle={{
+            rotate: `${spins * 720}deg`,
+            transition: `rotate 1600ms cubic-bezier(.25,1.3,.45,1)`,
+          }}
+        />
+        <div className="pointer-events-none container relative mx-auto flex flex-1 flex-col justify-center max-sm:px-4">
           <h1 className="font-display text-[clamp(7rem,28vw,26rem)] font-semibold leading-[0.8] tracking-tight tabular-nums translate-y-[calc(var(--p)*-6svh)]">
             <span
               ref={year}
@@ -332,7 +506,12 @@ function Opening({ summary }: { summary: TempusYearSummary }) {
           {empty ? (
             <p className="mt-8 font-display text-2xl italic sm:text-3xl lg:text-4xl">Inga observationer {summary.year}.</p>
           ) : (
-            <div className="mt-8 flex flex-col gap-2 font-display text-2xl italic sm:text-4xl lg:text-5xl 2xl:text-6xl">
+            <div className="relative isolate mt-8 flex w-fit flex-col gap-2 font-display text-2xl italic sm:text-4xl lg:text-5xl 2xl:text-6xl">
+              {/* The map fades out behind the lines so they read clearly, with no edge. */}
+              <span
+                aria-hidden="true"
+                className="absolute -inset-x-16 -inset-y-10 -z-10 bg-[radial-gradient(ellipse_at_center,var(--bg)_45%,transparent_72%)] opacity-[clamp(0,(var(--p)_-_0.1)*4,1)]"
+              />
               <p className={RISE_EARLY}>{formatCount(summary.observation_count)} observationer.</p>
               <p className={`text-accent ${RISE_LATE}`}>{formatCount(summary.species_count)} arter.</p>
               <p className={`text-base not-italic text-text-muted sm:text-lg lg:text-xl ${RISE_LAST}`}>
@@ -348,9 +527,10 @@ function Opening({ summary }: { summary: TempusYearSummary }) {
 
 // The year's leading photo opens out from a print in the middle of the page to
 // the whole screen; its caption follows once it is full.
-function LeadPhoto({ photo, onOpen }: { photo: TempusYearPhoto; onOpen: () => void }) {
+function LeadPhoto({ photo, speciesLink, onOpen }: { photo: TempusYearPhoto; speciesLink: SpeciesLink; onOpen: () => void }) {
   const ref = useScrollProgress<HTMLElement>("pinned")
   const name = speciesName(photo)
+  const species = speciesLink(photo.species_id)
   return (
     <section ref={ref} className={`${PROGRESS} h-[240vh]`}>
       <div className={FRAME}>
@@ -369,11 +549,15 @@ function LeadPhoto({ photo, onOpen }: { photo: TempusYearPhoto; onOpen: () => vo
             className="size-full object-cover scale-[calc(1.14_-_min(1,var(--p)*1.7)*0.14)]"
           />
         </button>
-        <div className={`pointer-events-none absolute bottom-6 left-0 bg-bg px-5 py-4 sm:bottom-10 lg:px-8 lg:py-6 ${RISE_LAST}`}>
-          <p className="font-display text-3xl font-semibold sm:text-5xl lg:text-6xl">{name}</p>
+        <div className={`absolute bottom-6 left-0 bg-bg px-5 py-4 sm:bottom-10 lg:px-8 lg:py-6 ${RISE_LAST}`}>
+          <p className="font-display text-3xl font-semibold sm:text-5xl lg:text-6xl">
+            {species ? <Link href={species} className={LINK}>{name}</Link> : name}
+          </p>
           <p className="mt-1 text-sm text-text-muted sm:text-base lg:text-lg">
-            {formatDay(photo.observed_at)}
-            {photo.locale_name ? ` · ${photo.locale_name}` : ""}
+            <Link href={observationHref(photo.observation_id)} className={LINK}>
+              {formatDay(photo.observed_at)}
+              {photo.locale_name ? ` · ${photo.locale_name}` : ""}
+            </Link>
           </p>
         </div>
       </div>
@@ -491,7 +675,7 @@ function MapChapter({ summary }: { summary: TempusYearSummary }) {
 
 // Observations per month; the bars grow together as the chapter comes up. A
 // bar under the mouse fills from the bottom in the other colour.
-function MonthsChapter({ summary }: { summary: TempusYearSummary }) {
+function MonthsChapter({ summary, speciesLink }: { summary: TempusYearSummary; speciesLink: SpeciesLink }) {
   const ref = useScrollProgress<HTMLElement>("enter")
   const months = summary.months ?? []
   const most = Math.max(...months)
@@ -527,16 +711,26 @@ function MonthsChapter({ summary }: { summary: TempusYearSummary }) {
       </div>
       {first ? (
         <p className={`mt-10 ${STATEMENT} ${RISE_LATE}`}>
-          Årets första art: {speciesName(first)}, {formatDay(first.observed_at)}
-          {first.locale_name ? ` vid ${first.locale_name}` : ""}.
+          Årets första art:{" "}
+          {speciesLink(first.species_id) ? (
+            <Link href={speciesLink(first.species_id) as string} className={LINK}>{speciesName(first)}</Link>
+          ) : (
+            speciesName(first)
+          )}
+          ,{" "}
+          <Link href={observationHref(first.id)} className={LINK}>
+            {formatDay(first.observed_at)}
+            {first.locale_name ? ` vid ${first.locale_name}` : ""}
+          </Link>
+          .
         </p>
       ) : null}
     </section>
   )
 }
 
-// The new species' names slide past in two rows, in opposite directions; a
-// name under the mouse is underlined.
+// The new species' names slide past in two rows, in opposite directions; each
+// leads to its species page and is underlined under the mouse.
 function NewSpeciesChapter({ summary }: { summary: TempusYearSummary }) {
   const ref = useScrollProgress<HTMLElement>("pinned")
   const fresh = (summary.species ?? []).filter((item) => item.is_new)
@@ -557,7 +751,7 @@ function NewSpeciesChapter({ summary }: { summary: TempusYearSummary }) {
               : `av årets ${formatCount(summary.species_count)} arter observerade du för första gången.`}
           </p>
         </div>
-        <div aria-hidden="true" className="container mx-auto flex flex-col gap-3 font-display text-4xl font-medium whitespace-nowrap max-sm:px-4 sm:text-6xl lg:text-7xl 2xl:text-8xl">
+        <div className="container mx-auto flex flex-col gap-3 font-display text-4xl font-medium whitespace-nowrap max-sm:px-4 sm:text-6xl lg:text-7xl 2xl:text-8xl">
           {rows.map((row, rowIndex) =>
             row.length ? (
               <p
@@ -567,14 +761,13 @@ function NewSpeciesChapter({ summary }: { summary: TempusYearSummary }) {
                 {row.map((item, index) => (
                   <span key={item.id}>
                     {index > 0 ? <span className="px-4 text-text-faint">·</span> : null}
-                    <span className={UNDERLINE}>{speciesName(item)}</span>
+                    <Link href={speciesHref(item.dyntaxa_taxon_id)} className={LINK}>{speciesName(item)}</Link>
                   </span>
                 ))}
               </p>
             ) : null,
           )}
         </div>
-        <p className="sr-only">{fresh.map(speciesName).join(", ")}</p>
       </div>
     </section>
   )
@@ -584,7 +777,7 @@ function NewSpeciesChapter({ summary }: { summary: TempusYearSummary }) {
 // The chapter holds the page exactly as long as the strip is wider than the
 // screen, so the strip moves one pixel per pixel scrolled; a strip that fits
 // stands still in the middle. Over a photo the pointer becomes the ring.
-function PhotoStrip({ photos, onOpen }: { photos: TempusYearPhoto[]; onOpen: OpenPhotos }) {
+function PhotoStrip({ photos, speciesLink, onOpen }: { photos: TempusYearPhoto[]; speciesLink: SpeciesLink; onOpen: OpenPhotos }) {
   const ref = useScrollProgress<HTMLElement>("pinned")
   const track = useRef<HTMLUListElement>(null)
   const [travel, setTravel] = useState({ overflow: 0, frame: 0 })
@@ -634,10 +827,18 @@ function PhotoStrip({ photos, onOpen }: { photos: TempusYearPhoto[]; onOpen: Ope
                   />
                 </button>
                 <figcaption className="mt-2">
-                  <span className="font-display text-lg font-semibold lg:text-xl">{speciesName(photo)}</span>
+                  <span className="block font-display text-lg font-semibold lg:text-xl">
+                    {speciesLink(photo.species_id) ? (
+                      <Link href={speciesLink(photo.species_id) as string} className={LINK}>{speciesName(photo)}</Link>
+                    ) : (
+                      speciesName(photo)
+                    )}
+                  </span>
                   <span className="block text-sm text-text-muted lg:text-base">
-                    {formatDay(photo.observed_at)}
-                    {photo.locale_name ? ` · ${photo.locale_name}` : ""}
+                    <Link href={observationHref(photo.observation_id)} className={LINK}>
+                      {formatDay(photo.observed_at)}
+                      {photo.locale_name ? ` · ${photo.locale_name}` : ""}
+                    </Link>
                   </span>
                 </figcaption>
               </figure>
@@ -649,14 +850,70 @@ function PhotoStrip({ photos, onOpen }: { photos: TempusYearPhoto[]; onOpen: Ope
   )
 }
 
-// The species reported least often in the country, beside its photo, which
-// drifts against the scroll; over it the pointer becomes the ring that opens it.
+// Every species of the year with a measured rarity, as a tick on a line from
+// common to rare; the rarest stands taller, in ink, with its name above. The
+// ticks rise together as the chapter comes up, and each leads to its species
+// page, naming it under the mouse.
+function RarityScale({ species, rarest }: { species: TempusYearSpecies[]; rarest: TempusYearSpecies }) {
+  const rated = species.filter((item) => item.significance !== null)
+  const at = (item: TempusYearSpecies) => `${((item.significance ?? 0) * 100).toFixed(2)}%`
+  // The rarest's name hangs from its tick to the left when the tick is far right.
+  const nameFromRight = (rarest.significance ?? 0) > 0.6
+  return (
+    <figure className="sm:col-span-2">
+      <div className="relative h-24 border-b border-text sm:h-28">
+        {rated.map((item) =>
+          item.id === rarest.id ? null : (
+            <Link
+              key={item.id}
+              href={speciesHref(item.dyntaxa_taxon_id)}
+              aria-label={speciesName(item)}
+              className="group absolute bottom-0 flex h-10 w-3 -translate-x-1/2 justify-center"
+              style={{ left: at(item) }}
+            >
+              <span className="h-full w-px origin-bottom scale-y-[var(--p)] bg-secondary transition-[width] duration-300 group-hover:w-0.5" />
+              <span className="pointer-events-none absolute bottom-full mb-1 whitespace-nowrap font-display text-sm italic text-text opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                {speciesName(item)}
+              </span>
+            </Link>
+          ),
+        )}
+        <Link
+          href={speciesHref(rarest.dyntaxa_taxon_id)}
+          aria-label={speciesName(rarest)}
+          className="absolute bottom-0 flex h-full w-3 -translate-x-1/2 justify-center"
+          style={{ left: at(rarest) }}
+        >
+          <span className="h-full w-0.5 origin-bottom scale-y-[var(--p)] bg-text" />
+          <span
+            className={`pointer-events-none absolute top-0 whitespace-nowrap font-display text-base italic text-text sm:text-lg ${
+              nameFromRight ? "right-full mr-2" : "left-full ml-2"
+            } ${RISE_LATE}`}
+          >
+            {speciesName(rarest)}
+          </span>
+        </Link>
+      </div>
+      <figcaption className="mt-2 flex justify-between font-display text-sm italic text-text-muted sm:text-base">
+        <span>vanlig</span>
+        <span>sällsynt</span>
+      </figcaption>
+    </figure>
+  )
+}
+
+// The species reported least often in the country, beside its photo when it
+// has one, which drifts against the scroll; over it the pointer becomes the
+// ring that opens it. Beneath, the year's species on a scale from common to
+// rare, over a faint meadow sketch at the edge.
 function RarestChapter({
   rarest,
+  species,
   redListedCount,
   onOpen,
 }: {
   rarest: TempusYearSpecies
+  species: TempusYearSpecies[]
   redListedCount: number
   onOpen: OpenPhotos
 }) {
@@ -664,7 +921,8 @@ function RarestChapter({
   const name = speciesName(rarest)
   const redList = RED_LIST[rarest.red_list_category]
   return (
-    <section ref={ref} className={`${PROGRESS} container mx-auto grid min-h-svh items-center gap-10 py-16 max-sm:px-4 sm:grid-cols-2`}>
+    <section ref={ref} className={`${PROGRESS} container isolate mx-auto grid min-h-svh content-center items-center gap-x-10 gap-y-14 py-16 max-sm:px-4 sm:grid-cols-2`}>
+      <SketchMargin seed={`Tempus ${rarest.dyntaxa_taxon_id} ovanligast`} biotope="meadow" />
       {rarest.photo ? (
         <button
           type="button"
@@ -685,7 +943,9 @@ function RarestChapter({
       ) : null}
       <div className={rarest.photo ? "" : "sm:col-span-2"}>
         <p className="font-display text-xl italic text-text-muted lg:text-2xl">Det ovanligaste fyndet</p>
-        <h2 className="mt-3 font-display text-5xl font-semibold leading-none tracking-tight sm:text-7xl 2xl:text-8xl">{name}</h2>
+        <h2 className="mt-3 font-display text-5xl font-semibold leading-none tracking-tight sm:text-7xl 2xl:text-8xl">
+          <Link href={speciesHref(rarest.dyntaxa_taxon_id)} className={LINK}>{name}</Link>
+        </h2>
         {rarest.scientific_name !== name ? (
           <p className="mt-3 font-display text-xl italic text-text-muted lg:text-2xl">{rarest.scientific_name}</p>
         ) : null}
@@ -700,12 +960,14 @@ function RarestChapter({
           </p>
         ) : null}
       </div>
+      <RarityScale species={species} rarest={rarest} />
     </section>
   )
 }
 
 // Every species of the year in the order it was first seen. The list rises in
-// as it comes up, and a name under the mouse is underlined.
+// as it comes up; each name leads to its species page and is underlined under
+// the mouse.
 function Register({ species }: { species: TempusYearSpecies[] }) {
   const ref = useScrollProgress<HTMLElement>("enter")
   return (
@@ -716,7 +978,7 @@ function Register({ species }: { species: TempusYearSpecies[] }) {
         {species.map((item) => (
           <li key={item.id} className="whitespace-nowrap">
             <span>
-              <span className={UNDERLINE}>{speciesName(item)}</span>
+              <Link href={speciesHref(item.dyntaxa_taxon_id)} className={LINK}>{speciesName(item)}</Link>
               {item.is_new ? <span className="ml-1.5 text-sm italic text-secondary lg:text-base">ny</span> : null}
             </span>
           </li>

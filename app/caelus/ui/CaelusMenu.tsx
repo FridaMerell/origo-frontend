@@ -11,6 +11,9 @@ import { useStored } from "./use-stored"
 
 // Om händelsepanelen är utfälld; den öppnas från menyn och stängs i panelen.
 export const EVENTS_KEY = "caelus-events"
+// Om quizet är öppet; det öppnas från menyn och stängs i sin panel. Det och händelsepanelen ligger
+// på samma ställe, så det ena stänger det andra.
+export const QUIZ_KEY = "caelus-quiz"
 
 const ITEM =
 	"block w-full px-4 py-2 text-left text-lg text-text no-underline hover:bg-text hover:text-bg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
@@ -21,6 +24,7 @@ export default function CaelusMenu() {
 	// Vilken undermeny som visas i stället för menyns länkar: vad kartan visar, eller de andra apparna.
 	const [submenu, setSubmenu] = useState<"layers" | "apps" | null>(null)
 	const [, storeEvents] = useStored(EVENTS_KEY)
+	const [, storeQuiz] = useStored(QUIZ_KEY)
 	const rootRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
@@ -107,10 +111,21 @@ export default function CaelusMenu() {
 						href='/'
 						onClick={() => {
 							storeEvents("open")
+							storeQuiz("closed")
 							setOpen(false)
 						}}
 						className={ITEM}>
 						Händelser
+					</Link>
+					<Link
+						href='/'
+						onClick={() => {
+							storeQuiz("open")
+							storeEvents("closed")
+							setOpen(false)
+						}}
+						className={ITEM}>
+						Quiz
 					</Link>
 					{user && <EventAlertToggle item={ITEM} />}
 					{/* /om är Origos gemensamma sida på alla domäner. */}

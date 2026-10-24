@@ -20,6 +20,10 @@ export type Frame = {
 	marks: { at: SkyPoint; level: number }[]
 	// Teckningar som hämtats, efter figurens id.
 	art: Map<string, Art>
+	// Om framlyfta figurer visar sin teckning. Avstängt i quizet tills man svarat rätt.
+	artShown: boolean
+	// Om figurerna har sina namn utskrivna. Avstängt i quizet när stjärnbilden ska pekas ut.
+	figureNames: boolean
 	// 0…1: hur långt planetfokus har tonat in. Solen, månen och planeterna lyfts då fram och
 	// resten av himlen träder tillbaka.
 	planetFocus: number
@@ -252,7 +256,7 @@ export function createPen(canvas: HTMLCanvasElement, frame: Frame, placed: Box[]
 	for (const level of levels.values()) selection = Math.max(selection, level.select)
 	const drawnFor = (id: string) => {
 		const level = levels.get(id)
-		return level ? Math.max(level.hover, level.select) * (frame.art.get(id)?.arrived ?? 0) : 0
+		return level && frame.artShown ? Math.max(level.hover, level.select) * (frame.art.get(id)?.arrived ?? 0) : 0
 	}
 
 	return {

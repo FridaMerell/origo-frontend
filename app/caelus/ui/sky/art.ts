@@ -1,5 +1,5 @@
 import type { GeoProjection } from "d3-geo"
-import type { Art, Scene } from "./types"
+import type { Art, ArtFile, SkyPoint } from "./types"
 
 // Hur täckande teckningen är som mest, så att stjärnorna och linjerna syns igenom den.
 const OPACITY = 0.6
@@ -7,6 +7,32 @@ const OPACITY = 0.6
 // ljusare än LINE helt täckande.
 const GROUND = 14
 const LINE = 215
+
+// Förteckningen över teckningar, hämtad första gången någon teckning behövs.
+let index: Promise<Record<string, ArtFile>> | null = null
+
+/**
+ * Hämtar en stjärnbilds teckning, med bilden avkodad. Null om stjärnbilden saknar teckning. Går
+ * hämtningen fel försöker nästa anrop på nytt.
+ */
+export function fetchArt(id: string): Promise<Art | null> {
+	index ??= fetch("/data/figures.json")
+		.then(response => (response.ok ? response.json() : Promise.reject()))
+		.then((payload: { figures: Record<string, ArtFile> }) => payload.figures)
+	return index
+		.then(async figures => {
+			const file = figures[id]
+			if (!file) return null
+			const picture = new Image()
+			picture.src = file.image
+			await picture.decode()
+			return { ...file, picture, tinted: null, arrived: 0 }
+		})
+		.catch(error => {
+			index = null
+			throw error
+		})
+}
 
 // Bildens svarta botten blir genomskinlig och sticket får kartans bläckfärg, så att teckningen
 // fungerar mot både ljus och mörk bakgrund. Görs en gång per bild och färg.
@@ -65,18 +91,19 @@ function drawTriangle(
 
 /**
  * Ritar en teckning som ett nät av trianglar, så att den följer kartans projektion när man
- * panorerar och zoomar. `shown` är hur långt den tonat in (0…1).
+ * panorerar och zoomar. `toSky` för nätets noder (rektascension och deklination) dit
+ * projektionen tar emot dem. `shown` är hur långt den tonat in (0…1).
  */
 export function drawArt(
 	context: CanvasRenderingContext2D,
 	projection: GeoProjection,
-	scene: Scene,
+	toSky: (equatorial: [number, number]) => SkyPoint,
 	art: Art,
 	ink: string,
 	shown: number,
 ) {
 	const texture = tint(art, ink)
-	const points = art.nodes.map(node => projection(scene.toSky(node)))
+	const points = art.nodes.map(node => projection(toSky(node)))
 	const across = art.columns + 1
 	const corner = (column: number, row: number) => ({
 		source: [(column / art.columns) * texture.width, (row / art.rows) * texture.height] as [number, number],

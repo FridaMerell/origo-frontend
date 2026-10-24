@@ -7,7 +7,7 @@ export type LabelledStar = { star: SceneStar; point: [number, number] }
 
 // Stjärntecken i storleksklasser som i en atlas teckenförklaring: åtta, sex och fem uddar för
 // de tre ljusaste klasserna, sedan punkter.
-function drawStar(
+export function drawStar(
 	context: CanvasRenderingContext2D,
 	x: number,
 	y: number,

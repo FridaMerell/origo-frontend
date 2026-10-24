@@ -8,14 +8,17 @@ import { mix, type Pen } from "./pen"
  * eller är vald, och dess egna linjer träder då tillbaka för den.
  */
 export function drawFigures(pen: Pen) {
-	const { context, path, projection, scene, ink, art, raised, plain, strength, receded, outgoing, figureIntro, contrast } = pen
+	const { context, path, projection, scene, ink, art, artShown, raised, plain, strength, receded, outgoing, figureIntro, contrast } =
+		pen
 	// Linjernas vanliga styrka.
 	const base = Math.min(1, 0.5 * contrast)
+	// Hur mycket av en framlyft figurs teckning som syns; ingen alls när teckningarna är avstängda.
+	const covering = (figure: Figure) => (artShown ? strength(figure) * (art.get(figure.id)?.arrived ?? 0) : 0)
 
 	for (const figure of raised) {
 		const drawing = art.get(figure.id)
-		const shown = drawing ? strength(figure) * drawing.arrived : 0
-		if (drawing && shown > 0) drawArt(context, projection, scene, drawing, ink, shown)
+		const shown = covering(figure)
+		if (drawing && shown > 0) drawArt(context, projection, scene.toSky, drawing, ink, shown)
 	}
 
 	const stroke = (figures: Figure[], alpha: number, lineWidth: number) => {
@@ -32,7 +35,7 @@ export function drawFigures(pen: Pen) {
 	if (engraved < 1) context.setLineDash([engraved * 900, 100_000])
 	stroke(plain, base * receded, 0.8)
 	for (const figure of raised) {
-		const covered = strength(figure) * (art.get(figure.id)?.arrived ?? 0)
+		const covered = covering(figure)
 		stroke(
 			[figure],
 			mix(base * receded, 1, strength(figure)) * (1 - 0.8 * covered),

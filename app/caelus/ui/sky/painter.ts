@@ -1,12 +1,13 @@
 import { select } from "d3-selection"
 import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomTransform } from "d3-zoom"
+import { fetchArt } from "./art"
 import { auroraAt } from "./aurora"
 import type { Direction } from "./compass"
 import { auroraMoving } from "./layers/aurora"
 import { meteorsWait } from "./layers/meteors"
 import { pickBody, pickFigure, pickStar } from "./pick"
 import { drawScene } from "./render"
-import type { Art, ArtFile, Figure, Level, Scene } from "./types"
+import type { Art, Figure, Level, Scene, SkyPoint } from "./types"
 import { dialGeometry, DIRECTION } from "./dial"
 import {
 	degreesPerPixel,
@@ -21,6 +22,8 @@ import {
 const INTRO_MILLISECONDS = 2200
 const FIGURE_INTRO_MILLISECONDS = 1400
 const OUTGOING_MILLISECONDS = 450
+// Hur länge blicken tar på sig att glida dit den visas, som till rätt stjärnbild i quizet.
+const GLIDE_MILLISECONDS = 1100
 // Tidskonstanten för hur fort en figur lyfts fram och sjunker tillbaka.
 const LEVEL_MILLISECONDS = 90
 // Hur ofta kartan ritas om för norrskenets rörelse.
@@ -90,7 +93,11 @@ export function createPainter(
 	// Teckningar som hämtats, och de som är på väg, efter figurens id.
 	const art = new Map<string, Art>()
 	const artRequested = new Set<string>()
-	let artIndex: Promise<Record<string, ArtFile>> | null = null
+	// Om framlyfta figurer visar sin teckning, och om figurerna har namn; quizet stänger av dem.
+	let artShown = true
+	let figureNames = true
+	// Blicken på väg mot en punkt på himlen; släpps så fort handen tar i kartan.
+	let glide: { from: SkyPoint; to: SkyPoint; since: number } | null = null
 
 	// Nästa bild för norrskenets rörelse, när ingenting annat rör sig.
 	let motion = 0
@@ -126,6 +133,15 @@ export function createPainter(
 		const figureIntro = progress(figureStart, FIGURE_INTRO_MILLISECONDS)
 		const left = outgoing ? progress(outgoing.since, OUTGOING_MILLISECONDS) : 1
 		if (left >= 1) outgoing = null
+		if (glide) {
+			const along = ease(progress(glide.since, GLIDE_MILLISECONDS))
+			// Den kortaste vägen runt horisonten.
+			const turn = ((glide.to[0] - glide.from[0] + 540) % 360) - 180
+			view.azimuth = (glide.from[0] + turn * along + 360) % 360
+			view.altitude = glide.from[1] + (glide.to[1] - glide.from[1]) * along
+			hand = view.azimuth
+			if (along >= 1) glide = null
+		}
 
 		// Varje nivå går en bråkdel av vägen mot sitt mål per bildruta, oberoende av bildfrekvens.
 		const step = still ? 1 : 1 - Math.exp(-Math.min(100, time - lastFrame) / LEVEL_MILLISECONDS)
@@ -180,6 +196,8 @@ export function createPainter(
 			outgoing: outgoing && { figures: outgoing.figures, alpha: 1 - ease(left) },
 			marks,
 			art,
+			artShown,
+			figureNames,
 			planetFocus: planetLevel,
 			auroraFocus: auroraLevel,
 			cloudsShown: cloudLevel,
@@ -187,7 +205,7 @@ export function createPainter(
 			lifted: liftLevel,
 			moving: interacting,
 		}, motionOnly)
-		if ((introStart !== null && (intro < 1 || figureIntro < 1)) || outgoing || settling) redraw()
+		if ((introStart !== null && (intro < 1 || figureIntro < 1)) || outgoing || glide || settling) redraw()
 		// Norrskenet rör sig: medan det syns ritas kartan om ungefär elva gånger i sekunden, vilket
 		// räcker för en så långsam rörelse. En meteor som faller ritas varje bildruta, och annars
 		// väntar kartan tills nästa ska falla.
@@ -203,23 +221,15 @@ export function createPainter(
 	function loadArt(id: string) {
 		if (artRequested.has(id)) return
 		artRequested.add(id)
-		artIndex ??= fetch("/data/figures.json")
-			.then(response => (response.ok ? response.json() : Promise.reject()))
-			.then((payload: { figures: Record<string, ArtFile> }) => payload.figures)
-		artIndex
-			.then(async figures => {
-				const file = figures[id]
-				if (!file) return
-				const picture = new Image()
-				picture.src = file.image
-				await picture.decode()
-				art.set(id, { ...file, picture, tinted: null, arrived: 0 })
+		fetchArt(id)
+			.then(drawing => {
+				if (!drawing) return
+				art.set(id, drawing)
 				redraw()
 			})
 			.catch(() => {
 				// Nästa gång försöker på nytt.
 				artRequested.delete(id)
-				artIndex = null
 			})
 	}
 
@@ -366,6 +376,7 @@ export function createPainter(
 		// Medan handen rör kartan ritas den glesare; när den släpper ritas den skarp igen.
 		.on("start", () => {
 			interacting = true
+			glide = null
 		})
 		.on("end", () => {
 			interacting = false
@@ -450,6 +461,7 @@ export function createPainter(
 				return
 			}
 			following = true
+			glide = null
 			// Små darrningar ritas inte om.
 			const turned = Math.abs(((direction.azimuth - view.azimuth + 540) % 360) - 180)
 			if (turned < 0.05 && Math.abs(direction.altitude - view.altitude) < 0.05) return
@@ -467,6 +479,28 @@ export function createPainter(
 		setMeteors(on: boolean) {
 			if (meteors === on) return
 			meteors = on
+			redraw()
+		},
+		/** Om framlyfta figurer visar sin teckning. */
+		setArtShown(on: boolean) {
+			if (artShown === on) return
+			artShown = on
+			redraw()
+		},
+		/**
+		 * Låter blicken glida till en punkt på himlen, med zoomen som den är. Inte när blicken följer
+		 * telefonen, som då bestämmer riktningen.
+		 */
+		lookAt(at: SkyPoint) {
+			if (following) return
+			const altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), at[1]))
+			glide = { from: [view.azimuth, view.altitude], to: [(at[0] + 360) % 360, altitude], since: performance.now() }
+			redraw()
+		},
+		/** Om figurernas namn står på kartan. */
+		setFigureNames(on: boolean) {
+			if (figureNames === on) return
+			figureNames = on
 			redraw()
 		},
 		get hovered() {

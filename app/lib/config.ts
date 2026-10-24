@@ -136,6 +136,7 @@ export const TEMPUS_ENDPOINTS = {
   allObservationsByCategory: "/api/tempus/all-observations/by-category/",
   observationsSyncChecklists: "/api/tempus/observations/sync-checklists/",
   observationsYearSummary: "/api/tempus/observations/year-summary/",
+  observationsProfile: "/api/tempus/observations/profile/",
   interestingSpots: "/api/tempus/interesting-spots/",
   geoAreas: "/api/tempus/geo-areas/",
   locales:"/api/tempus/locales/",

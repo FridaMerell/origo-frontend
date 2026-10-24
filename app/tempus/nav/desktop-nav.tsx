@@ -8,7 +8,7 @@ import { FieldIcon, isActiveLink, mainLinks, moreLinks, primaryLinks } from "./n
 import { GeoAreaSelector } from "./geo-area-selector"
 import { NotificationMenu } from "@/app/components/ui/NotificationMenu"
 import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
-import { Bell, ChevronDown, LogIn, LogOut, Menu, Moon, Search, Settings, Sun, X } from "lucide-react"
+import { Bell, ChevronDown, LogIn, LogOut, Menu, Moon, Search, Settings, Sun, User as UserIcon, X } from "lucide-react"
 
 const MENU_ITEM_CLASS =
   "flex h-11 w-full items-center gap-3 rounded-md px-3 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-focus-ring"
@@ -250,11 +250,22 @@ export function DesktopNav({
                 className="absolute right-0 top-full z-50 mt-1 min-w-56 rounded-md border border-border bg-surface p-1 shadow-lg transition-[opacity,translate] duration-150 ease-(--ease-standard) starting:-translate-y-1 starting:opacity-0 motion-reduce:transition-none"
               >
                 {user ? (
-                  <NotificationMenu inline>
-                    {({ unreadCount, notificationLabel, toggle }) => (
-                      <NotificationsTrigger className={MENU_ITEM_CLASS} unreadCount={unreadCount} label={notificationLabel} onClick={toggle} />
-                    )}
-                  </NotificationMenu>
+                  <>
+                    <Link
+                      href="/profil"
+                      aria-current={isActiveLink(pathname, "/profil") ? "page" : undefined}
+                      onClick={() => setActionsOpen(false)}
+                      className={`${MENU_ITEM_CLASS} no-underline`}
+                    >
+                      <UserIcon size={18} />
+                      Profil
+                    </Link>
+                    <NotificationMenu inline>
+                      {({ unreadCount, notificationLabel, toggle }) => (
+                        <NotificationsTrigger className={MENU_ITEM_CLASS} unreadCount={unreadCount} label={notificationLabel} onClick={toggle} />
+                      )}
+                    </NotificationMenu>
+                  </>
                 ) : null}
                 <button
                   type="button"
@@ -325,17 +336,28 @@ export function DesktopNav({
 
               <div className="grid gap-1">
                 {user ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false)
-                      onOpenSpeciesSearch()
-                    }}
-                    className={MENU_ITEM_CLASS}
-                  >
-                    <Search size={18} />
-                    Artsök
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMenuOpen(false)
+                        onOpenSpeciesSearch()
+                      }}
+                      className={MENU_ITEM_CLASS}
+                    >
+                      <Search size={18} />
+                      Artsök
+                    </button>
+                    <Link
+                      href="/profil"
+                      aria-current={isActiveLink(pathname, "/profil") ? "page" : undefined}
+                      onClick={() => setMenuOpen(false)}
+                      className={`${MENU_ITEM_CLASS} no-underline`}
+                    >
+                      <UserIcon size={18} />
+                      Profil
+                    </Link>
+                  </>
                 ) : (
                   <Link
                     href="/login"

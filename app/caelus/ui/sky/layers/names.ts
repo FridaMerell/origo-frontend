@@ -33,7 +33,7 @@ export function drawNames(pen: Pen, labelled: LabelledStar[]) {
 				: ease((detail - 1.2) / 0.4)
 	const figureName = (figure: Figure, alpha: number, size: number) => {
 		// En figur vars mitt har gått ner har sitt namn under marken.
-		if (alpha <= 0.01 || figure.at[1] < 0) return
+		if (!pen.figureNames || alpha <= 0.01 || figure.at[1] < 0) return
 		const point = projection(figure.at)
 		if (!onScreen(point)) return
 		context.globalAlpha = alpha * named

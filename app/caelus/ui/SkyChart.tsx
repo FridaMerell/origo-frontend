@@ -3,12 +3,14 @@
 import type { Body } from "astronomy-engine"
 import type { MeteorShower } from "@/app/lib/dal/caelus"
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react"
-import { EVENTS_KEY } from "./CaelusMenu"
+import { EVENTS_KEY, QUIZ_KEY } from "./CaelusMenu"
 import { AURORA_FOCUS_KEY, CLOUDS_KEY, METEORS_KEY, PLANET_FOCUS_KEY } from "./LayerMenu"
 import { useDarkMode } from "./CaelusTheme"
 import CultureSwitch from "./CultureSwitch"
 import EventsPanel from "./EventsPanel"
 import InfoPanel, { type PanelInfo } from "./InfoPanel"
+import { answerQuiz, createQuiz, nextQuestion, quizConstellations, selectionPool, type Quiz, type QuizSelection } from "./quiz"
+import QuizPanel from "./QuizPanel"
 import { SKY_CULTURES, SWEDISH_NAMES, type SkyCulture } from "./sky-cultures"
 import { bodyInfo, figureInfo, starInfo, type SelectedStar, type StarDetails } from "./sky-info"
 import { cloudCoverAt, describeCloudCover, fetchCloudCover, type CloudStep } from "./sky/clouds"
@@ -119,6 +121,21 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const [storedEvents, storeEvents] = useStored(EVENTS_KEY)
 	const eventsOpen = storedEvents === "open"
 	const setEventsOpen = (open: boolean) => storeEvents(open ? "open" : "closed")
+	// Quizet, som öppnas från menyn. Det börjar om med valet av urval varje gång det öppnas.
+	const [storedQuiz, storeQuiz] = useStored(QUIZ_KEY)
+	const quizOpen = storedQuiz === "open"
+	const [quiz, setQuiz] = useState<Quiz | null>(null)
+	const [quizWasOpen, setQuizWasOpen] = useState(quizOpen)
+	if (quizOpen !== quizWasOpen) {
+		setQuizWasOpen(quizOpen)
+		setQuiz(null)
+	}
+	const question = quizOpen && quiz && quiz.index < quiz.questions.length ? quiz.questions[quiz.index] : null
+	const given = question && quiz ? (quiz.answers[quiz.index] ?? null) : null
+	// När en stjärnbild ska pekas ut tar kartan emot svaret, utan figurernas namn.
+	const pointing = question?.mode === "point"
+	// Quizet frågar efter IAU:s stjärnbilder, så den nordiska himlen byts mot den svenska under tiden.
+	const skyCulture = quizOpen && culture === "norse" ? "swedish" : culture
 	const [locating, setLocating] = useState(false)
 	const [locationError, setLocationError] = useState<string | null>(null)
 	// Om blicken följer telefonen slås av och på i menyn; felet står under kartan.
@@ -219,12 +236,27 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const cloudCover = cloudCoverAt(cloudSteps, shown)
 	const scene = useMemo(
 		() =>
-			shown ? buildScene(shown, position, culture, catalogue, kp, milkyWayData, cloudCover, meteorShowers) : null,
-		[shown, position, culture, catalogue, kp, milkyWayData, cloudCover, meteorShowers],
+			shown ? buildScene(shown, position, skyCulture, catalogue, kp, milkyWayData, cloudCover, meteorShowers) : null,
+		[shown, position, skyCulture, catalogue, kp, milkyWayData, cloudCover, meteorShowers],
 	)
+	// Byts himlen när quizet öppnas eller stängs tonar de gamla figurerna ut, som när man väljer
+	// himmel. Det måste ske innan målaren får den nya himlen.
+	const shownCultureRef = useRef(skyCulture)
+	useEffect(() => {
+		if (shownCultureRef.current === skyCulture) return
+		shownCultureRef.current = skyCulture
+		painterRef.current?.changeFigures()
+	}, [skyCulture])
 	useEffect(() => {
 		if (scene) painterRef.current?.setScene(scene)
 	}, [scene])
+
+	// Medan en stjärnbild ska pekas ut står inga namn på figurerna, och teckningen visas först
+	// när man pekat rätt.
+	useEffect(() => {
+		painterRef.current?.setFigureNames(!pointing)
+		painterRef.current?.setArtShown(!pointing || (given !== null && given === question?.id))
+	}, [pointing, given, question])
 
 	const hover = (id: string | null) => {
 		const painter = painterRef.current
@@ -232,7 +264,8 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	}
 
 	const onPointerMove = (event: PointerEvent<HTMLCanvasElement>) => {
-		if (event.pointerType !== "mouse" || event.buttons !== 0) return
+		// En stjärnbild som lyfts fram under pekaren skulle avslöja svaret.
+		if (pointing || event.pointerType !== "mouse" || event.buttons !== 0) return
 		hover(painterRef.current?.figureAt(event.nativeEvent.offsetX, event.nativeEvent.offsetY) ?? null)
 	}
 
@@ -264,7 +297,47 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		if (chosenFigure !== null) chooseFigure(null)
 	}
 
-	const panelOpen = starIndex !== null || chosenBody !== null || chosenFigure !== null
+	// Stjärnbilderna quizet frågar efter, och hur högt var och en står just nu.
+	const quizzed = useMemo(() => quizConstellations(catalogue?.constellations ?? []), [catalogue])
+	const quizzedById = useMemo(() => new Map(quizzed.map(item => [item.id, item])), [quizzed])
+	const heights = useMemo(() => {
+		const result = new Map<string, number>()
+		for (const figure of scene?.figures ?? []) result.set(figure.id, Math.max(result.get(figure.id) ?? -90, figure.at[1]))
+		return result
+	}, [scene])
+
+	const startQuiz = (selection: QuizSelection, count: number) => {
+		chooseFigure(null)
+		setQuiz(createQuiz(selection, count, selectionPool(selection, quizzed, position, heights), heights))
+	}
+	const nextInQuiz = () => {
+		chooseFigure(null)
+		setQuiz(current => current && nextQuestion(current))
+	}
+	const restartQuiz = () => {
+		chooseFigure(null)
+		setQuiz(null)
+	}
+	const closeQuiz = () => {
+		chooseFigure(null)
+		storeQuiz("closed")
+	}
+	// En miss i resultatet visas på kartan, med panelen om stjärnbilden.
+	const showMiss = (id: string) => {
+		storeQuiz("closed")
+		chooseFigure(id)
+	}
+
+	useEffect(() => {
+		if (!quizOpen) return
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") closeQuiz()
+		}
+		document.addEventListener("keydown", onKeyDown)
+		return () => document.removeEventListener("keydown", onKeyDown)
+	})
+
+	const panelOpen = !quizOpen && (starIndex !== null || chosenBody !== null || chosenFigure !== null)
 	useEffect(() => {
 		if (!panelOpen) return
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -280,6 +353,24 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const onClick = (event: MouseEvent<HTMLCanvasElement>) => {
 		const painter = painterRef.current
 		if (!painter || painter.consumeTurn()) return
+		// Med quizet öppet väljer kartan ingenting; ett klick är bara ett svar när en stjärnbild ska
+		// pekas ut. Ett klick utanför stjärnbilderna, som på marken, räknas inte.
+		if (quizOpen) {
+			if (question?.mode !== "point" || given !== null) return
+			const id = painter.figureAt(event.nativeEvent.offsetX, event.nativeEvent.offsetY)
+			if (id === null) return
+			setQuiz(current => current && answerQuiz(current, id))
+			// Den rätta stjärnbilden lyfts fram, så att man ser var den låg, och vid fel svar glider
+			// blicken dit. Ormen är två figurer; blicken går till den som står högst.
+			chooseFigure(question.id)
+			if (id !== question.id) {
+				const target = scene?.figures
+					.filter(figure => figure.id === question.id)
+					.sort((a, b) => b.at[1] - a.at[1])[0]
+				if (target) painter.lookAt(target.at)
+			}
+			return
+		}
 		// Händelsepanelen och panelen om det som klickas fram ligger på samma ställe på en telefon.
 		if (eventsOpen) setEventsOpen(false)
 		const { offsetX, offsetY } = event.nativeEvent
@@ -413,7 +504,8 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 					onClick={onClick}
 					className='absolute inset-0 size-full cursor-grab touch-none text-text active:cursor-grabbing'
 				/>
-				<CultureSwitch culture={culture} onChange={chooseCulture} />
+				{/* Quizet har alltid svenska namn, så valet av himmel göms medan det är öppet. */}
+				{!quizOpen && <CultureSwitch culture={culture} onChange={chooseCulture} />}
 				<p
 					aria-hidden={catalogue !== null || failed}
 					className={`pointer-events-none absolute inset-x-0 top-1/3 text-center text-lg italic text-text-muted transition-opacity duration-700 motion-reduce:transition-none ${
@@ -440,8 +532,21 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 						</span>
 					)}
 				</p>
-				{/* Medan händelsepanelen är utfälld får den platsen för sig. */}
-				<InfoPanel info={eventsOpen ? null : info} onClose={closePanel} />
+				{/* Medan händelsepanelen eller quizet är öppet får det platsen för sig. */}
+				<InfoPanel info={eventsOpen || quizOpen ? null : info} onClose={closePanel} />
+				{quizOpen && catalogue && (
+					<QuizPanel
+						quiz={quiz}
+						constellations={quizzedById}
+						stars={catalogue.stars}
+						onStart={startQuiz}
+						onAnswer={id => setQuiz(current => current && answerQuiz(current, id))}
+						onNext={nextInQuiz}
+						onRestart={restartQuiz}
+						onShow={showMiss}
+						onClose={closeQuiz}
+					/>
+				)}
 				<EventsPanel
 					open={eventsOpen}
 					today={todaysEvents}

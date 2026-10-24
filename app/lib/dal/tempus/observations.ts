@@ -177,6 +177,7 @@ export type TempusYearSummary = {
   first_observation?: {
     id: string
     species_id: string
+    dyntaxa_taxon_id: number
     swedish_name: string
     scientific_name: string
     observed_at: string
@@ -198,6 +199,44 @@ export type TempusYearSummary = {
 export const getTempusYearSummary = cache(
   (year: number): Promise<TempusYearSummary | null> =>
     fetchItem(`${TEMPUS_ENDPOINTS.observationsYearSummary}${buildQuery({ year })}`)
+)
+
+export type TempusProfileSpecies = Omit<TempusYearSpecies, "is_new" | "photo">
+
+// The current user's Tempus over all time. Without observations only the
+// user, the totals (all zero), follows, planning and birdnet are present.
+export type TempusProfile = {
+  username: string
+  first_name: string
+  last_name: string
+  date_joined: string
+  observation_count: number
+  species_count: number
+  locale_count: number
+  photo_count: number
+  // Locales the user has drawn, observed in or not.
+  own_locale_count: number
+  follows: { follow_count: number; seen_count: number }
+  planning: { checklist_count: number; item_count: number; observed_item_count: number; route_count: number }
+  // null when the user has no BirdNET device.
+  birdnet: { detection_count: number; species_count: number } | null
+  // Every year with observations, newest first.
+  years: { year: number; observation_count: number; species_count: number; new_species_count: number }[]
+  first_observation?: NonNullable<TempusYearSummary["first_observation"]>
+  red_listed_count?: number
+  most_observed?: TempusProfileSpecies
+  newest?: TempusProfileSpecies
+  rarest?: TempusProfileSpecies | null
+  // Observed species per primary category, the largest first.
+  groups?: { id: string; label: string; taxon_id: number | null; species_count: number }[]
+  // Observations per calendar month, all years together.
+  months?: number[]
+  top_locales?: { id: number; name: string; observation_count: number }[]
+  extremes?: TempusYearSummary["extremes"]
+}
+
+export const getTempusProfile = cache(
+  (): Promise<TempusProfile | null> => fetchItem(TEMPUS_ENDPOINTS.observationsProfile)
 )
 
 export const getTempusObservationItem = cache(

@@ -8,11 +8,19 @@ import { WeatherWidget } from "@/app/verso/home/weather-widget"
 import { NextVisitWidget } from "@/app/verso/home/next-visit-widget"
 import { UpdatesWidget } from "@/app/verso/home/updates-widget"
 import { RecentExpensesWidget } from "@/app/verso/home/recent-expenses-widget"
+import { HeatingWidget } from "@/app/verso/home/heating-widget"
 import { OnThisDay } from "@/app/verso/historia/on-this-day"
-import type { OnThisDay as OnThisDayData } from "@/app/lib/dal"
+import type { HeatingLog, OnThisDay as OnThisDayData } from "@/app/lib/dal"
 import Link from "next/link"
 
-const HomeView = ({ onThisDay }: { onThisDay: OnThisDayData | null }) => {
+const HomeView = ({
+  onThisDay,
+  heating,
+}: {
+  onThisDay: OnThisDayData | null
+  /** Null when the house has no residential_heating module or no connection. */
+  heating: { logs: HeatingLog[]; error?: string } | null
+}) => {
   const { selectedFacility } = useFacilities()
   const { bookings } = useBookingData()
   if (!selectedFacility) {
@@ -31,7 +39,9 @@ const HomeView = ({ onThisDay }: { onThisDay: OnThisDayData | null }) => {
       </div>
     )
   }
-  const nextVisit = bookings[0]
+  const hasBookings = selectedFacility.modules?.includes("bookings") ?? false
+  const hasWeather = selectedFacility.modules?.includes("weather") ?? false
+  const nextVisit = hasBookings ? bookings[0] : undefined
   const nextVisitLabel = nextVisit
     ? `Nästa vistelse börjar ${new Date(nextVisit.start_date).toLocaleDateString("sv-SE", { day: "numeric", month: "long" })}`
     : "Samlad översikt för huset"
@@ -47,7 +57,7 @@ const HomeView = ({ onThisDay }: { onThisDay: OnThisDayData | null }) => {
           <Drawer trigger="Lägg till uppdatering" triggerVariant="secondary" triggerSize="sm" triggerClassName="justify-center" title="Ny uppdatering">
             <UpdateForm />
           </Drawer>
-          <BookVisitButton />
+          {hasBookings && <BookVisitButton />}
         </div>
       </header>
       <OnThisDay
@@ -60,10 +70,11 @@ const HomeView = ({ onThisDay }: { onThisDay: OnThisDayData | null }) => {
         }
       />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:grid-rows-[14rem_12.25rem] lg:gap-5">
-        <NextVisitWidget />
-        <WeatherWidget facility={selectedFacility} />
+        {hasBookings && <NextVisitWidget />}
+        {hasWeather && <WeatherWidget facility={selectedFacility} />}
         <UpdatesWidget />
         <RecentExpensesWidget />
+        {heating && <HeatingWidget logs={heating.logs} error={heating.error} />}
       </div>
     </div>
   )

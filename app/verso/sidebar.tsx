@@ -11,20 +11,17 @@ import { useAppHrefs } from "@/app/components/ui/use-app-hrefs"
 import Logo from "@/app/verso/ui/Logo"
 import { Profile } from "@/app/components/ui/Profile"
 
-const NAV_ITEMS = [
-  { label: "Kalender", href: "/besok", icon: CalendarIcon },
+/** Items with a `module` are shown only for houses with that entry in `House.modules`. */
+const NAV_ITEMS: { label: string; href: string; icon: typeof CalendarIcon; module?: string }[] = [
+  { label: "Kalender", href: "/besok", icon: CalendarIcon, module: "bookings" },
   { label: "Planering", href: "/planera", icon: ListTodoIcon },
+  { label: "Uppvärmning", href: "/uppvarmning", icon: ThermometerIcon, module: "residential_heating" },
   { label: "Ritningar", href: "/ritningar", icon: RulerIcon },
   { label: "Bilder", href: "/bilder", icon: ImageIcon },
   { label: "Historia", href: "/historia", icon: ScrollTextIcon },
   { label: "Ekonomi", href: "/ekonomi", icon: ReceiptIcon },
   { label: "Uppdateringar", href: "/updates", icon: BellIcon },
-] as const
-
-/** Nav items shown only for houses with the matching entry in `House.modules`. */
-const MODULE_NAV_ITEMS = [
-  { module: "residential_heating", label: "Uppvärmning", href: "/uppvarmning", icon: ThermometerIcon },
-] as const
+]
 
 function ModeToggle({
   mode,
@@ -107,10 +104,7 @@ export function SidebarContent({
   const pathname = usePathname()
   const { facilities, selectedFacility } = useFacilities()
   const appHrefs = useAppHrefs()
-  const navItems = [
-    ...NAV_ITEMS,
-    ...MODULE_NAV_ITEMS.filter((item) => selectedFacility?.modules?.includes(item.module)),
-  ]
+  const navItems = NAV_ITEMS.filter((item) => !item.module || selectedFacility?.modules?.includes(item.module))
 
   return (
     <div className="flex h-full flex-col gap-0.5 font-body text-text">

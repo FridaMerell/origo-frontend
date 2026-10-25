@@ -11,11 +11,11 @@ const formatTime = (timestamp: string) =>
   new Date(timestamp).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })
 
 /** ResidentialHeating logs from the last two hours, newest first. */
-export function HeatingWidget({ logs, error }: { logs: HeatingLog[]; error?: string }) {
+export function HeatingWidget({ logs, error, className = "" }: { logs: HeatingLog[]; error?: string; className?: string }) {
   const latest = logs[0]
 
   return (
-    <Card className="col-span-1 flex min-w-0 flex-col lg:col-span-12">
+    <Card className={`col-span-1 flex h-full min-w-0 flex-col ${className}`}>
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-sm font-semibold text-text">
           <ThermometerIcon size={16} />
@@ -42,7 +42,7 @@ export function HeatingWidget({ logs, error }: { logs: HeatingLog[]; error?: str
             </div>
           </div>
 
-          <div className="mt-4 max-h-48 overflow-y-auto border-t border-border">
+          <div className="mt-4 min-h-0 flex-1 overflow-y-auto border-t border-border">
             {logs.map((log) => (
               <div
                 key={`${log.device}-${log.timestamp}`}

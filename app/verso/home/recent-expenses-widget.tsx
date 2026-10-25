@@ -5,10 +5,10 @@ import { Card } from "@/app/components/ui/Card"
 import { useFacilities } from "@/app/verso/_state/verso-context"
 import Link from "next/link"
 
-export function RecentExpensesWidget() {
+export function RecentExpensesWidget({ className = "" }: { className?: string }) {
   const { yearlyExpenses } = useFacilities()
   return (
-    <Card className="col-span-1 flex h-full flex-col lg:col-span-5">
+    <Card className={`col-span-1 flex h-full flex-col ${className}`}>
       <div className="flex items-center gap-2 text-sm font-semibold text-text">
         <Receipt size={16} />
         Utgifter i år

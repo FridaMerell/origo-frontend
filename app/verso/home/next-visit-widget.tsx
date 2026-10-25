@@ -7,13 +7,13 @@ import { useBookingData } from "@/app/verso/_state/verso-context"
 import { formatDateShort } from "@/app/lib/formatters"
 import { StepperButtons } from "@/app/verso/ui/stepper-buttons"
 
-export function NextVisitWidget() {
+export function NextVisitWidget({ className = "" }: { className?: string }) {
   const { bookings } = useBookingData()
   const [index, setIndex] = useState(0)
   const booking = bookings[index]
   const startDate = booking ? new Date(booking.start_date) : null
 
-  return <Card className="col-span-1 h-full min-w-0 lg:col-span-7">
+  return <Card className={`col-span-1 h-full min-w-0 ${className}`}>
     {
       bookings && bookings.length > 0 ? (
         <div className="flex h-full flex-col">

@@ -33,7 +33,7 @@ function Measurement({ label, children }: { label: string; children: ReactNode }
   )
 }
 
-export function WeatherWidget({ facility }: { facility: Facility }) {
+export function WeatherWidget({ facility, className = "" }: { facility: Facility; className?: string }) {
   const [weather, setWeather] = useState<WeatherForecast | null>(null)
   const [index, setIndex] = useState(0)
 
@@ -45,7 +45,7 @@ export function WeatherWidget({ facility }: { facility: Facility }) {
   const current = series[index]
 
   return (
-    <Card className="col-span-1 h-full min-w-0 lg:col-span-5">
+    <Card className={`col-span-1 h-full min-w-0 ${className}`}>
       {!weather ? (
         <div className="flex h-full items-center text-sm text-text-muted">Hämtar väderdata...</div>
       ) : !current ? (

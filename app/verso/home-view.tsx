@@ -12,6 +12,25 @@ import { HeatingWidget } from "@/app/verso/home/heating-widget"
 import { OnThisDay } from "@/app/verso/historia/on-this-day"
 import type { HeatingLog, OnThisDay as OnThisDayData } from "@/app/lib/dal"
 import Link from "next/link"
+import { Fragment, type ReactNode } from "react"
+
+type Widget = { key: string; wide: boolean; render: (className: string) => ReactNode }
+
+/** Full class names so Tailwind generates them. */
+const SPAN_CLASS = { 5: "lg:col-span-5", 6: "lg:col-span-6", 7: "lg:col-span-7", 12: "lg:col-span-12" } as const
+
+/**
+ * Lays the visible widgets out two per row so every row fills all 12 columns: a lone widget
+ * takes the whole row, a wide and a narrow one split 7/5, two of the same kind split 6/6.
+ */
+function packWidgets(candidates: (Widget | false | null)[]) {
+  const widgets = candidates.filter((widget): widget is Widget => Boolean(widget))
+  return widgets.map((widget, index) => {
+    const partner = index % 2 === 0 ? widgets[index + 1] : widgets[index - 1]
+    const span = !partner ? 12 : widget.wide === partner.wide ? 6 : widget.wide ? 7 : 5
+    return <Fragment key={widget.key}>{widget.render(SPAN_CLASS[span])}</Fragment>
+  })
+}
 
 const HomeView = ({
   onThisDay,
@@ -69,12 +88,14 @@ const HomeView = ({
           </Link>
         }
       />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:grid-rows-[14rem_12.25rem] lg:gap-5">
-        {hasBookings && <NextVisitWidget />}
-        {hasWeather && <WeatherWidget facility={selectedFacility} />}
-        <UpdatesWidget />
-        <RecentExpensesWidget />
-        {heating && <HeatingWidget logs={heating.logs} error={heating.error} />}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:auto-rows-[14rem] lg:gap-5">
+        {packWidgets([
+          hasBookings && { key: "next-visit", wide: true, render: (className) => <NextVisitWidget className={className} /> },
+          hasWeather && { key: "weather", wide: false, render: (className) => <WeatherWidget facility={selectedFacility} className={className} /> },
+          { key: "updates", wide: true, render: (className) => <UpdatesWidget className={className} /> },
+          { key: "expenses", wide: false, render: (className) => <RecentExpensesWidget className={className} /> },
+          heating && { key: "heating", wide: true, render: (className) => <HeatingWidget logs={heating.logs} error={heating.error} className={className} /> },
+        ])}
       </div>
     </div>
   )

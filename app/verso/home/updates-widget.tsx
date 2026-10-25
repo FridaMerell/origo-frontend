@@ -4,10 +4,10 @@ import { Card } from "@/app/components/ui/Card"
 import { useUpdateData } from "@/app/verso/_state/verso-context"
 import { ListChecks, ArrowUpRight } from "lucide-react"
 import Link from "next/link"
-export function UpdatesWidget() {
+export function UpdatesWidget({ className = "" }: { className?: string }) {
 	const { updates } = useUpdateData()
 	return (
-		<Card className='col-span-1 h-full w-full !p-0 overflow-hidden lg:col-span-7'>
+		<Card className={`col-span-1 h-full w-full !p-0 overflow-hidden ${className}`}>
 			<div className='flex items-center justify-between border-b border-border px-4.5 py-3.5'>
 				<span className='flex items-center gap-2 text-sm font-medium text-text-muted'><ListChecks size={16} /> Senaste uppdateringar</span>
 				<span className='text-xs text-text-faint'>{updates?.length ?? 0} st</span>

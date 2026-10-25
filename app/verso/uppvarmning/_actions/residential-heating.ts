@@ -6,6 +6,8 @@ import { fetchOrigoApi } from "@/app/lib/api-client"
 import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
 import { residentialHeatingFormSchema, type ResidentialHeatingFormValues } from "@/app/lib/schemas"
+import { authedFetch } from "@/app/lib/dal/client"
+import type { HeatingZone } from "@/app/lib/dal"
 
 export type ResidentialHeatingActionState = { error?: string; success?: boolean } | undefined
 
@@ -43,4 +45,18 @@ export async function saveResidentialHeating(
 
   revalidatePath("/uppvarmning")
   return { success: true }
+}
+
+/** Zones of one log, fetched through Verso's proxy when a row is expanded. */
+export async function getHeatingLogZones(
+  connection: string,
+  log: number
+): Promise<{ zones?: HeatingZone[]; error?: string }> {
+  const path = `${VERSO_ENDPOINTS.residentialHeating}${connection}/logs/${log}/`
+  const response = await authedFetch(path)
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    return { error: payload?.detail ?? `Verso svarade ${response.status} för ${path}.` }
+  }
+  return { zones: payload?.zones ?? [] }
 }

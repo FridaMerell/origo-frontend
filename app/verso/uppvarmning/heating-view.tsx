@@ -8,13 +8,9 @@ import { EmptyState } from "@/app/components/ui/EmptyState"
 import { PageHeader } from "@/app/verso/ui/PageHeader"
 import { StepperButtons } from "@/app/verso/ui/stepper-buttons"
 import { ResidentialHeatingForm } from "@/app/verso/uppvarmning/residential-heating-form"
+import { HeatingLogHeader, HeatingLogRow } from "@/app/verso/uppvarmning/heating-log-row"
 import { formatDateLong } from "@/app/lib/formatters"
 import type { HeatingLog, HeatingLogPage, ResidentialHeating } from "@/app/lib/dal"
-
-const MODE_LABELS: Record<number, string> = { 0: "Av", 1: "Bas", 2: "Komfort" }
-
-const formatTime = (timestamp: string) =>
-  new Date(timestamp).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })
 
 export default function HeatingView({
   connection,
@@ -33,7 +29,11 @@ export default function HeatingView({
     <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
       <PageHeader
         title="Uppvärmning"
-        meta={connection ? `${data ? `${data.count} loggar · ` : ""}${connection.base_url} · device ${connection.device}` : undefined}
+        meta={
+          connection
+            ? `${data ? `${data.count} ${data.count === 1 ? "logg" : "loggar"} · ` : ""}${connection.base_url} · device ${connection.device}`
+            : undefined
+        }
         actions={
           <Drawer
             trigger={connection ? "Ändra koppling" : "Koppla"}
@@ -60,24 +60,9 @@ export default function HeatingView({
                 {group.label}
               </h2>
               <Card className="flex flex-col gap-0 overflow-hidden p-0">
+                <HeatingLogHeader className="px-4" />
                 {group.items.map((log) => (
-                  <div
-                    key={`${log.device}-${log.timestamp}`}
-                    className="flex min-h-14 items-center justify-between gap-3 border-b border-border px-4 py-3 last:border-b-0 sm:py-2.5"
-                  >
-                    <span className="flex min-w-0 flex-col">
-                      <span className="truncate text-sm text-text">
-                        {formatTime(log.timestamp)} · Inne {log.w_avg_temperature} °C (bör {log.w_avg_setpoint} °C)
-                      </span>
-                      <span className="truncate text-xs text-text-faint">
-                        Ute {log.outside_temperature} °C · Vind {log.wind_speed}
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-right text-xs text-text-faint">
-                      Energi {log.energy}
-                      {log.mode !== null && ` · ${MODE_LABELS[log.mode]}`}
-                    </span>
-                  </div>
+                  <HeatingLogRow key={log.timestamp} connection={connection.id} log={log} className="px-4" />
                 ))}
               </Card>
             </section>

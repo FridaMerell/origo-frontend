@@ -38,7 +38,7 @@ const HomeView = ({
 }: {
   onThisDay: OnThisDayData | null
   /** Null when the house has no residential_heating module or no connection. */
-  heating: { logs: HeatingLog[]; error?: string } | null
+  heating: { connection: string; logs: HeatingLog[]; error?: string } | null
 }) => {
   const { selectedFacility } = useFacilities()
   const { bookings } = useBookingData()
@@ -94,7 +94,7 @@ const HomeView = ({
           hasWeather && { key: "weather", wide: false, render: (className) => <WeatherWidget facility={selectedFacility} className={className} /> },
           { key: "updates", wide: true, render: (className) => <UpdatesWidget className={className} /> },
           { key: "expenses", wide: false, render: (className) => <RecentExpensesWidget className={className} /> },
-          heating && { key: "heating", wide: true, render: (className) => <HeatingWidget logs={heating.logs} error={heating.error} className={className} /> },
+          heating && { key: "heating", wide: true, render: (className) => <HeatingWidget connection={heating.connection} logs={heating.logs} error={heating.error} className={className} /> },
         ])}
       </div>
     </div>

@@ -26,6 +26,7 @@ export type ResidentialHeating = {
 
 /** One log row from ResidentialHeatingScheduler's `GET /log/`. */
 export type HeatingLog = {
+  id: number
   timestamp: string
   device: number
   outside_temperature: number
@@ -37,6 +38,14 @@ export type HeatingLog = {
   w_avg_setpoint: number
   w_avg_temperature: number
   mode: 0 | 1 | 2 | null
+}
+
+/** One zone in a ResidentialHeatingScheduler log; only returned by `GET /log/<id>/`. */
+export type HeatingZone = {
+  temperature: number
+  setpoint: number
+  active: boolean
+  area_code: number
 }
 
 export type Booking = {

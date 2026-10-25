@@ -17,6 +17,13 @@ export function formatDateLongOrNull(value: string | null): string | null {
   return Number.isNaN(date.getTime()) ? null : formatDateLong(date);
 }
 
+const ONE_DECIMAL = new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 1 });
+
+/** A measurement with at most one decimal, e.g. 20,6. */
+export function formatOneDecimal(value: number): string {
+  return ONE_DECIMAL.format(value);
+}
+
 export function formatMonthYear(date: string | Date): string {
   return new Date(date).toLocaleDateString("sv-SE", { month: "long", year: "numeric" });
 }

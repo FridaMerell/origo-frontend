@@ -16,6 +16,13 @@ export const drawingFormSchema = z.object({
 })
 export type DrawingFormValues = z.infer<typeof drawingFormSchema>
 
+export const residentialHeatingFormSchema = z.object({
+  base_url: z.string().url("Ange en giltig adress."),
+  token: z.string().optional(),
+  device: z.coerce.number().int().positive("Ange enhetens id."),
+})
+export type ResidentialHeatingFormValues = z.infer<typeof residentialHeatingFormSchema>
+
 export const photoFormSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),

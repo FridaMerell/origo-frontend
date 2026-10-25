@@ -17,7 +17,7 @@ export function buildQuery(params?: QueryParams): string {
   return query ? `?${query}` : ""
 }
 
-async function authedFetch(path: string) {
+export async function authedFetch(path: string) {
   const { sessionId, csrfToken } = await getSessionCookies()
 
   if (!sessionId) {

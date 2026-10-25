@@ -2,7 +2,7 @@
 
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { usePathname } from "next/navigation"
-import { BellIcon, CalendarIcon, ChevronDownIcon, ImageIcon, ListTodoIcon, ReceiptIcon, RulerIcon, ScrollTextIcon } from "lucide-react"
+import { BellIcon, CalendarIcon, ChevronDownIcon, ImageIcon, ListTodoIcon, ReceiptIcon, RulerIcon, ScrollTextIcon, ThermometerIcon } from "lucide-react"
 import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { useFacilities } from "@/app/verso/_state/verso-context"
 import { ORIGO_VERSION } from "@/app/lib/config"
@@ -19,6 +19,11 @@ const NAV_ITEMS = [
   { label: "Historia", href: "/historia", icon: ScrollTextIcon },
   { label: "Ekonomi", href: "/ekonomi", icon: ReceiptIcon },
   { label: "Uppdateringar", href: "/updates", icon: BellIcon },
+] as const
+
+/** Nav items shown only for houses with the matching entry in `House.modules`. */
+const MODULE_NAV_ITEMS = [
+  { module: "residential_heating", label: "Uppvärmning", href: "/uppvarmning", icon: ThermometerIcon },
 ] as const
 
 function ModeToggle({
@@ -100,8 +105,12 @@ export function SidebarContent({
   onNavigate,
 }: SidebarProps & { onNavigate?: () => void }) {
   const pathname = usePathname()
-  const { facilities } = useFacilities()
+  const { facilities, selectedFacility } = useFacilities()
   const appHrefs = useAppHrefs()
+  const navItems = [
+    ...NAV_ITEMS,
+    ...MODULE_NAV_ITEMS.filter((item) => selectedFacility?.modules?.includes(item.module)),
+  ]
 
   return (
     <div className="flex h-full flex-col gap-0.5 font-body text-text">
@@ -124,7 +133,7 @@ export function SidebarContent({
           }
         </div>
       </div>
-      {NAV_ITEMS.map((item) => {
+      {navItems.map((item) => {
         const active = pathname === item.href
         return (
           <Link

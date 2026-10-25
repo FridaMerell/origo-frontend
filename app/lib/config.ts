@@ -68,6 +68,7 @@ export const VERSO_ENDPOINTS = {
   documents: "/api/verso/documents/",
   onThisDay: "/api/verso/houses/on_this_day/",
   historyEvents: "/api/verso/history-events/",
+  residentialHeating: "/api/verso/residential-heating/",
 } as const;
 
 export const FLUX_ENDPOINTS = {

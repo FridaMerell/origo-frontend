@@ -1,6 +1,6 @@
 import { cache } from "react"
 import { VERSO_ENDPOINTS } from "@/app/lib/config"
-import { buildQuery, fetchItem, fetchList } from "@/app/lib/dal/client"
+import { authedFetch, buildQuery, fetchItem, fetchList } from "@/app/lib/dal/client"
 
 export type Facility = {
   name: string
@@ -11,6 +11,32 @@ export type Facility = {
   lng: number
   created_at: string
   updated_at: string
+  modules: string[] | null
+}
+
+/** A house's connection to ResidentialHeatingScheduler; the token is never returned. */
+export type ResidentialHeating = {
+  id: string
+  house: string
+  base_url: string
+  device: number
+  created_at: string
+  updated_at: string
+}
+
+/** One log row from ResidentialHeatingScheduler's `GET /log/`. */
+export type HeatingLog = {
+  timestamp: string
+  device: number
+  outside_temperature: number
+  wind_speed: number
+  wind_speed_gust: number
+  wind_direction: number
+  energy: number
+  energy_heat: number | null
+  w_avg_setpoint: number
+  w_avg_temperature: number
+  mode: 0 | 1 | 2 | null
 }
 
 export type Booking = {
@@ -485,4 +511,31 @@ export const getHistoryEvent = cache(
 export const getVersoUpdate = cache(
   (id: string): Promise<VersoUpdate | null> =>
     fetchItem(`${VERSO_ENDPOINTS.versoUpdates}${id}/`)
+)
+
+export const getResidentialHeating = cache(
+  async (house: string): Promise<ResidentialHeating | null> =>
+    (await fetchList<ResidentialHeating>(VERSO_ENDPOINTS.residentialHeating, { house }))[0] ?? null
+)
+
+/** One page of logs from Verso's ResidentialHeating proxy, newest first. */
+export type HeatingLogPage = {
+  count: number
+  page: number
+  next_page: number | null
+  previous_page: number | null
+  results: HeatingLog[]
+}
+
+/** Logs fetched live through Verso; `error` carries the cause when the external API fails. */
+export const getHeatingLogs = cache(
+  async (id: string, page: number): Promise<{ data: HeatingLogPage | null; error?: string }> => {
+    const response = await authedFetch(`${VERSO_ENDPOINTS.residentialHeating}${id}/logs/${buildQuery({ page })}`)
+    const payload: unknown = await response.json().catch(() => null)
+    if (!response.ok) {
+      const detail = (payload as { detail?: string } | null)?.detail
+      return { data: null, error: detail ?? `Verso svarade ${response.status}.` }
+    }
+    return { data: payload as HeatingLogPage }
+  }
 )

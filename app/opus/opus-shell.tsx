@@ -52,7 +52,7 @@ const OpusShell = ({ initialMode, children }: { initialMode: ColorMode | null; c
 							</a>
 						))}
 						<a
-							href='/integritet'
+							href={siteHrefs.origo ? `${siteHrefs.origo}integritet` : "#"}
 							className='no-underline hover:text-accent hover:underline'>
 							Integritet
 						</a>

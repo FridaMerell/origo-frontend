@@ -13,19 +13,17 @@ export async function proxy(request: NextRequest) {
   const tenant = resolveTenant(hostname);
   const isLoginRoute = pathname === "/login";
   const isRootLanding = tenant === null && pathname === "/";
-  // The house-invitation landing page. Reachable without a session (it can create
-  // an account) and host-agnostic, so it is never gated or rewritten to a tenant.
-  const isJoinRoute = pathname === "/join";
+  // Origo's own public pages: the house-invitation landing page (it can create an
+  // account), "about" and privacy. Root host only; on a tenant host they are
+  // rewritten like any other path and hit the tenant's not-found page.
+  const isOrigoPublicPage =
+    tenant === null && (pathname === "/join" || pathname === "/om" || pathname === "/integritet");
   // Routes a tenant has opted into serving without a session. "/login" is always
   // reachable; everything else stays gated unless the tenant lists it.
-  // The "about" and privacy pages are public and host-agnostic too, like the
-  // join route.
-  const isAboutRoute = pathname === "/om" || pathname === "/integritet";
   const isPublicRoute =
     isLoginRoute ||
     isRootLanding ||
-    isJoinRoute ||
-    isAboutRoute ||
+    isOrigoPublicPage ||
     (tenant !== null && isPublicPath(tenant, pathname));
 
   let validSessionId: string | undefined;
@@ -51,13 +49,15 @@ export async function proxy(request: NextRequest) {
     }
     if (hasValidSession) validSessionId = sessionId;
 
+    // Temporary redirect to the login page (Google: "If the move is only
+    // temporary for some reason, return 302").
     if (!isPublicRoute && !hasValidSession) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set(
         "redirect",
         `${request.nextUrl.pathname}${request.nextUrl.search}`,
       );
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(loginUrl, 302);
     }
 
     if (isLoginRoute && hasValidSession) {
@@ -74,7 +74,7 @@ export async function proxy(request: NextRequest) {
   // tenant-specific "/flux/login" or "/verso/login" page instead of always
   // falling through to the generic "/login" page.
   let response = NextResponse.next();
-  if (tenant && !isJoinRoute && !isAboutRoute) {
+  if (tenant) {
     const url = request.nextUrl.clone();
     url.pathname = `/${tenant}${pathname === "/" ? "" : pathname}`;
     response = NextResponse.rewrite(url);
@@ -104,5 +104,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|manifest\\.webmanifest$|sw\\.js$|.*\\.(?:png|svg|ico)$).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|manifest\\.webmanifest$|sw\\.js$|robots\\.txt$|sitemap\\.xml$|.*\\.(?:png|svg|ico)$).*)"],
 };

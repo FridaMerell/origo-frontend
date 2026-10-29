@@ -74,7 +74,7 @@ export default function TempusShell({ initialMode, children }: { initialMode: Co
               </a>
             ))}
             <a
-              href="/integritet"
+              href={siteHrefs.origo ? `${siteHrefs.origo}integritet` : "#"}
               className="no-underline hover:text-accent hover:underline"
             >
               Integritet

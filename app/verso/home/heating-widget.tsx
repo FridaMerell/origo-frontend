@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { ThermometerIcon } from "lucide-react"
 import { Card } from "@/app/components/ui/Card"
@@ -16,9 +16,12 @@ export type HeatingNow = {
   error?: string
 }
 
+/** Shared timing for every slide in the card, off under reduced motion. */
+const MOTION = "duration-200 ease-out motion-reduce:transition-none"
+
 /**
  * A log laid out the same way at any size: its values on the left, its time and a "Zoner"/"Dölj"
- * cue on the right. Opening slides its zones out underneath; nothing around it moves except down.
+ * cue on the right. Opening slides its zones out underneath, one short line per zone.
  */
 function ExpandableLog({
   connection,
@@ -41,8 +44,16 @@ function ExpandableLog({
   function toggle() {
     if (!open) {
       load()
-      // After the slide-out, bring the opened zones into view inside the list.
-      window.setTimeout(() => ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 220)
+      // After the slide-out, scroll only the card's list (never the page) so the opened log is fully visible.
+      window.setTimeout(() => {
+        const element = ref.current
+        const list = element?.closest<HTMLElement>("[data-heating-list]")
+        if (!element || !list) return
+        const box = element.getBoundingClientRect()
+        const view = list.getBoundingClientRect()
+        const delta = box.bottom > view.bottom ? Math.min(box.bottom - view.bottom, box.top - view.top) : box.top < view.top ? box.top - view.top : 0
+        if (delta) list.scrollBy({ top: delta, behavior: "smooth" })
+      }, 230)
     }
     onToggle()
   }
@@ -56,37 +67,34 @@ function ExpandableLog({
         type="button"
         aria-expanded={open}
         onClick={toggle}
-        className="flex w-full cursor-pointer items-baseline gap-4 px-4.5 py-2 text-left @lg:py-3"
+        className="flex w-full cursor-pointer items-baseline gap-4 px-4.5 py-2.5 text-left"
       >
         <span className="min-w-0 flex-1">{children}</span>
         <span className="text-xs text-text-faint tabular-nums">{formatTime(log.timestamp)}</span>
-        <span className="w-10 text-right text-sm font-semibold text-link">{open ? "Dölj" : "Zoner"}</span>
+        <span className="w-9 text-right text-xs text-text-muted">{open ? "Dölj" : "Zoner"}</span>
       </button>
       {/* Height animates from 0 to the content's own height; the zones stay mounted once loaded. */}
-      <div
-        className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
-      >
+      <div className={`grid transition-[grid-template-rows] ${MOTION} ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
         <div className="overflow-hidden">
           {zones && (
-            <p className="-mt-1 mb-0 max-w-prose px-4.5 pb-2 text-sm text-text-muted tabular-nums @lg:pb-3">
-              {zones.loading
-                ? "Hämtar zoner..."
-                : zones.error
-                  ? `Zonerna kunde inte hämtas: ${zones.error}`
-                  : !sorted.length
-                    ? "Inga zoner i loggen."
-                    : sorted.map((zone, index) => (
-                        <Fragment key={zone.area_code}>
-                          {index > 0 && ", "}
-                          <span className="whitespace-nowrap">
-                            Zon {zone.area_code} <span className="text-text">{round(zone.temperature)}°</span> bör{" "}
-                            {round(zone.setpoint)}°{zone.active && " aktiv"}
-                          </span>
-                        </Fragment>
-                      ))}
-            </p>
+            <div className="mx-4.5 mb-2.5 flex flex-col border-l border-border pl-3 text-sm leading-6 text-text-muted tabular-nums">
+              {zones.loading ? (
+                <span>Hämtar zoner...</span>
+              ) : zones.error ? (
+                <span>Zonerna kunde inte hämtas: {zones.error}</span>
+              ) : !sorted.length ? (
+                <span>Inga zoner i loggen.</span>
+              ) : (
+                sorted.map((zone) => (
+                  <span key={zone.area_code}>
+                    Zon {zone.area_code}
+                    <span className="ml-3 font-medium text-text">{round(zone.temperature)}°</span>
+                    <span className="ml-3">bör {round(zone.setpoint)}°</span>
+                    <span className="ml-3">{zone.active ? "aktiv" : "inaktiv"}</span>
+                  </span>
+                ))
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -95,19 +103,35 @@ function ExpandableLog({
 }
 
 /**
- * The newest log as the current reading at the weather card's size, fixed at the top; under it every
- * other log of the last two hours in a list that scrolls within the card. Opening a log slides its
- * zones out in place; no log is ever hidden or reordered.
+ * The newest log as the current reading at the weather card's size; under it every other log of the
+ * last two hours in a list that scrolls within the card. Opening a log slides its zones out in place,
+ * and while a listed log is open the current reading eases down to one compact line to give it room.
+ * No log is ever hidden or reordered.
  */
 export function HeatingWidget({ heating, className = "" }: { heating: HeatingNow; className?: string }) {
   const { connection, logs, error } = heating
   const [latest, ...older] = logs
   const [open, setOpen] = useState<string | null>(null)
   const toggle = (log: HeatingLog) => () => setOpen(open === log.timestamp ? null : log.timestamp)
+  const listedOpen = older.some((log) => log.timestamp === open)
+  const listRef = useRef<HTMLDivElement>(null)
+  // True while the list has rows below its visible part; only then does its bottom edge fade.
+  const [more, setMore] = useState(false)
+  const updateMore = () => {
+    const list = listRef.current
+    setMore(!!list && list.scrollTop + list.clientHeight < list.scrollHeight - 1)
+  }
+
+  useEffect(() => {
+    updateMore()
+    // Re-check once an opening or closing log has finished sliding.
+    const timer = window.setTimeout(updateMore, 450)
+    return () => window.clearTimeout(timer)
+  }, [open, older.length])
 
   return (
     <Card className={`@container col-span-1 flex h-full w-full flex-col overflow-hidden !p-0 ${className}`}>
-      <div className="flex items-center justify-between border-b border-border px-4.5 py-3.5">
+      <div className="flex items-center justify-between border-b border-border px-4.5 py-3">
         <span className="flex items-center gap-2 text-sm font-medium text-text-muted">
           <ThermometerIcon size={16} /> Uppvärmning
         </span>
@@ -130,11 +154,18 @@ export function HeatingWidget({ heating, className = "" }: { heating: HeatingNow
             className="shrink-0"
           >
             <span className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <span className="font-display text-4xl font-semibold leading-none text-text tabular-nums sm:text-5xl">
+              <span
+                className={`font-display font-semibold leading-none text-text tabular-nums transition-[font-size] ${MOTION} ${
+                  listedOpen ? "text-2xl" : "text-4xl sm:text-5xl"
+                }`}
+              >
                 {round(latest.w_avg_temperature)}°
               </span>
-              {/* Beside the number when the line fits, otherwise as one whole line under it. */}
-              <span className="min-w-[15rem] flex-1 text-sm text-text-muted tabular-nums">
+              {/* Beside the number when the line fits, otherwise as one whole line under it; in a narrow
+                  card it steps aside while an older log is open, to give that log's zones the room. */}
+              <span
+                className={`min-w-[15rem] flex-1 text-sm text-text-muted tabular-nums ${listedOpen ? "hidden @lg:inline" : ""}`}
+              >
                 <span className="whitespace-nowrap">Börvärde {round(latest.w_avg_setpoint)}°,</span>{" "}
                 <span className="whitespace-nowrap">ute {round(latest.outside_temperature)}°</span>
                 {latest.mode !== null && (
@@ -146,8 +177,15 @@ export function HeatingWidget({ heating, className = "" }: { heating: HeatingNow
             </span>
           </ExpandableLog>
           {older.length > 0 && (
-            // Scrolls within the card; the bottom edge fades so a row cut by the edge reads as "more below".
-            <div className="min-h-0 flex-1 scroll-pb-3 overflow-y-auto overscroll-contain border-t border-border pb-2 [mask-image:linear-gradient(to_bottom,black_calc(100%-1.5rem),transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            // Scrolls within the card; while more rows are below, the bottom edge fades to say so.
+            <div
+              ref={listRef}
+              data-heating-list
+              onScroll={updateMore}
+              className={`min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+                more && !listedOpen ? "[mask-image:linear-gradient(to_bottom,black_calc(100%-1.5rem),transparent)]" : ""
+              }`}
+            >
               {older.map((log, index) => (
                 <ExpandableLog
                   key={log.timestamp}

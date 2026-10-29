@@ -65,7 +65,7 @@ export default function ApsisShell({ initialMode, children }: { initialMode: Col
               </a>
             ))}
             <a
-              href="/integritet"
+              href={siteHrefs.origo ? `${siteHrefs.origo}integritet` : "#"}
               className="no-underline hover:text-accent hover:underline"
             >
               Integritet

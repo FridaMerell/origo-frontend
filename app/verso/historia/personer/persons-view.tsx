@@ -108,9 +108,23 @@ export default function PersonsView({
     setPortraitError(result?.error)
   }
 
+  // In a narrow content area the list and the detail take turns; when wide enough they sit side by side.
+  const showingDetail = Boolean(selected) || mode === "new"
+
   return (
-    <div className="container flex flex-1 flex-col gap-4 py-5 sm:py-8">
-      <BackLink href="/historia">Historia</BackLink>
+    <div className="@container container flex flex-1 flex-col gap-4 py-5 sm:py-8">
+      {showingDetail ? (
+        <>
+          <div className="@4xl:hidden" onClick={() => setMode("view")}>
+            <BackLink href="/historia/personer">Personer</BackLink>
+          </div>
+          <div className="hidden @4xl:block">
+            <BackLink href="/historia">Historia</BackLink>
+          </div>
+        </>
+      ) : (
+        <BackLink href="/historia">Historia</BackLink>
+      )}
       <PageHeader
         title="Personer"
         meta={`${people.length} st`}
@@ -121,22 +135,28 @@ export default function PersonsView({
         }
       />
 
-      <div className="grid gap-5 md:grid-cols-4">
-        <Card className="flex flex-col gap-3 !p-3 md:col-span-1">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Sök person"
-            aria-label="Sök person"
-            className="rounded border border-field-border bg-surface px-2.5 py-1.5 text-sm text-text"
-          />
+      <div className="grid items-start gap-6 @4xl:grid-cols-[16rem_minmax(0,1fr)] @4xl:gap-8 @6xl:grid-cols-[18rem_minmax(0,1fr)]">
+        <Card
+          className={`flex-col overflow-hidden !p-0 @4xl:sticky @4xl:top-6 @4xl:flex @4xl:max-h-[calc(100dvh-3rem)] ${
+            showingDetail ? "hidden" : "flex"
+          }`}
+        >
+          <div className="border-b border-border px-4.5 py-3.5">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Sök person"
+              aria-label="Sök person"
+              className="w-full rounded border border-field-border bg-surface px-3 py-2 text-sm text-text"
+            />
+          </div>
           {people.length === 0 ? (
-            <p className="m-0 px-1 text-sm text-text-muted">Inga personer ännu.</p>
+            <p className="m-0 px-4.5 py-6 text-sm text-text-muted">Inga personer ännu.</p>
           ) : shown.length === 0 ? (
-            <p className="m-0 px-1 text-sm text-text-muted">Ingen träff.</p>
+            <p className="m-0 px-4.5 py-6 text-sm text-text-muted">Ingen träff.</p>
           ) : (
-            <ul className="m-0 flex max-h-60 list-none flex-col gap-0.5 overflow-y-auto p-0 md:max-h-none md:overflow-visible">
+            <ul className="m-0 flex list-none flex-col divide-y divide-border p-0 @4xl:min-h-0 @4xl:overflow-y-auto">
               {shown.map((person) => {
                 const active = selected?.id === person.id && mode !== "new"
                 return (
@@ -144,18 +164,21 @@ export default function PersonsView({
                     <Link
                       href={personHref(person.id)}
                       onClick={() => setMode("view")}
-                      className={`flex items-center gap-2.5 rounded px-2 py-1.5 no-underline duration-200 ${
+                      aria-current={active ? "page" : undefined}
+                      className={`flex items-center gap-3 px-4.5 py-3 no-underline transition-colors ${
                         active ? "bg-surface-2 text-text" : "text-text hover:bg-surface-2"
                       }`}
                     >
-                      <Avatar name={person.name} size="size-8 text-xs" />
+                      <Avatar name={person.name} size="size-9 text-xs" />
                       <span className="flex min-w-0 flex-col">
                         <span className={`truncate text-sm ${active ? "font-semibold" : "font-medium"}`}>
                           {person.name}
                         </span>
-                        <span className="truncate text-xs text-text-faint">
-                          {lifespan(person) || person.relation}
-                        </span>
+                        {(lifespan(person) || person.relation) && (
+                          <span className="truncate text-xs text-text-faint">
+                            {lifespan(person) || person.relation}
+                          </span>
+                        )}
                       </span>
                     </Link>
                   </li>
@@ -165,7 +188,7 @@ export default function PersonsView({
           )}
         </Card>
 
-        <Card className="flex min-w-0 flex-col gap-5 md:col-span-3">
+        <Card className={`min-w-0 flex-col gap-5 @4xl:flex ${showingDetail ? "flex" : "hidden"}`}>
           {mode === "new" ? (
             <>
               <h2 className="m-0 font-display text-xl font-semibold text-text">Ny person</h2>
@@ -192,17 +215,34 @@ export default function PersonsView({
             </>
           ) : (
             <>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-4">
-                  <Avatar name={selected.name} photo={portrait} size="size-20 text-xl" />
-                  <div className="flex min-w-0 flex-col">
-                    <h2 className="m-0 truncate font-display text-2xl font-semibold text-text">{selected.name}</h2>
+              <div className="flex items-start gap-4">
+                <Avatar name={selected.name} photo={portrait} size="size-16 text-lg sm:size-20 sm:text-xl" />
+                <div className="flex min-w-0 flex-1 flex-col gap-1 self-center">
+                  <h2 className="m-0 font-display text-xl font-semibold leading-tight break-words text-text sm:text-2xl">
+                    {selected.name}
+                  </h2>
+                  {(lifespan(selected) || selected.relation) && (
                     <span className="text-sm text-text-muted">
                       {[lifespan(selected), selected.relation].filter(Boolean).join(" · ")}
                     </span>
-                  </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="mt-1 self-start sm:hidden"
+                    onClick={() => setMode("edit")}
+                  >
+                    Redigera
+                  </Button>
                 </div>
-                <Button type="button" variant="secondary" size="sm" onClick={() => setMode("edit")}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="hidden shrink-0 sm:inline-flex"
+                  onClick={() => setMode("edit")}
+                >
                   Redigera
                 </Button>
               </div>
@@ -211,7 +251,7 @@ export default function PersonsView({
 
               {tab === "overview" && (
                 <div className="flex flex-col gap-4">
-                  <dl className="m-0 grid gap-3 sm:grid-cols-2">
+                  <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
                     <Fact label="Född">
                       {selected.birth_date &&
                         formatHistoricalDate(selected.birth_date, selected.birth_date_precision)}
@@ -288,20 +328,26 @@ export default function PersonsView({
                 ) : (
                   <ul className="m-0 flex list-none flex-col divide-y divide-border p-0">
                     {personEvents.map((event) => (
-                      <li key={`e${event.id}`} className="flex items-baseline gap-3 py-2 text-sm text-text">
-                        <span className="w-28 shrink-0 text-xs text-text-faint">
+                      <li
+                        key={`e${event.id}`}
+                        className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5 py-2.5 text-sm text-text sm:grid-cols-[8rem_minmax(0,1fr)_auto]"
+                      >
+                        <span className="col-span-2 text-xs text-text-faint sm:col-span-1">
                           {formatHistoricalDate(event.date_start, event.date_precision)}
                         </span>
-                        <span className="min-w-0 flex-1 truncate">{event.title}</span>
+                        <span className="min-w-0 break-words">{event.title}</span>
                         <span className="text-xs text-text-faint">Händelse</span>
                       </li>
                     ))}
                     {personDocs.map((doc) => (
-                      <li key={`d${doc.id}`} className="flex items-baseline gap-3 py-2 text-sm text-text">
-                        <span className="w-28 shrink-0 text-xs text-text-faint">
+                      <li
+                        key={`d${doc.id}`}
+                        className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5 py-2.5 text-sm text-text sm:grid-cols-[8rem_minmax(0,1fr)_auto]"
+                      >
+                        <span className="col-span-2 text-xs text-text-faint sm:col-span-1">
                           {formatHistoricalDate(doc.document_date, doc.date_precision)}
                         </span>
-                        <span className="min-w-0 flex-1 truncate">{doc.title}</span>
+                        <span className="min-w-0 break-words">{doc.title}</span>
                         <span className="text-xs text-text-faint">Dokument</span>
                       </li>
                     ))}

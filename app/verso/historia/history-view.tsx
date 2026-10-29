@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
+import { Button, LinkButton } from "@/app/components/ui/Button"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { EmptyState } from "@/app/components/ui/EmptyState"
-import { ScrollTextIcon } from "lucide-react"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
+import { ChevronDown, ScrollTextIcon } from "lucide-react"
 import { AlbumForm } from "@/app/verso/bilder/album-form"
 import { PhotoUploadForm } from "@/app/verso/bilder/photo-upload-form"
 import { HistoryTimeline } from "@/app/verso/historia/timeline"
@@ -70,6 +72,11 @@ export default function HistoryView({
   const active = historyAlbums.find((album) => album.id === activeAlbum)
   const defaultAlbums = active ? [active.id] : historyAlbums.length === 1 ? [historyAlbums[0].id] : []
   const isEmpty = photos.length === 0 && events.length === 0 && documents.length === 0
+  const uploadMenu = useDismissableOpen<HTMLDivElement>()
+  const [uploadDrawer, setUploadDrawer] = useState<"file" | "photo" | "newAlbum" | "editAlbum" | null>(null)
+  const closeUploadDrawer = (open: boolean) => {
+    if (!open) setUploadDrawer(null)
+  }
 
   return (
     <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
@@ -77,67 +84,62 @@ export default function HistoryView({
         title="Historia"
         actions={
           <>
-          <Link
-            href="/historia/personer"
-            className="rounded border border-border px-3 py-1.5 text-sm font-semibold text-text no-underline duration-200 hover:bg-accent-wash hover:text-accent"
-          >
+          <LinkButton href="/historia/personer" variant="secondary" size="sm" className="no-underline">
             Personer ({people.length})
-          </Link>
-          <Drawer
-            trigger="Ny händelse"
-            triggerVariant="secondary"
-            triggerSize="sm"
-            title="Ny händelse"
-            panelClassName="max-w-2xl!"
-          >
+          </LinkButton>
+          <div ref={uploadMenu.ref} className="relative">
+            <Button type="button" variant="secondary" size="sm" onClick={() => uploadMenu.setOpen((open) => !open)}>
+              Filer och album
+              <ChevronDown size={14} className={`transition-transform ${uploadMenu.open ? "rotate-180" : ""}`} />
+            </Button>
+            {uploadMenu.open && (
+              <div className="absolute right-0 top-full z-10 mt-1 min-w-48 overflow-hidden rounded-md border border-border bg-surface py-1 shadow-sm">
+                {[
+                  { id: "file" as const, label: "Ladda upp fil", show: true },
+                  { id: "photo" as const, label: "Ladda upp bild", show: historyAlbums.length > 0 },
+                  { id: "newAlbum" as const, label: "Nytt historiealbum", show: true },
+                  { id: "editAlbum" as const, label: "Redigera album", show: Boolean(active) },
+                ]
+                  .filter((item) => item.show)
+                  .map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        uploadMenu.setOpen(false)
+                        setUploadDrawer(item.id)
+                      }}
+                      className="block w-full truncate px-2.5 py-1.5 text-left text-sm text-text hover:bg-accent-wash hover:text-accent"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+          <Drawer trigger="Ny händelse" triggerSize="sm" title="Ny händelse" panelClassName="max-w-2xl!">
             <NewEventForm people={people} photos={photos} />
           </Drawer>
-          <Drawer trigger="Ladda upp fil" triggerVariant="secondary" triggerSize="sm" title="Ladda upp fil">
-            <DocumentUploadForm onUploaded={(ids) => setSelectedDocId(ids[0] ?? null)} />
-          </Drawer>
-          {historyAlbums.length > 0 && (
-            <Drawer trigger="Ladda upp bild" triggerSize="sm" title="Ladda upp bild">
-              <PhotoUploadForm
-                albums={albums}
-                tags={tags}
-                defaultAlbums={defaultAlbums}
-                requireAlbum
-                minimal
-                // Open the first new document so its history can be filled in right away.
-                onUploaded={(ids) => setSelectedId(ids[0] ?? null)}
-              />
-            </Drawer>
-          )}
           </>
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        {historyAlbums.length > 0 && (
-          <>
-            <AlbumChip href="/historia" selected={!active}>
-              Alla
+      {historyAlbums.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <AlbumChip href="/historia" selected={!active}>
+            Alla
+          </AlbumChip>
+          {historyAlbums.map((album) => (
+            <AlbumChip
+              key={album.id}
+              href={`/historia?album=${encodeURIComponent(album.id)}`}
+              selected={active?.id === album.id}
+            >
+              {album.name} ({album.photo_count})
             </AlbumChip>
-            {historyAlbums.map((album) => (
-              <AlbumChip
-                key={album.id}
-                href={`/historia?album=${encodeURIComponent(album.id)}`}
-                selected={active?.id === album.id}
-              >
-                {album.name} ({album.photo_count})
-              </AlbumChip>
-            ))}
-          </>
-        )}
-        <Drawer trigger="Nytt historiealbum" triggerVariant="ghost" triggerSize="sm" triggerClassName="border border-border hover:bg-accent-wash" title="Nytt historiealbum">
-          <AlbumForm defaultKind="history" />
-        </Drawer>
-        {active && (
-          <Drawer trigger="Redigera album" triggerVariant="ghost" triggerSize="sm" triggerClassName="border border-border hover:bg-accent-wash" title="Redigera album">
-            <AlbumForm album={active} />
-          </Drawer>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       <OnThisDay data={onThisDay} onOpenEvent={setSelectedEventId} onOpenPhoto={setSelectedId} />
 
@@ -158,6 +160,29 @@ export default function HistoryView({
           documents={documents}
           onOpenDocument={setSelectedDocId}
         />
+      )}
+
+      <Drawer title="Ladda upp fil" open={uploadDrawer === "file"} onOpenChange={closeUploadDrawer}>
+        <DocumentUploadForm onUploaded={(ids) => setSelectedDocId(ids[0] ?? null)} />
+      </Drawer>
+      <Drawer title="Ladda upp bild" open={uploadDrawer === "photo"} onOpenChange={closeUploadDrawer}>
+        <PhotoUploadForm
+          albums={albums}
+          tags={tags}
+          defaultAlbums={defaultAlbums}
+          requireAlbum
+          minimal
+          // Open the first new document so its history can be filled in right away.
+          onUploaded={(ids) => setSelectedId(ids[0] ?? null)}
+        />
+      </Drawer>
+      <Drawer title="Nytt historiealbum" open={uploadDrawer === "newAlbum"} onOpenChange={closeUploadDrawer}>
+        <AlbumForm defaultKind="history" />
+      </Drawer>
+      {active && (
+        <Drawer title="Redigera album" open={uploadDrawer === "editAlbum"} onOpenChange={closeUploadDrawer}>
+          <AlbumForm album={active} />
+        </Drawer>
       )}
 
       <Drawer

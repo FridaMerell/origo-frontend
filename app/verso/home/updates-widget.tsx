@@ -10,7 +10,6 @@ export function UpdatesWidget({ className = "" }: { className?: string }) {
 		<Card className={`col-span-1 h-full w-full !p-0 overflow-hidden ${className}`}>
 			<div className='flex items-center justify-between border-b border-border px-4.5 py-3.5'>
 				<span className='flex items-center gap-2 text-sm font-medium text-text-muted'><ListChecks size={16} /> Senaste uppdateringar</span>
-				<span className='text-xs text-text-faint'>{updates?.length ?? 0} st</span>
 			</div>
 			<div className='divide-y divide-border'>
 			{updates?.length ? updates.slice(0, 2).map(u => {

@@ -1,47 +1,72 @@
 "use client"
 
-import { CalendarIcon, FileTextIcon } from "lucide-react"
+import { FileTextIcon } from "lucide-react"
 import { documentTypeLabel } from "@/app/verso/historia/document-detail"
 import { fileProxyUrl } from "@/app/lib/files"
 import { decadeOf, formatHistoricalDate } from "@/app/lib/history-date"
-import type { HistoryEvent, HouseDocument, Person, Photo } from "@/app/lib/dal"
+import type { DatePrecision, HistoryEvent, HouseDocument, Person, Photo } from "@/app/lib/dal"
 
 type Item =
-  | { key: string; kind: "photo"; date: string | null; photo: Photo }
-  | { key: string; kind: "event"; date: string; event: HistoryEvent }
-  | { key: string; kind: "document"; date: string | null; doc: HouseDocument }
+  | { key: string; kind: "photo"; date: string | null; precision: DatePrecision; photo: Photo }
+  | { key: string; kind: "event"; date: string; precision: DatePrecision; event: HistoryEvent }
+  | { key: string; kind: "document"; date: string | null; precision: DatePrecision; doc: HouseDocument }
 
-type Group = { decade: number | null; items: Item[] }
+/** Items sharing a margin label: one year, "ca <year>", or "Okänt år" when only the decade is known. */
+type YearBlock = { label: string | null; events: HistoryEvent[]; photos: Photo[]; docs: HouseDocument[] }
+
+type Group = { decade: number | null; blocks: YearBlock[] }
+
+function marginLabel(item: Item): string | null {
+  if (!item.date) return null
+  if (item.precision === "decade") return "Okänt år"
+  if (item.precision === "circa") return formatHistoricalDate(item.date, "circa")
+  return item.date.slice(0, 4)
+}
 
 function buildGroups(photos: Photo[], events: HistoryEvent[], documents: HouseDocument[]): Group[] {
   const items: Item[] = [
-    ...photos.map((photo): Item => ({ key: `p${photo.id}`, kind: "photo", date: photo.taken_at, photo })),
-    ...events.map((event): Item => ({ key: `e${event.id}`, kind: "event", date: event.date_start, event })),
-    ...documents.map((doc): Item => ({ key: `d${doc.id}`, kind: "document", date: doc.document_date, doc })),
+    ...photos.map((photo): Item => ({
+      key: `p${photo.id}`, kind: "photo", date: photo.taken_at, precision: photo.date_precision, photo,
+    })),
+    ...events.map((event): Item => ({
+      key: `e${event.id}`, kind: "event", date: event.date_start, precision: event.date_precision, event,
+    })),
+    ...documents.map((doc): Item => ({
+      key: `d${doc.id}`, kind: "document", date: doc.document_date, precision: doc.date_precision, doc,
+    })),
   ].sort((a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999"))
 
   const groups: Group[] = []
   for (const item of items) {
     const decade = decadeOf(item.date)
-    const last = groups[groups.length - 1]
-    if (last && last.decade === decade) last.items.push(item)
-    else groups.push({ decade, items: [item] })
+    let group = groups[groups.length - 1]
+    if (!group || group.decade !== decade) {
+      group = { decade, blocks: [] }
+      groups.push(group)
+    }
+    const label = marginLabel(item)
+    let block = group.blocks.find((candidate) => candidate.label === label)
+    if (!block) {
+      block = { label, events: [], photos: [], docs: [] }
+      group.blocks.push(block)
+    }
+    if (item.kind === "event") block.events.push(item.event)
+    else if (item.kind === "photo") block.photos.push(item.photo)
+    else block.docs.push(item.doc)
   }
   return groups
 }
 
-function PersonChips({ ids, people }: { ids: string[]; people: Person[] }) {
-  const named = people.filter((person) => ids.map(String).includes(String(person.id)))
-  if (named.length === 0) return null
-  return (
-    <span className="flex flex-wrap gap-1.5">
-      {named.map((person) => (
-        <span key={person.id} className="rounded-full border border-border px-2 py-0.5 text-xs text-text-muted">
-          {person.name}
-        </span>
-      ))}
-    </span>
-  )
+/** Day or month within the year, shown only when known; the year itself is in the margin. */
+function dayOf(date: string | null, precision: DatePrecision): string | null {
+  if (!date || (precision !== "day" && precision !== "month")) return null
+  return formatHistoricalDate(date, precision).replace(/\s*\d{4}$/, "")
+}
+
+function personNames(ids: string[], people: Person[]): string | null {
+  const names = people.filter((person) => ids.map(String).includes(String(person.id))).map((person) => person.name)
+  if (names.length === 0) return null
+  return names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} och ${names[names.length - 1]}`
 }
 
 function Thumb({ photo, onOpen, size }: { photo: Photo; onOpen: (id: string) => void; size: string }) {
@@ -50,6 +75,7 @@ function Thumb({ photo, onOpen, size }: { photo: Photo; onOpen: (id: string) => 
       type="button"
       onClick={() => onOpen(photo.id)}
       aria-label={photo.title || "Öppna dokument"}
+      title={photo.title || undefined}
       className={`${size} shrink-0 overflow-hidden rounded-lg border border-border bg-accent-wash focus-visible:outline-2 focus-visible:outline-accent`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -64,7 +90,7 @@ function Thumb({ photo, onOpen, size }: { photo: Photo; onOpen: (id: string) => 
   )
 }
 
-/** Vertical timeline grouped by decade, mixing history events and dated photos. */
+/** Vertical timeline grouped by decade and year, mixing history events, dated photos and documents. */
 export function HistoryTimeline({
   photos,
   events,
@@ -88,90 +114,101 @@ export function HistoryTimeline({
   const groups = buildGroups(photos, events, documents)
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="ml-1.5 flex flex-col gap-12 border-l border-border pl-6 sm:pl-8">
       {groups.map((group) => (
-        <section key={group.decade ?? "undated"} className="flex flex-col gap-3">
-          <h2 className="m-0 font-display text-lg font-semibold text-text">
+        <section key={group.decade ?? "undated"} className="relative flex flex-col">
+          <span
+            aria-hidden
+            className="absolute -left-[31px] top-3 size-3 rounded-full border-2 border-bg bg-accent sm:-left-[39px]"
+          />
+          <h2 className="m-0 border-b border-border pb-2 font-display text-2xl font-semibold text-text">
             {group.decade === null ? "Odaterat" : `${group.decade}-talet`}
           </h2>
-          <ol className="m-0 flex list-none flex-col gap-4 border-l border-border p-0 pl-5">
-            {group.items.map((item) => (
-              <li key={item.key} className="relative flex gap-3">
-                <span
-                  aria-hidden
-                  className="absolute -left-[25px] top-2 size-2.5 rounded-full border-2 border-surface bg-accent"
-                />
-                {item.kind === "document" ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => onOpenDocument(item.doc.id)}
-                      aria-label={item.doc.title}
-                      className="flex size-20 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-border bg-accent-wash text-text-muted focus-visible:outline-2 focus-visible:outline-accent"
-                    >
-                      <FileTextIcon size={22} />
-                      <span className="text-xs font-medium">{documentTypeLabel(item.doc)}</span>
-                    </button>
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <span className="text-xs text-text-faint">
-                        {formatHistoricalDate(item.doc.document_date, item.doc.date_precision)}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => onOpenDocument(item.doc.id)}
-                        className="self-start truncate text-left text-sm font-semibold text-text hover:text-accent"
-                      >
-                        {item.doc.title}
-                      </button>
-                      <PersonChips ids={item.doc.people} people={people} />
-                    </div>
-                  </>
-                ) : item.kind === "photo" ? (
-                  <>
-                    <Thumb photo={item.photo} onOpen={onOpenPhoto} size="size-20" />
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <span className="text-xs text-text-faint">
-                        {formatHistoricalDate(item.photo.taken_at, item.photo.date_precision)}
-                        {item.photo.place && ` · ${item.photo.place}`}
-                      </span>
-                      <span className="truncate text-sm font-semibold text-text">
-                        {item.photo.title || "Utan titel"}
-                      </span>
-                      <PersonChips ids={item.photo.people ?? []} people={people} />
-                    </div>
-                  </>
+
+          <div className="flex flex-col divide-y divide-border">
+            {group.blocks.map((block) => (
+              <div
+                key={block.label ?? "undated"}
+                className="grid gap-x-6 gap-y-3 py-5 sm:grid-cols-[6rem_minmax(0,1fr)]"
+              >
+                {block.label && /^\d{4}$/.test(block.label) ? (
+                  <span className="font-display text-xl font-semibold leading-tight text-text-muted">{block.label}</span>
                 ) : (
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5 rounded-lg border border-border bg-surface p-3">
-                    <span className="flex items-center gap-1.5 text-xs text-text-faint">
-                      <CalendarIcon size={12} />
-                      {formatHistoricalDate(item.event.date_start, item.event.date_precision)}
-                      {item.event.place && ` · ${item.event.place}`}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onOpenEvent(item.event.id)}
-                      className="self-start text-left text-sm font-semibold text-text hover:text-accent"
-                    >
-                      {item.event.title}
-                    </button>
-                    {item.event.description && (
-                      <p className="m-0 line-clamp-3 whitespace-pre-wrap text-sm text-text-muted">
-                        {item.event.description}
-                      </p>
-                    )}
-                    <PersonChips ids={item.event.people} people={people} />
-                    <span className="flex flex-wrap gap-2">
-                      {allPhotos
-                        .filter((photo) => item.event.photos.map(String).includes(String(photo.id)))
-                        .map((photo) => (
-                          <Thumb key={photo.id} photo={photo} onOpen={onOpenPhoto} size="size-14" />
-                        ))}
-                    </span>
-                  </div>
+                  <span className="pt-1 text-sm text-text-faint">{block.label}</span>
                 )}
-              </li>
+
+                <div className="flex min-w-0 flex-col gap-5">
+                  {block.events.map((event) => {
+                    const meta = [dayOf(event.date_start, event.date_precision), event.place].filter(Boolean).join(" · ")
+                    const names = personNames(event.people, people)
+                    const linked = allPhotos.filter((photo) => event.photos.map(String).includes(String(photo.id)))
+                    return (
+                      <article key={event.id} className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onOpenEvent(event.id)}
+                          className="self-start text-left font-display text-lg font-semibold leading-snug text-text hover:text-accent"
+                        >
+                          {event.title}
+                        </button>
+                        {meta && <span className="text-sm text-text-faint">{meta}</span>}
+                        {event.description && (
+                          <p className="m-0 mt-1 line-clamp-3 max-w-prose whitespace-pre-wrap text-sm leading-relaxed text-text-muted">
+                            {event.description}
+                          </p>
+                        )}
+                        {names && <span className="text-sm text-text-muted">{names}</span>}
+                        {linked.length > 0 && (
+                          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                            {linked.map((photo) => (
+                              <Thumb key={photo.id} photo={photo} onOpen={onOpenPhoto} size="h-16 w-20" />
+                            ))}
+                          </div>
+                        )}
+                      </article>
+                    )
+                  })}
+
+                  {block.photos.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {block.photos.map((photo) => (
+                        <Thumb key={photo.id} photo={photo} onOpen={onOpenPhoto} size="h-28 w-36" />
+                      ))}
+                    </div>
+                  )}
+
+                  {block.docs.length > 0 && (
+                    <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                      {block.docs.map((doc) => {
+                        const meta = [documentTypeLabel(doc), dayOf(doc.document_date, doc.date_precision), personNames(doc.people, people)]
+                          .filter(Boolean)
+                          .join(" · ")
+                        return (
+                          <li key={doc.id}>
+                            <button
+                              type="button"
+                              onClick={() => onOpenDocument(doc.id)}
+                              className="group flex items-center gap-3 text-left"
+                            >
+                              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-accent-wash text-text-muted">
+                                <FileTextIcon size={16} />
+                              </span>
+                              <span className="flex min-w-0 flex-col">
+                                <span className="truncate text-sm font-semibold text-text group-hover:text-accent">
+                                  {doc.title}
+                                </span>
+                                <span className="truncate text-xs text-text-faint">{meta}</span>
+                              </span>
+                            </button>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </div>
             ))}
-          </ol>
+          </div>
         </section>
       ))}
     </div>

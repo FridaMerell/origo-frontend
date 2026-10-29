@@ -18,9 +18,6 @@ export function RecentExpensesWidget({ className = "" }: { className?: string })
         <div className="font-display text-4xl font-semibold leading-none text-text">
           {yearlyExpenses ? `${yearlyExpenses} kr` : "—"}
         </div>
-        <div className="mt-2 text-sm text-text-muted">
-          {yearlyExpenses ? "Registrerat för den valda anläggningen" : "Inga utgifter registrerade ännu"}
-        </div>
       </div>
 
       <Link href="/ekonomi" className="mt-1 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-link hover:text-link-hover">

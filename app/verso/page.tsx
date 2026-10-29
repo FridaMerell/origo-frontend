@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { getHeatingLogs, getOnThisDay, getResidentialHeating, type HeatingLog } from "@/app/lib/dal";
+import { getHeatingLogs, getOnThisDay, getResidentialHeating } from "@/app/lib/dal";
 import { getSelectedFacility } from "@/app/lib/selected-facility";
+import type { HeatingNow } from "@/app/verso/home/heating-widget";
 import HomeView from "./home-view";
 
 const HEATING_WINDOW_MS = 2 * 60 * 60 * 1000;
@@ -14,10 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-/** Logs from the last two hours, read from the newest page of the house's ResidentialHeating proxy. */
-async function getRecentHeating(
-  house: string
-): Promise<{ connection: string; logs: HeatingLog[]; error?: string } | null> {
+/** Logs from the last two hours, newest first, read from the newest page of the house's ResidentialHeating proxy. */
+async function getRecentHeating(house: string): Promise<HeatingNow | null> {
   const connection = await getResidentialHeating(house);
   if (!connection) return null;
   const { data, error } = await getHeatingLogs(connection.id, 1);

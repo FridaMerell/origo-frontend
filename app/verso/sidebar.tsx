@@ -18,8 +18,7 @@ const NAV_ITEMS: { label: string; href: string; icon: typeof CalendarIcon; modul
   { label: "Uppvärmning", href: "/uppvarmning", icon: ThermometerIcon, module: "residential_heating" },
   { label: "Ritningar", href: "/ritningar", icon: RulerIcon },
   { label: "Bilder", href: "/bilder", icon: ImageIcon },
-  { label: "Historia", href: "/historia", icon: ScrollTextIcon },
-  { label: "Ekonomi", href: "/ekonomi", icon: ReceiptIcon },
+  { label: "Historia", href: "/historia", icon: ScrollTextIcon },  { label: "Ekonomi", href: "/ekonomi", icon: ReceiptIcon },
   { label: "Uppdateringar", href: "/updates", icon: BellIcon },
 ]
 

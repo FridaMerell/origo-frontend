@@ -8,9 +8,9 @@ import { WeatherWidget } from "@/app/verso/home/weather-widget"
 import { NextVisitWidget } from "@/app/verso/home/next-visit-widget"
 import { UpdatesWidget } from "@/app/verso/home/updates-widget"
 import { RecentExpensesWidget } from "@/app/verso/home/recent-expenses-widget"
-import { HeatingWidget } from "@/app/verso/home/heating-widget"
+import { HeatingWidget, type HeatingNow } from "@/app/verso/home/heating-widget"
 import { OnThisDay } from "@/app/verso/historia/on-this-day"
-import type { HeatingLog, OnThisDay as OnThisDayData } from "@/app/lib/dal"
+import type { OnThisDay as OnThisDayData } from "@/app/lib/dal"
 import Link from "next/link"
 import { Fragment, type ReactNode } from "react"
 
@@ -38,7 +38,7 @@ const HomeView = ({
 }: {
   onThisDay: OnThisDayData | null
   /** Null when the house has no residential_heating module or no connection. */
-  heating: { connection: string; logs: HeatingLog[]; error?: string } | null
+  heating: HeatingNow | null
 }) => {
   const { selectedFacility } = useFacilities()
   const { bookings } = useBookingData()
@@ -63,14 +63,14 @@ const HomeView = ({
   const nextVisit = hasBookings ? bookings[0] : undefined
   const nextVisitLabel = nextVisit
     ? `Nästa vistelse börjar ${new Date(nextVisit.start_date).toLocaleDateString("sv-SE", { day: "numeric", month: "long" })}`
-    : "Samlad översikt för huset"
+    : null
 
   return (
     <div className="container flex min-w-0 flex-col gap-5 py-5 sm:gap-6 sm:py-8">
       <header className="flex min-w-0 flex-col gap-4 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between sm:pb-5">
         <div className="flex flex-col gap-0.5">
           <h1 className="font-display text-3xl font-semibold tracking-tight text-text sm:text-4xl">{selectedFacility.name}</h1>
-          <p className="mt-1 text-sm text-text-muted">{nextVisitLabel}</p>
+          {nextVisitLabel && <p className="mt-1 text-sm text-text-muted">{nextVisitLabel}</p>}
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
           <Drawer trigger="Lägg till uppdatering" triggerVariant="secondary" triggerSize="sm" triggerClassName="justify-center" title="Ny uppdatering">
@@ -94,7 +94,7 @@ const HomeView = ({
           hasWeather && { key: "weather", wide: false, render: (className) => <WeatherWidget facility={selectedFacility} className={className} /> },
           { key: "updates", wide: true, render: (className) => <UpdatesWidget className={className} /> },
           { key: "expenses", wide: false, render: (className) => <RecentExpensesWidget className={className} /> },
-          heating && { key: "heating", wide: true, render: (className) => <HeatingWidget connection={heating.connection} logs={heating.logs} error={heating.error} className={className} /> },
+          heating && { key: "heating", wide: true, render: (className) => <HeatingWidget heating={heating} className={className} /> },
         ])}
       </div>
     </div>

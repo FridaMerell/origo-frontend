@@ -12,32 +12,62 @@ export const formatTime = (timestamp: string) =>
 
 /**
  * Shared columns for the header, the log rows and their zone rows, so a zone's temperature and
- * setpoint sit under the log's. Phones: Tid, Inne, Bör, Ute, Läge. From `sm`: also Vind and Energi.
+ * setpoint sit under the log's. Narrow (phones, and always when `compact`): Tid, Inne, Bör, Ute,
+ * Läge. Wide (from `sm`, not compact): also Vind and Energi.
  */
-const GRID =
-  "grid grid-cols-[3rem_repeat(3,minmax(0,1fr))_4.5rem] items-baseline gap-x-3 sm:grid-cols-[3.5rem_repeat(5,minmax(0,1fr))_5rem]"
+const NARROW_GRID = "grid grid-cols-[3rem_repeat(3,minmax(0,1fr))_4.5rem] items-baseline gap-x-3"
+const WIDE_GRID = `${NARROW_GRID} sm:grid-cols-[3.5rem_repeat(5,minmax(0,1fr))_5rem]`
 const NUMBER = "text-right tabular-nums"
-const WIDE_ONLY = "hidden sm:block"
 const LAST_COLUMN = "col-[-2/-1] text-right"
 
+const layout = (compact: boolean) => ({
+  grid: compact ? NARROW_GRID : WIDE_GRID,
+  wideOnly: compact ? "hidden" : "hidden sm:block",
+})
+
 /** Column names; `className` sets the horizontal padding to match the rows. */
-export function HeatingLogHeader({ className = "" }: { className?: string }) {
+export function HeatingLogHeader({ className = "", compact = false }: { className?: string; compact?: boolean }) {
+  const { grid, wideOnly } = layout(compact)
   return (
-    <div className={`${GRID} border-b border-border py-2 text-xs text-text-muted ${className}`}>
+    <div className={`${grid} whitespace-nowrap border-b border-border py-2 text-xs text-text-muted ${className}`}>
       <span>Tid</span>
       <span className={NUMBER}>Inne °C</span>
       <span className={NUMBER}>Bör °C</span>
       <span className={NUMBER}>Ute °C</span>
-      <span className={`${NUMBER} ${WIDE_ONLY}`}>Vind</span>
-      <span className={`${NUMBER} ${WIDE_ONLY}`}>Energi</span>
+      <span className={`${NUMBER} ${wideOnly}`}>Vind</span>
+      <span className={`${NUMBER} ${wideOnly}`}>Energi</span>
       <span className="text-right">Läge</span>
     </div>
   )
 }
 
-type ZoneState = { loading: true } | { loading: false; zones?: HeatingZone[]; error?: string }
+export type ZoneState = { loading: true } | { loading: false; zones?: HeatingZone[]; error?: string }
 
-function Zones({ state, className }: { state: ZoneState; className: string }) {
+/**
+ * Zones of one log. They only come from the log's detail endpoint, so `load` fetches them on
+ * first use and keeps them; a failed fetch is retried on the next `load`.
+ */
+export function useLogZones(connection: string, log: HeatingLog) {
+  const [zones, setZones] = useState<ZoneState | null>(null)
+
+  async function load() {
+    if (zones && (zones.loading || !zones.error)) return
+    if (!Number.isInteger(log.id)) {
+      setZones({ loading: false, error: `ResidentialHeating skickade inget giltigt id för loggen (id: ${String(log.id)}).` })
+      return
+    }
+    setZones({ loading: true })
+    try {
+      setZones({ loading: false, ...(await getHeatingLogZones(connection, log.id)) })
+    } catch (err) {
+      setZones({ loading: false, error: err instanceof Error ? err.message : String(err) })
+    }
+  }
+
+  return { zones, load }
+}
+
+function Zones({ state, className, grid }: { state: ZoneState; className: string; grid: string }) {
   const message = state.loading
     ? "Hämtar zoner..."
     : state.error
@@ -52,7 +82,7 @@ function Zones({ state, className }: { state: ZoneState; className: string }) {
       {[...(state.loading ? [] : state.zones ?? [])]
         .sort((a, b) => a.area_code - b.area_code)
         .map((zone) => (
-          <li key={zone.area_code} className={`${GRID} py-1`}>
+          <li key={zone.area_code} className={`${grid} py-1`}>
             <span>Zon {zone.area_code}</span>
             <span className={`${NUMBER} text-text`}>{formatOneDecimal(zone.temperature)}</span>
             <span className={NUMBER}>{formatOneDecimal(zone.setpoint)}</span>
@@ -63,36 +93,27 @@ function Zones({ state, className }: { state: ZoneState; className: string }) {
   )
 }
 
-/**
- * One log as a button that expands to its zones. Zones only come from the log's detail endpoint,
- * so they are fetched on the first open and kept; a failed fetch is retried on the next open.
- */
+/** One log as a button that expands to its zones. */
 export function HeatingLogRow({
   connection,
   log,
   className = "",
+  compact = false,
 }: {
   connection: string
   log: HeatingLog
   /** Horizontal padding, shared by the row and its zones. */
   className?: string
+  /** Always the narrow columns, for tight spots such as the home widget. */
+  compact?: boolean
 }) {
+  const { grid, wideOnly } = layout(compact)
   const [open, setOpen] = useState(false)
-  const [zones, setZones] = useState<ZoneState | null>(null)
+  const { zones, load } = useLogZones(connection, log)
 
-  async function toggle() {
+  function toggle() {
     setOpen(!open)
-    if (open || (zones && (zones.loading || !zones.error))) return
-    if (!Number.isInteger(log.id)) {
-      setZones({ loading: false, error: `ResidentialHeating skickade inget giltigt id för loggen (id: ${String(log.id)}).` })
-      return
-    }
-    setZones({ loading: true })
-    try {
-      setZones({ loading: false, ...(await getHeatingLogZones(connection, log.id)) })
-    } catch (err) {
-      setZones({ loading: false, error: err instanceof Error ? err.message : String(err) })
-    }
+    if (!open) load()
   }
 
   return (
@@ -101,17 +122,17 @@ export function HeatingLogRow({
         type="button"
         aria-expanded={open}
         onClick={toggle}
-        className={`${GRID} w-full py-2.5 text-left text-sm text-text duration-150 hover:bg-surface-2 ${className}`}
+        className={`${grid} w-full py-2.5 text-left text-sm text-text duration-150 hover:bg-surface-2 ${className}`}
       >
         <span className="text-text-muted tabular-nums">{formatTime(log.timestamp)}</span>
         <span className={`${NUMBER} font-medium`}>{formatOneDecimal(log.w_avg_temperature)}</span>
         <span className={`${NUMBER} text-text-muted`}>{formatOneDecimal(log.w_avg_setpoint)}</span>
         <span className={`${NUMBER} text-text-muted`}>{formatOneDecimal(log.outside_temperature)}</span>
-        <span className={`${NUMBER} ${WIDE_ONLY} text-text-muted`}>{formatOneDecimal(log.wind_speed)}</span>
-        <span className={`${NUMBER} ${WIDE_ONLY} text-text-muted`}>{formatOneDecimal(log.energy)}</span>
+        <span className={`${NUMBER} ${wideOnly} text-text-muted`}>{formatOneDecimal(log.wind_speed)}</span>
+        <span className={`${NUMBER} ${wideOnly} text-text-muted`}>{formatOneDecimal(log.energy)}</span>
         <span className="text-right text-text-muted">{log.mode !== null ? MODE_LABELS[log.mode] : "–"}</span>
       </button>
-      {open && zones && <Zones state={zones} className={className} />}
+      {open && zones && <Zones state={zones} className={className} grid={grid} />}
     </div>
   )
 }

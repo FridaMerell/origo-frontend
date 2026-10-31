@@ -32,6 +32,7 @@ export default function SeasonLookup() {
   const router = useRouter()
   const [values, setValues] = useState<string[] | null>(null)
   const [season, setSeason] = useState<SeasonFilter>("all")
+  const [query, setQuery] = useState("")
   const [page, setPage] = useState(1)
   const [result, setResult] = useState<SeasonLookupResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -40,6 +41,7 @@ export default function SeasonLookup() {
   const [saving, startSaving] = useTransition()
   // Only the latest request may fill the list, whatever order the answers arrive in.
   const latestRequest = useRef(0)
+  const appliedSearch = useRef("")
 
   const load = async (nextValues: string[], nextSeason: SeasonFilter, nextPage: number) => {
     const request = ++latestRequest.current
@@ -50,6 +52,7 @@ export default function SeasonLookup() {
         values: nextValues,
         geoAreaId,
         season: nextSeason,
+        search: appliedSearch.current,
         page: nextPage,
         pageSize: PAGE_SIZE,
       })
@@ -74,10 +77,24 @@ export default function SeasonLookup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [geoAreaId])
 
+  useEffect(() => {
+    const search = query.trim()
+    if (!values || search === appliedSearch.current) return
+    const timer = setTimeout(() => {
+      appliedSearch.current = search
+      setPage(1)
+      reload(values, season, 1)
+    }, 300)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, season])
+
   // A failure here reaches CsvImport, which reports it through onError.
   const importValues = async (nextValues: string[]) => {
     setValues(nextValues)
     setSeason("all")
+    setQuery("")
+    appliedSearch.current = ""
     setPage(1)
     const data = await load(nextValues, "all", 1)
     return { matched: data?.species_ids.length ?? 0, unmatched: data?.unmatched ?? [] }
@@ -179,6 +196,14 @@ export default function SeasonLookup() {
             </form>
           </div>
 
+          <TextField
+            type="search"
+            aria-label="Sök i artlistan"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Namn eller Dyntaxa-ID"
+          />
+
           <div aria-busy={loading} className={`border border-border ${loading ? "opacity-60" : ""}`}>
             <div className={`border-b border-border py-2.5 text-sm text-text-muted max-md:hidden ${COLUMNS}`}>
               <span>Art</span>
@@ -210,7 +235,9 @@ export default function SeasonLookup() {
                 })}
               </ol>
             ) : (
-              <p className="px-4 py-12 text-center text-sm text-text-muted">{EMPTY_TEXT[season]}</p>
+              <p className="px-4 py-12 text-center text-sm text-text-muted">
+                {appliedSearch.current ? "Inga arter matchar sökningen." : EMPTY_TEXT[season]}
+              </p>
             )}
           </div>
 

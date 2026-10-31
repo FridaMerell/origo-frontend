@@ -86,6 +86,7 @@ export async function loadSeasonLookup(input: {
   values: string[]
   geoAreaId: string | null
   season: SeasonFilter
+  search: string
   page: number
   pageSize: number
 }): Promise<{ data?: SeasonLookupResult; error?: string }> {
@@ -98,6 +99,7 @@ export async function loadSeasonLookup(input: {
       values: [...new Set(input.values)],
       geo_area: input.geoAreaId,
       season: input.season,
+      search: input.search,
     }),
   })
   if (!response.ok) return { error: await responseErrorMessage(response) }

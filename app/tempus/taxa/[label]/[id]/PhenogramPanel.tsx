@@ -46,7 +46,7 @@ export default function PhenogramPanel({ id, geoAreaId, areaName }: { id: string
   }, [geoAreaId, id])
 
   if (phenogram === undefined) return <div role="status" aria-live="polite" className="flex min-h-80 w-full flex-col items-center justify-center gap-3 rounded border border-dashed border-border bg-surface-2/50 text-text-muted md:min-h-96"><Loader size={22} className="animate-spin text-accent" /><p className="text-sm">Hämtar aktivitetsdata…</p></div>
-  if (!phenogram) return <EmptyPhenogram areaName={areaName} />
+  if (!phenogram || phenogram.record_count === 0) return <EmptyPhenogram areaName={areaName} />
 
   return <><SeasonalStatusBadge status={phenogram.seasonal_status} /><Phenogram phenogram={phenogram} /></>
 }

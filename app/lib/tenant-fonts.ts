@@ -1,4 +1,5 @@
-import { Cormorant_Garamond, Fraunces, IBM_Plex_Mono, Karla, PT_Serif, Petrona, Source_Serif_4, Space_Grotesk } from "next/font/google"
+import { Fraunces, IBM_Plex_Mono, Karla, PT_Serif, Petrona, Source_Serif_4, Space_Grotesk } from "next/font/google"
+import localFont from "next/font/local"
 import type { TenantId } from "./tenant"
 
 // Each app's typefaces (app/styles/tokens/typography.css), as the classes that
@@ -51,11 +52,13 @@ const spaceGrotesk = Space_Grotesk({
 	subsets: ["latin"],
 	display: "swap",
 })
-const cormorant = Cormorant_Garamond({
+// Local because next/font/google fails the Turbopack build on this family.
+const cormorant = localFont({
 	variable: "--font-caelus-cormorant",
-	subsets: ["latin", "latin-ext"],
-	weight: ["400", "500", "600"],
-	style: ["normal", "italic"],
+	src: [
+		{ path: "../caelus/fonts/cormorant-garamond-latin.woff2", weight: "300 700", style: "normal" },
+		{ path: "../caelus/fonts/cormorant-garamond-italic-latin.woff2", weight: "300 700", style: "italic" },
+	],
 	display: "swap",
 })
 

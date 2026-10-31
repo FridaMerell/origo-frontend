@@ -34,17 +34,18 @@ export function PageSteps({
 
   return (
     <nav
+      data-pager={compact ? "side" : ""}
       aria-label={label}
       className={compact ? "flex items-baseline gap-1.5 text-[12px]" : "mt-6 flex items-center justify-center gap-5 font-mono text-[11px] uppercase tracking-[.14em]"}
     >
       {hasPrevious ? (
-        <SelectionLink change={{ [field]: page - 1 }} aria-label="Föregående" className={link}>{previous}</SelectionLink>
+        <SelectionLink change={{ [field]: page - 1 }} data-page-step="previous" aria-label="Föregående" className={link}>{previous}</SelectionLink>
       ) : (
         <span className={idle}>{previous}</span>
       )}
       <span className={compact ? "text-[10px]" : "text-text-faint"}>{compact ? page : `Sida ${page}`}</span>
       {hasNext ? (
-        <SelectionLink change={{ [field]: page + 1 }} aria-label="Nästa" className={link}>{next}</SelectionLink>
+        <SelectionLink change={{ [field]: page + 1 }} data-page-step="next" aria-label="Nästa" className={link}>{next}</SelectionLink>
       ) : (
         <span className={idle}>{next}</span>
       )}

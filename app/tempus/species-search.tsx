@@ -31,6 +31,16 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
   const matches = results.filter((species) =>
     normalizeName(species.swedish_name).includes(normalizedQuery),
   )
+  const showsMatches = query.trim().length >= 2 && !isDebouncing && !loading && !error && matches.length > 0
+
+  // The marked result belongs to one set of results; a new search starts unmarked again.
+  const resultsKey = `${debouncedQuery}\n${matches.length}`
+  const [active, setActive] = useState({ resultsKey, index: -1 })
+  const activeIndex = active.resultsKey === resultsKey ? active.index : -1
+
+  useEffect(() => {
+    if (activeIndex >= 0) document.getElementById(`species-lookup-option-${activeIndex}`)?.scrollIntoView({ block: "nearest" })
+  }, [activeIndex])
 
   useEffect(() => {
     if (!open) return
@@ -92,6 +102,24 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (!showsMatches) return
+                if (event.key === "ArrowDown") {
+                  event.preventDefault()
+                  setActive({ resultsKey, index: Math.min(activeIndex + 1, matches.length - 1) })
+                } else if (event.key === "ArrowUp") {
+                  event.preventDefault()
+                  setActive({ resultsKey, index: activeIndex === -1 ? matches.length - 1 : Math.max(activeIndex - 1, 0) })
+                } else if (event.key === "Enter") {
+                  event.preventDefault()
+                  document.getElementById(`species-lookup-option-${Math.max(activeIndex, 0)}`)?.click()
+                }
+              }}
+              autoComplete="off"
+              role="combobox"
+              aria-expanded={showsMatches}
+              aria-controls="species-lookup-results"
+              aria-activedescendant={showsMatches && activeIndex >= 0 ? `species-lookup-option-${activeIndex}` : undefined}
               placeholder="Sök på svenskt artnamn"
               className="h-12 w-full rounded-md border border-field-border bg-bg py-2 pl-10 pr-3 text-text placeholder:text-text-faint focus:outline-2 focus:outline-offset-2 focus:outline-focus-ring"
             />
@@ -108,13 +136,14 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
           ) : matches.length === 0 ? (
             <p className="px-3 py-5 text-sm text-text-muted">Inga svenska artnamn matchar “{query.trim()}”.</p>
           ) : (
-            <ul className="grid gap-1" aria-label="Sökresultat">
-              {matches.map((species) => (
-                <li key={species.id}>
+            <ul id="species-lookup-results" role="listbox" className="grid gap-1" aria-label="Sökresultat">
+              {matches.map((species, index) => (
+                <li key={species.id} role="option" aria-selected={activeIndex === index}>
                   <Link
+                    id={`species-lookup-option-${index}`}
                     href={`/taxa/oversikt/${species.dyntaxa_taxon_id}`}
                     onClick={onClose}
-                    className="flex items-center justify-between gap-4 rounded-md px-3 py-3 no-underline transition-colors hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-focus-ring"
+                    className={`flex items-center justify-between gap-4 rounded-md px-3 py-3 no-underline transition-colors hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-focus-ring ${activeIndex === index ? "bg-accent-wash" : ""}`}
                   >
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-text">{species.swedish_name}</span>

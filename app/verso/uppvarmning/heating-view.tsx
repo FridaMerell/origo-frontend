@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { groupItems } from "@/app/components/ui/GroupedList"
+import { LinkButton } from "@/app/components/ui/Button"
 import { Card } from "@/app/components/ui/Card"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { EmptyState } from "@/app/components/ui/EmptyState"
@@ -35,14 +36,21 @@ export default function HeatingView({
             : undefined
         }
         actions={
-          <Drawer
-            trigger={connection ? "Ändra koppling" : "Koppla"}
-            triggerSize="sm"
-            triggerClassName="justify-center"
-            title="ResidentialHeating"
-          >
-            <ResidentialHeatingForm connection={connection} />
-          </Drawer>
+          <>
+            {connection && (
+              <LinkButton href="/uppvarmning/graf" variant="secondary" size="sm" className="no-underline">
+                Graf
+              </LinkButton>
+            )}
+            <Drawer
+              trigger={connection ? "Ändra koppling" : "Koppla"}
+              triggerSize="sm"
+              triggerClassName="justify-center"
+              title="ResidentialHeating"
+            >
+              <ResidentialHeatingForm connection={connection} />
+            </Drawer>
+          </>
         }
       />
 

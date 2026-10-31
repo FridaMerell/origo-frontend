@@ -5,7 +5,7 @@ import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
 import { getCurrentUser } from "@/app/lib/dal/auth"
 import { getTempusObservationItem, type TempusObservation } from "@/app/lib/dal/tempus/observations"
-import { getTempusSpeciesCategoriesAll } from "@/app/lib/dal/tempus/species"
+import { getTempusSpeciesCategoriesAll, type TempusSeasonalOverview } from "@/app/lib/dal/tempus/species"
 import {
   getTempusSpeciesItems,
   getTempusSpeciesPage,
@@ -66,6 +66,42 @@ export async function matchSpeciesValues(values: string[]): Promise<{ matchedIds
     pageNumber += 1
   }
   return { matchedIds: [...matchedIds], unmatched: [...pending].map((key) => normalized.get(key) ?? key) }
+}
+
+export type SeasonFilter = "all" | "in_season" | "out_of_season"
+
+export type SeasonLookupResult = {
+  count: number
+  next: string | null
+  previous: string | null
+  results: TempusSeasonalOverview[]
+  in_season_count: number
+  out_of_season_count: number
+  species_ids: string[]
+  without_phenogram: { id: string; swedish_name: string; scientific_name: string }[]
+  unmatched: string[]
+}
+
+export async function loadSeasonLookup(input: {
+  values: string[]
+  geoAreaId: string | null
+  season: SeasonFilter
+  page: number
+  pageSize: number
+}): Promise<{ data?: SeasonLookupResult; error?: string }> {
+  if (!(await getCurrentUser())) return { error: "Du måste vara inloggad." }
+  const search = new URLSearchParams({ page: String(input.page), page_size: String(input.pageSize) })
+  const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.speciesSeasonLookup}?${search}`, {
+    method: "POST",
+    headers: await authedJsonHeaders(),
+    body: JSON.stringify({
+      values: [...new Set(input.values)],
+      geo_area: input.geoAreaId,
+      season: input.season,
+    }),
+  })
+  if (!response.ok) return { error: await responseErrorMessage(response) }
+  return { data: (await response.json()) as SeasonLookupResult }
 }
 
 export async function loadSpeciesItems(ids: string[]): Promise<TempusSpecies[]> {

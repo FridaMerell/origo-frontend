@@ -18,7 +18,7 @@ const STRIP = "w-full md:max-w-72 md:justify-self-end"
 // The phenogram, as it was drawn from the start: the year as twelve month
 // cells with each month's letter under its cell. Active months are filled in
 // the status colour and the current month is outlined.
-function PhenoStrip({ species, currentMonth }: { species: HomeSpecies; currentMonth: number }) {
+export function PhenoStrip({ species, currentMonth }: { species: HomeSpecies; currentMonth: number }) {
   const status = STATUS_META[species.seasonal_status.status]
   const months = activeMonths(species.activity_window)
   return (

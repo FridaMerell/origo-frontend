@@ -42,6 +42,8 @@ export function Lightbox({
   if (captions) {
     return (
       <div
+        role="dialog"
+        aria-modal="true"
         className="fixed inset-0 z-50 grid grid-rows-[minmax(0,1fr)_auto] gap-4 bg-[rgb(14,11,8)] pt-14 pb-4 sm:px-16 sm:pt-16 sm:pb-8"
         onPointerDown={closeOnBackdrop}
       >
@@ -99,6 +101,8 @@ export function Lightbox({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose()

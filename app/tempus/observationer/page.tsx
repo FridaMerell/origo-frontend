@@ -239,15 +239,15 @@ export default async function ObservationsPage({ searchParams }: PageProps) {
           )}
 
           {pageCount > 1 ? (
-            <nav aria-label="Observationer, sidor" className="mt-3 flex items-center justify-between text-xs">
+            <nav data-pager="" aria-label="Observationer, sidor" className="mt-3 flex items-center justify-between text-xs">
               {page > 1 ? (
-                <Link href={hrefFor(page - 1)} className={STEP}>‹ Föregående</Link>
+                <Link data-page-step="previous" href={hrefFor(page - 1)} className={STEP}>‹ Föregående</Link>
               ) : (
                 <span className="font-display italic text-text-faint">‹ Föregående</span>
               )}
               <span className="font-display italic text-text-muted">Blad {page} av {pageCount}</span>
               {page < pageCount ? (
-                <Link href={hrefFor(page + 1)} className={STEP}>Nästa ›</Link>
+                <Link data-page-step="next" href={hrefFor(page + 1)} className={STEP}>Nästa ›</Link>
               ) : (
                 <span className="font-display italic text-text-faint">Nästa ›</span>
               )}

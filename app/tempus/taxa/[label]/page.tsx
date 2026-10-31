@@ -99,9 +99,10 @@ const Page = async ({ params, searchParams }: {
       )}
 
       {(next || previous) && (
-        <nav className="flex items-center justify-between" aria-label="Sidnavigering">
+        <nav data-pager="" className="flex items-center justify-between" aria-label="Sidnavigering">
           {previous ? (
             <Link
+              data-page-step="previous"
               href={hrefFor(page - 1)}
               className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
             >
@@ -116,6 +117,7 @@ const Page = async ({ params, searchParams }: {
           </span>
           {next ? (
             <Link
+              data-page-step="next"
               href={hrefFor(page + 1)}
               className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
             >

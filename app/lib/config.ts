@@ -152,6 +152,7 @@ export const TEMPUS_ENDPOINTS = {
     `/api/tempus/species-follows/unfollow/?species=${encodeURIComponent(taxonId)}`,
   species: "/api/tempus/species/",
   speciesResolve: "/api/tempus/species/resolve/",
+  speciesSeasonLookup: "/api/tempus/species/season-lookup/",
   speciesSeasonalOverview: "/api/tempus/species/seasonal-overview/",
   speciesSeasonalLandscapes: "/api/tempus/species/seasonal-landscapes/",
   speciesImportChecklist: "/api/tempus/species/import-checklist/",

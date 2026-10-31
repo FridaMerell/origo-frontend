@@ -383,9 +383,10 @@ export default function ChecklistBuilder({
 											</p>
 										)}
 										{selectedTotalPages > 1 ? (
-											<div className='mt-2 flex items-center justify-between text-xs text-text-muted'>
+											<div data-pager='' className='mt-2 flex items-center justify-between text-xs text-text-muted'>
 												<button
 													type='button'
+													data-page-step='previous'
 													disabled={effectiveSelectedPage === 1}
 													onClick={() =>
 														setSelectedPage(effectiveSelectedPage - 1)
@@ -398,6 +399,7 @@ export default function ChecklistBuilder({
 												</span>
 												<button
 													type='button'
+													data-page-step='next'
 													disabled={
 														effectiveSelectedPage === selectedTotalPages
 													}

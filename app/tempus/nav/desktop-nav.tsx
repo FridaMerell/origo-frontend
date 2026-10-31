@@ -201,6 +201,7 @@ export function DesktopNav({
               type="button"
               onClick={onOpenSpeciesSearch}
               aria-label="Öppna artsök"
+              aria-keyshortcuts="Control+K Meta+K"
               title="Artsök"
               className="hidden h-10 items-center gap-2 rounded-md px-2.5 text-sm text-text-muted transition-colors hover:bg-accent-wash hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring sm:flex"
             >

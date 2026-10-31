@@ -258,9 +258,10 @@ const Page = async ({ params, searchParams }: {
         </Card>
 
         {(observations.next || observations.previous) && (
-          <nav className="flex items-center justify-between" aria-label="Sidnavigering för observationer">
+          <nav data-pager="" className="flex items-center justify-between" aria-label="Sidnavigering för observationer">
             {observations.previous ? (
               <Link
+                data-page-step="previous"
                 href={observationHref(observationPage - 1)}
                 className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
               >
@@ -275,6 +276,7 @@ const Page = async ({ params, searchParams }: {
             </span>
             {observations.next ? (
               <Link
+                data-page-step="next"
                 href={observationHref(observationPage + 1)}
                 className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
               >

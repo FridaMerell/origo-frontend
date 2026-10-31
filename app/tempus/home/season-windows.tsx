@@ -36,7 +36,7 @@ function SeasonWindow({ kind, list, view }: { kind: SeasonWindowKind; list: Home
   const page = useOverview().selection[pageField]
 
   return (
-    <div className="min-w-0">
+    <div data-pager-scope="" className="min-w-0">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className={`${LABEL} text-text`}>{title}</h2>
         <div className="flex items-baseline gap-3 font-mono text-[11px] tabular-nums text-text-muted">

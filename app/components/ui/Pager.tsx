@@ -29,9 +29,10 @@ export function Pager({
 
   const Container = as
   return (
-    <Container className={className}>
+    <Container data-pager="" className={className}>
       <button
         type="button"
+        data-page-step="previous"
         disabled={disabled || page === 1}
         onClick={() => onPageChange(page - 1)}
         className={buttonClassName}
@@ -41,6 +42,7 @@ export function Pager({
       <span>{label ?? `Sida ${page} av ${totalPages}`}</span>
       <button
         type="button"
+        data-page-step="next"
         disabled={disabled || page === totalPages}
         onClick={() => onPageChange(page + 1)}
         className={buttonClassName}

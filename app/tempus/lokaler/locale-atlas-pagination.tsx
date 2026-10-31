@@ -17,6 +17,7 @@ export function LocaleAtlasPagination({
 
   return (
     <nav
+      data-pager=""
       className="grid grid-cols-[auto_1fr_auto] items-baseline gap-x-2 px-4 py-3 text-sm text-text-muted"
       aria-label={ariaLabel}
     >
@@ -25,6 +26,7 @@ export function LocaleAtlasPagination({
         {page > 1 ? (
           <button
             type="button"
+            data-page-step="previous"
             onClick={() => onPageChange(page - 1)}
             className="whitespace-nowrap font-display italic hover:text-accent"
           >
@@ -36,6 +38,7 @@ export function LocaleAtlasPagination({
         {page < pageCount ? (
           <button
             type="button"
+            data-page-step="next"
             onClick={() => onPageChange(page + 1)}
             className="whitespace-nowrap font-display italic hover:text-accent"
           >

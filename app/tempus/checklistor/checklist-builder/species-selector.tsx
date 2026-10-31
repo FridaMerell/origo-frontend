@@ -1,6 +1,7 @@
 import { useDeferredValue } from "react"
 import { CategoryTreeSelect } from "@/app/components/ui/CategoryTreeSelect"
 import { Pager } from "@/app/components/ui/Pager"
+import { matchSpeciesValues } from "@/app/tempus/_actions/species"
 import { speciesName } from "@/app/tempus/_state/tempus-context"
 import type { TempusSpecies, TempusSpeciesCategory } from "@/app/lib/dal"
 import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
@@ -63,7 +64,14 @@ export function SpeciesSelector({
         </div>
       </div>
 
-      <CsvImport onMatched={onCsvMatched} messages={messages} />
+      <CsvImport
+        onValues={async (values) => {
+          const { matchedIds, unmatched } = await matchSpeciesValues(values)
+          onCsvMatched(matchedIds)
+          return { matched: matchedIds.length, unmatched }
+        }}
+        messages={messages}
+      />
 
       <div className="px-4 py-4 sm:px-5">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">

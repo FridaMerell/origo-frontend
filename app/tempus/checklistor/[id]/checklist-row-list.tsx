@@ -84,11 +84,13 @@ export function ChecklistRowList({
 
       {rows.length > 0 ? (
         <nav
+          data-pager=""
           aria-label="Sidnavigering för checklistan"
           className="mt-2 grid grid-cols-[1fr_auto_1fr] border border-border font-display text-xs italic text-text-muted"
         >
           <button
             type="button"
+            data-page-step="previous"
             disabled={searchLoading || !hasPrevious}
             onClick={() => onChangePage(resultPage - 1)}
             className="border-r border-border px-3 py-2 text-center underline underline-offset-2 hover:text-text disabled:text-text-faint disabled:no-underline"
@@ -103,6 +105,7 @@ export function ChecklistRowList({
           </span>
           <button
             type="button"
+            data-page-step="next"
             disabled={searchLoading || !hasNext}
             onClick={() => onChangePage(resultPage + 1)}
             className="border-l border-border px-3 py-2 text-center underline underline-offset-2 hover:text-text disabled:text-text-faint disabled:no-underline"

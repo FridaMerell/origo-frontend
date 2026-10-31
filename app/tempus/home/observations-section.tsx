@@ -68,15 +68,15 @@ export function ObservationsSection({
       </ul>
 
       {pageCount > 1 ? (
-        <nav aria-label="Observationer, sidor" className={`mt-6 flex items-center justify-center gap-5 ${LABEL}`}>
+        <nav data-pager="" aria-label="Observationer, sidor" className={`mt-6 flex items-center justify-center gap-5 ${LABEL}`}>
           {page > 1 ? (
-            <Link href={hrefFor(page - 1)} scroll={false} className={STEP}>‹ Föregående</Link>
+            <Link data-page-step="previous" href={hrefFor(page - 1)} scroll={false} className={STEP}>‹ Föregående</Link>
           ) : (
             <span className="text-text-faint">‹ Föregående</span>
           )}
           <span className="text-text-faint">Sida {page}</span>
           {page < pageCount ? (
-            <Link href={hrefFor(page + 1)} scroll={false} className={STEP}>Nästa ›</Link>
+            <Link data-page-step="next" href={hrefFor(page + 1)} scroll={false} className={STEP}>Nästa ›</Link>
           ) : (
             <span className="text-text-faint">Nästa ›</span>
           )}

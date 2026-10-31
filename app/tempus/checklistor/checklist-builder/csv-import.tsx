@@ -1,5 +1,4 @@
 import { useRef, useState } from "react"
-import { matchSpeciesValues } from "@/app/tempus/_actions/species"
 
 const MAX_CSV_BYTES = 2 * 1024 * 1024
 
@@ -66,10 +65,10 @@ function detectDelimiter(line: string) {
 }
 
 export function CsvImport({
-  onMatched,
+  onValues,
   messages: { onError, onClearMessages },
 }: {
-  onMatched: (matchedIds: string[]) => void
+  onValues: (values: string[]) => Promise<{ matched: number; unmatched: string[] }>
   messages: FormMessageCallbacks
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -113,10 +112,8 @@ export function CsvImport({
         const cells = cellsIn(row, delimiter)
         return indexes.map((index) => cells[index]?.trim()).filter(Boolean)
       })
-      const { matchedIds, unmatched } = await matchSpeciesValues(values)
-
-      onMatched(matchedIds)
-      setImportResult({ fileName: file.name, matched: matchedIds.length, unmatched })
+      const { matched, unmatched } = await onValues(values)
+      setImportResult({ fileName: file.name, matched, unmatched })
     } catch (caught) {
       onError(caught instanceof Error ? caught.message : "CSV-filen kunde inte läsas.")
     } finally {

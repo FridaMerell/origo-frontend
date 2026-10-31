@@ -1,7 +1,5 @@
 import { useRef, useState } from "react"
 
-const MAX_CSV_BYTES = 2 * 1024 * 1024
-
 const NAME_HEADERS = new Set([
   "art",
   "artnamn",
@@ -66,9 +64,11 @@ function detectDelimiter(line: string) {
 
 export function CsvImport({
   onValues,
+  maxMegabytes = 2,
   messages: { onError, onClearMessages },
 }: {
   onValues: (values: string[]) => Promise<{ matched: number; unmatched: string[] }>
+  maxMegabytes?: number
   messages: FormMessageCallbacks
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -84,8 +84,8 @@ export function CsvImport({
       onError("Välj en CSV-fil.")
       return
     }
-    if (file.size > MAX_CSV_BYTES) {
-      onError("CSV-filen får vara högst 2 MB.")
+    if (file.size > maxMegabytes * 1024 * 1024) {
+      onError(`CSV-filen får vara högst ${maxMegabytes} MB.`)
       return
     }
 
@@ -151,7 +151,7 @@ export function CsvImport({
           <p className="text-sm font-semibold text-text">
             {importing ? "Läser artlistan…" : "Släpp en CSV här eller välj fil"}
           </p>
-          <p className="mt-1 text-xs">Svenskt namn, vetenskapligt namn eller Dyntaxa-ID · max 2 MB</p>
+          <p className="mt-1 text-xs">Svenskt namn, vetenskapligt namn eller Dyntaxa-ID · max {maxMegabytes} MB</p>
         </div>
         <input
           ref={fileInputRef}

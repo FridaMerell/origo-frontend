@@ -78,7 +78,7 @@ export type SeasonLookupResult = {
   in_season_count: number
   out_of_season_count: number
   species_ids: string[]
-  without_phenogram: { id: string; swedish_name: string; scientific_name: string }[]
+  without_phenogram: { swedish_name: string; scientific_name: string }[]
   unmatched: string[]
 }
 

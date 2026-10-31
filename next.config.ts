@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
     // ~2.4GB of .sst here and reloaded into the Node process until .next was wiped.
     // Off = no unbounded disk cache; cold compile is slower, sessions stay usable.
     turbopackFileSystemCacheForDev: false,
+    // Tempus sends imported species lists of up to 5000 species through server actions.
+    serverActions: { bodySizeLimit: "2mb" },
   },
   images: {
     // /api/files always carries a dynamic ?url= value, so search can't be

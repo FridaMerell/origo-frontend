@@ -131,6 +131,7 @@ export default function SeasonLookup() {
       <section className="border-x border-t border-border">
         <CsvImport
           onValues={importValues}
+          maxMegabytes={20}
           messages={{ onError: setError, onClearMessages: () => setError(null) }}
         />
       </section>

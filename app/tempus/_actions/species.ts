@@ -68,7 +68,7 @@ export async function matchSpeciesValues(values: string[]): Promise<{ matchedIds
   return { matchedIds: [...matchedIds], unmatched: [...pending].map((key) => normalized.get(key) ?? key) }
 }
 
-export type SeasonFilter = "all" | "in_season" | "out_of_season"
+export type SeasonFilter = "all" | "in_season" | "at_peak" | "out_of_season"
 
 export type SeasonLookupResult = {
   count: number
@@ -76,6 +76,7 @@ export type SeasonLookupResult = {
   previous: string | null
   results: TempusSeasonalOverview[]
   in_season_count: number
+  at_peak_count: number
   out_of_season_count: number
   species_ids: string[]
   without_phenogram: { swedish_name: string; scientific_name: string }[]

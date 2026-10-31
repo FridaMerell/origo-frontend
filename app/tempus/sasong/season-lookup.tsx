@@ -23,6 +23,7 @@ const COLUMNS = "grid grid-cols-1 gap-x-8 gap-y-1.5 px-4 md:grid-cols-[minmax(0,
 const EMPTY_TEXT: Record<SeasonFilter, string> = {
   all: "Inga arter i listan har ett fenogram.",
   in_season: "Inga arter i listan är i säsong just nu.",
+  at_peak: "Inga arter i listan har toppsäsong just nu.",
   out_of_season: "Alla arter i listan är i säsong just nu.",
 }
 
@@ -138,6 +139,7 @@ export default function SeasonLookup() {
     ? [
         { value: "all", label: "Alla", count: result.in_season_count + result.out_of_season_count },
         { value: "in_season", label: "I säsong", count: result.in_season_count },
+        { value: "at_peak", label: "Toppsäsong", count: result.at_peak_count },
         { value: "out_of_season", label: "Ur säsong", count: result.out_of_season_count },
       ]
     : []

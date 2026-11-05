@@ -15,6 +15,7 @@ import {
   SwedenMap,
   type SwedenMapFeature,
 } from "@/app/tempus/ui/biotope-map"
+import type { SwedenMapPoint } from "@/app/tempus/ui/biotope-map/SwedenMap"
 import { biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import { getTempusAllObservationsPage } from "@/app/lib/dal/tempus/observations"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
@@ -89,6 +90,12 @@ const Page = async ({ params, searchParams }: {
     ]
     : []
 
+  const observationPoints: SwedenMapPoint[] = observations.results.flatMap((observation) =>
+    observation.location.type === "Point"
+      ? [{ id: observation.id, coordinates: observation.location.coordinates }]
+      : [],
+  )
+
   const facts: Array<[string, string]> = [
     ["Vetenskapligt namn", species.scientific_name],
     ["Svenskt namn", species.swedish_name || "—"],
@@ -104,15 +111,15 @@ const Page = async ({ params, searchParams }: {
 
   return (
     <div className="container py-5 mx-auto flex flex-col gap-5">
-      <div className="flex flex-col md:flex-row gap-3 justify-between items-center">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-row gap-3 justify-between items-start md:items-center">
+        <div className="flex min-w-0 flex-col gap-1">
           <Link
             href={label === "oversikt" ? "/?view=all" : fromHomeOverview ? "/" : `/taxa/${encodeURIComponent(label)}`}
             className="w-fit text-sm text-text-muted hover:text-text"
           >
             ← {label === "oversikt" ? "Alla arter" : fromHomeOverview ? "Säsongsöversikt" : category?.label ?? "Okänd kategori"}
           </Link>
-          <h1 className="font-display text-3xl font-semibold tracking-tight md:mt-3 capitalize">
+          <h1 className="mt-2 break-words font-display text-2xl font-semibold tracking-tight capitalize sm:text-3xl md:mt-3">
             {speciesName(species)}
           </h1>
           {species.swedish_name && species.scientific_name !== species.swedish_name && (
@@ -127,11 +134,11 @@ const Page = async ({ params, searchParams }: {
             Visa artfakta
           </a>
         </div>
-        <div className="flex items-center justify-end">
+        <div className="flex shrink-0 items-center justify-end max-md:mt-7">
           <FollowButton taxa={String(species.dyntaxa_taxon_id)} initial={species.is_followed} initialNotify={species.is_notify ?? false} />
         </div>
       </div>
-      <Card className="relative overflow-hidden shadow-sm min-h-70">
+      <Card className="relative overflow-hidden shadow-sm min-h-70 max-sm:pb-40">
 
         <BiotopeMap
           {...biotopePropsFromSpecies(species)}
@@ -142,15 +149,15 @@ const Page = async ({ params, searchParams }: {
           style={{ width: "100%", height: "100%" }}
         />
 
-        <div className="absolute inset-0 bg-linear-to-r from-surface via-surface/12 to-transparent" />
-        <dl className="relative z-10 grid grid-cols-1 gap-x-10 gap-y-4 sm:grid-cols-2 w-max">
+        <div className="absolute inset-0 bg-linear-to-b from-surface via-surface/60 to-transparent sm:bg-linear-to-r sm:via-surface/12" />
+        <dl className="relative z-10 grid grid-cols-2 gap-x-6 gap-y-4 sm:gap-x-10 sm:w-max">
           {facts.map(([term, value]) => (
-            <div key={term} className="flex flex-col gap-0.5">
+            <div key={term} className="flex min-w-0 flex-col gap-0.5">
               <dt className="text-sm text-text-muted">{term}</dt>
-              <dd className="text-sm text-text">{value}</dd>
+              <dd className="break-words text-sm text-text">{value}</dd>
             </div>
           ))}
-          <div className="flex flex-col gap-0.5">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <dt className="text-sm text-text-muted">Kategorier</dt>
             <dd className="text-sm text-text">
               {species.categories.length === 0 ? "—" : species.categories.map((speciesCategory, index) => (
@@ -168,8 +175,8 @@ const Page = async ({ params, searchParams }: {
 
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-xl font-semibold tracking-tight">Aktivitet</h2>
-        <Card className="flex flex-col md:flex-row gap-3 items-end">
-          <div className="md:w-2/3 flex-col flex justify-space gap-10">
+        <Card className="flex flex-col md:flex-row gap-3 md:items-end">
+          <div className="min-w-0 md:w-2/3 flex-col flex justify-space gap-6 md:gap-10">
             <PhenogramPanel
               id={id}
               geoAreaId={selectedGeoArea?.id}
@@ -198,8 +205,9 @@ const Page = async ({ params, searchParams }: {
           </div>
 
           <SwedenMap
-            className="md:w-1/3"
+            className="max-md:max-w-44 md:w-1/3"
             areas={selectedMapAreas}
+            points={observationPoints}
             title={selectedGeoArea ? `${selectedGeoArea.name} markerat på Sverigekartan` : "Sverigekarta"}
           />
         </Card>

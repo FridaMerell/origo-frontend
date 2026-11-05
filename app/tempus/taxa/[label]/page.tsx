@@ -4,6 +4,7 @@ import FollowButton from "./[id]/FollowButton"
 import TaxonSearch from "./taxon-search"
 import ImportSpeciesChecklistForm from "../import-species-checklist-form"
 import AddSpeciesPanel from "../add-species-panel"
+import RebuildPhenogramsButton from "../rebuild-phenograms-button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const Page = async ({ params, searchParams }: {
@@ -47,14 +48,17 @@ const Page = async ({ params, searchParams }: {
     <div className="container py-5 mx-auto flex flex-col gap-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3 md:mt-5">
         <h1 className="font-display text-3xl font-semibold tracking-tight">{category?.label}</h1>
-        <a
-          href={`https://artfakta.se/taxa/${category.taxon_id}/information`}
-          target="_blank"
-          rel="noreferrer"
-          className="font-display text-sm italic text-accent underline decoration-accent/40 underline-offset-4 hover:text-accent-hover"
-        >
-          Visa artfakta
-        </a>
+        <div className="flex flex-wrap items-baseline gap-4">
+          <RebuildPhenogramsButton categoryId={category.id} categoryLabel={category.label} />
+          <a
+            href={`https://artfakta.se/taxa/${category.taxon_id}/information`}
+            target="_blank"
+            rel="noreferrer"
+            className="font-display text-sm italic text-accent underline decoration-accent/40 underline-offset-4 hover:text-accent-hover"
+          >
+            Visa artfakta
+          </a>
+        </div>
       </div>
 
       <TaxonSearch />

@@ -158,6 +158,7 @@ export const TEMPUS_ENDPOINTS = {
   speciesImportChecklist: "/api/tempus/species/import-checklist/",
   speciesRegister: "/api/tempus/species/register/",
   speciesRegisterBatch: "/api/tempus/species/register-batch/",
+  speciesGeneratePhenograms: "/api/tempus/species/generate-phenograms/",
   speciesSearch: "/api/tempus/species/search/",
   speciesCategories: "/api/tempus/species-categories/",
   speciesPhenogram: (id: string) => `/api/tempus/species/${id}/phenogram/`,

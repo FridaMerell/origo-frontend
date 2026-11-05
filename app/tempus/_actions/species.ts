@@ -115,6 +115,17 @@ export async function loadSpeciesPhenogram(id: string, geoAreaId?: string) {
   return getTempusSpeciesPhenogram(id, geoAreaId)
 }
 
+export async function rebuildCategoryPhenograms(categoryId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!(await getCurrentUser())) return { ok: false, error: "Du måste vara inloggad." }
+  const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesGeneratePhenograms, {
+    method: "POST",
+    headers: await authedJsonHeaders(),
+    body: JSON.stringify({ species_category: categoryId }),
+  })
+  if (response.ok) return { ok: true }
+  return { ok: false, error: await responseErrorMessage(response) }
+}
+
 export type SpeciesDetail = {
   species: TempusSpecies
   observation: TempusObservation | null

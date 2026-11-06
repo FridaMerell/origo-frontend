@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { headers } from "next/headers";
 import { getCurrentUser } from "@/app/lib/dal/auth";
@@ -23,6 +23,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Origo",
   description: "Origo application",
+};
+
+// iOS Safari zoomar in på fält med textstorlek under 16px när de får fokus,
+// även när fokus återställs efter att skärmen tänts. maximumScale stoppar den
+// automatiska zoomen; iOS låter fortfarande användaren nypzooma.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

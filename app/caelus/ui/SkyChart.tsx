@@ -11,6 +11,7 @@ import EventsPanel from "./EventsPanel"
 import InfoPanel, { type PanelInfo } from "./InfoPanel"
 import { answerQuiz, createQuiz, nextQuestion, quizConstellations, selectionPool, type Quiz, type QuizSelection } from "./quiz"
 import QuizPanel from "./QuizPanel"
+import SkySearch, { type Sought } from "./SkySearch"
 import { SKY_CULTURES, SWEDISH_NAMES, type SkyCulture } from "./sky-cultures"
 import { bodyInfo, figureInfo, starInfo, type SelectedStar, type StarDetails } from "./sky-info"
 import { cloudCoverAt, describeCloudCover, fetchCloudCover, type CloudStep } from "./sky/clouds"
@@ -18,7 +19,7 @@ import { onDeviceDirection, stopFollowing, useFollowing } from "./sky/compass"
 import { eventsAround, sameDay } from "./sky/events"
 import { createPainter, type Painter } from "./sky/painter"
 import { BODIES, buildScene } from "./sky/scene"
-import type { Catalogue, Position } from "./sky/types"
+import type { Catalogue, Position, Scene } from "./sky/types"
 import { prepareMilkyWay, type MilkyWayData } from "./sky/milky-way"
 import { useGlidingTime } from "./sky/use-gliding-time"
 import TimeControls from "./TimeControls"
@@ -61,6 +62,16 @@ export function parsePosition(stored: string | null): Position | null {
 function formatPosition({ latitude, longitude }: Position) {
 	const degrees = (value: number) => Math.abs(value).toFixed(2).replace(".", ",")
 	return `${degrees(latitude)}° ${latitude < 0 ? "S" : "N"}, ${degrees(longitude)}° ${longitude < 0 ? "V" : "O"}`
+}
+
+// Var det sökta står på himlen och vad det heter. Ormen är två figurer; den som står högst gäller.
+function soughtPoint(scene: Scene, sought: Sought) {
+	if (sought.kind === "body") {
+		const body = scene.allBodies.find(item => item.body === sought.body)
+		return body ? { at: body.at, name: body.name } : null
+	}
+	const figure = scene.figures.filter(item => item.id === sought.id).sort((a, b) => b.at[1] - a.at[1])[0]
+	return figure ? { at: figure.at, name: figure.name } : null
 }
 
 function twilight(sunAltitude: number) {
@@ -139,7 +150,9 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const [locating, setLocating] = useState(false)
 	const [locationError, setLocationError] = useState<string | null>(null)
 	// Om blicken följer telefonen slås av och på i menyn; felet står under kartan.
-	const { error: followError } = useFollowing()
+	const { on: following, error: followError } = useFollowing()
+	// Det som sökts fram. Det gäller så länge det är framklickat; väljs något annat släpps det.
+	const [sought, setSought] = useState<Sought | null>(null)
 
 	useEffect(() => {
 		const unsubscribe = onDeviceDirection(direction => painterRef.current?.follow(direction))
@@ -296,6 +309,45 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		setChosenBody(null)
 		if (chosenFigure !== null) chooseFigure(null)
 	}
+
+	// Det sökta gäller bara medan det är framklickat och quizet är stängt.
+	const activeSought =
+		sought && !quizOpen &&
+		((sought.kind === "body" && chosenBody === sought.body) || (sought.kind === "figure" && chosenFigure === sought.id))
+			? sought
+			: null
+	const soughtTarget = useMemo(() => (scene && activeSought ? soughtPoint(scene, activeSought) : null), [scene, activeSought])
+
+	// Det som sökts fram klickas fram, med sin panel, och blicken glider dit. Följer blicken
+	// telefonen visar målaren i stället vägen dit.
+	const seek = (target: Sought) => {
+		const painter = painterRef.current
+		if (!painter || !scene) return
+		if (eventsOpen) setEventsOpen(false)
+		chooseStar(null)
+		if (target.kind === "body") {
+			if (chosenFigure !== null) chooseFigure(null)
+			setChosenBody(target.body)
+		} else {
+			setChosenBody(null)
+			chooseFigure(target.id)
+		}
+		setSought(target)
+		const point = soughtPoint(scene, target)
+		if (point) painter.lookAt(point.at)
+	}
+
+	useEffect(() => {
+		painterRef.current?.guide(soughtTarget)
+	}, [soughtTarget])
+
+	// När telefonen släpps glider blicken till det sökta, som när det söktes fram utan telefonen.
+	const followedRef = useRef(following)
+	useEffect(() => {
+		const was = followedRef.current
+		followedRef.current = following
+		if (was && !following && soughtTarget) painterRef.current?.lookAt(soughtTarget.at)
+	}, [following, soughtTarget])
 
 	// Stjärnbilderna quizet frågar efter, och hur högt var och en står just nu.
 	const quizzed = useMemo(() => quizConstellations(catalogue?.constellations ?? []), [catalogue])
@@ -532,6 +584,9 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 						</span>
 					)}
 				</p>
+				{/* Sökknappen står under menyknappen. Den göms medan quizet är öppet, eftersom
+				    sökningen skulle avslöja svaren. */}
+				{!quizOpen && <SkySearch scene={scene} onChoose={seek} />}
 				{/* Medan händelsepanelen eller quizet är öppet får det platsen för sig. */}
 				<InfoPanel info={eventsOpen || quizOpen ? null : info} onClose={closePanel} />
 				{quizOpen && catalogue && (

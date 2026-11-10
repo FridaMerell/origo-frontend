@@ -1,5 +1,5 @@
 import { geoPath, type GeoPath, type GeoProjection } from "d3-geo"
-import type { Art, Figure, Level, Scene, SkyPoint, View } from "../types"
+import type { Art, Figure, Guide, Level, Scene, SkyPoint, View } from "../types"
 import { detailOf, ease, makeProjection, starLimitAt } from "../view"
 
 // Allt som bestämmer en bildruta.
@@ -39,6 +39,8 @@ export type Frame = {
 	// per punkt i stället för skärmens fulla täthet, så att den hinner följa handen; full skärpa
 	// kommer tillbaka när handen släpper.
 	moving: boolean
+	// Det som sökts fram, medan blicken följer telefonen: kartan visar vägen dit. Annars null.
+	guide: Guide | null
 }
 
 // Där en text redan står på kartan.

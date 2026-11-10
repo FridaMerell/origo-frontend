@@ -145,11 +145,13 @@ export function buildScene(
 	}
 
 	const bodies: Scene["bodies"] = []
+	const allBodies: Scene["allBodies"] = []
 	let sunAt: SkyPoint = [0, -90]
 	for (const { body, name } of BODIES) {
 		const equatorial = Equator(body, now, observer, true, true)
 		const horizontal = Horizon(now, observer, equatorial.ra, equatorial.dec, "normal")
 		const at: SkyPoint = [wrap(horizontal.azimuth), horizontal.altitude]
+		allBodies.push({ body, name, at })
 		if (body === Body.Sun) sunAt = at
 		if (horizontal.altitude <= 0) continue
 		// Månen ritas med den del som är upplyst.
@@ -173,6 +175,7 @@ export function buildScene(
 		})),
 		graticule: EQUATORIAL_GRID.map(line => line.map(toSky)),
 		bodies,
+		allBodies,
 		sunAt,
 		sunAltitude,
 		aurora: kp === null ? null : auroraAt(kp, position),

@@ -59,6 +59,9 @@ export type Position = { latitude: number; longitude: number }
 // longitud och latitud, så horisonten ligger vågrätt hur man än panorerar.
 export type SkyPoint = [number, number]
 
+// Det som sökts fram: var det står och vad det heter.
+export type Guide = { at: SkyPoint; name: string }
+
 export type Figure = {
 	id: string
 	// Namnet som står på kartan, och det andra namnet som visas bredvid när figuren pekas ut.
@@ -105,6 +108,8 @@ export type Scene = {
 	graticule: SkyPoint[][]
 	// Himlakropparna som är uppe. `lit` är hur stor del av månen som är upplyst (0…1).
 	bodies: { body: Body; name: string; at: SkyPoint; lit?: number }[]
+	// Alla himlakroppar, också de som är nere, så att sökningen kan visa vägen till dem.
+	allBodies: { body: Body; name: string; at: SkyPoint }[]
 	// Solens läge också när den är nere, så att månens upplysta sida kan vändas mot den.
 	sunAt: SkyPoint
 	sunAltitude: number

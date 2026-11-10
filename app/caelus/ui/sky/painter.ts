@@ -7,7 +7,7 @@ import { auroraMoving } from "./layers/aurora"
 import { meteorsWait } from "./layers/meteors"
 import { pickBody, pickFigure, pickStar } from "./pick"
 import { drawScene } from "./render"
-import type { Art, Figure, Level, Scene, SkyPoint } from "./types"
+import type { Art, Figure, Guide, Level, Scene, SkyPoint } from "./types"
 import { dialGeometry, DIRECTION } from "./dial"
 import {
 	degreesPerPixel,
@@ -110,6 +110,8 @@ export function createPainter(
 	let following = false
 	// Tills telefonen legat still en stund ritas kartan glesare, som när handen rör den.
 	let settle = 0
+	// Det som sökts fram; medan blicken följer telefonen visar kartan vägen dit.
+	let guided: Guide | null = null
 
 	function redraw() {
 		full = true
@@ -204,6 +206,7 @@ export function createPainter(
 			meteorsShown: meteorLevel,
 			lifted: liftLevel,
 			moving: interacting,
+			guide: following ? guided : null,
 		}, motionOnly)
 		if ((introStart !== null && (intro < 1 || figureIntro < 1)) || outgoing || glide || settling) redraw()
 		// Norrskenet rör sig: medan det syns ritas kartan om ungefär elva gånger i sekunden, vilket
@@ -496,6 +499,12 @@ export function createPainter(
 			const altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), at[1]))
 			glide = { from: [view.azimuth, view.altitude], to: [(at[0] + 360) % 360, altitude], since: performance.now() }
 			redraw()
+		},
+		/** Det som sökts fram, eller null. Kartan visar vägen dit medan blicken följer telefonen. */
+		guide(target: Guide | null) {
+			if (guided === target) return
+			guided = target
+			if (following) redraw()
 		},
 		/** Om figurernas namn står på kartan. */
 		setFigureNames(on: boolean) {

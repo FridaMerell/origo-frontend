@@ -5,6 +5,7 @@ import { drawDial } from "./layers/dial"
 import { drawFigures } from "./layers/figures"
 import { drawGrid } from "./layers/grid"
 import { drawGround } from "./layers/ground"
+import { drawGuide } from "./layers/guide"
 import { drawNames } from "./layers/names"
 import { drawMeteors } from "./layers/meteors"
 import { drawMilkyWay } from "./layers/milky-way"
@@ -84,4 +85,6 @@ function drawMoving(pen: Pen) {
 	// Marken täcker allt som gått ner under horisonten, och kalenderskivan ligger på marken.
 	drawGround(pen)
 	drawDial(pen)
+	// Vägen till det som sökts fram ligger överst, också över marken när målet är nere.
+	drawGuide(pen)
 }

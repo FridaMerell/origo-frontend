@@ -72,7 +72,7 @@ export default function ObservationForm() {
     if (stagedIds.has(item.id)) return
     setRows((current) => [
       ...current,
-      { key: rowKey(), speciesId: item.id, count: "1", lifeStage: defaultLifeStage(item.stages), notes: "", photos: [] },
+      { key: rowKey(), speciesId: item.id, observedAt: nowLocal(), count: "1", lifeStage: defaultLifeStage(item.stages), notes: "", photos: [] },
     ])
     setSelectedSpecies((current) => new Map(current).set(item.id, item))
     setQuery("")
@@ -84,6 +84,9 @@ export default function ObservationForm() {
 
   const removeRow = (key: string) =>
     setRows((current) => current.filter((row) => row.key !== key))
+
+  const applyTimeToAll = () =>
+    setRows((current) => current.map((row) => ({ ...row, observedAt })))
 
   const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -99,8 +102,10 @@ export default function ObservationForm() {
       setError("Antal måste vara ett heltal.")
       return
     }
-    if (!observedAt) {
-      setError("Ange en tidpunkt.")
+    const missingTime = rows.filter((row) => !/T\d{2}:\d{2}$/.test(row.observedAt))
+    if (missingTime.length > 0) {
+      setRowErrors(Object.fromEntries(missingTime.map((row) => [row.key, "Ange en tidpunkt."])))
+      setError("Ange en tidpunkt för varje art.")
       return
     }
 
@@ -114,12 +119,11 @@ export default function ObservationForm() {
       latNum !== null && lonNum !== null
         ? { type: "Point" as const, coordinates: [lonNum, latNum] as [number, number] }
         : undefined
-    const observedAtIso = new Date(observedAt).toISOString()
 
     startTransition(async () => {
       setProgress(rows.length === 1 ? "Sparar observationen…" : `Sparar ${rows.length} observationer…`)
       try {
-        await saveRows(location, observedAtIso)
+        await saveRows(location)
       } catch {
         setError("Observationerna kunde inte sparas. Kontrollera anslutningen och försök igen.")
       } finally {
@@ -130,13 +134,12 @@ export default function ObservationForm() {
 
   const saveRows = async (
     location: { type: "Point"; coordinates: [number, number] } | undefined,
-    observedAtIso: string,
   ) => {
     const result = await createObservationsBatch(
       rows.map((row) => ({
         species: row.speciesId,
         checklist_items: [],
-        observed_at: observedAtIso,
+        observed_at: new Date(row.observedAt).toISOString(),
         ...(location ? { location } : {}),
         count: row.count.trim() ? Number(row.count.trim()) : null,
         life_stage: row.lifeStage.trim(),
@@ -199,21 +202,35 @@ export default function ObservationForm() {
           <ObservationFormHeader mapSpecies={mapSpecies} />
 
           <section className="px-3 pb-3 sm:px-5">
-            <div className="grid border-l border-t border-border sm:grid-cols-[1fr_2fr]">
-              <label className="flex flex-col border-b border-r border-border px-3 py-2 font-display text-[9px] italic text-text-faint">
-                Tidpunkt
-                <input
-                  type="datetime-local"
-                  value={observedAt}
-                  max={nowLocal()}
-                  onChange={(event) => setObservedAt(event.target.value)}
-                  className="mt-1 h-9 rounded border border-field-border bg-surface px-2.5 font-body text-xs not-italic text-text focus:border-accent focus:outline-none"
-                />
-              </label>
+            <div className="grid border-l border-t border-border md:grid-cols-[auto_minmax(0,1fr)]">
+              <fieldset className="border-b border-r border-border px-3 py-2">
+                <legend className="float-left w-full font-display text-[9px] italic text-text-faint">Tidpunkt</legend>
+                <div className="clear-left flex flex-wrap items-start gap-2 pt-1">
+                  <input
+                    type="datetime-local"
+                    value={observedAt}
+                    max={nowLocal()}
+                    onChange={(event) => setObservedAt(event.target.value)}
+                    aria-label="Tidpunkt för alla arter"
+                    className="h-9 min-w-0 flex-1 basis-40 rounded border border-field-border bg-surface px-2.5 text-xs text-text focus:border-accent focus:outline-none md:w-40 md:flex-none"
+                  />
+                  <Button
+                    type="button"
+                    variant="paper-bordered"
+                    size="sm"
+                    rounded="rounded-none"
+                    className="h-9 text-sm"
+                    disabled={rows.length === 0 || !observedAt}
+                    onClick={applyTimeToAll}
+                  >
+                    Sätt på alla
+                  </Button>
+                </div>
+              </fieldset>
 
               <fieldset className="border-b border-r border-border px-3 py-2">
-                <legend className="font-display text-[9px] italic text-text-faint">Position <span>(valfritt)</span></legend>
-                <div className="mt-1 flex flex-wrap items-start gap-2">
+                <legend className="float-left w-full font-display text-[9px] italic text-text-faint">Position <span>(valfritt)</span></legend>
+                <div className="clear-left flex flex-wrap items-start gap-2 pt-1">
                   <input
                     inputMode="decimal"
                     value={lat}
@@ -231,7 +248,7 @@ export default function ObservationForm() {
                   <CurrentLocationButton
                     label="Min position"
                     size="sm"
-                    className="h-9"
+                    className="h-9 max-sm:basis-full"
                     onLocate={({ latitude, longitude }) => {
                       setLat(latitude.toFixed(6))
                       setLon(longitude.toFixed(6))
@@ -263,8 +280,8 @@ export default function ObservationForm() {
             onUpdateRow={updateRow}
             onRemoveRow={removeRow}
             onPhotoError={setError}
-            onPhotoMetadata={({ takenAt, lat: photoLat, lon: photoLon }) => {
-              if (takenAt) setObservedAt(toDateTimeLocal(takenAt))
+            onPhotoMetadata={(key, { takenAt, lat: photoLat, lon: photoLon }) => {
+              if (takenAt) updateRow(key, { observedAt: toDateTimeLocal(takenAt) })
               if (photoLat !== undefined && photoLon !== undefined) {
                 setLat(photoLat.toFixed(6))
                 setLon(photoLon.toFixed(6))

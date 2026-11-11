@@ -850,15 +850,25 @@ function PhotoStrip({ photos, speciesLink, onOpen }: { photos: TempusYearPhoto[]
   )
 }
 
-// Every species of the year with a measured rarity, as a tick on a line from
-// common to rare; the rarest stands taller, in ink, with its name above. The
-// ticks rise together as the chapter comes up, and each leads to its species
-// page, naming it under the mouse.
+// Every species of the year with a measured significance, as a tick on a line
+// from the year's most common to its rarest; the rarest stands taller, in ink,
+// with its name above. Significance is already logarithmic in how seldom the
+// species is found, so the ticks spread over the whole line. The rarest is
+// placed by the value it won with (its province's), which can be higher than
+// its whole-country value in the list, so the line spans both. The ticks rise
+// together as the chapter comes up, and each leads to its species page,
+// naming it under the mouse.
 function RarityScale({ species, rarest }: { species: TempusYearSpecies[]; rarest: TempusYearSpecies }) {
   const rated = species.filter((item) => item.significance !== null)
-  const at = (item: TempusYearSpecies) => `${((item.significance ?? 0) * 100).toFixed(2)}%`
+  const values = [...rated, rarest]
+    .map((item) => item.significance)
+    .filter((value): value is number => value !== null)
+  const low = Math.min(...values)
+  const span = Math.max(...values) - low
+  const position = (item: TempusYearSpecies) => (span > 0 ? ((item.significance ?? low) - low) / span : 1)
+  const at = (item: TempusYearSpecies) => `${(position(item) * 100).toFixed(2)}%`
   // The rarest's name hangs from its tick to the left when the tick is far right.
-  const nameFromRight = (rarest.significance ?? 0) > 0.6
+  const nameFromRight = position(rarest) > 0.6
   return (
     <figure className="sm:col-span-2">
       <div className="relative h-24 border-b border-text sm:h-28">

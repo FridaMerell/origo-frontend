@@ -151,6 +151,8 @@ export default function QuickObservation({
   const [lifeStage, setLifeStage] = useState("")
   const [customLifeStage, setCustomLifeStage] = useState(false)
   const [observedAt, setObservedAt] = useState(nowLocal())
+  // Ikryssad följer tiden klockan så länge dialogen är öppen; varje obs får tiden då den sparas.
+  const [autoTime, setAutoTime] = useState(false)
   const [lat, setLat] = useState("")
   const [lon, setLon] = useState("")
   // null följer positionen; ett val gäller även om positionen ligger strax utanför platsen.
@@ -257,6 +259,13 @@ export default function QuickObservation({
     }
   }, [open, closing])
 
+  useEffect(() => {
+    if (!open || !autoTime) return
+    setObservedAt(nowLocal())
+    const id = setInterval(() => setObservedAt(nowLocal()), 1000)
+    return () => clearInterval(id)
+  }, [open, autoTime])
+
   // Escape stänger direkt, som krysset. Är bekräftelserutan öppen stänger den sig själv.
   // Prenumerationen sätts om vid varje render så att pending och confirmingCancel är aktuella.
   useEffect(() => {
@@ -325,7 +334,8 @@ export default function QuickObservation({
       setError("Antal måste vara ett heltal.")
       return
     }
-    if (!observedAt) {
+    const time = autoTime ? nowLocal() : observedAt
+    if (!time) {
       setError("Ange en tidpunkt.")
       return
     }
@@ -349,7 +359,7 @@ export default function QuickObservation({
         const result = await createObservation({
           species: picked.id,
           checklist_items: selectedChecklistItemIds,
-          observed_at: new Date(observedAt).toISOString(),
+          observed_at: new Date(time).toISOString(),
           ...(location ? { location } : {}),
           locale: localeId ? Number(localeId) : null,
           count: trimmed ? Number(trimmed) : null,
@@ -515,16 +525,28 @@ export default function QuickObservation({
                   </label>
 
                   {showTime ? (
-                    <label className="flex flex-col gap-1.5 text-sm font-medium">
-                      Tidpunkt
-                      <input
-                        type="datetime-local"
-                        value={observedAt}
-                        max={nowLocal()}
-                        onChange={(event) => setObservedAt(event.target.value)}
-                        className={INPUT_CLASS}
-                      />
-                    </label>
+                    <div className="flex flex-col gap-2">
+                      <label className="flex flex-col gap-1.5 text-sm font-medium">
+                        Tidpunkt
+                        <input
+                          type="datetime-local"
+                          value={observedAt}
+                          max={nowLocal()}
+                          disabled={autoTime}
+                          onChange={(event) => setObservedAt(event.target.value)}
+                          className={INPUT_CLASS}
+                        />
+                      </label>
+                      <label className="flex items-center gap-2 self-start text-xs text-text-muted">
+                        <input
+                          type="checkbox"
+                          checked={autoTime}
+                          onChange={(event) => setAutoTime(event.target.checked)}
+                          className="size-3.5 accent-accent"
+                        />
+                        Aktuell tid
+                      </label>
+                    </div>
                   ) : null}
                 </div>
 

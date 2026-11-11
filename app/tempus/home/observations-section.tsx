@@ -5,6 +5,7 @@ import type { TempusPublicObservation } from "@/app/lib/dal/tempus/observations"
 import { formatUserName } from "@/app/lib/format-user-name"
 import { Chip } from "@/app/components/ui/Chip"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
+import { usePageTransition } from "@/app/components/ui/use-page-transition"
 import { LABEL } from "./styles"
 
 const STEP = "inline-block no-underline transition-colors active:translate-y-px text-text-muted hover:text-text"
@@ -22,6 +23,7 @@ export function ObservationsSection({
   // The page's other choices as a query string, kept when the page of finds changes.
   query: string
 }) {
+  const { ref: listRef, leave } = usePageTransition<HTMLUListElement>(page)
   const hrefFor = (target: number) => {
     const params = new URLSearchParams(query)
     if (target > 1) params.set("obs", String(target))
@@ -41,7 +43,7 @@ export function ObservationsSection({
         <span className="text-right">Antal</span>
       </div>
 
-      <ul className="divide-y divide-border border-b border-border">
+      <ul ref={listRef} className="divide-y divide-border border-b border-border">
         {observations.map((observation) => {
           const name = observation.species_detail.swedish_name
           return (
@@ -70,13 +72,13 @@ export function ObservationsSection({
       {pageCount > 1 ? (
         <nav data-pager="" aria-label="Observationer, sidor" className={`mt-6 flex items-center justify-center gap-5 ${LABEL}`}>
           {page > 1 ? (
-            <Link data-page-step="previous" href={hrefFor(page - 1)} scroll={false} className={STEP}>‹ Föregående</Link>
+            <Link data-page-step="previous" href={hrefFor(page - 1)} scroll={false} onClick={() => leave(page - 1)} className={STEP}>‹ Föregående</Link>
           ) : (
             <span className="text-text-faint">‹ Föregående</span>
           )}
           <span className="text-text-faint">Sida {page}</span>
           {page < pageCount ? (
-            <Link data-page-step="next" href={hrefFor(page + 1)} scroll={false} className={STEP}>Nästa ›</Link>
+            <Link data-page-step="next" href={hrefFor(page + 1)} scroll={false} onClick={() => leave(page + 1)} className={STEP}>Nästa ›</Link>
           ) : (
             <span className="text-text-faint">Nästa ›</span>
           )}

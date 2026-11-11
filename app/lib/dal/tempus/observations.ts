@@ -143,6 +143,9 @@ export type TempusYearSpecies = {
   dyntaxa_taxon_id: number
   swedish_name: string
   scientific_name: string
+  // How rare a find of the species is within its own Tempus species group,
+  // 0..1, higher is rarer; null until measured. For `rarest` it is the value
+  // the species won with (its province's, else the whole country's).
   significance: number | null
   // Bare IUCN code (NT, VU, EN, CR, RE, DD), or "" when not red-listed.
   red_list_category: string

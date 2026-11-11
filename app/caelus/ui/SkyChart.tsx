@@ -3,7 +3,7 @@
 import type { Body } from "astronomy-engine"
 import type { MeteorShower } from "@/app/lib/dal/caelus"
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react"
-import { EVENTS_KEY, QUIZ_KEY } from "./CaelusMenu"
+import { EVENTS_KEY, QUIZ_KEY, TONIGHT_KEY } from "./CaelusMenu"
 import { AURORA_FOCUS_KEY, CLOUDS_KEY, METEORS_KEY, PLANET_FOCUS_KEY } from "./LayerMenu"
 import { useDarkMode } from "./CaelusTheme"
 import CultureSwitch from "./CultureSwitch"
@@ -15,6 +15,9 @@ import SkySearch, { type Sought } from "./SkySearch"
 import { SKY_CULTURES, SWEDISH_NAMES, type SkyCulture } from "./sky-cultures"
 import { bodyInfo, figureInfo, starInfo, type SelectedStar, type StarDetails } from "./sky-info"
 import { cloudCoverAt, describeCloudCover, fetchCloudCover, type CloudStep } from "./sky/clouds"
+import { darknessAt, darknessInfo } from "./sky/darkness"
+import { tonightAt } from "./sky/tonight"
+import TonightPanel from "./TonightPanel"
 import { onDeviceDirection, stopFollowing, useFollowing } from "./sky/compass"
 import { eventsAround, sameDay } from "./sky/events"
 import { createPainter, type Painter } from "./sky/painter"
@@ -74,12 +77,6 @@ function soughtPoint(scene: Scene, sought: Sought) {
 	return figure ? { at: figure.at, name: figure.name } : null
 }
 
-function twilight(sunAltitude: number) {
-	if (sunAltitude > 0) return "Solen är uppe"
-	if (sunAltitude > -18) return "Skymning"
-	return "Mörkt"
-}
-
 /**
  * Stjärnkartan med sina reglage. Komponenten håller det som väljs (tid, plats, himmel, utpekad
  * figur och stjärna) och räknar fram himlen; ritandet och allt som rör sig sköter målaren i
@@ -132,6 +129,9 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const [storedEvents, storeEvents] = useStored(EVENTS_KEY)
 	const eventsOpen = storedEvents === "open"
 	const setEventsOpen = (open: boolean) => storeEvents(open ? "open" : "closed")
+	// I kväll, som öppnas från menyn och ligger på händelsepanelens plats.
+	const [storedTonight, storeTonight] = useStored(TONIGHT_KEY)
+	const tonightOpen = storedTonight === "open"
 	// Quizet, som öppnas från menyn. Det börjar om med valet av urval varje gång det öppnas.
 	const [storedQuiz, storeQuiz] = useStored(QUIZ_KEY)
 	const quizOpen = storedQuiz === "open"
@@ -147,6 +147,15 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const pointing = question?.mode === "point"
 	// Quizet frågar efter IAU:s stjärnbilder, så den nordiska himlen byts mot den svenska under tiden.
 	const skyCulture = quizOpen && culture === "norse" ? "swedish" : culture
+	// Kvällens förutsättningar, som öppnas från betyget i tidsraden. De visas i infopanelen och
+	// stängs när något på kartan klickas fram.
+	const [darknessOpen, setDarknessOpen] = useState(false)
+	const hasSelection = starIndex !== null || chosenBody !== null || chosenFigure !== null
+	const [hadSelection, setHadSelection] = useState(hasSelection)
+	if (hasSelection !== hadSelection) {
+		setHadSelection(hasSelection)
+		if (hasSelection) setDarknessOpen(false)
+	}
 	const [locating, setLocating] = useState(false)
 	const [locationError, setLocationError] = useState<string | null>(null)
 	// Om blicken följer telefonen slås av och på i menyn; felet står under kartan.
@@ -305,6 +314,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 
 	// Stänger panelen, vad den än visar. En figur som var framklickad släpps också.
 	const closePanel = () => {
+		setDarknessOpen(false)
 		chooseStar(null)
 		setChosenBody(null)
 		if (chosenFigure !== null) chooseFigure(null)
@@ -324,6 +334,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		const painter = painterRef.current
 		if (!painter || !scene) return
 		if (eventsOpen) setEventsOpen(false)
+		if (tonightOpen) storeTonight("closed")
 		chooseStar(null)
 		if (target.kind === "body") {
 			if (chosenFigure !== null) chooseFigure(null)
@@ -389,7 +400,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		return () => document.removeEventListener("keydown", onKeyDown)
 	})
 
-	const panelOpen = !quizOpen && (starIndex !== null || chosenBody !== null || chosenFigure !== null)
+	const panelOpen = !quizOpen && (darknessOpen || hasSelection)
 	useEffect(() => {
 		if (!panelOpen) return
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -423,8 +434,10 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 			}
 			return
 		}
-		// Händelsepanelen och panelen om det som klickas fram ligger på samma ställe på en telefon.
+		// Händelsepanelen, I kväll och panelen om det som klickas fram ligger på samma ställe på en
+		// telefon.
 		if (eventsOpen) setEventsOpen(false)
+		if (tonightOpen) storeTonight("closed")
 		const { offsetX, offsetY } = event.nativeEvent
 		// Solen, månen och planeterna ligger överst och har företräde framför stjärnorna under dem.
 		const body = painter.bodyAt(offsetX, offsetY)
@@ -463,10 +476,12 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		storeCulture(next)
 	}
 
-	const locate = () => {
+	// `opening` när kartan själv frågar efter platsen när sidan öppnas: säger man nej till
+	// webbläsarens fråga gäller den sparade platsen, utan något fel under kartan.
+	const locate = (opening = false) => {
 		setLocationError(null)
 		if (!navigator.geolocation) {
-			setLocationError("Platstjänster stöds inte i den här webbläsaren.")
+			if (!opening) setLocationError("Platstjänster stöds inte i den här webbläsaren.")
 			return
 		}
 		setLocating(true)
@@ -475,13 +490,26 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 				setLocating(false)
 				storePosition(JSON.stringify({ latitude: coords.latitude, longitude: coords.longitude }))
 			},
-			() => {
+			error => {
 				setLocating(false)
-				setLocationError("Platsen kunde inte hämtas.")
+				if (opening && error.code === error.PERMISSION_DENIED) return
+				setLocationError(
+					error.code === error.PERMISSION_DENIED
+						? "Platsen är blockerad i webbläsaren."
+						: "Platsen kunde inte hämtas.",
+				)
 			},
 			{ timeout: 15000, maximumAge: 600_000 },
 		)
 	}
+
+	// Kartan frågar efter aktuell plats när sidan öppnas, en gång.
+	const openedRef = useRef(false)
+	useEffect(() => {
+		if (openedRef.current) return
+		openedRef.current = true
+		locate(true)
+	})
 
 	// Det senaste namnet står kvar medan raden tonar ut.
 	const focusedFigure = scene?.figures.find(figure => figure.id === focused) ?? null
@@ -507,8 +535,21 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		}
 	}, [chosen, detail, catalogue, culture])
 
+	const darkness = useMemo(() => (scene && shown ? darknessAt(scene, shown) : null), [scene, shown])
+	const toggleDarkness = () => {
+		if (darknessOpen) {
+			setDarknessOpen(false)
+			return
+		}
+		closePanel()
+		if (eventsOpen) setEventsOpen(false)
+		if (tonightOpen) storeTonight("closed")
+		setDarknessOpen(true)
+	}
+
 	const figure = (chosenFigure !== null && scene?.figures.find(item => item.id === chosenFigure)) || null
 	const info = useMemo((): PanelInfo | null => {
+		if (darknessOpen && darkness && shown) return darknessInfo(darkness, shown, cloudSteps.length > 0)
 		if (selectedStar) return starInfo(selectedStar)
 		if (chosenBody !== null && time) {
 			const name = BODIES.find(item => item.body === chosenBody)?.name ?? ""
@@ -520,7 +561,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 			return figureInfo(figure, culture, catalogue, constellation)
 		}
 		return null
-	}, [selectedStar, chosenBody, time, position, culture, figure, catalogue])
+	}, [darknessOpen, darkness, shown, cloudSteps, selectedStar, chosenBody, time, position, culture, figure, catalogue])
 
 	// Händelserna räknas ut per år och plats; panelen visar dem kring kartans tid.
 	const year = time?.getFullYear() ?? null
@@ -540,6 +581,21 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		document.addEventListener("keydown", onKeyDown)
 		return () => document.removeEventListener("keydown", onKeyDown)
 	}, [eventsOpen, storeEvents])
+
+	// Natten räknas bara medan I kväll är öppet, och på kartans tid, inte under glidningen dit.
+	const tonight = useMemo(
+		() => (tonightOpen && time ? tonightAt(time, position, cloudSteps, kpPeriods, meteorShowers) : null),
+		[tonightOpen, time, position, cloudSteps, kpPeriods, meteorShowers],
+	)
+
+	useEffect(() => {
+		if (!tonightOpen) return
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") storeTonight("closed")
+		}
+		document.addEventListener("keydown", onKeyDown)
+		return () => document.removeEventListener("keydown", onKeyDown)
+	}, [tonightOpen, storeTonight])
 
 	return (
 		<div className='flex min-h-0 flex-1 flex-col'>
@@ -588,7 +644,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 				    sökningen skulle avslöja svaren. */}
 				{!quizOpen && <SkySearch scene={scene} onChoose={seek} />}
 				{/* Medan händelsepanelen eller quizet är öppet får det platsen för sig. */}
-				<InfoPanel info={eventsOpen || quizOpen ? null : info} onClose={closePanel} />
+				<InfoPanel info={eventsOpen || quizOpen || tonightOpen ? null : info} onClose={closePanel} />
 				{quizOpen && catalogue && (
 					<QuizPanel
 						quiz={quiz}
@@ -607,8 +663,16 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 					today={todaysEvents}
 					showers={scene?.showers ?? []}
 					coming={comingEvents}
+					position={position}
 					onChoose={chosen => setChosenTime(new Date(chosen))}
 					onClose={() => setEventsOpen(false)}
+				/>
+				<TonightPanel
+					open={tonightOpen}
+					tonight={tonight}
+					hasForecast={cloudSteps.length > 0}
+					onChoose={chosen => setChosenTime(new Date(chosen))}
+					onClose={() => storeTonight("closed")}
 				/>
 				{failed && (
 					<p className='absolute inset-0 flex items-center justify-center p-8 text-center text-base italic text-text-muted'>
@@ -621,16 +685,29 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 				live={chosenTime === null}
 				onChange={setChosenTime}
 				onScrub={setScrubbing}>
-				{scene && (
-					<span className='text-xs'>
-						<span className='italic'>{twilight(scene.sunAltitude)}</span>
-						{scene.cloudCover !== null && ` · ${describeCloudCover(scene.cloudCover)}`} ·{" "}
-						{formatPosition(position)}
+				{scene && darkness && (
+					<span className='text-center text-xs'>
+						{/* Betyget öppnar förutsättningarna i infopanelen. Medan quizet har den platsen
+						    är det bara text. */}
+						{quizOpen ? (
+							<span className='italic'>{darkness.verdict}</span>
+						) : (
+							<button
+								type='button'
+								aria-expanded={darknessOpen && !eventsOpen && !tonightOpen}
+								onClick={toggleDarkness}
+								className='cursor-pointer italic text-text underline-offset-4 hover:underline aria-expanded:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'>
+								{darkness.verdict}
+							</button>
+						)}
+						{scene.cloudCover !== null && ` · ${describeCloudCover(scene.cloudCover)}`}{" "}
+						{/* Punkten följer med positionen, så att ingen punkt blir hängande när raden bryts. */}
+						<span className='whitespace-nowrap'>· {formatPosition(position)}</span>
 					</span>
 				)}
 				<button
 					type='button'
-					onClick={locate}
+					onClick={() => locate()}
 					disabled={locating}
 					className='cursor-pointer text-xs uppercase tracking-[0.16em] transition-colors duration-200 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring disabled:cursor-default disabled:opacity-60 motion-reduce:transition-none'>
 					{locating ? "Hämtar plats …" : "Min plats"}

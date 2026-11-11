@@ -40,11 +40,15 @@ function number(value: number, decimals: number) {
 	return value.toLocaleString("sv-SE", { maximumFractionDigits: decimals })
 }
 
+/** Väderstrecket för en azimut i grader, i ord: "norr", "sydost" … */
+export function direction(azimuth: number) {
+	return DIRECTIONS[Math.round(((azimuth + 360) % 360) / 45) % 8]
+}
+
 // Var något står på himlen just nu, i ord.
-function whereNow([azimuth, altitude]: SkyPoint) {
+export function whereNow([azimuth, altitude]: SkyPoint) {
 	if (altitude < 0) return "Under horisonten"
-	const direction = DIRECTIONS[Math.round(((azimuth + 360) % 360) / 45) % 8]
-	return `${Math.round(altitude)}° upp i ${direction}`
+	return `${Math.round(altitude)}° upp i ${direction(azimuth)}`
 }
 
 function starDesignation(star: SelectedStar) {
@@ -123,14 +127,19 @@ const BODY_KINDS: Partial<Record<Body, string>> = {
 	[Body.Moon]: "Jordens måne",
 }
 
-function moonPhaseName(angle: number) {
-	if (angle < 10 || angle >= 350) return "Nymåne"
-	if (angle < 80) return "Tilltagande skära"
-	if (angle < 100) return "Första kvarteret"
-	if (angle < 170) return "Tilltagande"
-	if (angle < 190) return "Fullmåne"
-	if (angle < 260) return "Avtagande"
-	if (angle < 280) return "Sista kvarteret"
+// Huvudfaserna är ögonblick; de får sitt namn ungefär ett halvt dygn åt vardera hållet (månen
+// går omkring 12° om dygnet), så att samma namn inte står flera dagar i rad.
+const PRINCIPAL_PHASE = 6
+
+export function moonPhaseName(angle: number) {
+	const near = (phase: number) => Math.abs(((angle - phase + 540) % 360) - 180) < PRINCIPAL_PHASE
+	if (near(0)) return "Nymåne"
+	if (near(90)) return "Första kvarteret"
+	if (near(180)) return "Fullmåne"
+	if (near(270)) return "Sista kvarteret"
+	if (angle < 90) return "Tilltagande skära"
+	if (angle < 180) return "Tilltagande"
+	if (angle < 270) return "Avtagande"
 	return "Avtagande skära"
 }
 

@@ -1,11 +1,11 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 import { logout } from "@/app/actions/auth"
 import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
 import { useUser } from "@/app/lib/user-context"
-import EventAlertToggle from "./EventAlertToggle"
 import LayerMenu from "./LayerMenu"
 import { useStored } from "./use-stored"
 
@@ -14,17 +14,21 @@ export const EVENTS_KEY = "caelus-events"
 // Om quizet är öppet; det öppnas från menyn och stängs i sin panel. Det och händelsepanelen ligger
 // på samma ställe, så det ena stänger det andra.
 export const QUIZ_KEY = "caelus-quiz"
+// Om I kväll är öppet; det ligger på samma ställe som händelsepanelen och quizet.
+export const TONIGHT_KEY = "caelus-tonight"
 
 const ITEM =
-	"block w-full px-4 py-2 text-left text-lg text-text no-underline hover:bg-text hover:text-bg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
+	"block w-full px-4 py-1.5 text-left text-md leading-snug text-text no-underline hover:bg-text hover:text-bg focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
 
 export default function CaelusMenu() {
 	const user = useUser()
+	const pathname = usePathname()
 	const [open, setOpen] = useState(false)
 	// Vilken undermeny som visas i stället för menyns länkar: vad kartan visar, eller de andra apparna.
 	const [submenu, setSubmenu] = useState<"layers" | "apps" | null>(null)
 	const [, storeEvents] = useStored(EVENTS_KEY)
 	const [, storeQuiz] = useStored(QUIZ_KEY)
+	const [, storeTonight] = useStored(TONIGHT_KEY)
 	const rootRef = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
@@ -100,18 +104,33 @@ export default function CaelusMenu() {
 					</>
 				) : (
 					<>
-					<Link href='/' onClick={() => setOpen(false)} className={ITEM}>
-						Stjärnhimlen
-					</Link>
+					{/* Tillbaka till kartan behövs bara från de andra sidorna. */}
+					{pathname !== "/" && (
+						<Link href='/' onClick={() => setOpen(false)} className={ITEM}>
+							Stjärnhimlen
+						</Link>
+					)}
 					<button type='button' onClick={() => setSubmenu("layers")} className={`${ITEM} cursor-pointer`}>
 						Visa ›
 					</button>
-					{/* Händelsepanelen hör till kartan, så den öppnas där. */}
+					{/* Panelerna hör till kartan, så de öppnas där; de ligger på samma ställe. */}
+					<Link
+						href='/'
+						onClick={() => {
+							storeTonight("open")
+							storeEvents("closed")
+							storeQuiz("closed")
+							setOpen(false)
+						}}
+						className={ITEM}>
+						I kväll
+					</Link>
 					<Link
 						href='/'
 						onClick={() => {
 							storeEvents("open")
 							storeQuiz("closed")
+							storeTonight("closed")
 							setOpen(false)
 						}}
 						className={ITEM}>
@@ -122,12 +141,15 @@ export default function CaelusMenu() {
 						onClick={() => {
 							storeQuiz("open")
 							storeEvents("closed")
+							storeTonight("closed")
 							setOpen(false)
 						}}
 						className={ITEM}>
 						Quiz
 					</Link>
-					{user && <EventAlertToggle item={ITEM} />}
+					<Link href='/manfoto' onClick={() => setOpen(false)} className={ITEM}>
+						Månfoto
+					</Link>
 					{/* /om är Origos gemensamma sida på alla domäner. */}
 					<Link href='/om-caelus' onClick={() => setOpen(false)} className={ITEM}>
 						Om

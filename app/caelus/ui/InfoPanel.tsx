@@ -11,6 +11,8 @@ export type PanelInfo = {
 	title: string
 	subtitle: string
 	rows: [term: string, value: string][]
+	// En rad under uppgifterna om vad de inte tar med.
+	note?: string
 }
 
 /**
@@ -48,6 +50,7 @@ export default function InfoPanel({ info, onClose }: { info: PanelInfo | null; o
 							</div>
 						))}
 					</dl>
+					{shown.note && <p className='mt-2 text-xs italic text-text-muted'>{shown.note}</p>}
 				</div>
 			)}
 		</section>

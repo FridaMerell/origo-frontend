@@ -1,8 +1,8 @@
 import { sharedOrigoJson } from "@/app/lib/api-client"
 
-// Ett årligt meteorregn: radiant, aktivitet och hastighet från IAU:s Meteor Data Center, ZHR
-// från IMO:s kalender (se caelus/services/iau_mdc.py i backend). Maximum, början och slut är
-// solens longitud (grader, J2000); början och slut saknas när ingen lösning anger dem. Radiantens
+// Ett årligt meteorregn: aktivitet, maximum, radiant, hastighet och ZHR från årets kalender från
+// IMO, radiantens vandring från IAU:s Meteor Data Center (se caelus/services/imo.py och
+// iau_mdc.py i backend). Maximum, början och slut är solens longitud (grader, J2000). Radiantens
 // vandring är grader per grad av solens longitud.
 export type MeteorShower = {
 	code: string

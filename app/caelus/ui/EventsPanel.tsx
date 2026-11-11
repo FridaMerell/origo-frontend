@@ -1,15 +1,30 @@
 "use client"
 
 import { PushControls } from "@/app/components/ui/PushControls"
+import { PUBLIC_API_BASE_URL } from "@/app/lib/config"
 import { useUser } from "@/app/lib/user-context"
+import EventAlertToggle from "./EventAlertToggle"
 import type { SkyEvent } from "./sky/events"
 import type { Shower } from "./sky/meteors"
+import type { Position } from "./sky/types"
 
 const DATE_FORMAT = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short" })
 const CLOCK_FORMAT = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" })
 
 const CHOICE =
 	"cursor-pointer text-left text-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+
+/**
+ * Prenumerationen på årets händelser för platsen, som webcal-adress så att telefonens kalender
+ * öppnas. En decimal räcker för förmörkelserna och avslöjar inte exakt var man bor; backend
+ * avrundar likadant.
+ */
+function calendarHref({ latitude, longitude }: Position) {
+	const url = new URL("/api/caelus/calendar.ics", PUBLIC_API_BASE_URL)
+	url.searchParams.set("lat", latitude.toFixed(1))
+	url.searchParams.set("lon", longitude.toFixed(1))
+	return url.href.replace(/^https?:/, "webcal:")
+}
 
 // Hur många meteorer i timmen man kan se, eller varför man inte ser några.
 function showerNote(shower: Shower) {
@@ -29,6 +44,7 @@ export default function EventsPanel({
 	today,
 	showers,
 	coming,
+	position,
 	onChoose,
 	onClose,
 }: {
@@ -38,6 +54,8 @@ export default function EventsPanel({
 	showers: Shower[]
 	// De närmaste händelserna efter den dagen.
 	coming: SkyEvent[]
+	// Kartans plats, som kalendern gäller för.
+	position: Position
 	onChoose: (time: number) => void
 	onClose: () => void
 }) {
@@ -71,6 +89,16 @@ export default function EventsPanel({
 					Stäng
 				</button>
 			</div>
+			{/* Varningarna överst, så att de syns direkt när panelen öppnas. */}
+			{user && (
+				<EventAlertToggle item='mt-2 w-full text-sm text-text hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring' />
+			)}
+			{/* Kalendern kräver ingen inloggning: appen som prenumererar hämtar den själv. */}
+			<a
+				href={calendarHref(position)}
+				className='mt-2 block text-sm text-text underline decoration-text/60 underline-offset-4 hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'>
+				Prenumerera i kalendern
+			</a>
 			{(today.length > 0 || showers.length > 0) && (
 				<>
 					<h3 className='mt-3 text-xs uppercase tracking-[0.16em] text-text-muted'>Den här dagen</h3>

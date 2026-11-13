@@ -1,6 +1,7 @@
 import { Body, Equator, Horizon, Illumination, MoonPhase, Observer, SearchRiseSet } from "astronomy-engine"
 import type { PanelInfo } from "./InfoPanel"
 import type { SkyCulture } from "./sky-cultures"
+import { DEEP_SKY_KINDS, deepSkySize, isGalaxy, type DeepSkyObject } from "./sky/deep-sky"
 import { bayerLabel } from "./sky/scene"
 import type { Catalogue, Constellation as ConstellationData, Figure, Position, SkyPoint } from "./sky/types"
 
@@ -119,6 +120,30 @@ export function figureInfo(
 			.filter(Boolean)
 			.join(" · "),
 		rows,
+	}
+}
+
+// Vad som behövs för att se ett objekt, efter dess magnitud: ungefärliga gränser under en mörk
+// himmel, för blotta ögat och för en vanlig handkikare.
+function seenWith(magnitude: number) {
+	if (magnitude <= 6) return "Blotta ögat, under mörk himmel"
+	if (magnitude <= 9) return "Handkikare"
+	return "Teleskop"
+}
+
+/** En galax eller nebulosa: vad det är, var den står, hur stor och ljus den är och vad som behövs för att se den. */
+export function deepSkyInfo(object: DeepSkyObject, constellation: string): PanelInfo {
+	return {
+		key: `deep-sky:${object.index}`,
+		label: isGalaxy(object.kind) ? "Vald galax" : "Vald nebulosa",
+		title: object.name || object.designation,
+		subtitle: [object.name ? object.designation : "", DEEP_SKY_KINDS[object.kind], constellation].filter(Boolean).join(" · "),
+		rows: [
+			["Just nu", whereNow(object.at)],
+			["Magnitud", number(object.magnitude, 1)],
+			["Storlek", deepSkySize(object.major, object.minor)],
+			["Syns med", seenWith(object.magnitude)],
+		],
 	}
 }
 

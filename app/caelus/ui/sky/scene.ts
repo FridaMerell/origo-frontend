@@ -21,6 +21,7 @@ import { NORSE_NAMES, NORSE_STAR_NAMES, SWEDISH_NAMES, type SkyCulture } from ".
 import { auroraAt } from "./aurora"
 import { eventDays } from "./events"
 import { showersAt } from "./meteors"
+import { deepSkyObjects, type DeepSkyRow } from "./deep-sky"
 import { milkyWay, type MilkyWayData } from "./milky-way"
 import type { Catalogue, Constellation, Dial, Position, Scene, SceneStar, SkyPoint } from "./types"
 
@@ -106,6 +107,8 @@ export function buildScene(
 	cloudCover: number | null,
 	// De årliga meteorregnen, från backend.
 	meteorShowers: MeteorShower[],
+	// Galaxerna och nebulosorna; tomt tills filen hämtats.
+	deepSkyRows: DeepSkyRow[] = [],
 ): Scene {
 	const time = MakeTime(now)
 	const observer = new Observer(position.latitude, position.longitude, 0)
@@ -184,6 +187,7 @@ export function buildScene(
 		cloudCover,
 		showers: showersAt(now, toSky, sunAltitude, meteorShowers),
 		milkyWay: () => (milkyWayShown ??= milkyWayData ? milkyWay(milkyWayData, toHorizon.rot) : []),
+		deepSky: deepSkyObjects(deepSkyRows, toSky),
 		toSky,
 		figureAt:
 			culture === "norse"

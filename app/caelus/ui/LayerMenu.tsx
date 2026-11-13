@@ -8,6 +8,8 @@ import { useStored } from "./use-stored"
 // respektive var norrsken kan synas.
 export const PLANET_FOCUS_KEY = "caelus-planet-focus"
 export const AURORA_FOCUS_KEY = "caelus-aurora-focus"
+// Och galaxerna och nebulosorna, som annars syns svagt.
+export const DEEP_SKY_FOCUS_KEY = "caelus-deep-sky-focus"
 // Molnen enligt prognosen visas tills de slås av.
 export const CLOUDS_KEY = "caelus-clouds"
 // Likaså meteorregnen.
@@ -21,7 +23,7 @@ function useToggle(key: string, onByDefault: boolean) {
 }
 
 /**
- * Vad kartan visar: planetfokus, norrsken, moln och meteorregn, och om blicken följer telefonen,
+ * Vad kartan visar: planetfokus, norrsken, galaxer och nebulosor, moln och meteorregn, och om blicken följer telefonen,
  * slagna av och på. Menyns egen
  * lista, med menyns rader; `item` är radernas klasser.
  */
@@ -35,6 +37,7 @@ export default function LayerMenu({ item }: { item: string }) {
 	const toggles = [
 		{ label: "Planetfokus", toggle: useToggle(PLANET_FOCUS_KEY, false) },
 		{ label: "Norrsken", toggle: useToggle(AURORA_FOCUS_KEY, false) },
+		{ label: "Galaxer och nebulosor", toggle: useToggle(DEEP_SKY_FOCUS_KEY, false) },
 		{ label: "Moln", toggle: useToggle(CLOUDS_KEY, true) },
 		{ label: "Meteorregn", toggle: useToggle(METEORS_KEY, true) },
 		...(canFollow ? [{ label: "Följ telefonen", toggle: [following.on, toggleFollowing] as const }] : []),

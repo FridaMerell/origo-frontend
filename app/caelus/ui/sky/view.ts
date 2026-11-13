@@ -60,11 +60,12 @@ export function starLimitAt(detail: number) {
 // båge när man zoomar ut, och marken når inte ända ut i hörnen.
 export function makeProjection(view: View, width: number, height: number) {
 	const scale = baseScale(width, height) * view.zoom
-	const corner = Math.hypot(width, height) / 2
+	const [shiftX, shiftY] = view.shift ?? [0, 0]
+	const corner = Math.hypot(width / 2 + Math.abs(shiftX), height / 2 + Math.abs(shiftY))
 	const reach = (2 * Math.atan(corner / scale) * 180) / Math.PI + 4
 	return geoStereographic()
 		.scale(scale)
-		.translate([width / 2, height / 2])
+		.translate([width / 2 + shiftX, height / 2 + shiftY])
 		.rotate([-view.azimuth, -view.altitude])
 		.clipAngle(Math.min(172, Math.max(110, reach)))
 		.precision(0.3)

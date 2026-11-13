@@ -1,4 +1,5 @@
 import type { Body } from "astronomy-engine"
+import { deepSkyShown } from "./deep-sky"
 import type { Scene, View } from "./types"
 import { detailOf, makeProjection, starLimitAt } from "./view"
 
@@ -8,6 +9,8 @@ const FIGURE_DISTANCE = 28
 const STAR_DISTANCE = 16
 // Och en himlakropp, vars ring är större.
 const BODY_DISTANCE = 22
+// Och en galax eller nebulosa, när dess form är mindre än så.
+const DEEP_SKY_DISTANCE = 16
 
 function distanceToSegment(
 	[x, y]: [number, number],
@@ -65,6 +68,33 @@ export function pickBody(scene: Scene, view: View, width: number, height: number
 		if (candidate < distance) {
 			distance = candidate
 			nearest = body
+		}
+	}
+	return nearest
+}
+
+/**
+ * Radnumret för den galax eller nebulosa som syns och ligger närmast en punkt på kartan, om
+ * punkten ligger inom dess form eller nära nog dess mitt. `focus` är hur långt fokus tonat in.
+ */
+export function pickDeepSky(scene: Scene, view: View, width: number, height: number, x: number, y: number, focus: number) {
+	const projection = makeProjection(view, width, height)
+	const detail = detailOf(view, width, height)
+	let nearest: number | null = null
+	let score = Infinity
+	for (const object of scene.deepSky) {
+		if (object.at[1] < 0 || deepSkyShown(object.magnitude, detail, focus) < 0.3) continue
+		const centre = projection(object.at)
+		const majorEnd = projection(object.majorEnd)
+		if (!centre || !majorEnd) continue
+		const reach = Math.max(DEEP_SKY_DISTANCE, Math.hypot(majorEnd[0] - centre[0], majorEnd[1] - centre[1]))
+		const distance = Math.hypot(centre[0] - x, centre[1] - y)
+		if (distance > reach) continue
+		// Mitten väger tyngst, så att en liten galax framför en stor går att träffa.
+		const candidate = distance / reach
+		if (candidate < score) {
+			score = candidate
+			nearest = object.index
 		}
 	}
 	return nearest

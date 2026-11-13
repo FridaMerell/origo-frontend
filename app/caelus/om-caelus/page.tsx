@@ -43,6 +43,11 @@ const SECTIONS: { title: string; text: string; sources: Source[] }[] = [
 		sources: [{ name: "d3-celestial", href: "https://github.com/ofrohn/d3-celestial", note: "Olaf Frohn. BSD-3-Clause" }],
 	},
 	{
+		title: "Galaxerna och nebulosorna",
+		text: "Messierkatalogens galaxer och nebulosor, med läge, magnitud, storlek och lutning.",
+		sources: [{ name: "OpenNGC", href: "https://github.com/mattiaverga/OpenNGC", note: "Mattia Verga. CC BY-SA 4.0" }],
+	},
+	{
 		title: "Solen, månen och planeterna",
 		text: "Positioner, månfas och skymning beräknas lokalt. Stereografisk projektion.",
 		sources: [

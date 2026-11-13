@@ -7,9 +7,9 @@ import type { Person, PersonRelation } from "@/app/lib/dal"
 
 const W = 176 // card width
 const H = 60 // card height
-const GX = 20 // horizontal gap
-const GY = 52 // vertical gap between generations
-const PAD = 24
+const GX = 36 // horizontal gap
+const GY = 100 // room for engraved branches between generations
+const PAD = 36
 const MAX_UP = 3
 const MAX_DOWN = 3
 
@@ -47,7 +47,7 @@ function buildGraph(relations: PersonRelation[]): Graph {
 }
 
 type Placed = { key: string; id: string; x: number; y: number; role: "root" | "kin" | "sibling" }
-type Path = { key: string; d: string }
+type Path = { key: string; d: string; leaf?: { x: number; y: number; angle: number } }
 
 // A partner unit (a person plus partners) with its descendants, laid out top-down.
 type DownNode = { ids: string[]; kids: DownNode[]; width: number }
@@ -84,7 +84,8 @@ function buildUp(id: string, graph: Graph, depth: number, seen: Set<string>): Up
 
 function elbow(x1: number, y1: number, x2: number, y2: number): string {
   const mid = (y1 + y2) / 2
-  return `M ${x1} ${y1} V ${mid} H ${x2} V ${y2}`
+  const bend = Math.sign(x2 - x1) * Math.min(14, Math.abs(x2 - x1) / 5)
+  return `M ${x1} ${y1} C ${x1 + bend} ${mid}, ${x2 - bend} ${mid}, ${x2} ${y2}`
 }
 
 function layout(rootId: string, graph: Graph) {
@@ -97,30 +98,27 @@ function layout(rootId: string, graph: Graph) {
   const unitLeft = -unitWidth(down.ids.length) / 2
   const rootCenter = unitLeft + W / 2
 
-  function placeDown(node: DownNode, left: number, y: number, anchor?: { x: number; y: number }, isRoot = false) {
+  function placeDown(node: DownNode, left: number, y: number, isRoot = false) {
     const center = left + node.width / 2
     const uLeft = center - unitWidth(node.ids.length) / 2
     node.ids.forEach((id, i) => {
       const x = uLeft + i * (W + GX)
       placed.push({ key: nextKey(), id, x, y, role: isRoot && i === 0 ? "root" : "kin" })
-      if (i > 0) paths.push({ key: nextKey(), d: `M ${x - GX} ${y + H / 2} H ${x}` })
     })
-    if (anchor) paths.push({ key: nextKey(), d: elbow(anchor.x, anchor.y, center, y) })
 
     const kidsWidth = node.kids.reduce((s, k) => s + k.width, 0) + Math.max(0, node.kids.length - 1) * GX
     let cursor = left + (node.width - kidsWidth) / 2
     for (const kid of node.kids) {
-      placeDown(kid, cursor, y + H + GY, { x: center, y: y + H })
+      placeDown(kid, cursor, y + H + GY)
       cursor += kid.width + GX
     }
   }
-  placeDown(down, -down.width / 2, 0, undefined, true)
+  placeDown(down, -down.width / 2, 0, true)
 
   const up = buildUp(rootId, graph, 0, new Set([rootId]))
   function placeUp(node: UpNode, center: number, y: number, childTop?: { x: number; y: number }) {
     if (childTop) {
       placed.push({ key: nextKey(), id: node.id, x: center - W / 2, y, role: "kin" })
-      paths.push({ key: nextKey(), d: elbow(childTop.x, childTop.y, center, y + H) })
     }
     const parentsWidth = node.parents.reduce((s, p) => s + p.width, 0) + Math.max(0, node.parents.length - 1) * GX
     let cursor = center - parentsWidth / 2
@@ -137,16 +135,51 @@ function layout(rootId: string, graph: Graph) {
     placed.push({ key: nextKey(), id, x: unitLeft - (i + 1) * (W + GX), y: 0, role: "sibling" })
   })
 
+  // Draw actual relationships, never an inferred link from a whole partner unit.
+  const positions = new Map<string, Placed[]>()
+  for (const card of placed) {
+    const copies = positions.get(card.id) ?? []
+    copies.push(card)
+    positions.set(card.id, copies)
+  }
+  for (const [parentId, children] of graph.children) {
+    for (const childId of children) {
+      const candidates = (positions.get(parentId) ?? []).flatMap((parent) =>
+        (positions.get(childId) ?? []).map((child) => ({ parent, child })),
+      )
+      const pair = candidates.sort((a, b) =>
+        Math.abs(a.parent.y - a.child.y) - Math.abs(b.parent.y - b.child.y) ||
+        Math.abs(a.parent.x - a.child.x) - Math.abs(b.parent.x - b.child.x),
+      )[0]
+      if (!pair) continue
+      const { parent, child } = pair
+      const x1 = parent.x + W / 2
+      const x2 = child.x + W / 2
+      const below = child.y > parent.y
+      const y1 = parent.y + (below ? H : 0)
+      const y2 = child.y + (below ? 0 : H)
+      paths.push({ key: nextKey(), d: elbow(x1, y1, x2, y2),
+        leaf: { x: (x1 + x2) / 2, y: (y1 + y2) / 2, angle: below ? 0 : 180 } })
+    }
+  }
+  const pairs = new Set<string>()
+  for (const [id, partners] of graph.partners) {
+    for (const partnerId of partners) {
+      const key = [id, partnerId].sort().join(":")
+      if (pairs.has(key)) continue
+      pairs.add(key)
+      const a = positions.get(id)?.[0]
+      const b = positions.get(partnerId)?.[0]
+      if (!a || !b || a.y !== b.y) continue
+      const [left, right] = a.x < b.x ? [a, b] : [b, a]
+      // Route additional partnerships above the row, clear of intervening cards.
+      const y = left.y + H / 2
+      paths.push({ key: nextKey(), d: right.x - left.x > W + GX
+        ? `M ${left.x + W / 2} ${left.y} V ${left.y - 18} H ${right.x + W / 2} V ${right.y}`
+        : `M ${left.x + W} ${y} Q ${left.x + W + GX / 2} ${y - 4} ${right.x} ${y}` })
+    }
+  }
   return { placed, paths }
-}
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("")
 }
 
 /** Family tree around one person: parents above, children below, partners and siblings beside. */
@@ -166,7 +199,9 @@ export function FamilyTree({
   const byId = useMemo(() => new Map(people.map((p) => [String(p.id), p])), [people])
 
   const tree = useMemo(() => {
-    const graph = buildGraph(relations)
+    const graph = buildGraph(relations.filter((relation) =>
+      byId.has(String(relation.person)) && byId.has(String(relation.related)),
+    ))
     const { placed, paths } = layout(rootId, graph)
     const visible = placed.filter((p) => byId.has(p.id))
     if (visible.length === 0) return null
@@ -204,24 +239,25 @@ export function FamilyTree({
 
   return (
     <div className="flex flex-col gap-2">
-      <div ref={scrollRef} className="overflow-auto rounded-lg border border-border bg-surface-2">
+      <div ref={scrollRef} className="overflow-auto rounded-lg border border-border bg-bg">
         <div className="relative" style={{ width: tree.width, height: tree.height }}>
           <svg
             width={tree.width}
             height={tree.height}
             aria-hidden
-            className="pointer-events-none absolute inset-0 text-text-faint"
+            className="pointer-events-none absolute inset-0 text-accent"
           >
             {tree.paths.map((path) => (
-              <path
-                key={path.key}
-                d={path.d}
-                transform={`translate(${tree.dx} ${tree.dy})`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.5}
-                strokeLinejoin="round"
-              />
+              <g key={path.key} transform={`translate(${tree.dx} ${tree.dy})`} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
+                <path d={path.d} strokeWidth={4.5} opacity={0.8} />
+                <path d={path.d} stroke="var(--bg)" strokeWidth={2.3} />
+                <path d={path.d} strokeWidth={0.65} strokeDasharray="0.7 3.2" />
+                {path.leaf && (
+                  <g transform={`translate(${path.leaf.x} ${path.leaf.y}) rotate(${path.leaf.angle})`} strokeWidth={0.9}>
+                    <path d="M 0 0 C -7 -8 -8 -15 -13 -22 M -7 -13 C -20 -12 -23 -22 -23 -25 C -13 -25 -8 -20 -7 -13 Z M -10 -18 L -21 -23 M 0 0 C 7 -4 12 -10 15 -17 M 8 -8 C 7 -19 15 -24 20 -25 C 23 -16 17 -9 8 -8 Z M 9 -10 L 18 -22" />
+                  </g>
+                )}
+              </g>
             ))}
           </svg>
           {tree.cards.map((card) => {
@@ -233,21 +269,16 @@ export function FamilyTree({
                 href={personHref(p.id)}
                 aria-current={isRoot ? "true" : undefined}
                 style={{ left: card.x + tree.dx, top: card.y + tree.dy, width: W, height: H }}
-                className={`absolute flex items-center gap-2 rounded-lg border bg-surface px-2.5 no-underline duration-200 hover:bg-surface-2 ${
+                title={p.name}
+                className={`absolute flex items-center justify-center rounded-lg border px-3 no-underline duration-200 hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent ${
                   isRoot
-                    ? "border-text shadow-card"
+                    ? "border-accent bg-accent-wash"
                     : card.role === "sibling"
-                      ? "border-dashed border-text-faint"
-                      : "border-border"
+                      ? "border-dashed border-text-faint bg-surface"
+                      : "border-border bg-surface"
                 }`}
               >
-                <span
-                  aria-hidden
-                  className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-xs font-semibold text-text-muted"
-                >
-                  {initials(p.name)}
-                </span>
-                <span className="flex min-w-0 flex-col">
+                <span className="flex min-w-0 flex-col items-center gap-1">
                   <span className="truncate text-sm font-semibold text-text">{p.name}</span>
                   <span className="truncate text-xs text-text-faint">{lifespan(p) || p.relation}</span>
                 </span>
@@ -257,7 +288,7 @@ export function FamilyTree({
         </div>
       </div>
       <p className="m-0 text-xs text-text-faint">
-        Föräldrar ovanför, barn nedanför, partner bredvid (heldragen linje) och syskon till vänster (streckad ram).
+        Föräldrar ovanför, barn nedanför, partner bredvid och syskon till vänster (streckad ram).
         Klicka på en person för att flytta trädet dit.
       </p>
     </div>

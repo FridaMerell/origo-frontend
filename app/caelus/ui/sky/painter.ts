@@ -5,7 +5,7 @@ import { auroraAt } from "./aurora"
 import type { Direction } from "./compass"
 import { auroraMoving } from "./layers/aurora"
 import { meteorsWait } from "./layers/meteors"
-import { pickBody, pickFigure, pickStar } from "./pick"
+import { pickBody, pickDeepSky, pickFigure, pickStar } from "./pick"
 import { drawScene } from "./render"
 import type { Art, Figure, Guide, Level, Scene, SkyPoint } from "./types"
 import { dialGeometry, DIRECTION } from "./dial"
@@ -77,6 +77,11 @@ export function createPainter(
 	// Och norrskensfokus.
 	let auroraFocus = false
 	let auroraLevel = 0
+	// Och galax- och nebulosafokus.
+	let deepSkyFocus = false
+	let deepSkyLevel = 0
+	// Den framklickade galaxen eller nebulosan, som markeras som en vald stjärna.
+	let deepSkyChosen: number | null = null
 	// Kp-värdet norrskenet ritas för just nu. Det glider mot himlens, så att norrskenet flyttar
 	// sig mjukt när tiden vrids över en gräns mellan två treTimmarsperioder.
 	let shownKp: number | null = null
@@ -166,6 +171,7 @@ export function createPainter(
 		for (const drawing of art.values()) drawing.arrived = approach(drawing.arrived, 1, 0.5)
 		planetLevel = approach(planetLevel, planetFocus ? 1 : 0, 0.5)
 		auroraLevel = approach(auroraLevel, auroraFocus ? 1 : 0, 0.5)
+		deepSkyLevel = approach(deepSkyLevel, deepSkyFocus ? 1 : 0, 0.5)
 		cloudLevel = approach(cloudLevel, clouds ? 1 : 0, 0.5)
 		meteorLevel = approach(meteorLevel, meteors ? 1 : 0, 0.5)
 		// Övrig text tonas ner när en figur är vald, inte när den bara pekas ut: pekaren står
@@ -182,6 +188,8 @@ export function createPainter(
 			const at = scene.starByIndex.get(index)?.at
 			if (at && next > 0) marks.push({ at, level: next })
 		}
+		const chosenObject = deepSkyChosen === null ? undefined : scene.deepSky.find(item => item.index === deepSkyChosen)
+		if (chosenObject) marks.push({ at: chosenObject.at, level: 1 })
 
 		shownKp = scene.kp === null ? null : shownKp === null ? scene.kp : approach(shownKp, scene.kp, KP_RATE)
 		const sky =
@@ -202,6 +210,7 @@ export function createPainter(
 			figureNames,
 			planetFocus: planetLevel,
 			auroraFocus: auroraLevel,
+			deepSkyFocus: deepSkyLevel,
 			cloudsShown: cloudLevel,
 			meteorsShown: meteorLevel,
 			lifted: liftLevel,
@@ -345,6 +354,19 @@ export function createPainter(
 	// Riktningen handen har vridit blicken till. Blicken följer den, utom nära ett väderstreck,
 	// där den dras mot det (se `magnetic`).
 	let hand = view.azimuth
+	// Punkten i kartan som ett hjul eller nyp zoomar mot: pekaren, eller mitt mellan fingrarna.
+	const anchorOf = (source: Event): [number, number] | null => {
+		const bounds = canvas.getBoundingClientRect()
+		if (source.type === "wheel") {
+			const wheel = source as WheelEvent
+			return [wheel.clientX - bounds.left, wheel.clientY - bounds.top]
+		}
+		const touches = "touches" in source ? Array.from((source as TouchEvent).touches) : []
+		if (touches.length < 2) return null
+		const x = touches.reduce((sum, touch) => sum + touch.clientX, 0) / touches.length
+		const y = touches.reduce((sum, touch) => sum + touch.clientY, 0) / touches.length
+		return [x - bounds.left, y - bounds.top]
+	}
 	const behavior = zoom<HTMLCanvasElement, unknown>()
 		.scaleExtent(ZOOM_EXTENT)
 		// Som d3-zooms eget filter, men ett tag i kalenderskivan ska vrida den, inte panorera.
@@ -359,20 +381,40 @@ export function createPainter(
 		})
 		.on("zoom", (event: D3ZoomEvent<HTMLCanvasElement, unknown>) => {
 			const transform = event.transform
-			// Hjul och nyp zoomar bara. d3-zoom flyttar samtidigt bilden så att punkten under
-			// fingrarna står still, men här skulle den förflyttningen bli en vriden himmel.
 			const source = event.sourceEvent as Event | null
 			const pinching = source !== null && "touches" in source && (source as TouchEvent).touches.length > 1
+			const clamp = () => {
+				if (!following) view.altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), view.altitude))
+			}
 			if (source?.type !== "wheel" && !pinching && !following) {
 				const degrees = degreesPerPixel(width, height, transform.k)
 				hand = (hand - (transform.x - last.x) * degrees + 360) % 360
 				view.azimuth = magnetic(hand)
 				view.altitude += (transform.y - last.y) * degrees
 			}
+			// Hjul och nyp zoomar mot punkten under pekaren eller mellan fingrarna, som en vanlig
+			// karta: bilden förstoras kring den punkten, som står kvar under fingret. Blickriktningen
+			// ändras inte, så himlen vrids aldrig av en zoom; i stället flyttar sig blickriktningens
+			// punkt från kartans mitt (`shift`). Utzoomad glider den tillbaka till mitten, så att
+			// himlens rundel hamnar mitt på kartan.
+			const anchor = source && !following && transform.k !== view.zoom ? anchorOf(source) : null
+			const grown = transform.k / view.zoom
 			view.zoom = transform.k
-			if (!following) {
-				view.altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), view.altitude))
+			if (anchor) {
+				const [shiftX, shiftY] = view.shift ?? [0, 0]
+				const centreX = width / 2 + shiftX
+				const centreY = height / 2 + shiftY
+				// Inzoomat kan blickriktningens punkt hamna långt utanför kartan, lika långt som
+				// förstoringen räcker; utzoomad ska den tillbaka till mitten.
+				const room = Math.min(1, Math.max(0, (view.zoom - 0.85) / 0.3)) * Math.max(1, view.zoom)
+				const limit = (value: number, half: number) => Math.max(-half * room, Math.min(half * room, value))
+				view.shift = [
+					limit(anchor[0] + (centreX - anchor[0]) * grown - width / 2, width / 2),
+					limit(anchor[1] + (centreY - anchor[1]) * grown - height / 2, height / 2),
+				]
 			}
+			if (following) view.shift = undefined
+			clamp()
 			last = transform
 			redraw()
 		})
@@ -442,6 +484,18 @@ export function createPainter(
 			auroraFocus = on
 			redraw()
 		},
+		/** Lyfter fram galaxerna och nebulosorna och låter resten av himlen träda tillbaka. */
+		setDeepSkyFocus(on: boolean) {
+			if (deepSkyFocus === on) return
+			deepSkyFocus = on
+			redraw()
+		},
+		/** Markerar en framklickad galax eller nebulosa, efter radnummer, eller ingen. */
+		setDeepSky(index: number | null) {
+			if (deepSkyChosen === index) return
+			deepSkyChosen = index
+			redraw()
+		},
 		/** Visar eller döljer molnen. */
 		setClouds(on: boolean) {
 			if (clouds === on) return
@@ -465,6 +519,8 @@ export function createPainter(
 			}
 			following = true
 			glide = null
+			// Telefonen pekar rakt fram: det den pekar på ligger mitt på kartan.
+			view.shift = undefined
 			// Små darrningar ritas inte om.
 			const turned = Math.abs(((direction.azimuth - view.azimuth + 540) % 360) - 180)
 			if (turned < 0.05 && Math.abs(direction.altitude - view.altitude) < 0.05) return
@@ -497,6 +553,8 @@ export function createPainter(
 		lookAt(at: SkyPoint) {
 			if (following) return
 			const altitude = Math.min(90, Math.max(lowestAltitude(width, height, view.zoom), at[1]))
+			// Målet ska hamna mitt på kartan.
+			view.shift = undefined
 			glide = { from: [view.azimuth, view.altitude], to: [(at[0] + 360) % 360, altitude], since: performance.now() }
 			redraw()
 		},
@@ -529,6 +587,9 @@ export function createPainter(
 		},
 		bodyAt(x: number, y: number) {
 			return scene ? pickBody(scene, view, width, height, x, y) : null
+		},
+		deepSkyAt(x: number, y: number) {
+			return scene ? pickDeepSky(scene, view, width, height, x, y, deepSkyLevel) : null
 		},
 		/** Sant en gång efter att kalenderskivan vridits, så att släppet inte räknas som ett klick. */
 		consumeTurn() {

@@ -546,6 +546,16 @@
   /* Norrskenets band på kartan: den enda färgen utanför bläck och papper. I ljust läge
      norrskenets röda, från syret högst upp i ridån, dragen mot kvävets magenta. */
   --aurora: #a3395f;
+  /* Galaxernas och nebulosornas färger på kartan, som akvarellfärger på ljust papper (de läggs
+     multiplicerade, som en lavering): spiralgalaxens varma kärna och blåare skiva,
+     emissionsnebulosornas vätgasrosa, reflexionsnebulosornas blå, de planetariska nebulosornas
+     turkos och supernovarestens rödorange. */
+  --galaxy-core: #d08a2e;
+  --galaxy-disc: #4a78c8;
+  --nebula: #c96690;
+  --reflection-nebula: #3f7ad6;
+  --planetary-nebula: #2f9c8f;
+  --remnant: #c8622e;
   --surface: #faf7f0;
   --surface-2: #ebe4d6;
   --surface-raised: #faf7f0;
@@ -584,6 +594,12 @@
   [data-theme="caelus"]:not([data-mode="light"]) {
     --bg: #13152b;
     --aurora: #a8cbb2;
+    --galaxy-core: #ead6a8;
+    --galaxy-disc: #a4b7dc;
+    --nebula: #e0a2b6;
+    --reflection-nebula: #a3b8e0;
+    --planetary-nebula: #a3cfc6;
+    --remnant: #e2b096;
     --surface: #1c1f38;
     --surface-2: #252946;
     --surface-raised: #1c1f38;
@@ -616,6 +632,12 @@
 [data-theme="caelus"][data-mode="dark"] {
   --bg: #13152b;
   --aurora: #a8cbb2;
+  --galaxy-core: #ead6a8;
+  --galaxy-disc: #a4b7dc;
+  --nebula: #e0a2b6;
+  --reflection-nebula: #a3b8e0;
+  --planetary-nebula: #a3cfc6;
+  --remnant: #e2b096;
   --surface: #1c1f38;
   --surface-2: #252946;
   --surface-raised: #1c1f38;

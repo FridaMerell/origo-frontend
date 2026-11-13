@@ -11,7 +11,10 @@ export function drawNames(pen: Pen, labelled: LabelledStar[]) {
 	const { context, projection, ink, paper, family, onScreen, label, spacing } = pen
 	const { detail, named, raised, plain, outgoing, strength, receded, quieted, letterLimit, starScale, lettered, figuresLettered } =
 		pen
-	if (named <= 0.01) return
+	// Med galaxfokus träder stjärnbildernas och stjärnornas namn tillbaka helt, så att galaxernas
+	// och nebulosornas namn får plats.
+	const kept = 1 - pen.deepSkyFocus
+	if (named <= 0.01 || kept <= 0.01) return
 	// Den framlyfta figur en stjärna ingår i, alltså en av stjärnorna figurens linjer dras mellan;
 	// inte bara en som råkar ligga inom stjärnbildens gränser.
 	const vertices = raised.map(figure => ({ figure, points: figure.lines.flat() }))
@@ -36,7 +39,7 @@ export function drawNames(pen: Pen, labelled: LabelledStar[]) {
 		if (!pen.figureNames || alpha <= 0.01 || figure.at[1] < 0) return
 		const point = projection(figure.at)
 		if (!onScreen(point)) return
-		context.globalAlpha = alpha * named
+		context.globalAlpha = alpha * named * kept
 		context.font = `500 ${size}px ${family}`
 		// Grekiska versaler skrivs utan accenter; för övriga alfabet gör regeln ingen skillnad.
 		label(figure.name.toLocaleUpperCase("el"), point[0], point[1])
@@ -67,6 +70,7 @@ export function drawNames(pen: Pen, labelled: LabelledStar[]) {
 		// när figurens teckning syns, så att bilden står i fokus.
 		const figure = figureOf(star)
 		const alpha =
+			kept *
 			named *
 			(figure ? mix(quieted, 1, strength(figure)) * (1 - pen.drawnFor(figure.id)) : quieted) *
 			lettered *

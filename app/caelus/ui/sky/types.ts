@@ -1,5 +1,6 @@
 import type { Body } from "astronomy-engine"
 import type { Aurora } from "./aurora"
+import type { DeepSkyObject } from "./deep-sky"
 import type { Shower } from "./meteors"
 
 // public/caelus/data/stars.json: HYG:s stjärnor ljusare än magnitud 6,5, ljusast först.
@@ -126,6 +127,8 @@ export type Scene = {
 	// Vintergatans nivåer, den svagaste först; varje nivå är polygoner av ringar. Räknas ut
 	// första gången den behövs, eftersom den inte ritas utzoomat. Tom tills konturen hämtats.
 	milkyWay: () => SkyPoint[][][][]
+	// Galaxerna och nebulosorna som är uppe; tom tills filen hämtats.
+	deepSky: DeepSkyObject[]
 	// Från rektascension och deklination (J2000, grader) till en punkt på den här himlen.
 	toSky: (equatorial: [number, number]) => SkyPoint
 	// Stjärnbilden vars område en punkt ligger i, enligt IAU:s gränser. Saknas för den nordiska
@@ -134,7 +137,9 @@ export type Scene = {
 }
 
 // Blickriktningen och förstoringen.
-export type View = { azimuth: number; altitude: number; zoom: number }
+// `shift` är hur långt blickriktningens punkt ligger från kartans mitt, i pixlar: en zoom mot
+// pekaren förstorar kartan kring pekaren, som en vanlig karta, utan att vrida himlen.
+export type View = { azimuth: number; altitude: number; zoom: number; shift?: [number, number] }
 
 // Hur mycket en figur är framlyft just nu (0…1), av pekaren respektive av att vara vald.
 // Nivåerna glider mot sina mål, så att framlyftningen både kommer och går mjukt.

@@ -29,6 +29,8 @@ export type Frame = {
 	planetFocus: number
 	// 0…1: detsamma för norrskensfokus, som lyfter fram var norrsken kan synas.
 	auroraFocus: number
+	// 0…1: detsamma för galaxer och nebulosor.
+	deepSkyFocus: number
 	// 0…1: hur långt molnen har tonat in; de slås av och på i menyn.
 	cloudsShown: number
 	// 0…1: detsamma för meteorregnen.
@@ -43,6 +45,9 @@ export type Frame = {
 	guide: Guide | null
 }
 
+// Temats färger för galaxer och nebulosor, efter CSS-variabelns namn.
+export type SpaceColor = "galaxy-core" | "galaxy-disc" | "nebula" | "reflection-nebula" | "planetary-nebula" | "remnant"
+
 // Där en text redan står på kartan.
 export type Box = { left: number; right: number; top: number; bottom: number }
 
@@ -56,6 +61,8 @@ export type Pen = Frame & {
 	paper: string
 	// Norrskenets färg.
 	aurora: string
+	// Galaxernas och nebulosornas färger.
+	space: Record<SpaceColor, string>
 	// Om papperet är ljust. Svaga toner som är avvägda mot mörkt papper syns för lite mot ljust,
 	// och det som lyser i mörkret graveras i stället.
 	light: boolean
@@ -269,6 +276,12 @@ export function createPen(canvas: HTMLCanvasElement, frame: Frame, placed: Box[]
 		ink: styles.color,
 		paper,
 		aurora: styles.getPropertyValue("--aurora").trim() || styles.color,
+		space: Object.fromEntries(
+			(["galaxy-core", "galaxy-disc", "nebula", "reflection-nebula", "planetary-nebula", "remnant"] as const).map(name => [
+				name,
+				styles.getPropertyValue(`--${name}`).trim() || styles.color,
+			]),
+		) as Record<SpaceColor, string>,
 		light,
 		contrast: light ? 1.6 : 1,
 		family: styles.fontFamily,

@@ -1,6 +1,7 @@
 import { drawAurora } from "./layers/aurora"
 import { drawBodies } from "./layers/bodies"
 import { drawClouds } from "./layers/clouds"
+import { drawDeepSky } from "./layers/deep-sky"
 import { drawDial } from "./layers/dial"
 import { drawFigures } from "./layers/figures"
 import { drawGrid } from "./layers/grid"
@@ -50,15 +51,18 @@ export function drawScene(canvas: HTMLCanvasElement, frame: Frame, motionOnly = 
 	const labelled = drawStars(pen)
 	drawMarks(pen)
 	drawNames(pen, labelled)
-	// Med planet- eller norrskensfokus läggs en slöja av papper över stjärnor, figurer och namn,
-	// så att det som lyfts fram står ut. Ljust papper bleker mer än mörkt, så slöjan är tunnare där.
-	const focus = Math.max(pen.planetFocus, pen.auroraFocus)
+	// Med planet-, norrskens- eller galaxfokus läggs en slöja av papper över stjärnor, figurer och
+	// namn, så att det som lyfts fram står ut. Ljust papper bleker mer än mörkt, så slöjan är
+	// tunnare där.
+	const focus = Math.max(pen.planetFocus, pen.auroraFocus, pen.deepSkyFocus)
 	if (focus > 0) {
 		pen.context.globalAlpha = (pen.light ? 0.35 : 0.65) * focus
 		pen.context.fillStyle = pen.paper
 		pen.context.fillRect(0, 0, pen.width, pen.height)
 		pen.context.globalAlpha = 1
 	}
+	// Galaxerna och nebulosorna står still på himlen men ligger över slöjan, så att fokus lyfter fram dem.
+	drawDeepSky(pen)
 
 	// Medan handen rör kartan ritas varje bild hel ändå, så då sparas ingenting.
 	if (frame.moving) below = null

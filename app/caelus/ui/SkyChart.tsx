@@ -4,7 +4,7 @@ import type { Body } from "astronomy-engine"
 import type { MeteorShower } from "@/app/lib/dal/caelus"
 import { useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react"
 import { EVENTS_KEY, QUIZ_KEY, TONIGHT_KEY } from "./CaelusMenu"
-import { AURORA_FOCUS_KEY, CLOUDS_KEY, METEORS_KEY, PLANET_FOCUS_KEY } from "./LayerMenu"
+import { AURORA_FOCUS_KEY, CLOUDS_KEY, DEEP_SKY_FOCUS_KEY, METEORS_KEY, PLANET_FOCUS_KEY } from "./LayerMenu"
 import { useDarkMode } from "./CaelusTheme"
 import CultureSwitch from "./CultureSwitch"
 import EventsPanel from "./EventsPanel"
@@ -13,7 +13,8 @@ import { answerQuiz, createQuiz, nextQuestion, quizConstellations, selectionPool
 import QuizPanel from "./QuizPanel"
 import SkySearch, { type Sought } from "./SkySearch"
 import { SKY_CULTURES, SWEDISH_NAMES, type SkyCulture } from "./sky-cultures"
-import { bodyInfo, figureInfo, starInfo, type SelectedStar, type StarDetails } from "./sky-info"
+import { bodyInfo, deepSkyInfo, figureInfo, starInfo, type SelectedStar, type StarDetails } from "./sky-info"
+import type { DeepSkyRow } from "./sky/deep-sky"
 import { cloudCoverAt, describeCloudCover, fetchCloudCover, type CloudStep } from "./sky/clouds"
 import { darknessAt, darknessInfo } from "./sky/darkness"
 import { tonightAt } from "./sky/tonight"
@@ -104,6 +105,10 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const planetFocus = storedFocus === "on"
 	const [storedAurora] = useStored(AURORA_FOCUS_KEY)
 	const auroraFocus = storedAurora === "on"
+	const [storedDeepSky] = useStored(DEEP_SKY_FOCUS_KEY)
+	const deepSkyFocus = storedDeepSky === "on"
+	// Galaxerna och nebulosorna, som hämtas för sig så att kartan inte väntar på dem.
+	const [deepSkyRows, setDeepSkyRows] = useState<DeepSkyRow[]>([])
 	// Kp-index från NOAA, uppmätt och prognos i treTimmarsperioder; tomt tills det hämtats.
 	const [kpPeriods, setKpPeriods] = useState<KpPeriod[]>([])
 	// Molnen slås av och på i menyn. Prognosen kommer från SMHI och gäller platsen; tom tills den
@@ -122,6 +127,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const [starIndex, setStarIndex] = useState<number | null>(null)
 	const [chosenBody, setChosenBody] = useState<Body | null>(null)
 	const [chosenFigure, setChosenFigure] = useState<string | null>(null)
+	const [chosenDeepSky, setChosenDeepSky] = useState<number | null>(null)
 	// Hämtas först när en stjärna öppnas.
 	const [details, setDetails] = useState<StarDetails[] | null>(null)
 	const detailsRequestedRef = useRef(false)
@@ -150,7 +156,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	// Kvällens förutsättningar, som öppnas från betyget i tidsraden. De visas i infopanelen och
 	// stängs när något på kartan klickas fram.
 	const [darknessOpen, setDarknessOpen] = useState(false)
-	const hasSelection = starIndex !== null || chosenBody !== null || chosenFigure !== null
+	const hasSelection = starIndex !== null || chosenBody !== null || chosenFigure !== null || chosenDeepSky !== null
 	const [hadSelection, setHadSelection] = useState(hasSelection)
 	if (hasSelection !== hadSelection) {
 		setHadSelection(hasSelection)
@@ -188,6 +194,14 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	useEffect(() => {
 		painterRef.current?.setAuroraFocus(auroraFocus)
 	}, [auroraFocus])
+
+	useEffect(() => {
+		painterRef.current?.setDeepSkyFocus(deepSkyFocus)
+	}, [deepSkyFocus])
+
+	useEffect(() => {
+		painterRef.current?.setDeepSky(chosenDeepSky)
+	}, [chosenDeepSky])
 
 	// Kp hämtas när sidan öppnas och sedan en gång i timmen; ett misslyckat försök lämnar det
 	// som redan finns, och kartan ritar då inget norrsken där värden saknas.
@@ -250,6 +264,10 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		load("/data/mw.json")
 			.then(file => setMilkyWayData(prepareMilkyWay(file)))
 			.catch(() => {})
+		// Likaså utan galaxerna och nebulosorna.
+		load("/data/deep-sky.json")
+			.then((rows: DeepSkyRow[]) => setDeepSkyRows(rows))
+			.catch(() => {})
 	}, [])
 
 	const time = chosenTime ?? now
@@ -258,8 +276,10 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	const cloudCover = cloudCoverAt(cloudSteps, shown)
 	const scene = useMemo(
 		() =>
-			shown ? buildScene(shown, position, skyCulture, catalogue, kp, milkyWayData, cloudCover, meteorShowers) : null,
-		[shown, position, skyCulture, catalogue, kp, milkyWayData, cloudCover, meteorShowers],
+			shown
+				? buildScene(shown, position, skyCulture, catalogue, kp, milkyWayData, cloudCover, meteorShowers, deepSkyRows)
+				: null,
+		[shown, position, skyCulture, catalogue, kp, milkyWayData, cloudCover, meteorShowers, deepSkyRows],
 	)
 	// Byts himlen när quizet öppnas eller stängs tonar de gamla figurerna ut, som när man väljer
 	// himmel. Det måste ske innan målaren får den nya himlen.
@@ -317,6 +337,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		setDarknessOpen(false)
 		chooseStar(null)
 		setChosenBody(null)
+		setChosenDeepSky(null)
 		if (chosenFigure !== null) chooseFigure(null)
 	}
 
@@ -336,6 +357,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		if (eventsOpen) setEventsOpen(false)
 		if (tonightOpen) storeTonight("closed")
 		chooseStar(null)
+		setChosenDeepSky(null)
 		if (target.kind === "body") {
 			if (chosenFigure !== null) chooseFigure(null)
 			setChosenBody(target.body)
@@ -439,12 +461,24 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 		if (eventsOpen) setEventsOpen(false)
 		if (tonightOpen) storeTonight("closed")
 		const { offsetX, offsetY } = event.nativeEvent
+		// En framklickad galax eller nebulosa släpps av varje klick; klickas den igen stängs den.
+		const wasDeepSky = chosenDeepSky
+		setChosenDeepSky(null)
 		// Solen, månen och planeterna ligger överst och har företräde framför stjärnorna under dem.
 		const body = painter.bodyAt(offsetX, offsetY)
 		if (body !== null) {
 			chooseStar(null)
 			setChosenFigure(null)
 			setChosenBody(body === chosenBody ? null : body)
+			return
+		}
+		// Därefter galaxerna och nebulosorna, som är större än stjärnorna i dem.
+		const deepSky = painter.deepSkyAt(offsetX, offsetY)
+		if (deepSky !== null) {
+			chooseStar(null)
+			setChosenBody(null)
+			if (chosenFigure !== null) chooseFigure(null)
+			setChosenDeepSky(deepSky === wasDeepSky ? null : deepSky)
 			return
 		}
 		// Med fingret finns ingen pekare som lyfter fram en stjärnbild, och ett finger träffar
@@ -458,7 +492,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 			return
 		}
 		const star = painter.starAt(offsetX, offsetY)
-		if (star !== null || painter.star !== null || chosenBody !== null) {
+		if (star !== null || painter.star !== null || chosenBody !== null || wasDeepSky !== null) {
 			// En stjärna öppnar sin panel; ett klick bredvid stänger den utan att välja något annat.
 			setChosenBody(null)
 			chooseStar(star === painter.star ? null : star)
@@ -548,9 +582,14 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 	}
 
 	const figure = (chosenFigure !== null && scene?.figures.find(item => item.id === chosenFigure)) || null
+	const deepSkyObject = (chosenDeepSky !== null && scene?.deepSky.find(item => item.index === chosenDeepSky)) || null
 	const info = useMemo((): PanelInfo | null => {
 		if (darknessOpen && darkness && shown) return darknessInfo(darkness, shown, cloudSteps.length > 0)
 		if (selectedStar) return starInfo(selectedStar)
+		if (deepSkyObject) {
+			const home = scene?.figureAt?.(deepSkyObject.at)
+			return deepSkyInfo(deepSkyObject, scene?.figures.find(item => item.id === home)?.name ?? "")
+		}
 		if (chosenBody !== null && time) {
 			const name = BODIES.find(item => item.body === chosenBody)?.name ?? ""
 			return bodyInfo(chosenBody, name, time, position)
@@ -561,7 +600,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 			return figureInfo(figure, culture, catalogue, constellation)
 		}
 		return null
-	}, [darknessOpen, darkness, shown, cloudSteps, selectedStar, chosenBody, time, position, culture, figure, catalogue])
+	}, [darknessOpen, darkness, shown, cloudSteps, selectedStar, deepSkyObject, scene, chosenBody, time, position, culture, figure, catalogue])
 
 	// Händelserna räknas ut per år och plats; panelen visar dem kring kartans tid.
 	const year = time?.getFullYear() ?? null
@@ -603,7 +642,7 @@ export default function SkyChart({ meteorShowers }: { meteorShowers: MeteorShowe
 				<canvas
 					ref={canvasRef}
 					role='img'
-					aria-label='Stjärnhimlen. Dra för att se dig omkring, zooma för att komma närmare, klicka på en stjärnbild, stjärna, planet, solen eller månen för att få veta mer om den.'
+					aria-label='Stjärnhimlen. Dra för att se dig omkring, zooma för att komma närmare, klicka på en stjärnbild, stjärna, galax, nebulosa, planet, solen eller månen för att få veta mer om den.'
 					onPointerDown={event => {
 						pointerTypeRef.current = event.pointerType
 					}}

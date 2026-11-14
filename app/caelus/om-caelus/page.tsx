@@ -62,17 +62,17 @@ const SECTIONS: { title: string; text: string; sources: Source[] }[] = [
 	},
 	{
 		title: "Meteorregn",
-		text: "Radiant, drift, hastighet, aktivitetsperiod och maximum från IAU:s lista över etablerade meteorregn. ZHR från IMO. Meteorerna på kartan visas tätare än verklig frekvens.",
+		text: "Vilka meteorregn som visas, deras aktivitetsperiod, maximum, radiant, hastighet och ZHR kommer från IMO:s arbetslista över visuella meteorregn, som läses ur årets kalender. Radiantens drift kommer från IAU:s lista över etablerade meteorregn. Meteorerna på kartan visas tätare än verklig frekvens.",
 		sources: [
+			{
+				name: "IMO Meteor Shower Calendar",
+				href: "https://www.imo.net/resources/calendar/",
+				note: "International Meteor Organization, Jürgen Rendtel. Årets kalender",
+			},
 			{
 				name: "IAU Meteor Data Center",
 				href: "https://www.ta3.sk/IAUC22DB/MDC2022/",
-				note: "Etablerade meteorregn",
-			},
-			{
-				name: "IMO Meteor Shower Calendar 2026",
-				href: "https://www.imo.net/resources/calendar/",
-				note: "International Meteor Organization, Jürgen Rendtel",
+				note: "Radiantens drift",
 			},
 		],
 	},

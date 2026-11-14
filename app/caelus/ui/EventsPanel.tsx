@@ -15,15 +15,16 @@ const CHOICE =
 	"cursor-pointer text-left text-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
 
 /**
- * Prenumerationen på årets händelser för platsen, som webcal-adress så att telefonens kalender
- * öppnas. En decimal räcker för förmörkelserna och avslöjar inte exakt var man bor; backend
- * avrundar likadant.
+ * Årets händelser för platsen som .ics-fil över http(s). Backend skickar den som bilaga, så
+ * webbläsaren frågar vad som ska göras med den och erbjuder att öppna den i kalendern; en
+ * webcal-adress gör ingenting där inget program har registrerat sig för webcal. En decimal
+ * räcker för förmörkelserna och avslöjar inte exakt var man bor; backend avrundar likadant.
  */
 function calendarHref({ latitude, longitude }: Position) {
 	const url = new URL("/api/caelus/calendar.ics", PUBLIC_API_BASE_URL)
 	url.searchParams.set("lat", latitude.toFixed(1))
 	url.searchParams.set("lon", longitude.toFixed(1))
-	return url.href.replace(/^https?:/, "webcal:")
+	return url.href
 }
 
 // Hur många meteorer i timmen man kan se, eller varför man inte ser några.

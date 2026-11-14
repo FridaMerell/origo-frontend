@@ -53,6 +53,11 @@ function travel([azimuth, altitude]: SkyPoint, bearing: number, distance: number
  */
 export function drawMeteors(pen: Pen) {
 	const { context, projection, scene, ink, paper, family, onScreen, label, spacing, named, meteorsShown } = pen
+	// Med fokus på planeterna, norrskenet eller galaxerna träder radianterna tillbaka som resten av
+	// himlen, och deras namn tonas bort, så att de inte tar platsen från det som lyfts fram.
+	const focus = Math.max(pen.planetFocus, pen.auroraFocus, pen.deepSkyFocus)
+	const receded = 1 - 0.75 * focus
+	const kept = 1 - focus
 	const time = performance.now()
 	const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches
 	if (meteorsShown < 0.01 || still) {
@@ -93,7 +98,7 @@ export function drawMeteors(pen: Pen) {
 		const point = projection(shower.at)
 		if (!onScreen(point)) continue
 		const [x, y] = point
-		context.globalAlpha = meteorsShown * Math.min(1, 0.45 + shower.zhr / 40)
+		context.globalAlpha = meteorsShown * receded * Math.min(1, 0.45 + shower.zhr / 40)
 		context.strokeStyle = ink
 		context.lineWidth = 0.9
 		context.beginPath()
@@ -103,14 +108,14 @@ export function drawMeteors(pen: Pen) {
 			context.lineTo(x + Math.cos(angle) * RAY_TO, y + Math.sin(angle) * RAY_TO)
 		}
 		context.stroke()
-		if (named <= 0.01) continue
+		if (named * kept <= 0.01) continue
 		context.font = `500 15px ${family}`
 		context.textAlign = "left"
 		context.textBaseline = "alphabetic"
 		context.fillStyle = ink
 		context.strokeStyle = paper
 		context.lineWidth = 3.5
-		context.globalAlpha = named * meteorsShown
+		context.globalAlpha = named * kept * meteorsShown
 		spacing("0.14em")
 		label(shower.name.toUpperCase(), x + RAY_TO + 6, y + 5)
 		spacing("0px")

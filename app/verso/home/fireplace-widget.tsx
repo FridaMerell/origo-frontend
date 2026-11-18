@@ -15,7 +15,10 @@ export type FireplaceNow = {
 
 const LIT_WINDOW_MS = 60 * 60 * 1000
 
-/** The time of the last fireplace heating, or "Brasan är tänd" when it was lit within the last hour. */
+/**
+ * Built like the weather card: label on top, the reading large, and a ruled footer holding the action.
+ * The reading is "Brasan är tänd" when the last fireplace heating was lit within the hour, otherwise its time.
+ */
 export function FireplaceWidget({
   connection,
   fireplace,
@@ -42,27 +45,31 @@ export function FireplaceWidget({
   }, [started])
 
   return (
-    <Card className={`col-span-1 flex h-full w-full flex-col justify-between gap-4 ${className}`}>
-      <div className="flex min-w-0 flex-col gap-1">
+    <Card className={`col-span-1 h-full min-w-0 ${className}`}>
+      <div className="flex h-full flex-col">
         <span className="text-sm font-medium text-text-muted">Brasa</span>
-        {error ? (
-          <p className="m-0 text-sm text-text-muted">Brasorna kunde inte hämtas: {error}</p>
-        ) : !lastStart ? (
-          <p className="m-0 text-sm text-text-muted">Ingen brasa tänd.</p>
-        ) : (
-          <>
-            <p className="m-0 font-display text-2xl font-semibold leading-tight text-text">
-              {lit ? "Brasan är tänd" : formatTime(lastStart)}
-            </p>
-            <p className="m-0 text-sm text-text-muted tabular-nums">
-              {lit ? `Tänd ${formatTime(lastStart)}` : `Senaste brasa ${formatHeatingDate(lastStart)}`}
-            </p>
-          </>
-        )}
+        <div className="mt-3 flex items-baseline gap-3">
+          {error ? (
+            <span className="text-sm text-text-muted">Brasorna kunde inte hämtas: {error}</span>
+          ) : !lastStart ? (
+            <span className="text-sm text-text-muted">Ingen brasa tänd.</span>
+          ) : (
+            <>
+              <span className="font-display text-3xl font-semibold leading-none text-text sm:text-4xl">
+                {lit ? "Brasan är tänd" : formatTime(lastStart)}
+              </span>
+              <span className="ml-auto text-xs text-text-faint tabular-nums">
+                {lit ? formatTime(lastStart) : formatHeatingDate(lastStart)}
+              </span>
+            </>
+          )}
+        </div>
+        <div className="mt-auto border-t border-border pt-3">
+          <Drawer trigger="Tänd brasa" triggerSize="sm" triggerClassName="w-full justify-center" title="Tänd brasa">
+            <FireplaceHeatingForm connection={connection} />
+          </Drawer>
+        </div>
       </div>
-      <Drawer trigger="Tänd brasa" triggerSize="sm" triggerClassName="w-full justify-center" title="Tänd brasa">
-        <FireplaceHeatingForm connection={connection} />
-      </Drawer>
     </Card>
   )
 }

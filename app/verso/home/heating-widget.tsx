@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { ThermometerIcon } from "lucide-react"
-import { Card } from "@/app/components/ui/Card"
+import { Card } from "@/app/components/ui/Card"import type { FireplaceNow } from "@/app/verso/home/fireplace-widget"
 import { MODE_LABELS, formatTime, useLogZones } from "@/app/verso/uppvarmning/heating-log-row"
 import { formatOneDecimal as round } from "@/app/lib/formatters"
 import type { HeatingLog } from "@/app/lib/dal"
@@ -14,6 +14,8 @@ export type HeatingNow = {
   /** Logs from the last two hours, newest first. */
   logs: HeatingLog[]
   error?: string
+  /** The newest registered fireplace heating. */
+  fireplace: FireplaceNow
 }
 
 /** Shared timing for every slide in the card, off under reduced motion. */

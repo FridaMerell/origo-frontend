@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getHeatingLogs, getOnThisDay, getResidentialHeating } from "@/app/lib/dal";
+import { getFireplaceHeatings, getHeatingLogs, getOnThisDay, getResidentialHeating } from "@/app/lib/dal";
 import { getSelectedFacility } from "@/app/lib/selected-facility";
 import type { HeatingNow } from "@/app/verso/home/heating-widget";
 import HomeView from "./home-view";
@@ -19,12 +19,17 @@ export async function generateMetadata(): Promise<Metadata> {
 async function getRecentHeating(house: string): Promise<HeatingNow | null> {
   const connection = await getResidentialHeating(house);
   if (!connection) return null;
-  const { data, error } = await getHeatingLogs(connection.id, 1);
+  const [{ data, error }, fireplaces] = await Promise.all([
+    getHeatingLogs(connection.id, 1),
+    getFireplaceHeatings(connection.id, 1),
+  ]);
   const since = Date.now() - HEATING_WINDOW_MS;
   return {
     connection: connection.id,
     logs: (data?.results ?? []).filter((log) => new Date(log.timestamp).getTime() >= since),
     error,
+    // The proxy returns the newest first.
+    fireplace: { lastStart: fireplaces.data?.results[0]?.start_time ?? null, error: fireplaces.error },
   };
 }
 

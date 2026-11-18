@@ -548,3 +548,31 @@ export const getHeatingLogs = cache(
     return { data: payload as HeatingLogPage }
   }
 )
+
+/** One registered fireplace heating from ResidentialHeatingScheduler's `GET /fireplace-heating/`. */
+export type FireplaceHeating = {
+  id: number
+  device: number
+  start_time: string
+}
+
+export type FireplaceHeatingPage = {
+  count: number
+  page: number
+  next_page: number | null
+  previous_page: number | null
+  results: FireplaceHeating[]
+}
+
+/** Registered fireplace heatings fetched live through Verso, newest first. */
+export const getFireplaceHeatings = cache(
+  async (id: string, page: number): Promise<{ data: FireplaceHeatingPage | null; error?: string }> => {
+    const response = await authedFetch(`${VERSO_ENDPOINTS.residentialHeating}${id}/fireplace/${buildQuery({ page })}`)
+    const payload: unknown = await response.json().catch(() => null)
+    if (!response.ok) {
+      const detail = (payload as { detail?: string } | null)?.detail
+      return { data: null, error: detail ?? `Verso svarade ${response.status}.` }
+    }
+    return { data: payload as FireplaceHeatingPage }
+  }
+)

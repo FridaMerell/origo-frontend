@@ -9,18 +9,23 @@ import { EmptyState } from "@/app/components/ui/EmptyState"
 import { PageHeader } from "@/app/verso/ui/PageHeader"
 import { StepperButtons } from "@/app/verso/ui/stepper-buttons"
 import { ResidentialHeatingForm } from "@/app/verso/uppvarmning/residential-heating-form"
-import { HeatingLogHeader, HeatingLogRow } from "@/app/verso/uppvarmning/heating-log-row"
+import { FireplaceHeatingForm } from "@/app/verso/uppvarmning/fireplace-heating-form"
+import { HeatingLogHeader, HeatingLogRow, formatTime } from "@/app/verso/uppvarmning/heating-log-row"
 import { formatDateLong } from "@/app/lib/formatters"
-import type { HeatingLog, HeatingLogPage, ResidentialHeating } from "@/app/lib/dal"
+import type { FireplaceHeatingPage, HeatingLog, HeatingLogPage, ResidentialHeating } from "@/app/lib/dal"
 
 export default function HeatingView({
   connection,
   data,
   error,
+  fireplaces,
+  fireplacesError,
 }: {
   connection: ResidentialHeating | null
   data: HeatingLogPage | null
   error?: string
+  fireplaces: FireplaceHeatingPage | null
+  fireplacesError?: string
 }) {
   const router = useRouter()
   // The API already returns the logs newest first.
@@ -42,6 +47,16 @@ export default function HeatingView({
                 Graf
               </LinkButton>
             )}
+            {connection && (
+              <Drawer
+                trigger="Tänd brasa"
+                triggerSize="sm"
+                triggerClassName="justify-center"
+                title="Tänd brasa"
+              >
+                <FireplaceHeatingForm connection={connection.id} />
+              </Drawer>
+            )}
             <Drawer
               trigger={connection ? "Ändra koppling" : "Koppla"}
               triggerSize="sm"
@@ -56,12 +71,33 @@ export default function HeatingView({
 
       {!connection ? (
         <EmptyState>Huset är inte kopplat till ResidentialHeating.</EmptyState>
-      ) : error ? (
-        <EmptyState>Loggarna kunde inte hämtas: {error}</EmptyState>
-      ) : groups.length === 0 ? (
-        <EmptyState>Inga loggar.</EmptyState>
       ) : (
         <div className="flex flex-col gap-6">
+          <section className="flex min-w-0 flex-col gap-2">
+            <h2 className="m-0 px-1 font-display text-lg font-semibold leading-tight text-text">Brasor</h2>
+            {fireplacesError ? (
+              <EmptyState>Brasorna kunde inte hämtas: {fireplacesError}</EmptyState>
+            ) : !fireplaces?.results.length ? (
+              <EmptyState>Inga brasor registrerade.</EmptyState>
+            ) : (
+              <Card className="flex flex-col gap-0 overflow-hidden p-0">
+                {fireplaces.results.map((fireplace) => (
+                  <div
+                    key={fireplace.id}
+                    className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0"
+                  >
+                    <span>{formatDateLong(fireplace.start_time)}</span>
+                    <span className="text-text-muted tabular-nums">{formatTime(fireplace.start_time)}</span>
+                  </div>
+                ))}
+              </Card>
+            )}
+          </section>
+          {error ? (
+            <EmptyState>Loggarna kunde inte hämtas: {error}</EmptyState>
+          ) : groups.length === 0 ? (
+            <EmptyState>Inga loggar.</EmptyState>
+          ) : null}
           {groups.map((group) => (
             <section key={group.label} className="flex min-w-0 flex-col gap-2">
               <h2 className="m-0 px-1 font-display text-lg font-semibold leading-tight text-text">

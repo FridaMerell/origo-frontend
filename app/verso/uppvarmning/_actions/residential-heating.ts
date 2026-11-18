@@ -5,7 +5,12 @@ import { VERSO_ENDPOINTS } from "@/app/lib/config"
 import { fetchOrigoApi } from "@/app/lib/api-client"
 import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import { resolveSelectedHouse } from "@/app/lib/selected-facility"
-import { residentialHeatingFormSchema, type ResidentialHeatingFormValues } from "@/app/lib/schemas"
+import {
+  fireplaceHeatingFormSchema,
+  residentialHeatingFormSchema,
+  type FireplaceHeatingFormValues,
+  type ResidentialHeatingFormValues,
+} from "@/app/lib/schemas"
 import { authedFetch } from "@/app/lib/dal/client"
 import type { HeatingZone } from "@/app/lib/dal"
 
@@ -44,6 +49,36 @@ export async function saveResidentialHeating(
   }
 
   revalidatePath("/uppvarmning")
+  return { success: true }
+}
+
+/** Registers a fireplace heating on the connection's device; `startTime` is an ISO 8601 string with timezone. */
+export async function registerFireplaceHeating(
+  connection: string,
+  data: FireplaceHeatingFormValues
+): Promise<ResidentialHeatingActionState> {
+  const parsed = fireplaceHeatingFormSchema.safeParse(data)
+  const startTime = parsed.success ? new Date(parsed.data.start_time) : null
+  if (!startTime || Number.isNaN(startTime.getTime())) {
+    return { error: "Ange en giltig tidpunkt." }
+  }
+
+  const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.residentialHeating}${connection}/fireplace/`, {
+    method: "POST",
+    headers: await authedJsonHeaders(),
+    body: JSON.stringify({ start_time: startTime.toISOString() }),
+  })
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    return {
+      error: payload
+        ? `Brasan kunde inte sparas: ${payload.detail ?? JSON.stringify(payload)}`
+        : `Brasan kunde inte sparas (svar ${response.status}).`,
+    }
+  }
+
+  revalidatePath("/uppvarmning")
+  revalidatePath("/")
   return { success: true }
 }
 

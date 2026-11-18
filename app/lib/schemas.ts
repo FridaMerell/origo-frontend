@@ -23,6 +23,11 @@ export const residentialHeatingFormSchema = z.object({
 })
 export type ResidentialHeatingFormValues = z.infer<typeof residentialHeatingFormSchema>
 
+export const fireplaceHeatingFormSchema = z.object({
+  start_time: z.string().min(1, "Ange när brasan tändes."),
+})
+export type FireplaceHeatingFormValues = z.infer<typeof fireplaceHeatingFormSchema>
+
 export const photoFormSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),

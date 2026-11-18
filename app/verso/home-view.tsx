@@ -2,13 +2,13 @@
 import { useBookingData, useFacilities } from "@/app/verso/_state/verso-context"
 import { BookVisitButton } from "@/app/verso/besok/book-visit-button"
 import { Drawer } from "@/app/components/ui/Drawer"
-import UpdateForm from "@/app/verso/forms/update-form"
-import Logo from "@/app/verso/ui/Logo"
+import UpdateForm from "@/app/verso/forms/update-form"import Logo from "@/app/verso/ui/Logo"
 import { WeatherWidget } from "@/app/verso/home/weather-widget"
 import { NextVisitWidget } from "@/app/verso/home/next-visit-widget"
 import { UpdatesWidget } from "@/app/verso/home/updates-widget"
 import { RecentExpensesWidget } from "@/app/verso/home/recent-expenses-widget"
 import { HeatingWidget, type HeatingNow } from "@/app/verso/home/heating-widget"
+import { FireplaceWidget } from "@/app/verso/home/fireplace-widget"
 import { OnThisDay } from "@/app/verso/historia/on-this-day"
 import type { OnThisDay as OnThisDayData } from "@/app/lib/dal"
 import Link from "next/link"
@@ -95,6 +95,7 @@ const HomeView = ({
           { key: "updates", wide: true, render: (className) => <UpdatesWidget className={className} /> },
           { key: "expenses", wide: false, render: (className) => <RecentExpensesWidget className={className} /> },
           heating && { key: "heating", wide: true, render: (className) => <HeatingWidget heating={heating} className={className} /> },
+          heating && { key: "fireplace", wide: false, render: (className) => <FireplaceWidget connection={heating.connection} fireplace={heating.fireplace} className={className} /> },
         ])}
       </div>
     </div>

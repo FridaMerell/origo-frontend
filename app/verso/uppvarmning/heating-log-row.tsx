@@ -7,8 +7,17 @@ import type { HeatingLog, HeatingZone } from "@/app/lib/dal"
 
 export const MODE_LABELS: Record<number, string> = { 0: "Av", 1: "Bas", 2: "Komfort" }
 
+/**
+ * Times and dates of heating logs and fireplace heatings are always shown in the house's timezone.
+ * Fixed, not the runtime's, so the server render and the browser print the same text.
+ */
+const TIME_ZONE = "Europe/Stockholm"
+
 export const formatTime = (timestamp: string) =>
-  new Date(timestamp).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })
+  new Date(timestamp).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE })
+
+export const formatHeatingDate = (timestamp: string) =>
+  new Date(timestamp).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric", timeZone: TIME_ZONE })
 
 /**
  * Shared columns for the header, the log rows and their zone rows, so a zone's temperature and

@@ -1,10 +1,10 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card } from "@/app/components/ui/Card"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { FireplaceHeatingForm } from "@/app/verso/uppvarmning/fireplace-heating-form"
-import { formatTime } from "@/app/verso/uppvarmning/heating-log-row"
-import { formatDateLong } from "@/app/lib/formatters"
+import { formatHeatingDate, formatTime } from "@/app/verso/uppvarmning/heating-log-row"
 
 /** The newest registered fireplace heating, loaded on the server. */
 export type FireplaceNow = {
@@ -26,8 +26,20 @@ export function FireplaceWidget({
   className?: string
 }) {
   const { lastStart, error } = fireplace
-  const started = lastStart ? new Date(lastStart) : null
-  const lit = started !== null && Date.now() - started.getTime() < LIT_WINDOW_MS
+  const [now, setNow] = useState(() => Date.now())
+  const started = lastStart ? new Date(lastStart).getTime() : null
+  const lit = started !== null && now - started < LIT_WINDOW_MS
+
+  // A new brasa arrives as new props: take the time again. Then wake up when the hour is over, so
+  // "Brasan är tänd" turns into the time without a reload.
+  useEffect(() => {
+    setNow(Date.now())
+    if (started === null) return
+    const remaining = started + LIT_WINDOW_MS - Date.now()
+    if (remaining <= 0) return
+    const timer = window.setTimeout(() => setNow(Date.now()), remaining + 1000)
+    return () => window.clearTimeout(timer)
+  }, [started])
 
   return (
     <Card className={`col-span-1 flex h-full w-full flex-col justify-between gap-4 ${className}`}>
@@ -43,7 +55,7 @@ export function FireplaceWidget({
               {lit ? "Brasan är tänd" : formatTime(lastStart)}
             </p>
             <p className="m-0 text-sm text-text-muted tabular-nums">
-              {lit ? `Tänd ${formatTime(lastStart)}` : `Senaste brasa ${formatDateLong(lastStart)}`}
+              {lit ? `Tänd ${formatTime(lastStart)}` : `Senaste brasa ${formatHeatingDate(lastStart)}`}
             </p>
           </>
         )}

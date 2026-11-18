@@ -10,9 +10,17 @@ import { PageHeader } from "@/app/verso/ui/PageHeader"
 import { StepperButtons } from "@/app/verso/ui/stepper-buttons"
 import { ResidentialHeatingForm } from "@/app/verso/uppvarmning/residential-heating-form"
 import { FireplaceHeatingForm } from "@/app/verso/uppvarmning/fireplace-heating-form"
-import { HeatingLogHeader, HeatingLogRow, formatTime } from "@/app/verso/uppvarmning/heating-log-row"
-import { formatDateLong } from "@/app/lib/formatters"
+import { HeatingLogHeader, HeatingLogRow, formatHeatingDate, formatTime } from "@/app/verso/uppvarmning/heating-log-row"
 import type { FireplaceHeatingPage, HeatingLog, HeatingLogPage, ResidentialHeating } from "@/app/lib/dal"
+
+/** Logs and fireplace heatings page independently, so each link keeps the other list's page. */
+function pageHref(logPage: number, fireplacePage: number) {
+  const params = new URLSearchParams()
+  if (logPage > 1) params.set("page", String(logPage))
+  if (fireplacePage > 1) params.set("brasor", String(fireplacePage))
+  const query = params.toString()
+  return query ? `/uppvarmning?${query}` : "/uppvarmning"
+}
 
 export default function HeatingView({
   connection,
@@ -29,7 +37,7 @@ export default function HeatingView({
 }) {
   const router = useRouter()
   // The API already returns the logs newest first.
-  const groups = groupItems<HeatingLog>(data?.results ?? [], (log) => formatDateLong(log.timestamp))
+  const groups = groupItems<HeatingLog>(data?.results ?? [], (log) => formatHeatingDate(log.timestamp))
 
   return (
     <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
@@ -86,11 +94,22 @@ export default function HeatingView({
                     key={fireplace.id}
                     className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0"
                   >
-                    <span>{formatDateLong(fireplace.start_time)}</span>
+                    <span>{formatHeatingDate(fireplace.start_time)}</span>
                     <span className="text-text-muted tabular-nums">{formatTime(fireplace.start_time)}</span>
                   </div>
                 ))}
               </Card>
+            )}
+            {fireplaces && (fireplaces.next_page || fireplaces.previous_page) && (
+              <div className="flex items-center justify-end gap-3 text-xs text-text-faint">
+                Sida {fireplaces.page}
+                <StepperButtons
+                  className="flex"
+                  index={fireplaces.page - 1}
+                  length={fireplaces.next_page ? fireplaces.page + 1 : fireplaces.page}
+                  onIndexChange={(index) => router.push(pageHref(data?.page ?? 1, index + 1))}
+                />
+              </div>
             )}
           </section>
           {error ? (
@@ -118,7 +137,7 @@ export default function HeatingView({
                 className="flex"
                 index={data.page - 1}
                 length={data.next_page ? data.page + 1 : data.page}
-                onIndexChange={(index) => router.push(`/uppvarmning?page=${index + 1}`)}
+                onIndexChange={(index) => router.push(pageHref(index + 1, fireplaces?.page ?? 1))}
               />
             </div>
           )}

@@ -8,21 +8,23 @@ export const metadata: Metadata = {
   description: "Uppvärmning - Origo",
 }
 
-export default async function HeatingPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function HeatingPage({ searchParams }: { searchParams: Promise<{ page?: string; brasor?: string }> }) {
   const [house, params] = await Promise.all([resolveSelectedHouse(), searchParams])
   const page = Math.max(1, Number(params.page) || 1)
+  const fireplacePage = Math.max(1, Number(params.brasor) || 1)
   const connection = house ? await getResidentialHeating(house) : null
-  const [{ data, error }, fireplaces] = connection
-    ? await Promise.all([getHeatingLogs(connection.id, page), getFireplaceHeatings(connection.id, 1)])
-    : [{ data: null, error: undefined }, { data: null, error: undefined }]
+  const [logs, fireplaces] = connection
+    ? await Promise.all([getHeatingLogs(connection.id, page), getFireplaceHeatings(connection.id, fireplacePage)])
+    : [null, null]
+  const { data, error } = logs ?? { data: null, error: undefined }
 
   return (
     <HeatingView
       connection={connection}
       data={data}
       error={error}
-      fireplaces={fireplaces.data}
-      fireplacesError={fireplaces.error}
+      fireplaces={fireplaces?.data ?? null}
+      fireplacesError={fireplaces?.error}
     />
   )
 }

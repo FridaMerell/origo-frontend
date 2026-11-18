@@ -24,7 +24,10 @@ export const residentialHeatingFormSchema = z.object({
 export type ResidentialHeatingFormValues = z.infer<typeof residentialHeatingFormSchema>
 
 export const fireplaceHeatingFormSchema = z.object({
-  start_time: z.string().min(1, "Ange när brasan tändes."),
+  start_time: z
+    .string()
+    .min(1, "Ange när brasan tändes.")
+    .refine((value) => !Number.isNaN(Date.parse(value)), "Ange en giltig tidpunkt."),
 })
 export type FireplaceHeatingFormValues = z.infer<typeof fireplaceHeatingFormSchema>
 

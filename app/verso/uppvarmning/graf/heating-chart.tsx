@@ -5,8 +5,15 @@ import { MODE_LABELS, formatTime } from "@/app/verso/uppvarmning/heating-log-row
 import { formatDateLong, formatOneDecimal } from "@/app/lib/formatters"
 import type { HeatingLog } from "@/app/lib/dal"
 
-const HEIGHT = 360
 const MARGIN = { top: 12, right: 52, bottom: 26, left: 36 }
+/** Temperatures on top; energy in its own panel under them, with its own axis, on the shared time axis. */
+const TEMPERATURE_HEIGHT = 280
+const PANEL_GAP = 22
+const ENERGY_HEIGHT = 88
+const ENERGY_TOP = MARGIN.top + TEMPERATURE_HEIGHT + PANEL_GAP
+const ENERGY_BOTTOM = ENERGY_TOP + ENERGY_HEIGHT
+const HEIGHT = ENERGY_BOTTOM + MARGIN.bottom
+const ENERGY_STEPS = [0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000]
 const HOUR = 3_600_000
 /** A longer silence than this between two logs breaks the lines instead of drawing across it. */
 const MAX_GAP = 2 * HOUR
@@ -20,7 +27,10 @@ const SERIES = [
   { key: "outside_temperature", label: "Ute", line: "stroke-secondary", swatch: "border-secondary" },
 ] as const
 
-const localOffset = (time: number) => new Date(time).getTimezoneOffset() * 60_000
+/** The heat delivered, when the log has it, otherwise its total energy; kWh. */
+const energyOf = (log: HeatingLog) => log.energy_heat ?? log.energy
+
+const localOffset =(time: number) => new Date(time).getTimezoneOffset() * 60_000
 
 /** The time of day, or the date at midnight so the axis says which day it is on. */
 function formatTick(tick: number) {
@@ -40,7 +50,10 @@ function linePath(points: { time: number; x: number; y: number }[]) {
     .join("")
 }
 
-/** Temperatures and setpoints as lines over time, on one shared °C axis; `logs` may come in any order. */
+/**
+ * Temperatures and setpoints as lines over time on one °C axis, and each log's energy as a bar in a
+ * kWh panel under them; `logs` may come in any order.
+ */
 export function HeatingChart({ logs }: { logs: HeatingLog[] }) {
   const containerRef = useRef<HTMLDivElement>(null)
   // Unknown until mounted, so the first render has no chart and times follow the browser's time zone.
@@ -60,7 +73,7 @@ export function HeatingChart({ logs }: { logs: HeatingLog[] }) {
   const start = times[0]
   const end = times[times.length - 1]
   const plotWidth = Math.max(0, width - MARGIN.left - MARGIN.right)
-  const plotHeight = HEIGHT - MARGIN.top - MARGIN.bottom
+  const plotHeight = TEMPERATURE_HEIGHT
   const scaleX = (time: number) => MARGIN.left + (end > start ? ((time - start) / (end - start)) * plotWidth : plotWidth / 2)
 
   const values = sorted.flatMap((log) => SERIES.map((series) => log[series.key]))
@@ -73,6 +86,16 @@ export function HeatingChart({ logs }: { logs: HeatingLog[] }) {
 
   const temperatureTicks: number[] = []
   for (let tick = min; tick <= max; tick += step) temperatureTicks.push(tick)
+
+  const rawEnergyMax = Math.max(0, ...sorted.map(energyOf))
+  const energyStep = ENERGY_STEPS.find((candidate) => rawEnergyMax / candidate <= 2) ?? ENERGY_STEPS[ENERGY_STEPS.length - 1]
+  const energyMax = Math.max(Math.ceil(rawEnergyMax / energyStep), 1) * energyStep
+  const scaleEnergy = (value: number) => ENERGY_BOTTOM - (value / energyMax) * ENERGY_HEIGHT
+  const energyTicks: number[] = []
+  // Rounded so 0.1 steps don't drift into 0.30000000000000004.
+  for (let tick = 0; tick <= energyMax + energyStep / 2; tick += energyStep) energyTicks.push(Math.round(tick * 10) / 10)
+  // As wide as the log density allows, never under one pixel.
+  const barWidth = Math.max(1, Math.min(8, (plotWidth / sorted.length) * 0.6))
 
   // Ticks on whole local hours, as dense as the width allows.
   const timeStep = TIME_STEPS.find((candidate) => ((end - start) / candidate) * 48 <= plotWidth) ?? TIME_STEPS[TIME_STEPS.length - 1]
@@ -119,6 +142,10 @@ export function HeatingChart({ logs }: { logs: HeatingLog[] }) {
                 {series.label} <span className="text-text">{formatOneDecimal(shown[series.key])} °C</span>
               </li>
             ))}
+            <li className="flex items-center gap-1.5 tabular-nums">
+              <span className="size-2.5 rounded-sm bg-text-muted" />
+              Energi <span className="text-text">{formatOneDecimal(energyOf(shown))} kWh</span>
+            </li>
           </ul>
         </div>
       )}
@@ -128,7 +155,7 @@ export function HeatingChart({ logs }: { logs: HeatingLog[] }) {
             width={width}
             height={HEIGHT}
             role="img"
-            aria-label={`Inne-, bör- och utetemperatur från ${formatDateLong(sorted[0].timestamp)} till ${formatDateLong(newest.timestamp)}`}
+            aria-label={`Inne-, bör- och utetemperatur samt energi från ${formatDateLong(sorted[0].timestamp)} till ${formatDateLong(newest.timestamp)}`}
             className="block touch-pan-y"
             onPointerMove={handlePointer}
             onPointerDown={handlePointer}
@@ -142,6 +169,27 @@ export function HeatingChart({ logs }: { logs: HeatingLog[] }) {
                 </text>
               </g>
             ))}
+            {energyTicks.map((tick) => (
+              <g key={`energy-${tick}`}>
+                <line x1={MARGIN.left} x2={MARGIN.left + plotWidth} y1={scaleEnergy(tick)} y2={scaleEnergy(tick)} className="stroke-border" />
+                <text x={MARGIN.left - 8} y={scaleEnergy(tick)} dy="0.32em" textAnchor="end" className="fill-text-muted text-xs tabular-nums">
+                  {formatOneDecimal(tick)}
+                </text>
+              </g>
+            ))}
+            {sorted.map((log, index) => (
+              <rect
+                key={log.id}
+                x={scaleX(times[index]) - barWidth / 2}
+                y={scaleEnergy(energyOf(log))}
+                width={barWidth}
+                height={ENERGY_BOTTOM - scaleEnergy(energyOf(log))}
+                className={log === active ? "fill-text" : "fill-text-muted"}
+              />
+            ))}
+            <text x={MARGIN.left + plotWidth + 8} y={ENERGY_TOP} dy="0.32em" className="fill-text-muted text-xs">
+              kWh
+            </text>
             {timeTicks.map((tick) => (
               <text key={tick} x={scaleX(tick)} y={HEIGHT - 6} textAnchor="middle" className="fill-text-muted text-xs tabular-nums">
                 {formatTick(tick)}
@@ -165,7 +213,7 @@ export function HeatingChart({ logs }: { logs: HeatingLog[] }) {
             ))}
             {active && (
               <g>
-                <line x1={activeX} x2={activeX} y1={MARGIN.top} y2={MARGIN.top + plotHeight} className="stroke-border-strong" />
+                <line x1={activeX} x2={activeX} y1={MARGIN.top} y2={ENERGY_BOTTOM} className="stroke-border-strong" />
                 {SERIES.map((series) => (
                   <circle key={series.key} cx={activeX} cy={scaleY(active[series.key])} r={4} strokeWidth={2} className={`fill-surface ${series.line.split(" ")[0]}`} />
                 ))}

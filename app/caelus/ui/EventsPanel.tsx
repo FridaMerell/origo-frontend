@@ -14,17 +14,26 @@ const CLOCK_FORMAT = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute:
 const CHOICE =
 	"cursor-pointer text-left text-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
 
+const LINK =
+	"text-text underline decoration-text/60 underline-offset-4 hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+
 /**
- * Årets händelser för platsen som .ics-fil över http(s). Backend skickar den som bilaga, så
- * webbläsaren frågar vad som ska göras med den och erbjuder att öppna den i kalendern; en
- * webcal-adress gör ingenting där inget program har registrerat sig för webcal. En decimal
- * räcker för förmörkelserna och avslöjar inte exakt var man bor; backend avrundar likadant.
+ * Prenumerationen på årets händelser för platsen. Webcal öppnar det program som har tagit på sig
+ * webcal (telefonens kalender, Outlook); där inget har det ger webcal ingenting, så Google
+ * Kalender och Outlook på webben får egna länkar till samma flöde. En decimal räcker för
+ * förmörkelserna och avslöjar inte exakt var man bor; backend avrundar likadant.
  */
-function calendarHref({ latitude, longitude }: Position) {
-	const url = new URL("/api/caelus/calendar.ics", PUBLIC_API_BASE_URL)
-	url.searchParams.set("lat", latitude.toFixed(1))
-	url.searchParams.set("lon", longitude.toFixed(1))
-	return url.href
+function calendarLinks({ latitude, longitude }: Position) {
+	const feed = new URL("/api/caelus/calendar.ics", PUBLIC_API_BASE_URL)
+	feed.searchParams.set("lat", latitude.toFixed(1))
+	feed.searchParams.set("lon", longitude.toFixed(1))
+	const webcal = feed.href.replace(/^https?:/, "webcal:")
+	const google = new URL("https://calendar.google.com/calendar/r")
+	google.searchParams.set("cid", webcal)
+	const outlook = new URL("https://outlook.live.com/calendar/0/addfromweb")
+	outlook.searchParams.set("url", feed.href)
+	outlook.searchParams.set("name", "Caelus")
+	return { webcal, google: google.href, outlook: outlook.href }
 }
 
 // Hur många meteorer i timmen man kan se, eller varför man inte ser några.
@@ -61,7 +70,8 @@ export default function EventsPanel({
 	onClose: () => void
 }) {
 	const user = useUser()
-	const row = (event: SkyEvent, when: string) => (
+	const calendar = calendarLinks(position)
+	const row =(event: SkyEvent, when: string) => (
 		<div key={`${event.time}:${event.title}`} className='col-span-2 grid grid-cols-subgrid py-0.5'>
 			<dt className='italic text-text-muted'>{when}</dt>
 			<dd>
@@ -95,11 +105,17 @@ export default function EventsPanel({
 				<EventAlertToggle item='mt-2 w-full text-sm text-text hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring' />
 			)}
 			{/* Kalendern kräver ingen inloggning: appen som prenumererar hämtar den själv. */}
-			<a
-				href={calendarHref(position)}
-				className='mt-2 block text-sm text-text underline decoration-text/60 underline-offset-4 hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring'>
-				Prenumerera i kalendern
-			</a>
+			<p className='mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm'>
+				<a href={calendar.webcal} className={LINK}>
+					Prenumerera i kalendern
+				</a>
+				<a href={calendar.google} target='_blank' rel='noopener noreferrer' className={LINK}>
+					Google Kalender
+				</a>
+				<a href={calendar.outlook} target='_blank' rel='noopener noreferrer' className={LINK}>
+					Outlook
+				</a>
+			</p>
 			{(today.length > 0 || showers.length > 0) && (
 				<>
 					<h3 className='mt-3 text-xs uppercase tracking-[0.16em] text-text-muted'>Den här dagen</h3>

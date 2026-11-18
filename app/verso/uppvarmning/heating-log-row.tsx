@@ -13,7 +13,7 @@ export const formatTime = (timestamp: string) =>
 /**
  * Shared columns for the header, the log rows and their zone rows, so a zone's temperature and
  * setpoint sit under the log's. Narrow (phones, and always when `compact`): Tid, Inne, Bör, Ute,
- * Läge. Wide (from `sm`, not compact): also Vind and Energi.
+ * Läge. Wide (from `sm`, not compact): also Vind and Energi, which is `energy_heat` when the log has it.
  */
 const NARROW_GRID = "grid grid-cols-[3rem_repeat(3,minmax(0,1fr))_4.5rem] items-baseline gap-x-3"
 const WIDE_GRID = `${NARROW_GRID} sm:grid-cols-[3.5rem_repeat(5,minmax(0,1fr))_5rem]`
@@ -35,7 +35,7 @@ export function HeatingLogHeader({ className = "", compact = false }: { classNam
       <span className={NUMBER}>Bör °C</span>
       <span className={NUMBER}>Ute °C</span>
       <span className={`${NUMBER} ${wideOnly}`}>Vind</span>
-      <span className={`${NUMBER} ${wideOnly}`}>Energi</span>
+      <span className={`${NUMBER} ${wideOnly}`}>Energi kWh</span>
       <span className="text-right">Läge</span>
     </div>
   )
@@ -129,7 +129,7 @@ export function HeatingLogRow({
         <span className={`${NUMBER} text-text-muted`}>{formatOneDecimal(log.w_avg_setpoint)}</span>
         <span className={`${NUMBER} text-text-muted`}>{formatOneDecimal(log.outside_temperature)}</span>
         <span className={`${NUMBER} ${wideOnly} text-text-muted`}>{formatOneDecimal(log.wind_speed)}</span>
-        <span className={`${NUMBER} ${wideOnly} text-text-muted`}>{formatOneDecimal(log.energy)}</span>
+        <span className={`${NUMBER} ${wideOnly} text-text-muted`}>{formatOneDecimal(log.energy_heat ?? log.energy)}</span>
         <span className="text-right text-text-muted">{log.mode !== null ? MODE_LABELS[log.mode] : "–"}</span>
       </button>
       {open && zones && <Zones state={zones} className={className} grid={grid} />}

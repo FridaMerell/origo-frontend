@@ -9,6 +9,9 @@ import { parseLatLon } from "@/app/tempus/formatters"
 import { PlacePicker } from "./quick-observation/place-picker"
 import { SpeciesPicker, type PresetChecklistItem, type PresetSpecies } from "./quick-observation/species-picker"
 import { LocaleField, useObservationLocale } from "@/app/tempus/locale-match"
+import { localesAtPoint } from "@/app/tempus/locales"
+import { getCurrentCoords } from "@/app/components/ui/CurrentLocationButton"
+import { useKeepTimeAndPlaceCurrent } from "./quick-observation/keep-current-setting"
 import { ObservationPhotoPicker, readPhotoMetadata, toDateTimeLocal, uploadObservationPhotos, type PhotoMetadata } from "./observation-photos"
 
 const INPUT_CLASS =
@@ -151,13 +154,13 @@ export default function QuickObservation({
   const [lifeStage, setLifeStage] = useState("")
   const [customLifeStage, setCustomLifeStage] = useState(false)
   const [observedAt, setObservedAt] = useState(nowLocal())
-  // Ikryssad följer tiden klockan så länge dialogen är öppen; varje obs får tiden då den sparas.
-  const [autoTime, setAutoTime] = useState(false)
   const [lat, setLat] = useState("")
   const [lon, setLon] = useState("")
   // null följer positionen; ett val gäller även om positionen ligger strax utanför platsen.
   const [localeChoice, setLocaleChoice] = useState<string | null>(null)
-  const { localeId } = useObservationLocale(lat, lon, localeChoice)
+  const { locales, localeId } = useObservationLocale(lat, lon, localeChoice)
+  // Påslagen (i kugghjuls-/Mer-menyn, sparad per enhet) hämtas aktuell tid och position vid varje sparande.
+  const [keepTimeAndPlaceCurrent] = useKeepTimeAndPlaceCurrent()
   const [showTime, setShowTime] = useState(false)
   const [showPlace, setShowPlace] = useState(false)
   const [showComment, setShowComment] = useState(false)
@@ -259,13 +262,6 @@ export default function QuickObservation({
     }
   }, [open, closing])
 
-  useEffect(() => {
-    if (!open || !autoTime) return
-    setObservedAt(nowLocal())
-    const id = setInterval(() => setObservedAt(nowLocal()), 1000)
-    return () => clearInterval(id)
-  }, [open, autoTime])
-
   // Escape stänger direkt, som krysset. Är bekräftelserutan öppen stänger den sig själv.
   // Prenumerationen sätts om vid varje render så att pending och confirmingCancel är aktuella.
   useEffect(() => {
@@ -334,34 +330,55 @@ export default function QuickObservation({
       setError("Antal måste vara ett heltal.")
       return
     }
-    const time = autoTime ? nowLocal() : observedAt
-    if (!time) {
-      setError("Ange en tidpunkt.")
-      return
+    // Med "Håll tid och plats uppdaterad" ersätts fälten vid sparandet, så de behöver inte kontrolleras.
+    let time = observedAt
+    let location: { type: "Point"; coordinates: [number, number] } | undefined
+    if (!keepTimeAndPlaceCurrent) {
+      if (!observedAt) {
+        setError("Ange en tidpunkt.")
+        return
+      }
+      const parsedCoords = parseLatLon(lat, lon)
+      if ("error" in parsedCoords) {
+        setError(parsedCoords.error)
+        return
+      }
+      const { lat: latNum, lon: lonNum } = parsedCoords
+      if (latNum !== null && lonNum !== null) location = { type: "Point", coordinates: [lonNum, latNum] }
     }
-
-    const parsedCoords = parseLatLon(lat, lon)
-    if ("error" in parsedCoords) {
-      setError(parsedCoords.error)
-      return
-    }
-    const { lat: latNum, lon: lonNum } = parsedCoords
-    const location =
-      latNum !== null && lonNum !== null
-        ? { type: "Point" as const, coordinates: [lonNum, latNum] as [number, number] }
-        : undefined
 
     const label = picked.label
+    // Sätts före övergången: uppdateringar inuti den före första await visas först när den är klar.
+    if (keepTimeAndPlaceCurrent) setProgress("Hämtar position…")
 
     startTransition(async () => {
-      setProgress("Sparar observationen…")
       try {
+        let locale = localeId
+        if (keepTimeAndPlaceCurrent) {
+          let coords
+          try {
+            coords = await getCurrentCoords({ maximumAge: 0 })
+          } catch (locateError) {
+            setError(`${locateError instanceof Error ? locateError.message : "Platsen kunde inte hämtas."} Observationen sparades inte.`)
+            return
+          }
+          time = nowLocal()
+          const nextLat = coords.latitude.toFixed(6)
+          const nextLon = coords.longitude.toFixed(6)
+          location = { type: "Point", coordinates: [Number(nextLon), Number(nextLat)] }
+          locale = localeChoice ?? String(localesAtPoint(locales, Number(nextLon), Number(nextLat))[0]?.id ?? "")
+          setObservedAt(time)
+          setLat(nextLat)
+          setLon(nextLon)
+        }
+
+        setProgress("Sparar observationen…")
         const result = await createObservation({
           species: picked.id,
           checklist_items: selectedChecklistItemIds,
           observed_at: new Date(time).toISOString(),
           ...(location ? { location } : {}),
-          locale: localeId ? Number(localeId) : null,
+          locale: locale ? Number(locale) : null,
           count: trimmed ? Number(trimmed) : null,
           life_stage: lifeStage.trim(),
           notes: notes.trim(),
@@ -525,28 +542,16 @@ export default function QuickObservation({
                   </label>
 
                   {showTime ? (
-                    <div className="flex flex-col gap-2">
-                      <label className="flex flex-col gap-1.5 text-sm font-medium">
-                        Tidpunkt
-                        <input
-                          type="datetime-local"
-                          value={observedAt}
-                          max={nowLocal()}
-                          disabled={autoTime}
-                          onChange={(event) => setObservedAt(event.target.value)}
-                          className={INPUT_CLASS}
-                        />
-                      </label>
-                      <label className="flex items-center gap-2 self-start text-xs text-text-muted">
-                        <input
-                          type="checkbox"
-                          checked={autoTime}
-                          onChange={(event) => setAutoTime(event.target.checked)}
-                          className="size-3.5 accent-accent"
-                        />
-                        Aktuell tid
-                      </label>
-                    </div>
+                    <label className="flex flex-col gap-1.5 text-sm font-medium">
+                      Tidpunkt
+                      <input
+                        type="datetime-local"
+                        value={observedAt}
+                        max={nowLocal()}
+                        onChange={(event) => setObservedAt(event.target.value)}
+                        className={INPUT_CLASS}
+                      />
+                    </label>
                   ) : null}
                 </div>
 
@@ -570,7 +575,6 @@ export default function QuickObservation({
                     {!showComment ? <AddOptionalButton label="+ Kommentar" onClick={() => setShowComment(true)} /> : null}
                   </div>
                 ) : null}
-
                 {showPlace ? (
                   <PlacePicker
                     lat={lat}

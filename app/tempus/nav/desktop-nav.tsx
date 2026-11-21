@@ -1,8 +1,10 @@
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { logout } from "@/app/actions/auth"
 import type { User } from "@/app/lib/dal"
 import QuickObservation from "../observationer/quick-observation"
+import { useKeepTimeAndPlaceCurrent } from "../observationer/quick-observation/keep-current-setting"
 import Logo from "../ui/Logo"
 import { FieldIcon, isActiveLink, mainLinks, moreLinks, primaryLinks } from "./nav-links"
 import { GeoAreaSelector } from "./geo-area-selector"
@@ -20,6 +22,37 @@ function ModeToggleContent({ mode }: { mode: "light" | "dark" | null }) {
     <>
       {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       {mode === "dark" ? "Ljust läge" : "Mörkt läge"}
+    </>
+  )
+}
+
+// The quick observation's "Håll tid och plats uppdaterad", remembered on this device.
+// A place of its own below the icon rows, built like "Påminn mig" in the species page's
+// Spara menu (taxa/[label]/[id]/FollowButton.tsx): text on the left, switch on the right.
+// The menu rows' own class, so the text starts on the icons' left edge and hovers the same.
+function KeepTimeAndPlaceCurrentToggle() {
+  const [checked, setChecked] = useKeepTimeAndPlaceCurrent()
+  const [error, setError] = useState<string | null>(null)
+  return (
+    <>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => setError(setChecked(!checked))}
+        className={`${MENU_ITEM_CLASS} justify-between whitespace-nowrap`}
+      >
+        Aktuell tid och plats
+        <span
+          aria-hidden
+          className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${checked ? "bg-accent" : "bg-border"}`}
+        >
+          <span
+            className={`absolute top-0.5 size-4 rounded-full bg-surface transition-all ${checked ? "left-4" : "left-0.5"}`}
+          />
+        </span>
+      </button>
+      {error ? <p className="px-3 pb-1 text-xs text-danger" role="alert">{error}</p> : null}
     </>
   )
 }
@@ -289,6 +322,8 @@ export function DesktopNav({
                       <LogOut size={18} />
                       Logga ut
                     </button>
+                    <div className="my-1 border-t border-border" />
+                    <KeepTimeAndPlaceCurrentToggle />
                   </>
                 ) : null}
               </div>
@@ -385,6 +420,12 @@ export function DesktopNav({
                     <LogOut size={18} />
                     Logga ut
                   </button>
+                ) : null}
+                {user ? (
+                  <>
+                    <div className="my-1 border-t border-border" />
+                    <KeepTimeAndPlaceCurrentToggle />
+                  </>
                 ) : null}
                 <GeoAreaSelector compact />
               </div>

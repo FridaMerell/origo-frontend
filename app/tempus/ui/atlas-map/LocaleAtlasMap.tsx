@@ -268,9 +268,9 @@ export function LocaleAtlasMap({ locale, points, selectedPoint, onPointClick, Co
   useEffect(() => {
     let disposed = false
     let map: import("maplibre-gl").Map | null = null
-    void import("maplibre-gl").then(({ default: maplibregl }) => {
+    void import("maplibre-gl").then(({ Map: MaplibreMap }) => {
       if (disposed || !node.current) return
-      map = new maplibregl.Map({
+      map = new MaplibreMap({
         container: node.current,
         style: atlasStyle,
         center: [15.0, 62.0],

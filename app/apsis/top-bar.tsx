@@ -4,7 +4,7 @@ import { AppLink as Link } from "@/app/components/ui/AppLink";
 import { usePathname, useRouter } from "next/navigation";
 import { logout } from "@/app/actions/auth";
 import { Menu, MoonIcon, SunIcon } from "lucide-react";
-import { NotificationBell } from "@/app/components/ui/NotificationBell";
+import { NotificationBellLink, NotificationMenuLink } from "./ui/notification-link";
 import { Button } from "@/app/components/ui/Button";
 import { Drawer, useDrawerClose } from "@/app/components/ui/Drawer";
 import { useUser, formatUserName } from "@/app/lib/user-context";
@@ -46,12 +46,18 @@ function MobileMenu({ mode, onToggleMode }: TopBarProps) {
         ))}
       </nav>
 
+      {user && (
+        <NotificationMenuLink
+          onClick={close}
+          className={`-mt-6 flex items-center gap-3 border-b border-border py-3 text-sm font-semibold uppercase tracking-wide no-underline ${
+            pathname === "/notifikationer" ? "text-text" : "text-text-muted"
+          }`}
+        />
+      )}
+
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm text-text-muted">{name ? `Inloggad som ${name}` : "Ej inloggad"}</span>
         <span className="flex items-center gap-1">
-          {user && (
-            <NotificationBell className="flex size-9 items-center justify-center rounded text-text-muted hover:bg-accent-wash hover:text-accent" />
-          )}
           <button
             type="button"
             onClick={onToggleMode}
@@ -134,7 +140,7 @@ export default function TopBar({ mode, onToggleMode }: TopBarProps) {
           {mode === "dark" ? <SunIcon size={17} /> : <MoonIcon size={17} />}
         </button>
         {user && (
-          <NotificationBell className="flex size-9 items-center justify-center text-text-muted hover:text-text" />
+          <NotificationBellLink className="flex size-9 items-center justify-center text-text-muted no-underline hover:text-text" />
         )}
         <span className="italic">{name ? `Inloggad som ${name}` : "Ej inloggad"}</span>
         {/* Written as text, like everything else on the sign, not as a filled button. */}

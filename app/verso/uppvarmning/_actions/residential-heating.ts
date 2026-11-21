@@ -82,6 +82,33 @@ export async function registerFireplaceHeating(
   return { success: true }
 }
 
+/** Removes one registered fireplace heating from the connection's device. */
+export async function deleteFireplaceHeating(
+  connection: string,
+  fireplace: number
+): Promise<ResidentialHeatingActionState> {
+  if (!connection || !Number.isInteger(fireplace)) {
+    return { error: "Brasan kunde inte tas bort." }
+  }
+
+  const response = await fetchOrigoApi(`${VERSO_ENDPOINTS.residentialHeating}${connection}/fireplace/${fireplace}/`, {
+    method: "DELETE",
+    headers: await authedJsonHeaders(),
+  })
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    return {
+      error: payload?.detail
+        ? `Brasan kunde inte tas bort: ${payload.detail}`
+        : `Brasan kunde inte tas bort (svar ${response.status}).`,
+    }
+  }
+
+  revalidatePath("/uppvarmning")
+  revalidatePath("/")
+  return { success: true }
+}
+
 /** Zones of one log, fetched through Verso's proxy when a row is expanded. */
 export async function getHeatingLogZones(
   connection: string,

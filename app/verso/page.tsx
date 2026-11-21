@@ -15,7 +15,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-/** Logs from the last two hours, newest first, read from the newest page of the house's ResidentialHeating proxy. */
+/**
+ * Logs from the last two hours, newest first, read from the newest page of the house's ResidentialHeating
+ * proxy, and the newest fireplace heating from the first page of its fireplace proxy.
+ */
 async function getRecentHeating(house: string): Promise<HeatingNow | null> {
   const connection = await getResidentialHeating(house);
   if (!connection) return null;
@@ -23,13 +26,17 @@ async function getRecentHeating(house: string): Promise<HeatingNow | null> {
     getHeatingLogs(connection.id, 1),
     getFireplaceHeatings(connection.id, 1),
   ]);
-  const since = Date.now() - HEATING_WINDOW_MS;
+  const now = Date.now();
+  const since = now - HEATING_WINDOW_MS;
   return {
     connection: connection.id,
     logs: (data?.results ?? []).filter((log) => new Date(log.timestamp).getTime() >= since),
     error,
-    // The proxy returns the newest first.
-    fireplace: { lastStart: fireplaces.data?.results[0]?.start_time ?? null, error: fireplaces.error },
+    fireplace: {
+      latest: fireplaces.data?.results[0]?.start_time ?? null,
+      checkedAt: now,
+      error: fireplaces.error,
+    },
   };
 }
 

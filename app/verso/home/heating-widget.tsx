@@ -4,10 +4,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { ThermometerIcon } from "lucide-react"
 import { Card } from "@/app/components/ui/Card"
-import type { FireplaceNow } from "@/app/verso/home/fireplace-widget"
 import { MODE_LABELS, formatTime, useLogZones } from "@/app/verso/uppvarmning/heating-log-row"
 import { formatOneDecimal as round } from "@/app/lib/formatters"
 import type { HeatingLog } from "@/app/lib/dal"
+import type { FireplaceNow } from "@/app/verso/home/fireplace-widget"
 
 /** ResidentialHeating for the home page, loaded on the server. */
 export type HeatingNow = {
@@ -15,7 +15,7 @@ export type HeatingNow = {
   /** Logs from the last two hours, newest first. */
   logs: HeatingLog[]
   error?: string
-  /** The newest registered fireplace heating. */
+  /** The newest fireplace heating, for the fireplace card. */
   fireplace: FireplaceNow
 }
 

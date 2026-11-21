@@ -91,7 +91,11 @@ const HomeView = ({
       />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:auto-rows-[14rem] lg:gap-5">
         {packWidgets([
-          heating && { key: "fireplace", wide: false, render: (className) => <FireplaceWidget connection={heating.connection} fireplace={heating.fireplace} className={className} /> },
+          heating && {
+            key: "fireplace",
+            wide: false,
+            render: (className) => <FireplaceWidget connection={heating.connection} fireplace={heating.fireplace} className={className} />,
+          },
           hasBookings && { key: "next-visit", wide: true, render: (className) => <NextVisitWidget className={className} /> },
           hasWeather && { key: "weather", wide: false, render: (className) => <WeatherWidget facility={selectedFacility} className={className} /> },
           { key: "updates", wide: true, render: (className) => <UpdatesWidget className={className} /> },

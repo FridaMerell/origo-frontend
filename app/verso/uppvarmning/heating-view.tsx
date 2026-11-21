@@ -1,8 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { groupItems } from "@/app/components/ui/GroupedList"
 import { LinkButton } from "@/app/components/ui/Button"
+import { DeleteButton } from "@/app/components/ui/DeleteButton"
 import { Card } from "@/app/components/ui/Card"
 import { Drawer } from "@/app/components/ui/Drawer"
 import { EmptyState } from "@/app/components/ui/EmptyState"
@@ -10,6 +12,7 @@ import { PageHeader } from "@/app/verso/ui/PageHeader"
 import { StepperButtons } from "@/app/verso/ui/stepper-buttons"
 import { ResidentialHeatingForm } from "@/app/verso/uppvarmning/residential-heating-form"
 import { FireplaceHeatingForm } from "@/app/verso/uppvarmning/fireplace-heating-form"
+import { deleteFireplaceHeating } from "@/app/verso/uppvarmning/_actions/residential-heating"
 import { HeatingLogHeader, HeatingLogRow, formatHeatingDate, formatTime } from "@/app/verso/uppvarmning/heating-log-row"
 import type { FireplaceHeatingPage, HeatingLog, HeatingLogPage, ResidentialHeating } from "@/app/lib/dal"
 
@@ -36,8 +39,24 @@ export default function HeatingView({
   fireplacesError?: string
 }) {
   const router = useRouter()
+  const [fireplaceError, setFireplaceError] = useState<string>()
   // The API already returns the logs newest first.
   const groups = groupItems<HeatingLog>(data?.results ?? [], (log) => formatHeatingDate(log.timestamp))
+
+  async function removeFireplace(id: number) {
+    if (!connection) return
+    setFireplaceError(undefined)
+    try {
+      const result = await deleteFireplaceHeating(connection.id, id)
+      if (result?.error) {
+        setFireplaceError(result.error)
+        return
+      }
+      router.refresh()
+    } catch (err) {
+      setFireplaceError(err instanceof Error ? err.message : "Brasan kunde inte tas bort. Försök igen.")
+    }
+  }
 
   return (
     <div className="container flex min-w-0 flex-1 flex-col gap-4 py-5 sm:py-8">
@@ -83,6 +102,7 @@ export default function HeatingView({
         <div className="flex flex-col gap-6">
           <section className="flex min-w-0 flex-col gap-2">
             <h2 className="m-0 px-1 font-display text-lg font-semibold leading-tight text-text">Brasor</h2>
+            {fireplaceError && <p className="m-0 px-1 text-sm text-danger">{fireplaceError}</p>}
             {fireplacesError ? (
               <EmptyState>Brasorna kunde inte hämtas: {fireplacesError}</EmptyState>
             ) : !fireplaces?.results.length ? (
@@ -90,12 +110,15 @@ export default function HeatingView({
             ) : (
               <Card className="flex flex-col gap-0 overflow-hidden p-0">
                 {fireplaces.results.map((fireplace) => (
-                  <div
-                    key={fireplace.id}
-                    className="flex items-baseline justify-between gap-3 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0"
-                  >
-                    <span>{formatHeatingDate(fireplace.start_time)}</span>
+                  <div key={fireplace.id} className="flex items-baseline gap-3 border-b border-border px-4 py-2.5 text-sm text-text last:border-b-0">
+                    <span className="min-w-0 flex-1">{formatHeatingDate(fireplace.start_time)}</span>
                     <span className="text-text-muted tabular-nums">{formatTime(fireplace.start_time)}</span>
+                    <DeleteButton
+                      label="Ta bort brasa"
+                      confirmTitle="Ta bort brasa"
+                      confirmMessage="Ta bort den här brasan? Det går inte att ångra."
+                      onDelete={() => removeFireplace(fireplace.id)}
+                    />
                   </div>
                 ))}
               </Card>

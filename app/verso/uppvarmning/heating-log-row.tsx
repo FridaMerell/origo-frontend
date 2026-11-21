@@ -16,8 +16,18 @@ const TIME_ZONE = "Europe/Stockholm"
 export const formatTime = (timestamp: string) =>
   new Date(timestamp).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE })
 
-export const formatHeatingDate = (timestamp: string) =>
+export const formatHeatingDate =(timestamp: string) =>
   new Date(timestamp).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric", timeZone: TIME_ZONE })
+
+/** "sön 15 nov", without the abbreviation dots. */
+export const formatShortWeekdayDate = (timestamp: string) =>
+  new Date(timestamp)
+    .toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short", timeZone: TIME_ZONE })
+    .replace(/\./g, "")
+
+/** The house's calendar day of an instant as "YYYY-MM-DD", for counting whole days between two instants. */
+export const heatingCalendarDay = (instant: string | number) =>
+  new Date(instant).toLocaleDateString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: TIME_ZONE })
 
 /**
  * Shared columns for the header, the log rows and their zone rows, so a zone's temperature and

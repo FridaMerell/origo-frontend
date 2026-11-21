@@ -11,7 +11,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "heroku-postbuild": "next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/",    "start": "next start",
+    "heroku-postbuild": "next build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/",
+    "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:forms": "vitest run app/components/form app/lib/schemas.test.ts"
@@ -35,9 +36,9 @@
     "d3-zoom": "^3.0.0",
     "exifr": "^7.1.3",
     "lucide-react": "^1.34.0",
-    "maplibre-gl": "^5.24.0",
-    "mermaid": "^11.17.2",
-    "next": "^16.3.5",
+    "maplibre-gl": "^6.19.0",
+    "mermaid": "^12.3.0",
+    "next": "^16.4.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.86.0",

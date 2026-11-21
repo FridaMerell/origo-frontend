@@ -25,6 +25,39 @@ type Props = {
 }
 
 /**
+ * Reads the device position once through the browser Geolocation API. Rejects with an
+ * Error whose message is a user-facing Swedish explanation of what went wrong.
+ */
+export function getCurrentCoords({
+  highAccuracy = true,
+  maximumAge = 60000,
+}: { highAccuracy?: boolean; maximumAge?: number } = {}) {
+  return new Promise<GeolocationCoords>((resolve, reject) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      reject(new Error("Platstjänster stöds inte i den här webbläsaren."))
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) =>
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+        }),
+      (positionError) => {
+        const messages: Record<number, string> = {
+          1: "Åtkomst till plats nekades.",
+          2: "Platsen kunde inte fastställas.",
+          3: "Tidsgränsen för platsförfrågan överskreds.",
+        }
+        reject(new Error(messages[positionError.code] ?? "Platsen kunde inte hämtas."))
+      },
+      { enableHighAccuracy: highAccuracy, timeout: 15000, maximumAge },
+    )
+  })
+}
+
+/**
  * Shared "use my current location" trigger built on the browser Geolocation API.
  * Headless about what a location means — hands the caller raw coordinates and
  * lets each form map them (a formatted string, a lat/lon pair, …). Used by
@@ -52,29 +85,13 @@ export function CurrentLocationButton({
 
   const locate = () => {
     setError(null)
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      fail("Platstjänster stöds inte i den här webbläsaren.")
-      return
-    }
     setPending(true)
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    getCurrentCoords({ highAccuracy }).then(
+      (coords) => {
         setPending(false)
-        onLocate({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-        })
+        onLocate(coords)
       },
-      (positionError) => {
-        const messages: Record<number, string> = {
-          1: "Åtkomst till plats nekades.",
-          2: "Platsen kunde inte fastställas.",
-          3: "Tidsgränsen för platsförfrågan överskreds.",
-        }
-        fail(messages[positionError.code] ?? "Platsen kunde inte hämtas.")
-      },
-      { enableHighAccuracy: highAccuracy, timeout: 15000, maximumAge: 60000 },
+      (locateError: Error) => fail(locateError.message),
     )
   }
 

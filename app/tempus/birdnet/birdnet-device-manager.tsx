@@ -2,8 +2,11 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { createBirdnetDevice, updateBirdnetDevice } from "@/app/actions/birdnet"
+import { Button } from "@/app/components/ui/Button"
 import { Card } from "@/app/components/ui/Card"
+import { EmptyState } from "@/app/components/ui/EmptyState"
 import type { BirdnetDevice, BirdnetDeviceInput, Facility, FluxUser } from "@/app/lib/dal"
+import { formatDate } from "@/app/lib/formatters"
 import { formatUserName } from "@/app/lib/user-context"
 import { ChevronRight, Loader, Plus } from "lucide-react"
 
@@ -31,11 +34,9 @@ function editDevice(device: BirdnetDevice): EditorState {
   }
 }
 
-function formatDate(value: string) {
+function formatDeviceDate(value: string) {
   const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? "Okänt datum"
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })
+  return Number.isNaN(date.getTime()) ? "Okänt datum" : formatDate(date)
 }
 
 const fieldClass = "w-full rounded border border-field-border bg-surface px-3 py-2.5 text-sm font-normal text-text placeholder:text-text-faint focus:border-accent focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
@@ -128,14 +129,9 @@ export default function BirdnetDeviceManager({
           <div>
             <h2 className="mt-1 font-display text-xl font-semibold">Registrerade enheter</h2>
           </div>
-          <button
-            type="button"
-            onClick={startCreate}
-            disabled={editor !== null || loadError !== null}
-            className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2.5 text-sm font-semibold text-accent-contrast transition-colors hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <Button type="button" variant="primary" onClick={startCreate} disabled={editor !== null || loadError !== null}>
             <Plus size={16} /> Ny enhet
-          </button>
+          </Button>
         </div>
 
         {editor ? (
@@ -193,21 +189,22 @@ export default function BirdnetDeviceManager({
               <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-border px-5 py-4 sm:px-6">
                 {error ? <p role="alert" className="mr-auto text-sm text-danger">{error}</p> : null}
                 <button type="button" onClick={() => setEditor(null)} disabled={pending} className="px-3 py-2 text-sm text-text-muted hover:text-text disabled:opacity-50">Avbryt</button>
-                <button type="submit" disabled={pending || !editor.name.trim() || !editor.identifier.trim() || editor.users.length === 0} className="inline-flex items-center gap-2 rounded bg-accent px-4 py-2.5 text-sm font-semibold text-accent-contrast hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring disabled:cursor-not-allowed disabled:opacity-50">
+                <Button type="submit" variant="primary" disabled={pending || !editor.name.trim() || !editor.identifier.trim() || editor.users.length === 0}>
                   {pending ? <Loader size={16} className="animate-spin" /> : null}
                   {pending ? "Sparar…" : "Spara enhet"}
-                </button>
+                </Button>
               </footer>
             </form>
           </Card>
         ) : null}
 
         {!loadError && devices.length === 0 ? (
-          <Card className="border-dashed px-6 py-10 text-center">
-            <p className="font-display text-lg font-semibold">Inga enheter registrerade</p>
-            <p className="mt-2 text-sm text-text-muted">Lägg till en BirdNET-enhet för att börja ta emot detectioner.</p>
-            <button type="button" onClick={startCreate} className="mt-4 text-sm text-accent hover:underline">Registrera den första enheten</button>
-          </Card>
+          <EmptyState
+            title="Inga enheter registrerade"
+            action={<button type="button" onClick={startCreate} className="text-sm text-accent hover:underline">Registrera den första enheten</button>}
+          >
+            Lägg till en BirdNET-enhet för att börja ta emot detectioner.
+          </EmptyState>
         ) : !loadError ? (
           <Card className="overflow-hidden p-0">
             <ul>
@@ -227,7 +224,7 @@ export default function BirdnetDeviceManager({
                         <span className="block truncate text-sm text-text-muted">{house?.name ?? "Inget hus"}</span>
                         <span className="block font-mono text-[10px] uppercase tracking-wide text-text-faint">{device.users.length} användare</span>
                       </span>
-                      <span className="hidden font-mono text-[10px] uppercase tracking-wide text-text-faint sm:block">{formatDate(device.updated_at)}</span>
+                      <span className="hidden font-mono text-[10px] uppercase tracking-wide text-text-faint sm:block">{formatDeviceDate(device.updated_at)}</span>
                       <ChevronRight size={15} className="text-text-faint" />
                     </button>
                   </li>

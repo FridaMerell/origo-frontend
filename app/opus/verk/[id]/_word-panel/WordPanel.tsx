@@ -1,7 +1,10 @@
 "use client"
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react"
+import { useState, type FormEvent, type ReactNode } from "react"
 import type { AnnotationKind, Id } from "@/app/lib/dal/opus"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
+import { Button } from "@/app/components/ui/Button"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { deleteAnnotation } from "../../../_actions/annotation-actions"
 import { deleteLexicalEntry } from "../../../_actions/lexical-entry-actions"
 import { deleteLexicalForm } from "../../../_actions/lexical-form-actions"
@@ -56,18 +59,13 @@ export default function WordPanel({
 	const [step, setStep] = useState<Step>("meaning")
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-	const panelRef = useRef<HTMLDivElement>(null)
+	const { requestConfirm, dialog } = useConfirmDialog()
+	// The panel closes on Escape or a press outside it, but not while its confirmation (portaled
+	// outside the panel) is open.
+	const { ref: panelRef } = useDismissableOpen<HTMLDivElement>({ open: dialog === null, onDismiss: onClose })
 	const placement = usePanelPlacement(anchor, panelRef, TALLEST_PANEL)
 
 	const update: Update = patch => setDraft(current => ({ ...current, ...patch }))
-
-	useEffect(() => {
-		const onMouseDown = (event: MouseEvent) => {
-			if (panelRef.current && !panelRef.current.contains(event.target as Node)) onClose()
-		}
-		document.addEventListener("mousedown", onMouseDown)
-		return () => document.removeEventListener("mousedown", onMouseDown)
-	}, [onClose])
 
 	const definesWord = !draft.formOnly && draft.kind === "definition"
 	// I "Form av…" finns steget Böjning från början, så att stegraden inte ändras när ett ord väljs.
@@ -106,8 +104,8 @@ export default function WordPanel({
 		)
 	}
 
-	function confirmAndRun(question: string, action: () => Promise<unknown>, failure: string) {
-		if (window.confirm(question)) run(action, failure)
+	function confirmAndRun(title: string, message: string, action: () => Promise<unknown>, failure: string) {
+		requestConfirm({ title, message, confirmLabel: "Ta bort", destructive: true, onConfirm: () => run(action, failure) })
 	}
 
 	const { annotation, gloss } = target
@@ -135,14 +133,12 @@ export default function WordPanel({
 			ref={panelRef}
 			className={`fixed z-50 ${placement ? "" : "invisible"}`}
 			style={{ top: placement?.top ?? 0, left: placement?.left ?? 0 }}>
+			{dialog}
 			<form
 				onSubmit={handleSubmit}
 				// Samma ram som Opus dialoger: rubrik i rubriktypsnittet, skugga, linje över knapparna.
 				className='flex max-h-[85vh] w-96 max-w-[80vw] flex-col overflow-hidden rounded-lg border border-border bg-surface text-text shadow-xl'
-				style={placement?.maxHeight ? { maxHeight: placement.maxHeight } : undefined}
-				onKeyDown={event => {
-					if (event.key === "Escape") onClose()
-				}}>
+				style={placement?.maxHeight ? { maxHeight: placement.maxHeight } : undefined}>
 				<div className='flex shrink-0 items-baseline justify-between gap-4 border-b border-border px-5 py-3'>
 					<h2 className='m-0 truncate font-display text-lg font-semibold text-text'>{target.text}</h2>
 					<p className='m-0 shrink-0 text-sm text-text-muted'>
@@ -214,7 +210,8 @@ export default function WordPanel({
 							disabled={busy}
 							onClick={() =>
 								confirmAndRun(
-									"Ta bort annotationen? Det går inte att ångra.",
+									"Ta bort annotationen?",
+									"Det går inte att ångra.",
 									() => deleteAnnotation(annotation.id),
 									"Annotationen kunde inte tas bort.",
 								)
@@ -230,7 +227,8 @@ export default function WordPanel({
 								disabled={busy}
 								onClick={() =>
 									confirmAndRun(
-										`Ta bort ordet ${gloss.lexical_entry.lemma}? Det försvinner ur alla texter och ordlistor, tillsammans med definitionerna som pekar på det, och går inte att ångra.`,
+										`Ta bort ordet ${gloss.lexical_entry.lemma}?`,
+										"Det försvinner ur alla texter och ordlistor, tillsammans med definitionerna som pekar på det, och går inte att ångra.",
 										() => deleteLexicalEntry(gloss.lexical_entry.id),
 										"Kunde inte ta bort.",
 									)
@@ -244,7 +242,8 @@ export default function WordPanel({
 									disabled={busy}
 									onClick={() =>
 										confirmAndRun(
-											`Ta bort »${target.text}» som form av ${gloss.lexical_entry.lemma}?`,
+											"Ta bort formen?",
+											`»${target.text}» tas bort som form av ${gloss.lexical_entry.lemma}.`,
 											() => deleteLexicalForm(gloss.form!.id),
 											"Kunde inte ta bort.",
 										)
@@ -258,12 +257,9 @@ export default function WordPanel({
 					<button type='button' onClick={onClose} className={`${TEXT_BUTTON} hover:text-text`}>
 						Avbryt
 					</button>
-					<button
-						type='submit'
-						disabled={busy || !canSave(draft, target)}
-						className='rounded-md bg-primary px-3 py-1.5 font-body text-sm font-semibold text-bg transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50'>
+					<Button type='submit' size='sm' rounded='rounded-md' disabled={busy || !canSave(draft, target)}>
 						{busy ? "Sparar…" : "Spara"}
-					</button>
+					</Button>
 				</div>
 			</form>
 		</div>

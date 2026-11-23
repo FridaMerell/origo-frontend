@@ -4,6 +4,10 @@ import { useEffect, useRef, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button, LinkButton } from "@/app/components/ui/Button"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
+import { Pager } from "@/app/components/ui/Pager"
+import { useDebounced } from "@/app/lib/use-debounced"
+import { PAGER_BUTTON, PAGER_CLASS } from "../../ui/pager"
 import type {
 	GlossaryDetail,
 	LexicalEntry,
@@ -46,8 +50,6 @@ const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visi
 
 const LINK_BUTTON = `rounded-sm text-text-muted underline underline-offset-4 hover:text-text disabled:opacity-40 cursor-pointer ${FOCUS}`
 
-/** Samma bläddring som i anteckningslistan. */
-const PAGER_BUTTON = `rounded-sm font-display italic whitespace-nowrap hover:text-text cursor-pointer ${FOCUS}`
 
 function modernFormOf(entry: LexicalEntry) {
 	const value = entry.inflection_data?.modern_form
@@ -505,13 +507,19 @@ export default function GlossaryView({
 }) {
 	const user = useUser()
 	const router = useRouter()
+	const { askToConfirm, dialog } = useConfirmDialog()
 	const [glossary, setGlossary] = useState(initial)
 	const [editingDetails, setEditingDetails] = useState(false)
 	const [adding, setAdding] = useState(false)
 	const [query, setQuery] = useState("")
-	// Sökningen skickas först när man slutat skriva.
+	// Sökningen skickas först när man slutat skriva, och börjar då om på första sidan.
+	const debouncedSearch = useDebounced(query.trim())
 	const [search, setSearch] = useState("")
 	const [page, setPage] = useState(1)
+	if (debouncedSearch !== search) {
+		setSearch(debouncedSearch)
+		setPage(1)
+	}
 	// Räknas upp när sidan ska hämtas om, efter att ett ord lagts till eller tagits bort.
 	const [version, setVersion] = useState(0)
 	const [error, setError] = useState<string | null>(null)
@@ -524,14 +532,6 @@ export default function GlossaryView({
 	const { data } = loaded
 	const loading = loaded.key !== requestKey
 	const pageCount = Math.max(1, Math.ceil(data.count / GLOSSARY_PAGE_SIZE))
-
-	useEffect(() => {
-		const timeout = setTimeout(() => {
-			setSearch(query.trim())
-			setPage(1)
-		}, 300)
-		return () => clearTimeout(timeout)
-	}, [query])
 
 	useEffect(() => {
 		if (loadedKey.current === requestKey) return
@@ -573,7 +573,13 @@ export default function GlossaryView({
 	}
 
 	async function handleDelete() {
-		if (!window.confirm("Ta bort ordlistan? Orden finns kvar i texterna. Det går inte att ångra.")) return
+		const confirmed = await askToConfirm({
+			title: "Ta bort ordlistan?",
+			message: "Orden finns kvar i texterna. Det går inte att ångra.",
+			confirmLabel: "Ta bort",
+			destructive: true,
+		})
+		if (!confirmed) return
 		setError(null)
 		try {
 			await deleteGlossary(glossary.id)
@@ -595,6 +601,7 @@ export default function GlossaryView({
 
 	return (
 		<>
+			{dialog}
 			<p className='mb-4'>
 				<Link href='/ordlistor' className={`font-display italic text-text-muted underline underline-offset-4 hover:text-text ${FOCUS}`}>
 					← Alla ordlistor
@@ -693,29 +700,16 @@ export default function GlossaryView({
 							/>
 						))}
 					</ul>
-					{pageCount > 1 && (
-						<nav
-							aria-label='Sidor med ord'
-							className='grid grid-cols-[1fr_auto_1fr] items-baseline gap-x-4 text-sm text-text-muted'>
-							<span>
-								{page > 1 && (
-									<button type='button' onClick={() => goToPage(page - 1)} className={PAGER_BUTTON}>
-										Föregående
-									</button>
-								)}
-							</span>
-							<span className='font-display italic oldstyle-nums'>
-								Sida {page} av {pageCount}
-							</span>
-							<span className='justify-self-end'>
-								{page < pageCount && (
-									<button type='button' onClick={() => goToPage(page + 1)} className={PAGER_BUTTON}>
-										Nästa
-									</button>
-								)}
-							</span>
-						</nav>
-					)}
+					<Pager
+						as='nav'
+						ariaLabel='Sidor med ord'
+						page={page}
+						totalPages={pageCount}
+						onPageChange={goToPage}
+						className={PAGER_CLASS}
+						buttonClassName={PAGER_BUTTON}
+						label={<span className='font-display italic oldstyle-nums'>Sida {page} av {pageCount}</span>}
+					/>
 				</div>
 			)}
 			{search && data.count === 0 && glossary.entry_count > 0 && (

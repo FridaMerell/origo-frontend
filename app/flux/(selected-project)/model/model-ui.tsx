@@ -1,6 +1,7 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { ChevronLeft } from "lucide-react"
+import { LinkButton } from "@/app/components/ui/Button"
 
 export function ActionLink({
   href,
@@ -11,11 +12,16 @@ export function ActionLink({
   children: ReactNode
   variant?: "primary" | "secondary"
 }) {
-  const styles = variant === "primary"
-    ? "bg-accent text-accent-contrast hover:opacity-90"
-    : "border border-border bg-surface text-text hover:border-accent/50 hover:text-accent"
+  if (variant === "primary") {
+    // Samma höjd som den sekundära länken bredvid.
+    return (
+      <LinkButton href={href} size="sm" rounded="rounded-md" className="min-h-9 justify-center no-underline">
+        {children}
+      </LinkButton>
+    )
+  }
   return (
-    <Link href={href} className={"inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-medium no-underline transition-colors " + styles}>
+    <Link href={href} className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-surface px-3 text-sm font-medium text-text no-underline transition-colors hover:border-accent/50 hover:text-accent">
       {children}
     </Link>
   )

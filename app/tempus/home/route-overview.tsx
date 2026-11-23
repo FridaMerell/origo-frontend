@@ -2,6 +2,7 @@ import Link from "next/link"
 import { LinkButton } from "@/app/components/ui/Button"
 import type { TempusRoute, TempusRouteStop, TempusSuggestedStop } from "@/app/lib/dal"
 import { formatDateLong } from "@/app/lib/formatters"
+import { formatKm } from "@/app/lib/geo"
 import { RouteMap } from "../rutt/route-map"
 import { createRouteProjection } from "../rutt/projection"
 import { CornerTicks } from "./corner-ticks"
@@ -104,7 +105,7 @@ export function RouteOverview({ routeOverview }: { routeOverview: HomeRouteOverv
             <h2 className="font-display text-2xl font-semibold tracking-tight">{route.name}</h2>
             <p className="mt-2 font-mono text-[11px] uppercase leading-relaxed tracking-[.13em] text-text-faint">
               {formatRouteDate(route.planned_date)}<br />
-              {(route.corridor_metres / 1000).toLocaleString("sv-SE")} km korridor · {stops.length} stopp
+              {formatKm(route.corridor_metres)} korridor · {stops.length} stopp
             </p>
           </div>
           <Link

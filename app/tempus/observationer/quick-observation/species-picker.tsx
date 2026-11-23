@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react"
 import { Pager } from "@/app/components/ui/Pager"
+import { useDebounced } from "@/app/lib/use-debounced"
 import { speciesName } from "@/app/tempus/_state/tempus-context"
 import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
 import { Search, X } from "lucide-react"
@@ -35,15 +36,10 @@ export function SpeciesPicker({
   onClearError: () => void
   onSubmit: () => void
 }) {
-  const [debouncedQuery, setDebouncedQuery] = useState(query)
+  const debouncedQuery = useDebounced(query)
   const selectedRef = useRef<HTMLDivElement>(null)
   const activeOptionRef = useRef<HTMLButtonElement>(null)
   const isDebouncing = query !== debouncedQuery
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setDebouncedQuery(query), 300)
-    return () => clearTimeout(timeout)
-  }, [query])
 
   useEffect(() => {
     if (!picked) return

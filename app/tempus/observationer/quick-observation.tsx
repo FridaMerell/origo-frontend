@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { ConfirmDialog } from "@/app/components/ui/ConfirmDialog"
 import { createObservation } from "@/app/tempus/_actions/observations"
-import { parseLatLon } from "@/app/tempus/formatters"
+import { parseLatLon } from "@/app/lib/geo"
 import { PlacePicker } from "./quick-observation/place-picker"
 import { SpeciesPicker, type PresetChecklistItem, type PresetSpecies } from "./quick-observation/species-picker"
 import { LocaleField, useObservationLocale } from "@/app/tempus/locale-match"
 import { localesAtPoint } from "@/app/tempus/locales"
-import { getCurrentCoords } from "@/app/components/ui/CurrentLocationButton"
+import { getCurrentCoords, type GeolocationCoords } from "@/app/components/ui/CurrentLocationButton"
 import { useKeepTimeAndPlaceCurrent } from "./quick-observation/keep-current-setting"
 import { ObservationPhotoPicker, readPhotoMetadata, toDateTimeLocal, uploadObservationPhotos, type PhotoMetadata } from "./observation-photos"
 
@@ -354,22 +354,34 @@ export default function QuickObservation({
     startTransition(async () => {
       try {
         let locale = localeId
+        // Visas efter sparandet när positionen inte kunde hämtas.
+        let locationNotice: string | null = null
         if (keepTimeAndPlaceCurrent) {
-          let coords
+          time = nowLocal()
+          setObservedAt(time)
+          let coords: GeolocationCoords | null = null
           try {
             coords = await getCurrentCoords({ maximumAge: 0 })
           } catch (locateError) {
-            setError(`${locateError instanceof Error ? locateError.message : "Platsen kunde inte hämtas."} Observationen sparades inte.`)
-            return
+            // Webbläsaren kan neka positionen (t.ex. Safari i privat läge). Observationen
+            // sparas ändå, med platsen i fälten om en sådan är vald.
+            const reason = locateError instanceof Error ? locateError.message : "Platsen kunde inte hämtas."
+            const parsedCoords = parseLatLon(lat, lon)
+            if (!("error" in parsedCoords) && parsedCoords.lat !== null && parsedCoords.lon !== null) {
+              location = { type: "Point", coordinates: [parsedCoords.lon, parsedCoords.lat] }
+              locationNotice = `${reason} Observationen sparades med den valda platsen.`
+            } else {
+              locationNotice = `${reason} Observationen sparades utan plats.`
+            }
           }
-          time = nowLocal()
-          const nextLat = coords.latitude.toFixed(6)
-          const nextLon = coords.longitude.toFixed(6)
-          location = { type: "Point", coordinates: [Number(nextLon), Number(nextLat)] }
-          locale = localeChoice ?? String(localesAtPoint(locales, Number(nextLon), Number(nextLat))[0]?.id ?? "")
-          setObservedAt(time)
-          setLat(nextLat)
-          setLon(nextLon)
+          if (coords) {
+            const nextLat = coords.latitude.toFixed(6)
+            const nextLon = coords.longitude.toFixed(6)
+            location = { type: "Point", coordinates: [Number(nextLon), Number(nextLat)] }
+            locale = localeChoice ?? String(localesAtPoint(locales, Number(nextLon), Number(nextLat))[0]?.id ?? "")
+            setLat(nextLat)
+            setLon(nextLon)
+          }
         }
 
         setProgress("Sparar observationen…")
@@ -400,9 +412,11 @@ export default function QuickObservation({
         onSaved?.(selectedChecklistItemIds, result.observationId)
         setSaved(`${label} sparad.`)
         reset({ keepComment: keepCommentForNext })
-        if (photoError) {
-          setError(`${photoError} Observationen är sparad; lägg till bilderna från den.`)
-        }
+        const notices = [
+          locationNotice,
+          photoError ? `${photoError} Observationen är sparad; lägg till bilderna från den.` : null,
+        ].filter(Boolean)
+        if (notices.length > 0) setError(notices.join(" "))
         focusSearch()
       } catch {
         setError("Observationen kunde inte sparas. Kontrollera anslutningen och försök igen.")
@@ -421,8 +435,9 @@ export default function QuickObservation({
   return (
     <>
       {hideTrigger ? null : (
-        <button
+        <Button
           type="button"
+          size="sm"
           onClick={() => {
             setClosing(false)
             setEntered(false)
@@ -430,10 +445,10 @@ export default function QuickObservation({
           }}
           aria-label="Ny observation"
           title="Ny observation"
-          className="flex size-10 items-center justify-center rounded bg-accent text-accent-contrast hover:bg-accent-hover"
+          className="size-10 justify-center p-0"
         >
           <Plus size={18} />
-        </button>
+        </Button>
       )}
 
       {open ? createPortal(

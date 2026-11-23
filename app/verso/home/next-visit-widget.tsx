@@ -4,7 +4,7 @@ import { useState } from "react"
 import { CalendarIcon } from "lucide-react"
 import { Card } from "@/app/components/ui/Card"
 import { useBookingData } from "@/app/verso/_state/verso-context"
-import { formatDateShort } from "@/app/lib/formatters"
+import { formatDateShort, formatMonthName } from "@/app/lib/formatters"
 import { StepperButtons } from "@/app/verso/ui/stepper-buttons"
 
 export function NextVisitWidget({ className = "" }: { className?: string }) {
@@ -27,7 +27,7 @@ export function NextVisitWidget({ className = "" }: { className?: string }) {
           <div className="grid flex-1 grid-cols-[5.5rem_minmax(0,1fr)] items-center gap-4 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-6">
             <div className="flex aspect-square flex-col items-center justify-center rounded-md bg-secondary-wash text-secondary">
               <span className="font-display text-4xl font-semibold leading-none sm:text-5xl">{startDate?.getDate()}</span>
-              <span className="mt-1 text-xs font-medium uppercase tracking-wider">{startDate?.toLocaleDateString("sv-SE", { month: "short" }).replace(".", "")}</span>
+              <span className="mt-1 text-xs font-medium uppercase tracking-wider">{startDate && formatMonthName(startDate, { short: true })}</span>
             </div>
             <div className="min-w-0">
               <span className="block truncate font-display text-3xl font-semibold leading-tight sm:text-4xl">{booking.visitor}</span>

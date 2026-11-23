@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { AlignmentMatrix, Bookmark, Id } from "@/app/lib/dal/opus"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import {
 	autoMatchAlignmentChapters,
 	combineUnits,
@@ -46,6 +47,7 @@ export default function ParallelReader({
 	const [busy, setBusy] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [notice, setNotice] = useState<string | null>(null)
+	const { askToConfirm, dialog } = useConfirmDialog()
 	// Raden vyn ska ta användaren till efter en kapitelsynk, i de rader (matrisen) den gäller.
 	// När andra rader visas (t.ex. en annan sida) gäller den inte längre.
 	const [focus, setFocus] = useState<{ row: number; matrix: AlignmentMatrix } | null>(() =>
@@ -219,8 +221,15 @@ export default function ParallelReader({
 		}
 	}
 
-	function resetRows() {
-		if (busy || !window.confirm("Börja om? All manuell synkning för det här verket tas bort.")) return
+	async function resetRows() {
+		if (busy) return
+		const confirmed = await askToConfirm({
+			title: "Börja om?",
+			message: "All manuell synkning för det här verket tas bort.",
+			confirmLabel: "Börja om",
+			destructive: true,
+		})
+		if (!confirmed) return
 		setNotice(null)
 		run(() => resetAlignment(setId, { offset: 0, limit: PAGE_SIZE }))
 	}
@@ -257,6 +266,7 @@ export default function ParallelReader({
 
 	return (
 		<>
+			{dialog}
 			<SyncTools
 				error={error}
 				notice={notice}

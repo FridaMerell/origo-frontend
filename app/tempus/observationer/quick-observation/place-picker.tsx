@@ -1,8 +1,9 @@
-import { useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react"
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react"
 import { APIProvider, useMapsLibrary } from "@vis.gl/react-google-maps"
 import { CurrentLocationButton } from "@/app/components/ui/CurrentLocationButton"
 import { GOOGLE_MAPS_API_KEY } from "@/app/lib/config"
-import { parseLatLon } from "@/app/tempus/formatters"
+import { parseLatLon } from "@/app/lib/geo"
+import { useStored } from "@/app/lib/use-stored"
 import { X } from "lucide-react"
 
 type SavedPlace = { name: string; lat: string; lon: string }
@@ -24,46 +25,6 @@ function parsePlaces(raw: string | null): SavedPlace[] {
   }
 }
 
-// The saved places live in localStorage, read through useSyncExternalStore:
-// the server and the first client render see none, and every picker updates
-// when the list changes (here or in another tab).
-const NO_PLACES: SavedPlace[] = []
-const placesListeners = new Set<() => void>()
-let placesSnapshot: { raw: string | null; places: SavedPlace[] } = { raw: null, places: NO_PLACES }
-
-function readPlacesRaw() {
-  try {
-    return window.localStorage.getItem(PLACES_KEY)
-  } catch {
-    return null
-  }
-}
-
-function getPlaces() {
-  const raw = readPlacesRaw()
-  if (raw !== placesSnapshot.raw) placesSnapshot = { raw, places: parsePlaces(raw) }
-  return placesSnapshot.places
-}
-
-function subscribePlaces(listener: () => void) {
-  placesListeners.add(listener)
-  window.addEventListener("storage", listener)
-  return () => {
-    placesListeners.delete(listener)
-    window.removeEventListener("storage", listener)
-  }
-}
-
-/** Saves the list; false when the browser would not store it. */
-function storePlaces(next: SavedPlace[]) {
-  try {
-    window.localStorage.setItem(PLACES_KEY, JSON.stringify(next))
-  } catch {
-    return false
-  }
-  placesListeners.forEach((listener) => listener())
-  return true
-}
 
 /** Google Places Autocomplete input, biased to Sweden; resolves to lat/lon. */
 function PlaceSearch({
@@ -115,7 +76,10 @@ export function PlacePicker({
   onClearError: () => void
   onError: (message: string) => void
 }) {
-  const places = useSyncExternalStore(subscribePlaces, getPlaces, () => NO_PLACES)
+  // The saved places live in localStorage: the server and the first client render see
+  // none, and every picker updates when the list changes (here or in another tab).
+  const [storedPlaces, storePlaces] = useStored(PLACES_KEY)
+  const places = useMemo(() => parsePlaces(storedPlaces), [storedPlaces])
   const [placeName, setPlaceName] = useState("")
   const [manualCoords, setManualCoords] = useState(false)
   const [savingPlace, setSavingPlace] = useState(false)
@@ -123,7 +87,7 @@ export function PlacePicker({
   const [editingPlace, setEditingPlace] = useState(() => !hasCoords)
 
   const persistPlaces = (next: SavedPlace[]) => {
-    if (storePlaces(next)) return true
+    if (storePlaces(JSON.stringify(next)) === null) return true
     onError("Punkterna kunde inte sparas i webbläsaren.")
     return false
   }

@@ -12,7 +12,7 @@ import { ChurchPicker, churchDetail } from "@/app/apsis/ui/church-picker";
 import { Sign } from "@/app/apsis/ui/Sign";
 import type { ApsisPlace } from "@/app/lib/dal";
 import { PlacePicker } from "@/app/tempus/observationer/quick-observation/place-picker";
-import { parseLatLon } from "@/app/tempus/formatters";
+import { latLonString, parseLatLon } from "@/app/lib/geo";
 
 export default function UploadView() {
   const user = useUser();
@@ -67,7 +67,7 @@ export default function UploadView() {
         geolocation:
           coordinates.lat === null || coordinates.lon === null
             ? ""
-            : `${coordinates.lat.toFixed(6)}, ${coordinates.lon.toFixed(6)}`,
+            : latLonString(coordinates.lat, coordinates.lon),
       },
       uploadedFiles.files.flatMap((file) =>
         file.thumbnailUrl

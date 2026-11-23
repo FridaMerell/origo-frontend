@@ -1,5 +1,6 @@
 import type { TempusPhenogram, TempusSeasonalStatus } from "@/app/lib/dal"
 import { Chip } from "@/app/components/ui/Chip"
+import { formatDayMonth, formatMonthName } from "@/app/lib/formatters"
 
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
@@ -56,8 +57,7 @@ const windowMonths = ({ start_week, end_week }: { start_week: number; end_week: 
 
 const dayOfYear = (day: number | null) => {
   if (day == null) return "—"
-  const date = new Date(Date.UTC(2001, 0, day))
-  return date.toLocaleDateString("sv-SE", { day: "numeric", month: "short" })
+  return formatDayMonth(Date.UTC(2001, 0, day), { timeZone: "UTC" })
 }
 
 const percent = (value: number | null) =>
@@ -197,9 +197,7 @@ function MonthStrip({ phenogram }: { phenogram: TempusPhenogram }) {
     <div
       className="grid grid-cols-12 gap-1"
       role="img"
-      aria-label={`Aktiva månader, topp i ${new Date(2001, peakMonth).toLocaleDateString("sv-SE", {
-        month: "long",
-      })}`}
+      aria-label={`Aktiva månader, topp i ${formatMonthName(new Date(2001, peakMonth))}`}
     >
       {MONTHS.map((month, index) => (
         <div key={`${month}-${index}`} className="text-center">

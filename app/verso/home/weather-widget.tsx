@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import type { Facility } from "@/app/lib/dal"
 import { Card } from "@/app/components/ui/Card"
+import { formatTime } from "@/app/lib/formatters"
 import { getWeather, getWeatherIconName, type WeatherForecast } from "@/app/lib/weather-client"
 import { StepperButtons } from "@/app/verso/ui/stepper-buttons"
 import { Cloud, CloudFog, CloudLightning, CloudMoon, CloudRain, CloudSnow, CloudSun, Cloudy, Moon, Sun } from "lucide-react"
@@ -80,7 +81,7 @@ function CurrentWeather({
         <WeatherIcon size={38} strokeWidth={1.5} className="shrink-0 text-accent sm:h-[42px] sm:w-[42px]" />
         <span className="font-display text-4xl font-semibold leading-none text-text sm:text-5xl">{data.air_temperature}°</span>
         <span className="ml-auto text-xs text-text-faint">
-          {new Date(time).toLocaleString("sv-SE", { hour: "2-digit", minute: "2-digit" })}
+          {formatTime(time)}
         </span>
       </div>
       <div className="mt-auto grid grid-cols-2 gap-x-5 gap-y-2 border-t border-border pt-3 text-xs">

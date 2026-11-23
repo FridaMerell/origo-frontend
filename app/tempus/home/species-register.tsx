@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { LinkButton } from "@/app/components/ui/Button"
 import type { SpeciesList } from "./overview-data"
 import { useOverview } from "./overview-provider"
 import { PageSteps } from "./page-steps"
@@ -79,12 +80,9 @@ function EmptyRegister({ view }: { view: HomeViewName }) {
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-muted">
         Välj arter i taxakatalogen så förs de in här med sin säsongsdata.
       </p>
-      <Link
-        href="/taxa"
-        className="mt-5 inline-block border border-accent bg-accent px-4 py-2 text-sm font-medium text-accent-contrast no-underline hover:bg-accent-hover"
-      >
+      <LinkButton href="/taxa" size="sm" rounded="rounded-none" className="mt-5 px-4 py-2 no-underline">
         Till taxakatalogen
-      </Link>
+      </LinkButton>
     </div>
   )
 }

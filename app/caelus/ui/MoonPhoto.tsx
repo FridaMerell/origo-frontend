@@ -7,13 +7,9 @@ import { direction, moonPhaseName } from "./sky-info"
 import { photoDays, type MoonMoment, type PhotoDay } from "./sky/moon-photo"
 import { parsePosition, POSITION_KEY, UPPSALA } from "./SkyChart"
 import { useClock } from "./use-clock"
-import { useStored } from "./use-stored"
+import { useStored } from "@/app/lib/use-stored"
+import { formatMonthName, formatTime, formatWeekday, formatWeekdayDate } from "@/app/lib/formatters"
 
-const DAY_FORMAT = new Intl.DateTimeFormat("sv-SE", { weekday: "long", day: "numeric", month: "long" })
-const WEEKDAY_FORMAT = new Intl.DateTimeFormat("sv-SE", { weekday: "short" })
-const MONTH_FORMAT = new Intl.DateTimeFormat("sv-SE", { month: "long" })
-const SHORT_MONTH_FORMAT = new Intl.DateTimeFormat("sv-SE", { month: "short" })
-const CLOCK_FORMAT = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" })
 // Väderstrecken på horisonten, var 45:e grad.
 const COMPASS = ["N", "NO", "O", "SO", "S", "SV", "V", "NV"]
 
@@ -306,18 +302,18 @@ export default function MoonPhoto() {
 	}
 
 	const ends = [days[0].start, days[days.length - 1].start]
-	const months = [...new Set(ends.map(time => MONTH_FORMAT.format(time)))].join("–")
+	const months = [...new Set(ends.map(time => formatMonthName(time)))].join("–")
 	// I mobilen får månaderna inte trängas mellan Föregående och Nästa.
-	const shortMonths = [...new Set(ends.map(time => SHORT_MONTH_FORMAT.format(time).replace(".", "")))].join("–")
+	const shortMonths = [...new Set(ends.map(time => formatMonthName(time, { short: true })))].join("–")
 
 	return (
 		<div className='flex min-h-0 flex-1 flex-col'>
 			<div className='flex flex-col gap-0.5 px-5 pt-5 sm:px-8 sm:pt-8'>
-				<p className='text-md italic text-text-muted lg:text-lg'>{capitalized(DAY_FORMAT.format(day.start))}</p>
+				<p className='text-md italic text-text-muted lg:text-lg'>{capitalized(formatWeekdayDate(day.start))}</p>
 				{moment ? (
 					<>
 						<p className='text-3xl leading-none text-text lg:text-[5.5rem]'>
-							{moment.kind === "rise" ? "Upp" : "Ner"} {CLOCK_FORMAT.format(moment.time)}
+							{moment.kind === "rise" ? "Upp" : "Ner"} {formatTime(moment.time)}
 						</p>
 						<p className='text-lg text-text lg:text-xl'>
 							{Math.round(moment.azimuth)}° · {direction(moment.azimuth)}
@@ -361,7 +357,7 @@ export default function MoonPhoto() {
 								key={item.start}
 								type='button'
 								aria-current={on ? "date" : undefined}
-								aria-label={`${DAY_FORMAT.format(item.start)}${item.good ? ", bra tillfälle" : ""}`}
+								aria-label={`${formatWeekdayDate(item.start)}${item.good ? ", bra tillfälle" : ""}`}
 								onClick={() => {
 									const first = item.moments.findIndex(entry => entry.good)
 									choose({ day: index, moment: Math.max(0, first) })
@@ -369,7 +365,7 @@ export default function MoonPhoto() {
 								className={`flex cursor-pointer flex-col items-center gap-1 pb-1 pt-1.5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring ${
 									on ? "outline outline-1 -outline-offset-1 outline-text" : ""
 								} ${item.good ? "text-text" : "text-text-muted"}`}>
-								<span className='text-xs'>{WEEKDAY_FORMAT.format(item.start).replace(".", "")}</span>
+								<span className='text-xs'>{formatWeekday(item.start, { short: true })}</span>
 								<PhaseDot lit={item.lit} waning={item.waning} />
 								<span className={`text-sm ${item.good ? "underline underline-offset-4" : ""}`}>
 									{new Date(item.start).getDate()}
@@ -393,7 +389,7 @@ export default function MoonPhoto() {
 								className={`cursor-pointer py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring ${
 									index === chosen?.moment ? "text-text underline underline-offset-4" : "text-text-muted hover:text-text"
 								}`}>
-								{entry.kind === "rise" ? "Upp" : "Ner"} {CLOCK_FORMAT.format(entry.time)}
+								{entry.kind === "rise" ? "Upp" : "Ner"} {formatTime(entry.time)}
 							</button>
 						))}
 						{!day.moments.some(entry => entry.kind === "set") && (

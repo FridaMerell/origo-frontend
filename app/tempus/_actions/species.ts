@@ -20,7 +20,8 @@ import {
   type SpeciesCategoryFormValues,
 } from "@/app/lib/schemas"
 import { getSessionCookies } from "@/app/lib/session"
-import { authedJsonHeaders, responseErrorMessage } from "./request"
+import { responseErrorMessage } from "@/app/lib/api-errors"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 
 export type TempusActionState = { error?: string; success?: boolean } | undefined
 export type LoadSpeciesPageInput = { page?: number; pageSize?: number; search?: string; categoryTaxonId?: number | null }
@@ -103,7 +104,7 @@ export async function loadSeasonLookup(input: {
       search: input.search,
     }),
   })
-  if (!response.ok) return { error: await responseErrorMessage(response) }
+  if (!response.ok) return { error: await responseErrorMessage(response, { fieldPath: true }) }
   return { data: (await response.json()) as SeasonLookupResult }
 }
 
@@ -123,7 +124,7 @@ export async function rebuildCategoryPhenograms(categoryId: string): Promise<{ o
     body: JSON.stringify({ species_category: categoryId }),
   })
   if (response.ok) return { ok: true }
-  return { ok: false, error: await responseErrorMessage(response) }
+  return { ok: false, error: await responseErrorMessage(response, { fieldPath: true }) }
 }
 
 export type SpeciesDetail = {
@@ -165,7 +166,7 @@ export async function createSpeciesCategory(data: SpeciesCategoryFormValues): Pr
     }),
   })
   if (!response.ok) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
   revalidatePath("/taxa")
   return { success: true }
@@ -226,7 +227,7 @@ export async function importSpeciesChecklist(
     body,
   })
   if (!response.ok) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
   revalidatePath("/taxa")
   return { success: true, message: "Filen har validerats och arterna har lagts i importkön." }
@@ -242,7 +243,7 @@ export async function registerSpeciesBatch(speciesCategory: string, taxonIds: nu
     headers: await authedJsonHeaders(),
     body: JSON.stringify({ species_category: speciesCategory, dyntaxa_taxon_ids: ids }),
   })
-  if (!response.ok) return { queued: 0, error: await responseErrorMessage(response) }
+  if (!response.ok) return { queued: 0, error: await responseErrorMessage(response, { fieldPath: true }) }
   const body = (await response.json().catch(() => ({}))) as { queued?: number }
   return { queued: body.queued ?? ids.length }
 }
@@ -256,7 +257,7 @@ export async function followSpecies(taxonId: string, options: FollowSpeciesOptio
   const body = { species: Number(taxonId), priority: options.priority ?? 2, notifications_enabled: options.notificationsEnabled ?? false }
   const followsResponse = await fetchOrigoApi(TEMPUS_ENDPOINTS.speciesFollowsMine, { headers })
   if (!followsResponse.ok) {
-    return { ok: false, error: await responseErrorMessage(followsResponse) }
+    return { ok: false, error: await responseErrorMessage(followsResponse, { fieldPath: true }) }
   }
   const follows: unknown = await followsResponse.json().catch(() => [])
   const existing = Array.isArray(follows)
@@ -274,7 +275,7 @@ export async function followSpecies(taxonId: string, options: FollowSpeciesOptio
       body: JSON.stringify(body),
     })
   if (response.ok) return { ok: true }
-  return { ok: false, error: await responseErrorMessage(response) }
+  return { ok: false, error: await responseErrorMessage(response, { fieldPath: true }) }
 }
 
 export async function unfollowSpecies(taxonId: string): Promise<{ ok: boolean; error?: string }> {
@@ -284,7 +285,7 @@ export async function unfollowSpecies(taxonId: string): Promise<{ ok: boolean; e
     headers: await authedJsonHeaders(),
   })
   if (response.ok) return { ok: true }
-  return { ok: false, error: await responseErrorMessage(response) }
+  return { ok: false, error: await responseErrorMessage(response, { fieldPath: true }) }
 }
 
 export async function getFollowedSpecies(): Promise<TempusSpecies[]> {

@@ -2,10 +2,9 @@
 
 import type { ReactNode } from "react"
 import { direction } from "./sky-info"
+import { formatTime, formatWeekdayDate } from "@/app/lib/formatters"
 import type { Tonight } from "./sky/tonight"
 
-const DAY_FORMAT = new Intl.DateTimeFormat("sv-SE", { weekday: "long", day: "numeric", month: "long" })
-const CLOCK_FORMAT = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" })
 
 // En tid som vrider kartan dit. Strecket syns hela tiden, så att det går att se på en telefon
 // att tiden går att välja.
@@ -13,7 +12,7 @@ const CHOICE =
 	"-my-2 inline-block cursor-pointer py-2 text-text underline decoration-text/60 underline-offset-4 hover:decoration-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
 
 function clock(time: number) {
-	return CLOCK_FORMAT.format(time)
+	return formatTime(time)
 }
 
 function auroraNote(aurora: NonNullable<Tonight["aurora"]>) {
@@ -61,7 +60,7 @@ export default function TonightPanel({
 	if (tonight) {
 		const { start, end, dark, best, clouds, moon, planets, showers, aurora } = tonight
 		// Natten heter efter kvällen den hör till, även när den börjar efter midnatt.
-		const day = DAY_FORMAT.format(start - 12 * 60 * 60_000)
+		const day = formatWeekdayDate(start - 12 * 60 * 60_000)
 		const moonTimes = [
 			moon.rise !== null && { time: moon.rise, word: "Går upp" },
 			moon.set !== null && { time: moon.set, word: "Går ner" },

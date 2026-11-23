@@ -9,6 +9,7 @@ import { getApsisPlace } from "@/app/actions/apsis";
 import { useApsisPosts } from "@/app/apsis/_state/apsis-context";
 import { SOURCE, buildingFacts, churchSources } from "@/app/apsis/kyrka/[id]/post-view";
 import { fileProxyUrl } from "@/app/lib/files";
+import { formatDateLong } from "@/app/lib/formatters";
 import type { ApsisPlace } from "@/app/lib/dal";
 import { Sign, SignFacts, SignSources, SourceRef, signBodyClass } from "@/app/apsis/ui/Sign";
 import { WeatherVane } from "@/app/apsis/ui/WeatherVane";
@@ -79,7 +80,7 @@ export default function SlumpaView({ places }: { places: Record<string, ApsisPla
   const name = post?.name || place?.name || "Okänd kyrka";
   const location = place ? [place.municipality, place.county].filter(Boolean).join(", ") : "";
   const ownComment = post?.content && post.content !== post.name && post.content !== "Absidfoto" ? post.content : "";
-  const added = post?.created_at ? new Date(post.created_at).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" }) : "";
+  const added = post?.created_at ? formatDateLong(post.created_at) : "";
   // A row taken from Svenska kyrkan carries the number of its source; what
   // Apsis itself holds about the post carries none.
   const facts = ([

@@ -2,21 +2,19 @@
 
 import { useMemo, useState } from "react"
 import { Card } from "@/app/components/ui/Card"
+import { EmptyState } from "@/app/components/ui/EmptyState"
 import { useBirdnetStream, type BirdnetDetection } from "@/app/lib/birdnet-live"
 import type { BirdnetDevice } from "@/app/lib/dal"
+import { formatDayMonth, formatTime } from "@/app/lib/formatters"
 
-function formatTime(value: string) {
+function formatDetectionTime(value: string) {
   const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? "–"
-    : date.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  return Number.isNaN(date.getTime()) ? "–" : formatTime(date, { seconds: true })
 }
 
 function formatDay(value: string) {
   const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? ""
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "short" })
+  return Number.isNaN(date.getTime()) ? "" : formatDayMonth(date)
 }
 
 function formatRelative(value: string) {
@@ -28,7 +26,7 @@ function formatRelative(value: string) {
   if (min < 60) return `${min} min sedan`
   const hours = Math.round(min / 60)
   if (hours < 24) return `${hours} h sedan`
-  return `${formatDay(value)} ${formatTime(value)}`
+  return `${formatDay(value)} ${formatDetectionTime(value)}`
 }
 
 function capitalize(value: string) {
@@ -144,7 +142,7 @@ function DetectionRow({
         </span>
       </span>
       <span className="hidden font-mono text-[11px] text-text-muted sm:block">
-        {formatDay(detection.detectedAt)} {formatTime(detection.detectedAt)}
+        {formatDay(detection.detectedAt)} {formatDetectionTime(detection.detectedAt)}
       </span>
       <span className="font-mono text-xs tabular-nums text-text-muted">{pct}%</span>
       <span
@@ -203,19 +201,13 @@ export default function BirdnetLiveFeed({ devices }: { devices: BirdnetDevice[] 
       </div>
 
       {activeDevices.length === 0 ? (
-        <Card className="border-dashed px-6 py-10 text-center">
-          <p className="font-display text-lg font-semibold">Ingen aktiv enhet</p>
-          <p className="mt-2 text-sm text-text-muted">
-            Aktivera minst en BirdNET-enhet nedan för att ta emot kvitter.
-          </p>
-        </Card>
+        <EmptyState title="Ingen aktiv enhet">
+          Aktivera minst en BirdNET-enhet nedan för att ta emot kvitter.
+        </EmptyState>
       ) : detections.length === 0 ? (
-        <Card className="border-dashed px-6 py-10 text-center">
-          <p className="font-display text-lg font-semibold">Väntar på fåglar</p>
-          <p className="mt-2 text-sm text-text-muted">
-            Inga fåglar har hörts senaste 24 timmarna. När nästa hörs dyker den upp här utan att du behöver göra något
-          </p>
-        </Card>
+        <EmptyState title="Väntar på fåglar">
+          Inga fåglar har hörts senaste 24 timmarna. När nästa hörs dyker den upp här utan att du behöver göra något
+        </EmptyState>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">

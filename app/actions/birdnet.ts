@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
+import { fetchOrigoApi } from "@/app/lib/api-client"
+import { firstErrorMessage } from "@/app/lib/api-errors"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 import type { BirdnetDeviceInput } from "@/app/lib/dal/birdnet"
 import { getCurrentUser } from "@/app/lib/dal/auth"
-import { getSessionCookies } from "@/app/lib/session"
 
 export type BirdnetDeviceActionResult = {
   success?: boolean
@@ -23,34 +24,8 @@ function validateDeviceInput(input: BirdnetDeviceInput): string | null {
   return null
 }
 
-function firstErrorMessage(detail: string, status: number): string {
-  const fallback = status === 404
-    ? "BirdNET-API:t är inte tillgängligt ännu."
-    : `Ett fel uppstod (${status}).`
-
-  try {
-    const parsed = JSON.parse(detail) as Record<string, unknown>
-    const preferredKeys = ["identifier", "users", "house", "is_active", "non_field_errors", "detail"]
-    for (const key of preferredKeys) {
-      const value = parsed[key]
-      if (Array.isArray(value) && typeof value[0] === "string") return value[0]
-      if (typeof value === "string") return value
-    }
-  } catch {
-    // Never expose a raw API or HTML error response in the UI.
-  }
-
-  return fallback
-}
-
-async function mutationHeaders() {
-  const { sessionId, csrfToken } = await getSessionCookies()
-  return {
-    "Content-Type": "application/json",
-    "X-CSRFToken": csrfToken ?? "",
-    Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-  }
-}
+const birdnetErrorMessage = (detail: string, status: number) =>
+  firstErrorMessage(detail, status, status === 404 ? { fallback: "BirdNET-API:t är inte tillgängligt ännu." } : {})
 
 function normalizedInput(input: BirdnetDeviceInput): BirdnetDeviceInput {
   return {
@@ -71,13 +46,13 @@ export async function createBirdnetDevice(
 
   const response = await fetchOrigoApi(TEMPUS_ENDPOINTS.birdnetDevices, {
     method: "POST",
-    headers: await mutationHeaders(),
+    headers: await authedJsonHeaders(),
     body: JSON.stringify(normalizedInput(input)),
   })
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: birdnetErrorMessage(detail, response.status) }
   }
 
   const created = (await response.json().catch(() => null)) as { id?: unknown } | null
@@ -98,13 +73,13 @@ export async function updateBirdnetDevice(
 
   const response = await fetchOrigoApi(`${TEMPUS_ENDPOINTS.birdnetDevices}${id}/`, {
     method: "PATCH",
-    headers: await mutationHeaders(),
+    headers: await authedJsonHeaders(),
     body: JSON.stringify(normalizedInput(input)),
   })
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "")
-    return { error: firstErrorMessage(detail, response.status) }
+    return { error: birdnetErrorMessage(detail, response.status) }
   }
 
   revalidatePath("/birdnet")

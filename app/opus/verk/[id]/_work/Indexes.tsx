@@ -6,6 +6,7 @@ import { ChevronRightIcon, EllipsisIcon, GripVerticalIcon } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
 import { Chip } from "@/app/components/ui/Chip"
 import { Drawer, useDrawerClose } from "@/app/components/ui/Drawer"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { EditionReadingStatus, type ImportOptions } from "@/app/lib/dal/opus"
 import { addEmptyChapter, deleteEdition, reorderEditionChapters } from "../../../_actions/editions"
 import { requestUnitNavigation } from "../../../_state/unit-navigation"
@@ -306,9 +307,16 @@ function EditionPanel({
 	const [mode, setMode] = useState<"list" | "append" | "empty">("list")
 	const [deleting, setDeleting] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const { askToConfirm, dialog } = useConfirmDialog()
 
 	async function removeEdition() {
-		if (!window.confirm(`Radera utgåvan "${edition.title}"? All dess text, noter och synkning tas bort.`)) return
+		const confirmed = await askToConfirm({
+			title: `Radera utgåvan "${edition.title}"?`,
+			message: "All dess text, noter och synkning tas bort.",
+			confirmLabel: "Radera",
+			destructive: true,
+		})
+		if (!confirmed) return
 		setDeleting(true)
 		setError(null)
 		const result = await deleteEdition(workId, edition.id)
@@ -323,6 +331,7 @@ function EditionPanel({
 
 	return (
 		<>
+			{dialog}
 			<div className='mb-3 flex items-center gap-2'>
 				<span className={`h-2 w-2 shrink-0 rounded-full ${BAR_CLASS[color] ?? BAR_CLASS.foreground}`} />
 				<p className='font-mono text-xs uppercase tracking-widest text-text-muted'>

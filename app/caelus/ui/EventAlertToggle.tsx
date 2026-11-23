@@ -10,7 +10,7 @@ import {
 import { isPushSupported } from "@/app/lib/push-client"
 import { hasWorker, subscribeAndSave } from "@/app/lib/use-push-notifications"
 import { parsePosition, POSITION_KEY, UPPSALA } from "./SkyChart"
-import { useStored } from "./use-stored"
+import { useStored } from "@/app/lib/use-stored"
 
 // Varningen kommer som pushnotis när webbläsaren tillåter det, annars som e-post. Att den inte
 // får bli push stoppar alltså inte varningarna.

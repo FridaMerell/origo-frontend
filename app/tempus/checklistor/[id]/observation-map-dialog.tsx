@@ -3,7 +3,8 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { loadChecklistObservationPoints } from "@/app/tempus/_actions/checklists"
 import { SwedenMap, type SwedenMapPoint } from "@/app/tempus/ui/biotope-map/SwedenMap"
-import { Expand, X } from "lucide-react"
+import { Expand } from "lucide-react"
+import { Modal } from "@/app/components/ui/Modal"
 
 export default function ObservationMapDialog({
   children,
@@ -22,15 +23,6 @@ export default function ObservationMapDialog({
     void loadChecklistObservationPoints(checklistId).then(setPoints)
   }, [checklistId, open, points])
 
-  useEffect(() => {
-    if (!open) return
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false)
-    }
-    window.addEventListener("keydown", closeOnEscape)
-    return () => window.removeEventListener("keydown", closeOnEscape)
-  }, [open])
-
   return (
     <>
       <button
@@ -47,56 +39,35 @@ export default function ObservationMapDialog({
         </span>
       </button>
 
-      {open ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="observation-map-title"
-          onPointerDown={(event) => {
-            if (event.target === event.currentTarget) setOpen(false)
-          }}
-        >
-          <section className="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-card border border-border bg-surface shadow-2xl">
-            <header className="flex items-start justify-between gap-4 border-b border-border px-4 py-3 sm:px-5">
-              <div>
-                <p className="font-mono text-[9px] uppercase tracking-[.16em] text-text-faint">Observationernas utbredning</p>
-                <h2 id="observation-map-title" className="mt-0.5 font-display text-xl font-semibold">Dina observationer i Sverige</h2>
-                <p className="mt-1 text-xs text-text-muted">
-                  {points === null
-                    ? 'Laddar...'
-                    : `${points.length} ${points.length === 1 ? "observation med position" : "observationer med position"}`}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="flex size-8 items-center justify-center rounded-full text-text-muted hover:bg-surface-2 hover:text-text"
-                aria-label="Stäng"
-              >
-                <X size={17} />
-              </button>
-            </header>
-
-            <div className="relative min-h-0 flex-1 overflow-auto bg-surface-2/30 p-3 sm:p-5">
-              {points ? <SwedenMap
-                points={points}
-                pointRadius={10}
-                showLakeLabels
-                autoZoom
-                title="Sverigekarta med dina observationer markerade"
-                className="mx-auto max-w-full"
-                style={{ height: "min(68vh, 42rem)", width: "auto" }}
-              /> : null}
-              {points?.length === 0 ? (
-                <p className="absolute inset-x-4 top-1/2 -translate-y-1/2 rounded border border-border bg-surface/90 px-4 py-3 text-center text-sm text-text-muted sm:inset-x-1/4">
-                  Det finns ännu inga observationer med sparad position.
-                </p>
-              ) : null}
-            </div>
-          </section>
+      <Modal
+        open={open}
+        onOpenChange={setOpen}
+        size="lg"
+        className="max-w-4xl"
+        title="Dina observationer i Sverige"
+        description={
+          points === null
+            ? "Laddar..."
+            : `${points.length} ${points.length === 1 ? "observation med position" : "observationer med position"}`
+        }
+      >
+        <div className="relative">
+          {points ? <SwedenMap
+            points={points}
+            pointRadius={10}
+            showLakeLabels
+            autoZoom
+            title="Sverigekarta med dina observationer markerade"
+            className="mx-auto max-w-full"
+            style={{ height: "min(68vh, 42rem)", width: "auto" }}
+          /> : null}
+          {points?.length === 0 ? (
+            <p className="absolute inset-x-4 top-1/2 -translate-y-1/2 rounded border border-border bg-surface/90 px-4 py-3 text-center text-sm text-text-muted sm:inset-x-1/4">
+              Det finns ännu inga observationer med sparad position.
+            </p>
+          ) : null}
         </div>
-      ) : null}
+      </Modal>
     </>
   )
 }

@@ -1,6 +1,7 @@
 import { Body, Illumination } from "astronomy-engine"
 import type { PanelInfo } from "../InfoPanel"
 import { describeCloudCover } from "./clouds"
+import { formatTime, formatWeekdayDate } from "@/app/lib/formatters"
 import type { Scene } from "./types"
 
 /*
@@ -8,8 +9,6 @@ import type { Scene } from "./types"
  * höjd), månljuset och molnen, vägda till ett betyg i fyra steg. Ljusföroreningar räknas inte.
  */
 
-const DAY_FORMAT = new Intl.DateTimeFormat("sv-SE", { weekday: "long", day: "numeric", month: "long" })
-const CLOCK_FORMAT = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" })
 
 // Hur mycket ett fullt upplyst månljus i zenit tar av mörkret.
 const MOON_WEIGHT = 0.9
@@ -71,13 +70,13 @@ function degrees(value: number) {
 
 /** Panelens innehåll. `hasForecast` säger om SMHI har någon prognos alls för platsen. */
 export function darknessInfo(darkness: Darkness, time: Date, hasForecast: boolean): PanelInfo {
-	const day = DAY_FORMAT.format(time)
+	const day = formatWeekdayDate(time)
 	const { sunAltitude, moonAltitude, moonLit, cloudCover } = darkness
 	return {
 		key: "darkness",
 		label: "Förutsättningar",
 		title: "Förutsättningar",
-		subtitle: `${day.charAt(0).toUpperCase()}${day.slice(1)} · ${CLOCK_FORMAT.format(time)}`,
+		subtitle: `${day.charAt(0).toUpperCase()}${day.slice(1)} · ${formatTime(time)}`,
 		rows: [
 			["Betyg", darkness.verdict],
 			[

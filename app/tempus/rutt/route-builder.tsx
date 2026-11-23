@@ -4,21 +4,17 @@ import { useState, useTransition, type FormEvent } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
+import { isoDateKey } from "@/app/lib/formatters"
+import { formatKm } from "@/app/lib/geo"
 import { createRoute } from "@/app/tempus/_actions/routes"
 import { RoutePlanner, type PlannedRoute } from "./route-planner"
-
-function today() {
-  const now = new Date()
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-  return now.toISOString().slice(0, 10)
-}
 
 export default function RouteBuilder() {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
 
   const [name, setName] = useState("")
-  const [plannedDate, setPlannedDate] = useState(today())
+  const [plannedDate, setPlannedDate] = useState(() => isoDateKey())
   const [corridorKm, setCorridorKm] = useState(3)
   const [planned, setPlanned] = useState<PlannedRoute | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -154,10 +150,7 @@ export default function RouteBuilder() {
           </Button>
           {planned ? (
             <span className="font-mono text-xs uppercase tracking-[.14em] text-text-muted">
-              {(planned.distanceMetres / 1000).toLocaleString("sv-SE", {
-                maximumFractionDigits: 1,
-              })}{" "}
-              km körväg
+              {formatKm(planned.distanceMetres)} körväg
             </span>
           ) : null}
         </div>

@@ -8,6 +8,7 @@ import {
   markNotificationAsRead,
   type NotificationPreview,
 } from "@/app/actions/notifications";
+import { formatNotificationTime } from "@/app/components/ui/NotificationMenu";
 import { PushControls } from "@/app/components/ui/PushControls";
 import { currentTenant } from "@/app/lib/push-client";
 import { useUser } from "@/app/lib/user-context";
@@ -15,12 +16,6 @@ import { Sign, signBodyClass, signPanelClass } from "@/app/apsis/ui/Sign";
 
 const textButtonClass =
   "cursor-pointer whitespace-nowrap font-semibold text-text underline underline-offset-4 hover:text-accent disabled:opacity-50";
-
-function formatTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
 
 /**
  * The user's Apsis notifications as a sign of their own: each under a rule, the
@@ -104,7 +99,7 @@ export default function NotificationsView() {
                     {notification.title}
                   </span>
                   {notification.createdAt && (
-                    <time className="mt-1 block text-sm italic text-text-muted">{formatTime(notification.createdAt)}</time>
+                    <time className="mt-1 block text-sm italic text-text-muted">{formatNotificationTime(notification.createdAt)}</time>
                   )}
                   {hasBody && (
                     <span className={`mt-2 block whitespace-pre-wrap ${signBodyClass} ${open ? "" : "line-clamp-2"}`}>

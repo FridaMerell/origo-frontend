@@ -12,7 +12,8 @@ import {
   type TempusObservationCategoryPage,
 } from "@/app/lib/dal/tempus/observations"
 import { observationFormSchema, type ObservationFormValues } from "@/app/lib/schemas"
-import { authedJsonHeaders, responseErrorMessage } from "./request"
+import { responseErrorMessage } from "@/app/lib/api-errors"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 
 export type ObservationResult = {
   success?: boolean
@@ -50,7 +51,7 @@ export async function createObservation(input: ObservationFormValues): Promise<O
     body: JSON.stringify(parsed.data),
   })
   if (!response.ok) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
 
   const created = (await response.json().catch(() => null)) as { id?: unknown } | null
@@ -84,7 +85,7 @@ export async function createObservationsBatch(
       body: JSON.stringify(parsed.data),
     })
     if (!response.ok) {
-      results[index] = { index, species: parsed.data.species, ok: false, error: await responseErrorMessage(response) }
+      results[index] = { index, species: parsed.data.species, ok: false, error: await responseErrorMessage(response, { fieldPath: true }) }
       return
     }
     const created = (await response.json().catch(() => null)) as { id?: unknown } | null
@@ -116,7 +117,7 @@ export async function updateObservation(
     body: JSON.stringify(changes),
   })
   if (!response.ok) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
   revalidatePath("/observationer")
   return { success: true, observationId: id }
@@ -136,7 +137,7 @@ export async function setObservationPhotos(id: string, photos: string[]): Promis
     body: JSON.stringify({ photos: parsed.data }),
   })
   if (!response.ok) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
   revalidatePath("/observationer")
   return { success: true, observationId: id }
@@ -149,7 +150,7 @@ export async function deleteObservation(id: string): Promise<ObservationResult> 
     headers: await authedJsonHeaders(),
   })
   if (!response.ok && response.status !== 404) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
   revalidatePath("/observationer")
   return { success: true }

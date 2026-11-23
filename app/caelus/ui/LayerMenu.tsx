@@ -2,7 +2,7 @@
 
 import { MODE_KEY, useDarkMode } from "./CaelusTheme"
 import { toggleFollowing, useCanFollow, useFollowing } from "./sky/compass"
-import { useStored } from "./use-stored"
+import { useStored } from "@/app/lib/use-stored"
 
 // Sparas i webbläsaren och läses av kartan, som lyfter fram solen, månen och planeterna
 // respektive var norrsken kan synas.

@@ -11,6 +11,7 @@ import { useSubmitAction } from "@/app/components/form/useSubmitAction"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { Button } from "@/app/components/ui/Button"
 import { useDrawerClose } from "@/app/components/ui/Drawer"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { useVentureData } from "@/app/verso/_state/verso-context"
 import { fileProxyUrl } from "@/app/lib/files"
 import { withoutHistoryFields } from "@/app/verso/bilder/history-fields"
@@ -29,6 +30,7 @@ export function PhotoEditForm({
   const pathname = usePathname()
   const closeDrawer = useDrawerClose()
   const [deleting, setDeleting] = useState(false)
+  const { askToConfirm, dialog } = useConfirmDialog()
   const {
     register,
     handleSubmit,
@@ -72,7 +74,13 @@ export function PhotoEditForm({
   }
 
   async function onDelete() {
-    if (!window.confirm("Ta bort bilden?")) return
+    const confirmed = await askToConfirm({
+      title: "Ta bort bilden?",
+      message: "Bilden tas bort. Det går inte att ångra.",
+      confirmLabel: "Ta bort",
+      destructive: true,
+    })
+    if (!confirmed) return
     setDeleting(true)
     const result = await deletePhoto(photo.id, pathname)
     setDeleting(false)
@@ -167,6 +175,7 @@ export function PhotoEditForm({
       )}
 
       <FormRootError error={errors.root} />
+      {dialog}
       <div className="mt-2 flex items-center justify-between">
         <Button type="button" variant="ghost" size="sm" disabled={deleting} onClick={onDelete}>
           {deleting ? "Tar bort..." : "Ta bort"}

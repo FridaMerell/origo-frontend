@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/app/components/ui/Button"
 import { Pager } from "@/app/components/ui/Pager"
+import { PillSelect } from "@/app/components/ui/PillSelect"
 import { useToast } from "@/app/components/ui/ToastProvider"
 import type { TempusSeasonalOverview } from "@/app/lib/dal"
 import { createChecklist } from "@/app/tempus/_actions/checklists"
@@ -193,23 +194,13 @@ export default function SeasonLookup() {
       {result ? (
         <>
           <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {filters.map(({ value, label, count }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={season === value}
-                  onClick={() => chooseSeason(value)}
-                  className={`border px-2.5 py-1 font-display italic ${
-                    season === value
-                      ? "border-accent bg-accent text-accent-contrast"
-                      : "border-border text-text-muted hover:border-accent hover:text-accent"
-                  }`}
-                >
-                  {label} ({count})
-                </button>
-              ))}
-            </div>
+            <PillSelect
+              variant="square"
+              className="items-center gap-2"
+              value={season}
+              onChange={chooseSeason}
+              options={filters.map(({ value, label, count }) => ({ value, label: `${label} (${count})` }))}
+            />
 
             <form onSubmit={save} className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <TextField

@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { logout } from "@/app/actions/auth"
 import { APP_LINKS, appHref } from "@/app/lib/tenant-links"
 import { useUser } from "@/app/lib/user-context"
 import LayerMenu from "./LayerMenu"
-import { useStored } from "./use-stored"
+import { useStored } from "@/app/lib/use-stored"
 
 // Om händelsepanelen är utfälld; den öppnas från menyn och stängs i panelen.
 export const EVENTS_KEY = "caelus-events"
@@ -23,29 +24,12 @@ const ITEM =
 export default function CaelusMenu() {
 	const user = useUser()
 	const pathname = usePathname()
-	const [open, setOpen] = useState(false)
+	const { open, setOpen, ref: rootRef } = useDismissableOpen<HTMLDivElement>()
 	// Vilken undermeny som visas i stället för menyns länkar: vad kartan visar, eller de andra apparna.
 	const [submenu, setSubmenu] = useState<"layers" | "apps" | null>(null)
 	const [, storeEvents] = useStored(EVENTS_KEY)
 	const [, storeQuiz] = useStored(QUIZ_KEY)
 	const [, storeTonight] = useStored(TONIGHT_KEY)
-	const rootRef = useRef<HTMLDivElement>(null)
-
-	useEffect(() => {
-		if (!open) return
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") setOpen(false)
-		}
-		const onPointerDown = (event: PointerEvent) => {
-			if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
-		}
-		document.addEventListener("keydown", onKeyDown)
-		document.addEventListener("pointerdown", onPointerDown)
-		return () => {
-			document.removeEventListener("keydown", onKeyDown)
-			document.removeEventListener("pointerdown", onPointerDown)
-		}
-	}, [open])
 
 	return (
 		<div

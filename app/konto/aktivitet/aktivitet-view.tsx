@@ -1,6 +1,7 @@
 "use client";
 
 import type { ActivityItem, User } from "@/app/lib/dal";
+import { formatDateNumeric, formatTime } from "@/app/lib/formatters";
 import { KontoShell } from "../konto-shell";
 import { LABEL, MONO, Section } from "../ui";
 
@@ -8,7 +9,7 @@ function formatWhen(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("sv-SE", { dateStyle: "short", timeStyle: "short" });
+  return `${formatDateNumeric(date)} ${formatTime(date)}`;
 }
 
 export function AktivitetView({

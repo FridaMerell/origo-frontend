@@ -10,6 +10,7 @@ import { CheckboxGroup } from "@/app/components/form/CheckboxGroup"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { FormRootError } from "@/app/components/form/FormFeedback"
 import type { FluxIdentity } from "@/app/lib/dal"
+import { useDebounced } from "@/app/lib/use-debounced"
 import { formValuesToPreview, identityFormSchema, identityToFormValues, newIdentityValues, type IdentityFormValues } from "./identity-form"
 import { AssetFileField } from "./asset-file-field"
 import { COLOR_FORMATS_HINT, normalizeColor } from "./color-parse"
@@ -34,16 +35,6 @@ const ASSET_MODE_LABELS = { any: "Alla bakgrunder", light: "Ljus bakgrund", dark
 const sectionClass = "flex flex-col gap-4 rounded-lg border border-border bg-surface p-4"
 const sectionTitle = "text-sm font-semibold uppercase tracking-wide text-text-faint"
 const rowButton = "rounded-md p-1 text-text-faint transition-colors hover:bg-danger-wash hover:text-danger"
-
-/** Trails `value` by `ms`, so the preview frame does not reload on every keystroke. */
-function useDebounced<T>(value: T, ms: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), ms)
-    return () => clearTimeout(timer)
-  }, [value, ms])
-  return debounced
-}
 
 export function IdentityEditor({
   identity,

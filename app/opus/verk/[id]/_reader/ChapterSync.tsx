@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { XIcon } from "lucide-react"
+import { Button } from "@/app/components/ui/Button"
 import { Drawer } from "@/app/components/ui/Drawer"
 import type { AlignmentMatrix, AutoMatchChaptersResult, Id } from "@/app/lib/dal/opus"
 import { alignTexts } from "../../../_actions/alignment-actions"
@@ -260,13 +261,14 @@ export default function ChapterSync({
 				</div>
 
 				<div className='flex flex-wrap items-center gap-3'>
-					<button
+					<Button
 						type='button'
+						size='sm'
+						rounded='rounded-md'
 						disabled={staged.length === 0 || previewing || applying || Boolean(problem)}
-						onClick={apply}
-						className='rounded-md px-4 py-2 text-sm font-semibold bg-primary text-bg hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-text/15 disabled:text-text/50 cursor-pointer'>
+						onClick={apply}>
 						{applying ? "Sparar…" : "Applicera"}
-					</button>
+					</Button>
 					{staged.length === 0 && <span className='text-xs text-text/80'>Lägg till minst en grupp först.</span>}
 					<button
 						type='button'

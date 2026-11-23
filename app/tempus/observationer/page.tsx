@@ -6,6 +6,7 @@ import { getTempusObservationsPage, getTempusObservedCategoryPage } from "@/app/
 import { getTempusSpeciesItem, getTempusSpeciesItems } from "@/app/lib/dal/tempus/species"
 import { LocaleLabel } from "@/app/tempus/locale-label"
 import { BiotopeMap } from "@/app/tempus/ui/biotope-map/BiotopeMap"
+import { formatDate } from "@/app/lib/formatters"
 import { ObservationFilter, ObservationOrder } from "./observation-filter"
 import { REGISTER_COLUMNS as COLUMNS, type OBSERVATION_FILTER_PARAMS, type ObservationFilterValues } from "./observation-filter-params"
 
@@ -34,9 +35,7 @@ type PageProps = { searchParams: Promise<SearchParams> }
 function formatShortDate(value: string | null) {
   if (!value) return null
   const date = new Date(value)
-  return Number.isNaN(date.getTime())
-    ? null
-    : date.toLocaleDateString("sv-SE", { day: "numeric", month: "short", year: "numeric" })
+  return Number.isNaN(date.getTime()) ? null : formatDate(date)
 }
 
 function readPageNumber(value: string | undefined) {

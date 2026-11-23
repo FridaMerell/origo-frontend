@@ -16,7 +16,8 @@ import {
   checklistFormSchema,
   type ChecklistFormValues,
 } from "@/app/lib/schemas"
-import { authedJsonHeaders, responseErrorMessage } from "./request"
+import { responseErrorMessage } from "@/app/lib/api-errors"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 
 export type CreateChecklistResult = {
   success?: boolean
@@ -63,7 +64,7 @@ export async function createChecklist(input: ChecklistFormValues): Promise<Creat
     }),
   })
   if (!response.ok) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
   const checklist = (await response.json().catch(() => null)) as { id?: unknown } | null
   if (typeof checklist?.id !== "string") return { error: "Checklistan skapades, men svaret saknade ett checklist-ID." }
@@ -151,7 +152,7 @@ export async function updateChecklist(
     )),
   ])
   if (metadataResponse && !metadataResponse.ok) {
-    return { error: await responseErrorMessage(metadataResponse) }
+    return { error: await responseErrorMessage(metadataResponse, { fieldPath: true }) }
   }
   const changeResponses = [
     ...removalResponses,
@@ -159,7 +160,7 @@ export async function updateChecklist(
   ]
   const failed = changeResponses.find((itemResponse) => !itemResponse.ok && itemResponse.status !== 404)
   if (failed) {
-    const reason = await responseErrorMessage(failed)
+    const reason = await responseErrorMessage(failed, { fieldPath: true })
     return { checklistId: id, error: `Checklistan sparades, men artlistan kunde inte uppdateras helt. ${reason}` }
   }
 
@@ -173,7 +174,7 @@ export async function deleteChecklist(id: string): Promise<{ success?: boolean; 
     headers: await authedJsonHeaders(),
   })
   if (!response.ok && response.status !== 404) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
   revalidatePath("/checklistor")
   return { success: true }
@@ -195,7 +196,7 @@ export async function syncChecklistCategory(
     body: JSON.stringify({ species_category_id: speciesCategoryId }),
   })
   if (!response.ok) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
 
   revalidatePath("/checklistor")
@@ -212,7 +213,7 @@ export async function syncChecklistObservations(id: string): Promise<ChecklistSy
     headers: await authedJsonHeaders(),
   })
   if (!response.ok) {
-    return { error: await responseErrorMessage(response) }
+    return { error: await responseErrorMessage(response, { fieldPath: true }) }
   }
 
   revalidatePath("/checklistor")

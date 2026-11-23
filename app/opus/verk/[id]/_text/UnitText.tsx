@@ -10,6 +10,8 @@ import {
 	type UnitEditResult,
 } from "../../../_actions/alignment-actions"
 import { deleteAnnotation } from "../../../_actions/annotation-actions"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
+import { Button } from "@/app/components/ui/Button"
 import { TextAreaField } from "../../../forms/Fields/Fields"
 import Menu from "../_ui/Menu"
 import WordPanel from "../_word-panel/WordPanel"
@@ -47,6 +49,7 @@ export default function UnitText({
 	const [draft, setDraft] = useState(unit.content)
 	const [unitBusy, setUnitBusy] = useState(false)
 	const [unitError, setUnitError] = useState<string | null>(null)
+	const { requestConfirm, dialog } = useConfirmDialog()
 	const [showAnnotations, setShowAnnotations] = useState(false)
 	const [splitMode, setSplitMode] = useState(false)
 	const [panel, setPanel] = useState<OpenPanel | null>(null)
@@ -210,8 +213,13 @@ export default function UnitText({
 	}
 
 	function handleDelete() {
-		if (!window.confirm("Ta bort stycket? Det går inte att ångra.")) return
-		runUnitEdit(() => deleteUnit(unit.id))
+		requestConfirm({
+			title: "Ta bort stycket?",
+			message: "Det går inte att ångra.",
+			confirmLabel: "Ta bort",
+			destructive: true,
+			onConfirm: () => runUnitEdit(() => deleteUnit(unit.id)),
+		})
 	}
 
 	function startSplit() {
@@ -228,6 +236,7 @@ export default function UnitText({
 
 	return (
 		<div className='group/unit'>
+			{dialog}
 			{editing ? (
 				<div className='flex flex-col gap-2'>
 					<TextAreaField
@@ -244,13 +253,9 @@ export default function UnitText({
 							className='font-body text-sm text-text-muted underline underline-offset-4 hover:text-text cursor-pointer'>
 							Avbryt
 						</button>
-						<button
-							type='button'
-							disabled={unitBusy || !draft.trim()}
-							onClick={handleSave}
-							className='rounded-md px-3 py-1.5 font-body text-sm font-semibold bg-primary text-bg hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer'>
+						<Button type='button' size='sm' rounded='rounded-md' disabled={unitBusy || !draft.trim()} onClick={handleSave}>
 							{unitBusy ? "Sparar…" : "Spara"}
-						</button>
+						</Button>
 					</div>
 				</div>
 			) : (

@@ -8,6 +8,7 @@ import {
   markNotificationAsRead,
   type NotificationPreview,
 } from "@/app/actions/notifications"
+import { formatDateTime } from "@/app/lib/formatters"
 import { currentTenant } from "@/app/lib/push-client"
 import { useUser } from "@/app/lib/user-context"
 import { PushControls } from "./PushControls"
@@ -46,14 +47,10 @@ type NotificationMenuProps = {
   }) => ReactNode
 }
 
-function formatNotificationTime(value: string) {
+/** A notification's time as "12 maj 2026 14:30", or the raw value when it is not a date. */
+export function formatNotificationTime(value: string) {
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-
-  return new Intl.DateTimeFormat("sv-SE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date)
+  return Number.isNaN(date.getTime()) ? value : formatDateTime(date)
 }
 
 export function NotificationMenu({ align = "right", inline = false, dropUp = false, footer, children }: NotificationMenuProps) {

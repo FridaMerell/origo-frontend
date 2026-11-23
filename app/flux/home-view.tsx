@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { ProgressBar } from "../components/ui/ProgressBar"
+import { EmptyState } from "../components/ui/EmptyState"
 import { EditProjectButton } from "./projects/edit-project-button"
 import { AddMilestoneButton } from "./projects/add-milestone-button"
 import { TaskDueDate } from "./tasks/task-due-date"
@@ -47,11 +48,11 @@ const TaskList = ({
 
   if (upcoming.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border bg-surface-2/40 px-5 py-12 text-center">
-        <CheckCircle2Icon size={28} className="text-success" />
-        <p className="text-sm font-medium text-text">Allt är klart för tillfället.</p>
-        <Link href="/tasks" className="text-sm font-medium text-link hover:underline">Se alla uppgifter</Link>
-      </div>
+      <EmptyState
+        icon={<CheckCircle2Icon size={28} className="text-success" />}
+        title="Allt är klart för tillfället."
+        action={<Link href="/tasks" className="text-sm font-medium text-link hover:underline">Se alla uppgifter</Link>}
+      />
     )
   }
 

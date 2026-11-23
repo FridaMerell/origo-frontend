@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { ArrowRightIcon } from "lucide-react"
+import { Button } from "@/app/components/ui/Button"
 import { tokenizeWords } from "./text-offsets"
 
 /** Delningsläget: klicka på ordet stycket ska delas efter och bekräfta. */
@@ -59,15 +60,16 @@ export default function SplitPicker({
 					className='font-body text-sm text-text underline underline-offset-4 hover:text-primary cursor-pointer'>
 					Avbryt
 				</button>
-				<button
+				<Button
 					type='button'
 					disabled={busy || splitAt == null}
 					onClick={() => {
 						if (splitAt != null) onConfirm(splitAt)
 					}}
-					className='rounded-md px-3 py-1.5 font-body text-sm font-semibold bg-primary text-bg hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer'>
+					size='sm'
+					rounded='rounded-md'>
 					{busy ? "Delar…" : "Dela här"}
-				</button>
+				</Button>
 			</div>
 		</div>
 	)

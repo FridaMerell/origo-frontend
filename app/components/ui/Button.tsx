@@ -3,7 +3,7 @@ import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from "react"
 import { twMerge } from "tailwind-merge"
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-	variant?: "primary" | "secondary" | "ghost" | "paper" | "paper-bordered"
+	variant?: "primary" | "accent" | "secondary" | "ghost" | "paper" | "paper-bordered"
 	size?: "sm" | "md"
 	rounded?:
 		| "rounded"
@@ -15,7 +15,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 type LinkProps = AnchorHTMLAttributes<HTMLAnchorElement> & {
-	variant?: "primary" | "secondary" | "ghost" | "paper" | "paper-bordered"
+	variant?: "primary" | "accent" | "secondary" | "ghost" | "paper" | "paper-bordered"
 	size?: "sm" | "md"
 	rounded?:
 		| "rounded"
@@ -57,7 +57,7 @@ export function Button({
 		<button
 			disabled={disabled}
 			className={twMerge(
-				"inline-flex items-center gap-2 font-body font-semibold transition-colors cursor-pointer",
+				"inline-flex items-center gap-2 font-body font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
 				SIZES[size],
 				VARIANTS[variant],
 				resolvedRounded,
@@ -84,7 +84,7 @@ export const LinkButton = ({
 		<Link
 			href={href}
 			className={twMerge(
-				"inline-flex items-center gap-2 font-body font-semibold transition-colors cursor-pointer",
+				"inline-flex items-center gap-2 font-body font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
 				SIZES[size],
 				VARIANTS[variant],
 				resolvedRounded,

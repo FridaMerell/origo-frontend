@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 export function useDismissableOpen<T extends HTMLElement>(options?: {
   open?: boolean
   onOpenChange?: (open: boolean) => void
-  onDismiss?: () => void
+  /** Replaces the default close; told whether Escape or a press outside dismissed it. */
+  onDismiss?: (reason: "escape" | "outside") => void
 }) {
   const [openState, setOpenState] = useState(false)
   const open = options?.open ?? openState
@@ -17,14 +18,21 @@ export function useDismissableOpen<T extends HTMLElement>(options?: {
     onOpenChange?.(nextOpen)
   }, [open, onOpenChange])
 
+  // The latest onDismiss, so an inline function does not re-attach the listeners on every render.
+  const onDismissRef = useRef(onDismiss)
+  useEffect(() => {
+    onDismissRef.current = onDismiss
+  })
+
   useEffect(() => {
     if (!open) return
-    const dismiss = onDismiss ?? (() => setOpen(false))
+    const dismiss = (reason: "escape" | "outside") =>
+      onDismissRef.current ? onDismissRef.current(reason) : setOpen(false)
     const onClickOutside = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) dismiss()
+      if (!ref.current?.contains(event.target as Node)) dismiss("outside")
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") dismiss()
+      if (event.key === "Escape") dismiss("escape")
     }
     document.addEventListener("mousedown", onClickOutside)
     document.addEventListener("keydown", onKeyDown)
@@ -32,7 +40,7 @@ export function useDismissableOpen<T extends HTMLElement>(options?: {
       document.removeEventListener("mousedown", onClickOutside)
       document.removeEventListener("keydown", onKeyDown)
     }
-  }, [open, onDismiss, setOpen])
+  }, [open, setOpen])
 
   return { open, setOpen, ref }
 }

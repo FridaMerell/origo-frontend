@@ -10,6 +10,7 @@ import { Gallery } from "@/app/components/ui/Gallery"
 import UpdateForm from "@/app/verso/forms/update-form"
 import { BackLink, DetailNotFound } from "@/app/verso/ui/DetailPage"
 import { PageHeader } from "@/app/verso/ui/PageHeader"
+import { formatDateTime } from "@/app/lib/formatters"
 import { Link2 } from "lucide-react"
 
 export default function UpdateView() {
@@ -48,7 +49,7 @@ export default function UpdateView() {
           <div className="flex flex-col">
             <span className="text-sm text-text">{getUserLabel(users, update.author)}</span>
             <span className="text-xs text-text-faint">
-              {new Date(update.created_at).toLocaleString("sv-SE", { dateStyle: "medium", timeStyle: "short" })}
+              {formatDateTime(update.created_at)}
             </span>
           </div>
         </div>

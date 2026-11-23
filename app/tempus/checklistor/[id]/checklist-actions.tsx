@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
 import { useToast } from "@/app/components/ui/ToastProvider"
 import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import type { TempusSpeciesCategory } from "@/app/lib/dal"
 import {
   deleteChecklist,
@@ -25,7 +26,7 @@ export default function ChecklistActions({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [pendingAction, setPendingAction] = useState<"category" | "observations" | "delete" | null>(null)
-  const [syncMenuOpen, setSyncMenuOpen] = useState(false)
+  const { open: syncMenuOpen, setOpen: setSyncMenuOpen, ref: syncMenuRef } = useDismissableOpen<HTMLDivElement>()
   const [speciesCategoryId, setSpeciesCategoryId] = useState("")
   const [categoryQuery, setCategoryQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -90,7 +91,7 @@ export default function ChecklistActions({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-3">
-        <div className="relative">
+        <div ref={syncMenuRef} className="relative">
           <Button
             type="button"
             variant="paper"
@@ -107,12 +108,6 @@ export default function ChecklistActions({
           </Button>
           {syncMenuOpen ? (
             <>
-              <button
-                type="button"
-                aria-label="Stäng synkroniseringsmenyn"
-                className="fixed inset-0 z-10 cursor-default"
-                onClick={() => setSyncMenuOpen(false)}
-              />
               <div className="absolute left-0 top-full z-20 mt-1.5 w-64 rounded border border-border bg-surface p-2 shadow-md">
                 <form
                   onSubmit={(event) => {

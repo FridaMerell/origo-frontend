@@ -1,8 +1,8 @@
 "use server"
 
-import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
-import { getSessionCookies } from "@/app/lib/session"
-import { firstErrorMessage } from "@/app/lib/api-errors"
+import { fetchOrigoApi } from "@/app/lib/api-client"
+import { responseErrorMessage } from "@/app/lib/api-errors"
+import { authedJsonHeaders } from "@/app/lib/auth-headers"
 
 export type FluxActionState<T = undefined> = {
   error?: string
@@ -15,15 +15,9 @@ export async function fluxRequest<T>(
   method: "POST" | "PUT" | "PATCH" | "DELETE",
   body?: Record<string, unknown>
 ): Promise<{ data?: T; error?: string }> {
-  const { sessionId, csrfToken } = await getSessionCookies()
-
   const response = await fetchOrigoApi(path, {
     method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-CSRFToken": csrfToken ?? "",
-      Cookie: buildCookieHeader({ sessionid: sessionId, csrftoken: csrfToken }),
-    },
+    headers: await authedJsonHeaders(),
     body: body ? JSON.stringify(body) : undefined,
   })
 
@@ -33,6 +27,5 @@ export async function fluxRequest<T>(
     return { data: await response.json() as T }
   }
 
-  const detail = await response.text().catch(() => "")
-  return { error: firstErrorMessage(detail, response.status) }
+  return { error: await responseErrorMessage(response) }
 }

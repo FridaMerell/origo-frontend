@@ -2,11 +2,9 @@
 
 import { useState, type CSSProperties } from "react"
 import type { TempusInterestingSpots } from "@/app/lib/dal"
+import { formatDistance } from "@/app/lib/geo"
 import { CurrentLocationButton, type GeolocationCoords } from "@/app/components/ui/CurrentLocationButton"
-
-function formatDistance(distance: number) {
-  return distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(1).replace(".", ",")} km`
-}
+import { PillSelect } from "@/app/components/ui/PillSelect"
 
 function highlightLabel(highlight: unknown) {
   if (typeof highlight === "string") return highlight
@@ -150,12 +148,13 @@ export function InterestingSpots({ initialData = null, allowLocation = false, la
       {!loading && !error && data && data.spots.length > 0 ? <>
         <div className="mt-4 flex flex-wrap items-center gap-2 text-xs" role="group" aria-label="Sortera platser">
           <span className="text-text-muted">Sortera:</span>
-          {(["distance", "species_count"] as const).map((value) => {
-            const active = sortBy === value
-            return <button key={value} type="button" aria-pressed={active} onClick={() => setSortBy(value)} className={`border px-2.5 py-1 font-display italic ${active ? "border-accent bg-accent text-white" : "border-border text-text-muted hover:border-accent hover:text-accent"}`}>
-              {value === "distance" ? "Avstånd" : "Antal arter"}
-            </button>
-          })}
+          <PillSelect
+            variant="square"
+            className="gap-2"
+            value={sortBy}
+            onChange={setSortBy}
+            options={[{ value: "distance", label: "Avstånd" }, { value: "species_count", label: "Antal arter" }]}
+          />
         </div>
         <ol className="mt-4 divide-y divide-border border-y border-border">
           {([...data.spots].sort((first, second) => sortBy === "distance" ? first.distance_m - second.distance_m : second.species_count - first.species_count).slice(0, showAll ? undefined : 4)).map((spot) => {

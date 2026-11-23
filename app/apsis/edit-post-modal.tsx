@@ -14,17 +14,11 @@ import { ChurchPicker, churchDetail } from "@/app/apsis/ui/church-picker";
 import { fileProxyUrl } from "@/app/lib/files";
 import type { ApsisPlace, ApsisPost } from "@/app/lib/dal";
 import { PlacePicker } from "@/app/tempus/observationer/quick-observation/place-picker";
-import { parseLatLon } from "@/app/tempus/formatters";
+import { latLonString, parseLatLon, splitLatLonString } from "@/app/lib/geo";
 
 const FORM_ID = "apsis-edit-post-form";
 
 type ConnectedChurch = { id: string; name: string; detail?: string };
-
-// Posts store their position as "lat, lon"; older ones may hold free text.
-function splitGeolocation(geolocation: string): [string, string] {
-  const match = geolocation.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
-  return match ? [match[1], match[2]] : ["", ""];
-}
 
 /** Edit or delete one Apsis post. Mount it only while a post is being edited. */
 export function EditPostModal({
@@ -38,7 +32,7 @@ export function EditPostModal({
   onDeleted?: () => void;
 }) {
   const router = useRouter();
-  const [initialLat, initialLon] = splitGeolocation(post.geolocation);
+  const [initialLat, initialLon] = splitLatLonString(post.geolocation);
 
   const [name, setName] = useState(post.name);
   const [content, setContent] = useState(post.content === post.name ? "" : post.content);
@@ -102,7 +96,7 @@ export function EditPostModal({
       geolocation: !positionChanged
         ? post.geolocation
         : hasCoordinates
-          ? `${coordinates.lat!.toFixed(6)}, ${coordinates.lon!.toFixed(6)}`
+          ? latLonString(coordinates.lat!, coordinates.lon!)
           : "",
       files: newImage.files.flatMap((file) =>
         file.thumbnailUrl

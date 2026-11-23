@@ -1,12 +1,5 @@
 import type { TempusGeoArea } from "@/app/lib/dal"
-
-const degrees = (value: number, positive: string, negative: string) => {
-  const whole = Math.floor(Math.abs(value))
-  const minutes = Math.round((Math.abs(value) - whole) * 60)
-  // Sixty minutes is the next whole degree.
-  const [shownDegrees, shownMinutes] = minutes === 60 ? [whole + 1, 0] : [whole, minutes]
-  return `${shownDegrees}°${String(shownMinutes).padStart(2, "0")}′${value < 0 ? negative : positive}`
-}
+import { formatPosition } from "@/app/lib/geo"
 
 // The centre of the area's bounding box as latitude and longitude, the way a
 // map sheet states its position. Null for an area without a shape.
@@ -25,5 +18,5 @@ export function areaPosition(geometry: TempusGeoArea["geometry"]): string | null
     }
   }
   if (!Number.isFinite(west) || !Number.isFinite(south)) return null
-  return `${degrees((south + north) / 2, "N", "S")} ${degrees((west + east) / 2, "E", "W")}`
+  return formatPosition([(west + east) / 2, (south + north) / 2])
 }

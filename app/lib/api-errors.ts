@@ -25,21 +25,51 @@ export function readErrorBody<T>(
   return {}
 }
 
+const GENERAL_ERROR_KEYS = new Set(["detail", "non_field_errors"])
+
+/** Walks a DRF error body and returns the first message with the path to its field, e.g. "checklist_items.0". */
+function firstFieldError(value: unknown, path: string[] = []): { path: string[]; message: string } | null {
+  if (typeof value === "string") return { path, message: value }
+  if (Array.isArray(value)) {
+    for (const [index, item] of value.entries()) {
+      const found = firstFieldError(item, typeof item === "string" ? path : [...path, String(index)])
+      if (found) return found
+    }
+    return null
+  }
+  if (value && typeof value === "object") {
+    for (const [key, item] of Object.entries(value)) {
+      const found = firstFieldError(item, GENERAL_ERROR_KEYS.has(key) ? path : [...path, key])
+      if (found) return found
+    }
+  }
+  return null
+}
+
+type ErrorMessageOptions = {
+  /** Prefix the message with the field path, e.g. "checklist_items.0: …". */
+  fieldPath?: boolean
+  /** Message when the body holds no usable error; defaults to "Ett fel uppstod (status)." */
+  fallback?: string
+}
+
 /**
- * DRF error body → a single message, picking the first field's first error. Never surfaces a
- * non-JSON body (e.g. an HTML error page) to the user.
+ * DRF error body → a single message: the first error found, also inside nested fields. Never
+ * surfaces a non-JSON body (e.g. an HTML error page) to the user.
  */
-export function firstErrorMessage(detail: string, status: number): string {
-  const fallback = `Ett fel uppstod (${status}).`
+export function firstErrorMessage(detail: string, status: number, options: ErrorMessageOptions = {}): string {
+  const fallback = options.fallback ?? `Ett fel uppstod (${status}).`
   try {
-    const parsed = JSON.parse(detail)
-    const firstKey = Object.keys(parsed)[0]
-    const firstValue = firstKey ? parsed[firstKey] : undefined
-    if (Array.isArray(firstValue) && typeof firstValue[0] === "string") return firstValue[0]
-    if (typeof firstValue === "string") return firstValue
-    if (typeof parsed?.detail === "string") return parsed.detail
+    const found = firstFieldError(JSON.parse(detail))
+    if (found) return options.fieldPath && found.path.length > 0 ? `${found.path.join(".")}: ${found.message}` : found.message
   } catch {
     // Never expose a raw HTML or otherwise unstructured error response.
   }
   return fallback
+}
+
+/** Reads a failed API response and returns a readable error message. */
+export async function responseErrorMessage(response: Response, options?: ErrorMessageOptions): Promise<string> {
+  const detail = await response.text().catch(() => "")
+  return firstErrorMessage(detail, response.status, options)
 }

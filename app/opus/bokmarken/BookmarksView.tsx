@@ -4,11 +4,11 @@ import { useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import { Button } from "@/app/components/ui/Button"
 import type { Bookmark, Id } from "@/app/lib/dal/opus"
+import { formatDate } from "@/app/lib/formatters"
 import { removeBookmark, updateBookmark } from "../_actions/bookmark-actions"
 import { TextAreaField, TextField } from "../forms/Fields/Fields"
 import Divider from "../ui/Divider"
 
-const DATE_FORMAT = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short", year: "numeric" })
 
 /** Synlig fokusmarkering för tangentbordsnavigering, samma som Opus formulärfält. */
 const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
@@ -121,7 +121,7 @@ function BookmarkCard({
 			<div className='flex items-baseline justify-between gap-4 pr-8'>
 				<span className='min-w-0 truncate font-display text-sm italic text-text-muted'>{place}</span>
 				<time dateTime={bookmark.created_at} className='shrink-0 font-display text-sm text-text-muted oldstyle-nums'>
-					{DATE_FORMAT.format(new Date(bookmark.created_at))}
+					{formatDate(bookmark.created_at)}
 				</time>
 			</div>
 			{bookmark.title && <h3 className='mt-2 font-display text-xl text-text'>{bookmark.title}</h3>}

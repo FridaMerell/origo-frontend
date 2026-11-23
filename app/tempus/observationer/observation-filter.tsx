@@ -1,10 +1,11 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useState, type ReactNode } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { ChevronDown, Search, X } from "lucide-react"
 import { Pager } from "@/app/components/ui/Pager"
 import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
+import { useDebounced } from "@/app/lib/use-debounced"
 import { speciesName, useTempusLocales } from "@/app/tempus/_state/tempus-context"
 import { useSpeciesPage } from "@/app/tempus/ui/use-species-page"
 import { OBSERVATION_FILTER_PARAMS, REGISTER_COLUMNS, type ObservationFilterValues } from "./observation-filter-params"
@@ -136,16 +137,12 @@ export function ObservationFilter({
   const pathname = usePathname()
   const locales = useTempusLocales()
   const [query, setQuery] = useState("")
-  const [debouncedQuery, setDebouncedQuery] = useState("")
+  const debouncedQuery = useDebounced(query)
   const [period, setPeriod] = useState({ from: values.from, to: values.to })
   const [lifeStage, setLifeStage] = useState(values.lifeStage)
 
-  useEffect(() => {
-    const timeout = setTimeout(() => setDebouncedQuery(query), 300)
-    return () => clearTimeout(timeout)
-  }, [query])
-
-  const searching = debouncedQuery.trim().length >= 2
+  // A cleared query hides the results at once, without waiting for the debounce.
+  const searching = query.trim().length >= 2 && debouncedQuery.trim().length >= 2
   const { results, page, setPage, totalPages, loading, error } = useSpeciesPage({
     search: debouncedQuery,
     pageSize: 8,
@@ -167,7 +164,6 @@ export function ObservationFilter({
 
   const addSpecies = (item: (typeof results)[number]) => {
     setQuery("")
-    setDebouncedQuery("")
     if (values.species.some((entry) => entry.taxonId === item.dyntaxa_taxon_id)) return
     apply({ species: [...values.species, { taxonId: item.dyntaxa_taxon_id, label: speciesName(item) }] })
   }

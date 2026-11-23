@@ -1,22 +1,7 @@
-import { useSyncExternalStore } from "react"
+import { useEffect } from "react"
+import { useStored } from "@/app/lib/use-stored"
 
 export type ColorMode = "light" | "dark"
-
-const listeners = new Set<() => void>()
-
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  window.addEventListener("storage", listener)
-  return () => {
-    listeners.delete(listener)
-    window.removeEventListener("storage", listener)
-  }
-}
-
-function readMode(key: string): ColorMode | null {
-  const stored = localStorage.getItem(key)
-  return stored === "dark" || stored === "light" ? stored : null
-}
 
 // The mode is also kept in a cookie of the same name, so the server can render
 // the page in it and the first paint never shows the system's mode instead.
@@ -32,20 +17,17 @@ function writeCookie(key: string, mode: ColorMode) {
  * updates every user of the key.
  */
 export function useStoredMode(key: string, fallback: ColorMode | null = null, initial: ColorMode | null = null) {
-  const mode = useSyncExternalStore(
-    (listener) => {
-      // A mode stored before the cookie existed is copied into it once.
-      const stored = readMode(key)
-      if (stored && stored !== initial) writeCookie(key, stored)
-      return subscribe(listener)
-    },
-    () => readMode(key) ?? initial ?? fallback,
-    () => initial ?? fallback,
-  )
+  const [stored, store] = useStored(key)
+  const storedMode: ColorMode | null = stored === "dark" || stored === "light" ? stored : null
+
+  // A mode stored before the cookie existed is copied into it.
+  useEffect(() => {
+    if (storedMode && storedMode !== initial) writeCookie(key, storedMode)
+  }, [key, storedMode, initial])
+
   const setMode = (next: ColorMode) => {
-    localStorage.setItem(key, next)
+    store(next)
     writeCookie(key, next)
-    listeners.forEach((listener) => listener())
   }
-  return [mode, setMode] as const
+  return [storedMode ?? initial ?? fallback, setMode] as const
 }

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Plus } from "lucide-react"
 import { addDrawingPage } from "../_actions/drawing"
 import { Button } from "@/app/components/ui/Button"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import type { Drawing, DrawingPage } from "@/app/lib/dal"
 import { PageEditor } from "./page-editor"
 
@@ -15,10 +16,17 @@ export function DrawingEditor({ drawing, pages }: { drawing: Drawing; pages: Dra
 
   const active = pages.find((p) => p.id === activeId) ?? pages[0] ?? null
 
-  const confirmLeave = () => !dirty || window.confirm("Du har osparade ändringar på sidan. Byta ändå?")
+  const { askToConfirm, dialog } = useConfirmDialog()
+  const confirmLeave = async () =>
+    !dirty ||
+    askToConfirm({
+      title: "Byta sida?",
+      message: "Du har osparade ändringar på sidan.",
+      confirmLabel: "Byt ändå",
+    })
 
   const addPage = async () => {
-    if (!confirmLeave()) return
+    if (!(await confirmLeave())) return
     setAdding(true)
     setError(null)
     const order = pages.reduce((max, p) => Math.max(max, p.order), -1) + 1
@@ -33,6 +41,7 @@ export function DrawingEditor({ drawing, pages }: { drawing: Drawing; pages: Dra
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
+      {dialog}
       <div className="flex flex-wrap items-center gap-1.5">
         {pages.map((p) => (
           <Button
@@ -40,8 +49,8 @@ export function DrawingEditor({ drawing, pages }: { drawing: Drawing; pages: Dra
             type="button"
             size="sm"
             variant={p.id === active.id ? "primary" : "secondary"}
-            onClick={() => {
-              if (p.id !== active.id && confirmLeave()) setActiveId(p.id)
+            onClick={async () => {
+              if (p.id !== active.id && (await confirmLeave())) setActiveId(p.id)
             }}
           >
             {p.name}

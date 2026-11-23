@@ -14,6 +14,7 @@ import { OnThisDay } from "@/app/verso/historia/on-this-day"
 import type { OnThisDay as OnThisDayData } from "@/app/lib/dal"
 import Link from "next/link"
 import { Fragment, type ReactNode } from "react"
+import { formatDayMonth } from "@/app/lib/formatters"
 
 type Widget = { key: string; wide: boolean; render: (className: string) => ReactNode }
 
@@ -63,7 +64,7 @@ const HomeView = ({
   const hasWeather = selectedFacility.modules?.includes("weather") ?? false
   const nextVisit = hasBookings ? bookings[0] : undefined
   const nextVisitLabel = nextVisit
-    ? `Nästa vistelse börjar ${new Date(nextVisit.start_date).toLocaleDateString("sv-SE", { day: "numeric", month: "long" })}`
+    ? `Nästa vistelse börjar ${formatDayMonth(nextVisit.start_date, { month: "long" })}`
     : null
 
   return (

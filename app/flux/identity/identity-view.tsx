@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { EyeIcon, PencilIcon, PlusIcon } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
+import { EmptyState } from "@/app/components/ui/EmptyState"
 import { setProjectIdentity } from "./_actions/identities"
 import { fieldInputClass } from "@/app/components/form/Field"
 import { useFluxProjectActions, useSelectedFluxProject } from "@/app/flux/_state/flux-context"
@@ -158,10 +159,9 @@ export function IdentityView({ initialIdentities }: { initialIdentities: FluxIde
           </section>
         </>
       ) : (
-        <section className="rounded-xl border border-dashed border-border bg-surface px-5 py-12 text-center">
-          <h2 className="font-display text-xl font-semibold text-text">Ingen identitet vald</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-muted">Välj en identitet ovan eller skapa en ny för att börja samla projektets visuella riktning.</p>
-        </section>
+        <EmptyState title="Ingen identitet vald">
+          Välj en identitet ovan eller skapa en ny för att börja samla projektets visuella riktning.
+        </EmptyState>
       )}
 
       {editor && (

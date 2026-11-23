@@ -3,6 +3,7 @@
 import type { Body } from "astronomy-engine"
 import { useEffect, useId, useMemo, useRef, useState } from "react"
 import type { Scene } from "./sky/types"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 
 // Det man kan söka fram: en himlakropp eller en stjärnbild i himlen som visas.
 export type Sought = { kind: "body"; body: Body } | { kind: "figure"; id: string }
@@ -27,10 +28,10 @@ function matches(text: string, query: string) {
  * menyknappen, i samma tunna linjer, som fäller ut ett fält med träffar på samma sätt som menyn.
  */
 export default function SkySearch({ scene, onChoose }: { scene: Scene | null; onChoose: (target: Sought) => void }) {
-	const [open, setOpen] = useState(false)
+	// Som menyn stängs utfällningen med Esc och av ett tryck utanför.
+	const { open, setOpen, ref: rootRef } = useDismissableOpen<HTMLDivElement>({ onDismiss: () => close() })
 	const [query, setQuery] = useState("")
 	const [active, setActive] = useState(0)
-	const rootRef = useRef<HTMLDivElement>(null)
 	const inputRef = useRef<HTMLInputElement>(null)
 	const listId = useId()
 
@@ -76,22 +77,8 @@ export default function SkySearch({ scene, onChoose }: { scene: Scene | null; on
 		setActive(0)
 	}
 
-	// Som menyn stängs utfällningen med Esc och av ett tryck utanför.
 	useEffect(() => {
-		if (!open) return
-		inputRef.current?.focus()
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") close()
-		}
-		const onPointerDown = (event: PointerEvent) => {
-			if (!rootRef.current?.contains(event.target as Node)) close()
-		}
-		document.addEventListener("keydown", onKeyDown)
-		document.addEventListener("pointerdown", onPointerDown)
-		return () => {
-			document.removeEventListener("keydown", onKeyDown)
-			document.removeEventListener("pointerdown", onPointerDown)
-		}
+		if (open) inputRef.current?.focus()
 	}, [open])
 
 	const choose = (hit: Hit) => {

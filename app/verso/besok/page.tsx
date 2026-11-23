@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { getSelectedFacility } from "@/app/lib/selected-facility";
 import { formatMonthYear } from "@/app/lib/formatters";
 import { getBookings } from "@/app/lib/dal/verso";
+import { isoDateKey } from "@/app/lib/formatters";
 import { buildMonthCells } from "./calendar";
 import BesokView from "./besok-view";
 
@@ -39,8 +40,8 @@ export default async function BesokPage({
 
   // The grid also shows days from the neighbouring months, so fetch what it covers.
   const cells = buildMonthCells(year, month);
-  const from = cells[0].date.toLocaleDateString("sv-SE");
-  const to = cells[cells.length - 1].date.toLocaleDateString("sv-SE");
+  const from = isoDateKey(cells[0].date);
+  const to = isoDateKey(cells[cells.length - 1].date);
   const bookings = selectedFacility ? await getBookings(selectedFacility.id, from, to) : [];
 
   return (

@@ -3,6 +3,7 @@ import type { PanelInfo } from "./InfoPanel"
 import type { SkyCulture } from "./sky-cultures"
 import { DEEP_SKY_KINDS, deepSkySize, isGalaxy, type DeepSkyObject } from "./sky/deep-sky"
 import { bayerLabel } from "./sky/scene"
+import { formatTime, formatWeekday } from "@/app/lib/formatters"
 import type { Catalogue, Constellation as ConstellationData, Figure, Position, SkyPoint } from "./sky/types"
 
 // En rad i public/caelus/data/star-details.json, i samma ordning som stars.json.
@@ -34,8 +35,6 @@ export type SelectedStar = {
 
 const DIRECTIONS = ["norr", "nordost", "öster", "sydost", "söder", "sydväst", "väster", "nordväst"]
 const AU_KM = 149_597_870.7
-const CLOCK_FORMAT = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" })
-const WEEKDAY_FORMAT = new Intl.DateTimeFormat("sv-SE", { weekday: "short" })
 
 function number(value: number, decimals: number) {
 	return value.toLocaleString("sv-SE", { maximumFractionDigits: decimals })
@@ -171,7 +170,7 @@ export function moonPhaseName(angle: number) {
 // Ett klockslag, med veckodag när det inte är samma dag som kartan visar.
 function clock(at: Date, now: Date) {
 	const sameDay = at.toDateString() === now.toDateString()
-	return sameDay ? CLOCK_FORMAT.format(at) : `${WEEKDAY_FORMAT.format(at)} ${CLOCK_FORMAT.format(at)}`
+	return sameDay ? formatTime(at) : `${formatWeekday(at, { short: true })} ${formatTime(at)}`
 }
 
 /**

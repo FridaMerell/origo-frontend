@@ -6,6 +6,7 @@ import { Printer } from "lucide-react"
 import { Button } from "@/app/components/ui/Button"
 import { Checkbox, Field, fieldInputClass } from "@/app/components/form/Field"
 import type { Drawing, DrawingPage } from "@/app/lib/dal"
+import { formatDateNumeric } from "@/app/lib/formatters"
 import { DrawingSheet, PAPERS, type PerSheet } from "./drawing-sheet"
 
 const PX_PER_MM = 96 / 25.4
@@ -38,7 +39,7 @@ export function PrintView({
   const previewRef = useRef<HTMLDivElement>(null)
 
   const chosen = useMemo(() => pages.filter((p) => selected.has(p.id)), [pages, selected])
-  const date = new Date().toLocaleDateString("sv-SE")
+  const date = formatDateNumeric(new Date())
   const sheetW = landscape ? PAPERS[paper].width : PAPERS[paper].height
   const sheetH = landscape ? PAPERS[paper].height : PAPERS[paper].width
   const previewScale = previewWidth > 0 ? Math.min(1, previewWidth / (sheetW * PX_PER_MM)) : 0.5

@@ -2,6 +2,7 @@
 
 import { useState, type InputHTMLAttributes, type ReactNode } from "react";
 import type { FieldError } from "react-hook-form";
+import { formatDateNumeric } from "@/app/lib/formatters";
 
 // The account pages live on the theme-less root, so they can't use the
 // design-token utilities (bg-surface, text-text, …). These mirror
@@ -33,7 +34,7 @@ export function Field({
 export function formatExpiryDate(value: string | null) {
   if (!value) return null;
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString("sv-SE");
+  return Number.isNaN(date.getTime()) ? null : formatDateNumeric(date);
 }
 
 /** Shown once right after an invitation link is created — it can't be retrieved again afterward. */

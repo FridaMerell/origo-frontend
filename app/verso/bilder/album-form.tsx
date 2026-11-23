@@ -11,6 +11,7 @@ import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { useSubmitAction } from "@/app/components/form/useSubmitAction"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { useDrawerClose } from "@/app/components/ui/Drawer"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { useVentureData } from "@/app/verso/_state/verso-context"
 import type { Album } from "@/app/lib/dal"
 
@@ -35,6 +36,7 @@ export function AlbumForm({ album, defaultKind = "general" }: { album?: Album; d
   const submit = useSubmitAction(setError)
 
   const [deleting, setDeleting] = useState(false)
+  const { askToConfirm, dialog } = useConfirmDialog()
   const router = useRouter()
 
   const onSubmit = handleSubmit((data) =>
@@ -42,7 +44,14 @@ export function AlbumForm({ album, defaultKind = "general" }: { album?: Album; d
   )
 
   async function onDelete() {
-    if (!album || !window.confirm("Ta bort albumet? Bilderna i det tas inte bort.")) return
+    if (!album) return
+    const confirmed = await askToConfirm({
+      title: "Ta bort albumet?",
+      message: "Bilderna i det tas inte bort.",
+      confirmLabel: "Ta bort",
+      destructive: true,
+    })
+    if (!confirmed) return
     setDeleting(true)
     const result = await deleteAlbum(album.id)
     setDeleting(false)
@@ -85,6 +94,7 @@ export function AlbumForm({ album, defaultKind = "general" }: { album?: Album; d
       </Field>
 
       <FormRootError error={errors.root} />
+      {dialog}
       <div className="mt-2 flex items-center justify-between">
         {album ? (
           <Button type="button" variant="ghost" size="sm" disabled={deleting} onClick={onDelete}>

@@ -9,6 +9,7 @@ export function Pager({
   disabled = false,
   label,
   as = "div",
+  ariaLabel,
   className = "flex items-center justify-between text-xs text-text-muted",
   buttonClassName = "disabled:text-text-faint",
   prevLabel = "Föregående",
@@ -19,7 +20,9 @@ export function Pager({
   onPageChange: (page: number) => void
   disabled?: boolean
   label?: ReactNode
-  as?: "div" | "li"
+  as?: "div" | "li" | "nav"
+  /** Names the pager for screen readers, e.g. with `as="nav"`. */
+  ariaLabel?: string
   className?: string
   buttonClassName?: string
   prevLabel?: ReactNode
@@ -29,7 +32,7 @@ export function Pager({
 
   const Container = as
   return (
-    <Container data-pager="" className={className}>
+    <Container data-pager="" aria-label={ariaLabel} className={className}>
       <button
         type="button"
         data-page-step="previous"

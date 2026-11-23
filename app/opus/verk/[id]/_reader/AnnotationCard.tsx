@@ -4,6 +4,8 @@ import { ReadingAnnotation } from "@/app/lib/dal/opus"
 import { useState, useId } from "react"
 import { ChevronLeftIcon, ChevronRightIcon, XIcon, ExpandIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { TextAreaField } from "../../../forms/Fields/Fields"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
+import { Button } from "@/app/components/ui/Button"
 
 type AnnotationEntry = {
 	annotation: ReadingAnnotation
@@ -28,14 +30,22 @@ export default function AnnotationCard({
 	const [draft, setDraft] = useState<string | null>(null)
 	const [saving, setSaving] = useState(false)
 	const id = useId()
+	const { askToConfirm, dialog } = useConfirmDialog()
 
 	if (annotations.length === 0) return null
 
 	// Efter en radering kan färre noter finnas kvar än det index vi stod på.
 	const current = Math.min(index, annotations.length - 1)
 	const entry = annotations[current]
-	const remove = () => {
-		if (onDelete && window.confirm("Ta bort noten? Det går inte att ångra.")) onDelete(entry.annotation.id)
+	const remove = async () => {
+		if (!onDelete) return
+		const confirmed = await askToConfirm({
+			title: "Ta bort noten?",
+			message: "Det går inte att ångra.",
+			confirmLabel: "Ta bort",
+			destructive: true,
+		})
+		if (confirmed) onDelete(entry.annotation.id)
 	}
 	const body =
 		entry.annotation.body ||
@@ -56,6 +66,7 @@ export default function AnnotationCard({
 
 	return (
 		<>
+			{dialog}
 			<div
 				className={[
 					"rounded-sm px-4 py-3 text-sm",
@@ -120,13 +131,9 @@ export default function AnnotationCard({
 								className={"underline underline-offset-4 opacity-70 hover:opacity-100 cursor-pointer"}>
 								Avbryt
 							</button>
-							<button
-								type="button"
-								disabled={saving || !draft.trim()}
-								onClick={save}
-								className={"rounded-md px-3 py-1 font-semibold bg-primary text-bg hover:bg-primary/90 disabled:opacity-50 cursor-pointer"}>
+							<Button type="button" size="sm" rounded="rounded-md" disabled={saving || !draft.trim()} onClick={save}>
 								{saving ? "Sparar…" : "Spara"}
-							</button>
+							</Button>
 						</div>
 					</div>
 				) : (

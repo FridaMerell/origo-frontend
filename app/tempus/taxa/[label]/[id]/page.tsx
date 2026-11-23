@@ -18,7 +18,7 @@ import {
 import type { SwedenMapPoint } from "@/app/tempus/ui/biotope-map/SwedenMap"
 import { biotopePropsFromSpecies } from "@/app/tempus/ui/biotope-map/BiotopeMap"
 import { getTempusAllObservationsPage } from "@/app/lib/dal/tempus/observations"
-import { formatDateLongOrNull } from "@/app/lib/formatters"
+import { formatDateLongOrNull, formatDateNumeric } from "@/app/lib/formatters"
 import { formatUserName } from "@/app/lib/format-user-name"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import FollowButton from "./FollowButton"
@@ -104,7 +104,7 @@ const Page = async ({ params, searchParams }: {
     ["Status", species.is_active ? "Aktiv" : "Inaktiv"],
     [
       "Senast synkad",
-      species.synced_at ? new Date(species.synced_at).toLocaleDateString("sv-SE") : "Aldrig",
+      species.synced_at ? formatDateNumeric(species.synced_at) : "Aldrig",
     ],
   ]
 

@@ -1,5 +1,6 @@
 import { Card } from "@/app/components/ui/Card"
 import { fileProxyUrl } from "@/app/lib/files"
+import { formatMonthName } from "@/app/lib/formatters"
 import type { OnThisDay as OnThisDayData } from "@/app/lib/dal"
 
 function yearsAgo(n: number): string {
@@ -115,7 +116,7 @@ export function OnThisDay({
 
   const shown = limit ? entries.slice(0, limit) : entries
   const [, month, day] = data.date.split("-").map(Number)
-  const monthLabel = new Date(2000, month - 1, day).toLocaleDateString("sv-SE", { month: "long" })
+  const monthLabel = formatMonthName(new Date(2000, month - 1, day))
 
   return (
     <Card aria-label="Denna dag" className={`relative overflow-hidden !p-0 ${className}`}>

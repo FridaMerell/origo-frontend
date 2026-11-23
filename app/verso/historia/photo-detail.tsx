@@ -12,6 +12,7 @@ import { useSubmitAction } from "@/app/components/form/useSubmitAction"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { Button } from "@/app/components/ui/Button"
 import { useDrawerClose } from "@/app/components/ui/Drawer"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { fileProxyUrl } from "@/app/lib/files"
 import { formatHistoricalDate } from "@/app/lib/history-date"
 import type { Album, Person, Photo } from "@/app/lib/dal"
@@ -51,13 +52,20 @@ function PhotoRead({
   const pathname = usePathname()
   const closeDrawer = useDrawerClose()
   const [deleting, setDeleting] = useState(false)
+  const { askToConfirm, dialog } = useConfirmDialog()
   const [error, setError] = useState<string | undefined>()
 
   const depicted = people.filter((person) => (photo.people ?? []).map(String).includes(String(person.id)))
   const inAlbums = albums.filter((album) => photo.albums.map(String).includes(String(album.id)))
 
   async function onDelete() {
-    if (!window.confirm("Ta bort dokumentet?")) return
+    const confirmed = await askToConfirm({
+      title: "Ta bort dokumentet?",
+      message: "Dokumentet tas bort. Det går inte att ångra.",
+      confirmLabel: "Ta bort",
+      destructive: true,
+    })
+    if (!confirmed) return
     setDeleting(true)
     const result = await deletePhoto(photo.id, pathname)
     setDeleting(false)
@@ -114,6 +122,7 @@ function PhotoRead({
       )}
 
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+      {dialog}
       <div>
         <Button type="button" variant="ghost" size="sm" disabled={deleting} onClick={onDelete}>
           {deleting ? "Tar bort..." : "Ta bort"}

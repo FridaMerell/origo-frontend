@@ -11,6 +11,7 @@ import { useSubmitAction } from "@/app/components/form/useSubmitAction"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { Button } from "@/app/components/ui/Button"
 import { useDrawerClose } from "@/app/components/ui/Drawer"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { fileProxyUrl } from "@/app/lib/files"
 import { formatHistoricalDate } from "@/app/lib/history-date"
 import type { HouseDocument, Person, PhotoTag } from "@/app/lib/dal"
@@ -174,11 +175,18 @@ function DocumentRead({
 }) {
   const closeDrawer = useDrawerClose()
   const [deleting, setDeleting] = useState(false)
+  const { askToConfirm, dialog } = useConfirmDialog()
   const [error, setError] = useState<string | undefined>()
   const named = people.filter((person) => doc.people.map(String).includes(String(person.id)))
 
   async function onDelete() {
-    if (!window.confirm("Ta bort dokumentet?")) return
+    const confirmed = await askToConfirm({
+      title: "Ta bort dokumentet?",
+      message: "Dokumentet tas bort. Det går inte att ångra.",
+      confirmLabel: "Ta bort",
+      destructive: true,
+    })
+    if (!confirmed) return
     setDeleting(true)
     const result = await deleteDocument(doc.id)
     setDeleting(false)
@@ -231,6 +239,7 @@ function DocumentRead({
       )}
 
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+      {dialog}
       <div className="flex items-center gap-3">
         <a
           href={fileProxyUrl(doc.url)}

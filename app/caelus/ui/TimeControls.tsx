@@ -1,6 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react"
+import { useEffect, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from "react"
+import { formatTime, formatWeekdayDate } from "@/app/lib/formatters"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
@@ -10,9 +12,6 @@ const TICK_MINUTES = 10
 // Hur långt åt vardera hållet strecken ritas; det som hamnar utanför linjalen tonas bort.
 const REACH_MINUTES = 8 * 60
 
-const DAY_FORMAT = new Intl.DateTimeFormat("sv-SE", { weekday: "long", day: "numeric", month: "long" })
-const YEAR_FORMAT = new Intl.DateTimeFormat("sv-SE", { year: "numeric" })
-const CLOCK_FORMAT = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" })
 
 const LINK =
 	"cursor-pointer whitespace-nowrap uppercase tracking-[0.16em] transition-colors duration-200 hover:text-text focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring motion-reduce:transition-none"
@@ -66,30 +65,20 @@ export default function TimeControls({
 	onScrub: (active: boolean) => void
 	children?: ReactNode
 }) {
-	const rootRef = useRef<HTMLDivElement>(null)
 	const toggleRef = useRef<HTMLButtonElement>(null)
 	const sliderRef = useRef<HTMLDivElement>(null)
 	const pickerRef = useRef<HTMLInputElement>(null)
 	const dragRef = useRef<{ x: number; time: number } | null>(null)
-	const [open, setOpen] = useState(false)
+	const { open, setOpen, ref: rootRef } = useDismissableOpen<HTMLDivElement>({
+		onDismiss: reason => {
+			setOpen(false)
+			// Esc lämnar fokus på knappen som öppnade; ett tryck utanför lämnar det där man tryckte.
+			if (reason === "escape") toggleRef.current?.focus()
+		},
+	})
 
 	useEffect(() => {
-		if (!open) return
-		sliderRef.current?.focus()
-		const onKeyDown = (event: globalThis.KeyboardEvent) => {
-			if (event.key !== "Escape") return
-			setOpen(false)
-			toggleRef.current?.focus()
-		}
-		const onPointerDown = (event: globalThis.PointerEvent) => {
-			if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
-		}
-		document.addEventListener("keydown", onKeyDown)
-		document.addEventListener("pointerdown", onPointerDown)
-		return () => {
-			document.removeEventListener("keydown", onKeyDown)
-			document.removeEventListener("pointerdown", onPointerDown)
-		}
+		if (open) sliderRef.current?.focus()
 	}, [open])
 
 	if (!time) return <div className={`${ROW} text-text-muted`}>{children}</div>
@@ -126,7 +115,7 @@ export default function TimeControls({
 		shift(step)
 	}
 
-	const year = YEAR_FORMAT.format(time)
+	const year = new Date(time).getFullYear()
 	return (
 		<div ref={rootRef} className='relative text-text-muted'>
 			{/* Linjalen ligger över kartans nederkant när den är framme, så kartan behåller sin storlek. */}
@@ -146,7 +135,7 @@ export default function TimeControls({
 				role='slider'
 				tabIndex={0}
 				aria-label='Klockslag'
-				aria-valuetext={CLOCK_FORMAT.format(time)}
+				aria-valuetext={formatTime(time)}
 				aria-valuenow={time.getHours() * 60 + time.getMinutes()}
 				aria-valuemin={0}
 				aria-valuemax={24 * 60 - 1}
@@ -230,10 +219,10 @@ export default function TimeControls({
 						aria-controls='caelus-time-ruler'
 						onClick={() => setOpen(previous => !previous)}
 						className='min-w-0 cursor-pointer truncate text-md text-text first-letter:uppercase hover:text-text-muted focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring'>
-						{DAY_FORMAT.format(time)}
-						{year !== YEAR_FORMAT.format(new Date()) && ` ${year}`}
+						{formatWeekdayDate(time)}
+						{year !== new Date().getFullYear() && ` ${year}`}
 						<span className='text-text-muted'> · </span>
-						{CLOCK_FORMAT.format(time)}
+						{formatTime(time)}
 					</button>
 					{!live && (
 						<button

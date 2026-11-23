@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
+import { useDebounced } from "@/app/lib/use-debounced"
 import { useSpeciesPage } from "./ui/use-species-page"
 import { ArrowRight, Search, X } from "lucide-react"
 
@@ -19,7 +20,7 @@ const normalizeName = (value: string) =>
 
 export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
   const [query, setQuery] = useState("")
-  const [debouncedQuery, setDebouncedQuery] = useState(query)
+  const debouncedQuery = useDebounced(query)
   const inputRef = useRef<HTMLInputElement>(null)
   const isDebouncing = query !== debouncedQuery
   const { results, loading, error } = useSpeciesPage({
@@ -54,11 +55,6 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
       document.removeEventListener("keydown", onKeyDown)
     }
   }, [onClose, open])
-
-  useEffect(() => {
-    const timeout = setTimeout(() => setDebouncedQuery(query), 300)
-    return () => clearTimeout(timeout)
-  }, [query])
 
   if (!open) return null
 

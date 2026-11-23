@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import type { ReactNode } from "react"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 
 export type MenuItem =
 	| "separator"
@@ -32,24 +33,7 @@ export default function Menu({
 	triggerClassName?: string
 	disabled?: boolean
 }) {
-	const [open, setOpen] = useState(false)
-	const ref = useRef<HTMLDivElement>(null)
-
-	useEffect(() => {
-		if (!open) return
-		const onDown = (event: MouseEvent) => {
-			if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
-		}
-		const onKey = (event: KeyboardEvent) => {
-			if (event.key === "Escape") setOpen(false)
-		}
-		document.addEventListener("mousedown", onDown)
-		document.addEventListener("keydown", onKey)
-		return () => {
-			document.removeEventListener("mousedown", onDown)
-			document.removeEventListener("keydown", onKey)
-		}
-	}, [open])
+	const { open, setOpen, ref } = useDismissableOpen<HTMLDivElement>()
 
 	return (
 		<div ref={ref} className='relative inline-block'>

@@ -1,5 +1,5 @@
 import type { TempusRoute, TempusRouteStop } from "@/app/lib/dal"
-export { formatKm as km } from "@/app/tempus/formatters"
+export { formatKm as km } from "@/app/lib/geo"
 export { formatDateLongOrNull as formatDate } from "@/app/lib/formatters"
 
 export const RED_LIST_LABELS: Record<string, string> = {

@@ -29,7 +29,7 @@ import { useGlidingTime } from "./sky/use-gliding-time"
 import TimeControls from "./TimeControls"
 import { useClock } from "./use-clock"
 import { useLast } from "./use-last"
-import { useStored } from "./use-stored"
+import { useStored } from "@/app/lib/use-stored"
 
 export const UPPSALA: Position = { latitude: 59.8586, longitude: 17.6389 }
 export const POSITION_KEY = "caelus-position"

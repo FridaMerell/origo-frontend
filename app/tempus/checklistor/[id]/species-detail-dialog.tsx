@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import type { SpeciesDetail } from "@/app/tempus/_actions/species"
 import ObservationWidget from "@/app/tempus/observationer/observation-widget"
 import SpeciesWidget from "@/app/tempus/taxa/species-widget"
@@ -19,17 +20,17 @@ export function SpeciesDetailDialog({
   error: string | null
   onClose: () => void
 }) {
+  // The widgets carry their own frame, so this stays a bare overlay; it closes on Escape or a
+  // press outside the widget.
+  const { ref } = useDismissableOpen<HTMLDivElement>({ open: true, onDismiss: onClose })
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       role="dialog"
       aria-modal="true"
       aria-label={`Uppgifter för ${row.commonName}`}
-      onPointerDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
     >
-      <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto">
+      <div ref={ref} className="max-h-[90vh] w-full max-w-4xl overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center gap-3 rounded-card border border-border bg-surface px-5 py-8 text-sm text-text-muted">
             <span

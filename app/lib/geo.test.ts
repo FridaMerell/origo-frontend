@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { formatKm, parseLatLon } from "./formatters"
+import { formatKm, parseLatLon } from "./geo"
 
 describe("formatKm", () => {
   it("converts metres to a Swedish-formatted km string", () => {

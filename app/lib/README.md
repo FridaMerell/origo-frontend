@@ -8,16 +8,19 @@ components, see [`app/components/README.md`](../components/README.md).
 | File | What it's for |
 | --- | --- |
 | `api-client.ts` | Low-level HTTP client (`fetchOrigoApi`, cookie helpers) everything else builds on. |
-| `api-errors.ts` | Parses the Origo API's DRF-style error bodies — `firstErrorMessage()` (single message) and `readErrorBody()` (per-field errors), both never surfacing a raw non-JSON body. |
+| `api-errors.ts` | Parses the Origo API's DRF-style error bodies — `firstErrorMessage()` / `responseErrorMessage()` (single message, also from nested fields; options `fieldPath` and `fallback`) and `readErrorBody()` (per-field errors), both never surfacing a raw non-JSON body. |
 | `config.ts` | Env-derived constants and each product's `*_ENDPOINTS` objects. |
 | `files.ts` | Normalizes uploaded-file references (`FileLike`) and builds the file proxy URL. |
 | `storage.ts` | Cloudflare R2 (S3) client and helpers mapping between object keys and stored file URLs. |
-| `formatters.ts` | `formatDate`/`formatDateShort` — Swedish-locale date display, shared by Flux and Verso. (Tempus keeps its own `app/tempus/formatters.ts` for domain-specific formats like `formatKm` and `parseLatLon`.) |
+| `formatters.ts` | `formatDate`/`formatDateShort` — Swedish-locale date display, and `isoDateKey()` for "YYYY-MM-DD" day keys (local or `SWEDISH_TIME_ZONE`, never the UTC day from `toISOString()`). Shared by all apps. |
+| `geo.ts` | Positions and distances: `formatKm`, `formatDistance`, `parseLatLon`, `latLonString`/`splitLatLonString` ("lat, lon" storage), `formatPosition` ("58°40′ N 16°18′ Ö"). |
 | `nav-progress.tsx` | Top-of-page loading indicator wired into `AppLink`'s pending navigation state. |
 | `schemas.ts` | Every form's zod schema + inferred type — the single source of truth shared by forms and their server actions. See `app/components/form/README.md`. |
 | `session.ts` | Session/CSRF cookie read & write helpers. |
 | `tenant.ts` | `TenantId` and per-tenant config (name, public paths reachable without a session). |
 | `tenant-links.ts` | Cross-product nav links (`APP_LINKS`, `appHref`) — the "byt produkt" switcher in every sidebar/toolbar. |
+| `use-page-meta.ts` | `usePageMeta({ title, description })` — sets `document.title` and the description meta tag from data fetched in the client; undefined leaves the page's `metadata`, unmount restores it. Pass the whole title ("Platser \| Tempus"). |
+| `use-debounced.ts`, `use-stored.ts` | `useDebounced(value, ms)`; `useStored(key)` — a localStorage text value shared across components and tabs (with `readStored`/`writeStored`). |
 | `use-paginated-list.ts` | Generic client-side pagination hook: page state, reset-on-filter-change, loading/error. Pairs with `app/components/ui/Pager.tsx`. Not yet wired into Flux/Verso/Apsis, but built product-agnostic for that. |
 | `user-context.tsx` | Logged-in user + user-directory context (`useUser`, `useUsers`, `formatUserName`, `getUserLabel`). |
 

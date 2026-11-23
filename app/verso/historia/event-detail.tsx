@@ -11,6 +11,7 @@ import { useSubmitAction } from "@/app/components/form/useSubmitAction"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { Button } from "@/app/components/ui/Button"
 import { useDrawerClose } from "@/app/components/ui/Drawer"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import { formatHistoricalDate } from "@/app/lib/history-date"
 import type { HistoryEvent, Person, Photo } from "@/app/lib/dal"
 
@@ -38,6 +39,7 @@ export function EventForm({
   onDone: () => void
 }) {
   const [deleting, setDeleting] = useState(false)
+  const { askToConfirm, dialog } = useConfirmDialog()
   const {
     register,
     control,
@@ -66,7 +68,14 @@ export function EventForm({
   )
 
   async function onDelete() {
-    if (!event || !window.confirm("Ta bort händelsen?")) return
+    if (!event) return
+    const confirmed = await askToConfirm({
+      title: "Ta bort händelsen?",
+      message: "Händelsen tas bort. Det går inte att ångra.",
+      confirmLabel: "Ta bort",
+      destructive: true,
+    })
+    if (!confirmed) return
     setDeleting(true)
     const result = await deleteHistoryEvent(event.id)
     setDeleting(false)
@@ -153,6 +162,7 @@ export function EventForm({
       </Section>
 
       <FormRootError error={errors.root} />
+      {dialog}
       <div className="flex items-center justify-between">
         {event ? (
           <Button type="button" variant="ghost" size="sm" disabled={deleting} onClick={onDelete}>

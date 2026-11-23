@@ -14,7 +14,7 @@ import {
 } from "@/app/flux/_state/flux-context";
 import { isTaskOverdue } from "@/app/lib/flux-task-dates";
 import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
-import { formatDate } from "@/app/lib/formatters";
+import { formatDate, isoDateKey } from "@/app/lib/formatters";
 import type { FluxMilestone, FluxTask, FluxUser } from "@/app/lib/dal";
 import { useTaskPanel } from "@/app/flux/_state/task-panel-context";
 import { CheckCircleIcon, CircleIcon, Flag, PlayCircleIcon } from "lucide-react"
@@ -124,7 +124,7 @@ export default function FluxTimelineView() {
   const users = useFluxUsers();
   const { openTask } = useTaskPanel();
   const [showCompleted, setShowCompleted] = useState<Set<number>>(new Set());
-  const today = new Date().toISOString().slice(0, 10);
+  const today = isoDateKey();
 
   return (
     <div className="flex flex-col gap-6">

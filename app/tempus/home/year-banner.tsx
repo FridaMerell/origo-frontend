@@ -1,19 +1,13 @@
 import Link from "next/link"
+import { isoDateKey, SWEDISH_TIME_ZONE } from "@/app/lib/formatters"
 
 // The year summary is announced on the start page from 15 December to
 // 15 January, Swedish time: in December for the year that is ending, in
 // January for the one just over.
-const STOCKHOLM_DATE = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Europe/Stockholm",
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
-})
 
 /** The year the banner announces on `now`, or null outside 15 December–15 January. */
 export function yearBannerYear(now: Date): number | null {
-  const parts = Object.fromEntries(STOCKHOLM_DATE.formatToParts(now).map((part) => [part.type, Number(part.value)]))
-  const { year, month, day } = parts as { year: number; month: number; day: number }
+  const [year, month, day] = isoDateKey(now, SWEDISH_TIME_ZONE).split("-").map(Number)
   if (month === 12 && day >= 15) return year
   if (month === 1 && day <= 15) return year - 1
   return null

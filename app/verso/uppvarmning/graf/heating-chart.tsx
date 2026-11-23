@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type PointerEvent } from "react"
 import { MODE_LABELS, formatTime } from "@/app/verso/uppvarmning/heating-log-row"
-import { formatDateLong, formatOneDecimal } from "@/app/lib/formatters"
+import { formatDateLong, formatDayMonth, formatOneDecimal } from "@/app/lib/formatters"
 import type { HeatingLog } from "@/app/lib/dal"
 
 const MARGIN = { top: 12, right: 52, bottom: 26, left: 36 }
@@ -36,7 +36,7 @@ const localOffset =(time: number) => new Date(time).getTimezoneOffset() * 60_000
 function formatTick(tick: number) {
   const date = new Date(tick)
   return date.getHours() === 0 && date.getMinutes() === 0
-    ? date.toLocaleDateString("sv-SE", { day: "numeric", month: "short" })
+    ? formatDayMonth(date)
     : formatTime(date.toISOString())
 }
 

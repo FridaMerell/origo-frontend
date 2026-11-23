@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
+import { Button } from "@/app/components/ui/Button"
 import { Modal } from "@/app/components/ui/Modal"
 import { useToast } from "@/app/components/ui/ToastProvider"
 import type { ImportOptions, Shelf } from "@/app/lib/dal/opus"
@@ -283,7 +284,7 @@ export default function NewWorkForm({ open, onOpenChange }: NewWorkFormProps) {
 				<div className='mt-7 flex flex-wrap items-center justify-end gap-3 sm:gap-4'>
 					{error && error !== "Ange verkets titel." && <p role='alert' className='mr-auto text-xs text-danger'>{error}</p>}
 					<button type='button' onClick={() => onOpenChange(false)} className='font-body text-sm text-text-muted underline underline-offset-4 hover:text-text'>Avbryt</button>
-					<button type='submit' disabled={isSubmitting} className={`${buttonClass} bg-primary text-bg hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50`}>{isSubmitting ? "Sparar och importerar…" : step === 1 ? "Fortsätt" : "Spara verk och utgåvor"}</button>
+					<Button type='submit' size='sm' rounded='rounded-md' disabled={isSubmitting}>{isSubmitting ? "Sparar och importerar…" : step === 1 ? "Fortsätt" : "Spara verk och utgåvor"}</Button>
 				</div>
 				</div>
 			</form>

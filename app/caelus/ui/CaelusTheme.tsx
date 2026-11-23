@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore, type ReactNode } from "react"
 import { ThemeScope } from "@/app/components/ui/ThemeScope"
-import { useStored } from "./use-stored"
+import { useStored } from "@/app/lib/use-stored"
 
 // Ljust eller mörkt läge, valt i menyn: "light" eller "dark". Utan val följer temat systemet.
 export const MODE_KEY = "caelus-mode"

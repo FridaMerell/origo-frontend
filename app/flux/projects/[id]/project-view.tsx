@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useMemo, useState, useSyncExternalStore, type DragEvent } from "react"
+import { Fragment, useMemo, useState, type DragEvent } from "react"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { Avatar } from "@/app/components/ui/Avatar"
 import { Card } from "@/app/components/ui/Card"
@@ -32,6 +32,7 @@ import {
 } from "@/app/flux/_state/flux-context"
 import { progressOf } from "@/app/lib/flux-progress"
 import { formatDate } from "@/app/lib/formatters"
+import { useStored } from "@/app/lib/use-stored"
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date"
 import { isTaskOverdue, OVERDUE_ROW_TONE } from "@/app/lib/flux-task-dates"
 import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort"
@@ -42,8 +43,6 @@ import {
 } from "@/app/flux/flux-priority"
 import type { FluxTask, FluxUser } from "@/app/lib/dal"
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Flag, GripVertical, MessageSquare } from "lucide-react"
-
-const COLLAPSED_MILESTONES_EVENT = "flux:collapsed-milestones"
 
 function collapsedMilestonesKey(projectId: number) {
 	return `flux:collapsed-milestones:${projectId}`
@@ -211,27 +210,9 @@ export default function FluxProjectDetailView() {
 	const [reorderError, setReorderError] = useState<string | null>(null)
 
 	const project = selectedProject ?? projects[0]
-	const collapsedMilestoneIdsValue = useSyncExternalStore(
-		(callback) => {
-			window.addEventListener("storage", callback)
-			window.addEventListener(COLLAPSED_MILESTONES_EVENT, callback)
-			return () => {
-				window.removeEventListener("storage", callback)
-				window.removeEventListener(COLLAPSED_MILESTONES_EVENT, callback)
-			}
-		},
-		() => {
-			if (!project) return "[]"
-			try {
-				return window.localStorage.getItem(collapsedMilestonesKey(project.id)) ?? "[]"
-			} catch {
-				return "[]"
-			}
-		},
-		() => "[]",
-	)
+	const [collapsedMilestoneIdsValue, storeCollapsedMilestoneIds] = useStored(collapsedMilestonesKey(project?.id ?? 0))
 	const collapsedMilestoneIds = useMemo(
-		() => parseCollapsedMilestoneIds(collapsedMilestoneIdsValue),
+		() => parseCollapsedMilestoneIds(collapsedMilestoneIdsValue ?? "[]"),
 		[collapsedMilestoneIdsValue],
 	)
 
@@ -297,11 +278,7 @@ export default function FluxProjectDetailView() {
 		const next = new Set(collapsedMilestoneIds)
 		if (next.has(id)) next.delete(id)
 		else next.add(id)
-		window.localStorage.setItem(
-			collapsedMilestonesKey(project.id),
-			JSON.stringify([...next]),
-		)
-		window.dispatchEvent(new Event(COLLAPSED_MILESTONES_EVENT))
+		storeCollapsedMilestoneIds(JSON.stringify([...next]))
 	}
 	const unassignedTasks = sortFluxTasks(
 		projectTasks.filter(

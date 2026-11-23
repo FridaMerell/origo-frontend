@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/app/components/ui/Button";
+import { Lightbox } from "@/app/components/ui/Gallery";
 import { EditPostModal } from "@/app/apsis/edit-post-modal";
 import { Sign, SignFacts, SignSources, SourceRef, signHeadingClass, signPrintClass, signTextClass, type SignSource } from "@/app/apsis/ui/Sign";
 import { fileProxyUrl } from "@/app/lib/files";
@@ -118,14 +118,6 @@ export default function PostView({ post, place }: { post: ApsisPost; place: Apsi
   const visitingAddress = place ? [place.address, [place.postal_code, place.city].filter(Boolean).join(" ")].filter(Boolean).join(", ") : "";
   const hasVisit = Boolean(place && (place.open_hours.length > 0 || place.facilities.length > 0 || visitingAddress || place.phone || place.url));
 
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setEnlarged(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, []);
-
   return (
     <>
       <Sign
@@ -213,12 +205,7 @@ export default function PostView({ post, place }: { post: ApsisPost; place: Apsi
       </Sign>
 
       {enlarged && original && (
-        <div role="dialog" aria-modal="true" aria-label={`Förstorad bild av ${name}`} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-5" onPointerDown={(event) => { if (event.target === event.currentTarget) setEnlarged(false); }}>
-          <div className="relative w-full max-w-5xl">
-            <button type="button" onClick={() => setEnlarged(false)} className="absolute right-0 top-0 z-10 flex size-10 -translate-y-12 items-center justify-center text-white hover:text-white/70" aria-label="Stäng bild"><X size={24} /></button>
-            <Image src={fileProxyUrl(original.url)} alt={name} width={1200} height={900} sizes="100vw" className="block h-auto max-h-[85vh] w-full object-contain" />
-          </div>
-        </div>
+        <Lightbox images={[fileProxyUrl(original.url)]} index={0} onClose={() => setEnlarged(false)} onNavigate={() => {}} />
       )}
 
       {editing && <EditPostModal post={post} onClose={() => setEditing(false)} onDeleted={() => router.push("/")} />}

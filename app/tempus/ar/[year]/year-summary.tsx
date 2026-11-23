@@ -16,6 +16,8 @@ import {
 import { Lightbox } from "@/app/components/ui/Gallery"
 import type { TempusYearPhoto, TempusYearSpecies, TempusYearSummary } from "@/app/lib/dal/tempus/observations"
 import { fileProxyUrl } from "@/app/lib/files"
+import { formatDayMonth, SWEDISH_TIME_ZONE } from "@/app/lib/formatters"
+import { formatPosition } from "@/app/lib/geo"
 import { thumbnailPath } from "@/app/tempus/observationer/observation-photos"
 import { Compass } from "@/app/tempus/ui/atlas-map/Compass"
 import { BiotopeMap } from "@/app/tempus/ui/biotope-map/BiotopeMap"
@@ -119,20 +121,9 @@ function MapScale() {
   )
 }
 
-// "58°40′ N 16°18′ Ö", as on a map's margin.
-function formatPosition([lon, lat]: [number, number]) {
-  const part = (value: number) => {
-    const degrees = Math.floor(Math.abs(value))
-    const minutes = Math.round((Math.abs(value) - degrees) * 60)
-    return minutes === 60 ? `${degrees + 1}°00′` : `${degrees}°${String(minutes).padStart(2, "0")}′`
-  }
-  return `${part(lat)} ${lat >= 0 ? "N" : "S"} ${part(lon)} ${lon >= 0 ? "Ö" : "V"}`
-}
-
 const clamp = (value: number) => Math.min(1, Math.max(0, value))
 const formatCount = (value: number) => value.toLocaleString("sv-SE")
-const formatDay = (value: string) =>
-  new Date(value).toLocaleDateString("sv-SE", { day: "numeric", month: "long", timeZone: "Europe/Stockholm" })
+const formatDay = (value: string) => formatDayMonth(value, { month: "long", timeZone: SWEDISH_TIME_ZONE })
 const speciesName = (species: { swedish_name: string; scientific_name: string }) =>
   species.swedish_name || species.scientific_name
 // The species page as the start page links it, and an observation's own page.

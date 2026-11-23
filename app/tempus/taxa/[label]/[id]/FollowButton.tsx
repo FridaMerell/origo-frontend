@@ -2,6 +2,7 @@
 import { followSpecies, unfollowSpecies } from "@/app/tempus/_actions/species"
 import { Button } from "@/app/components/ui/Button"
 import { useToast } from "@/app/components/ui/ToastProvider"
+import { useDismissableOpen } from "@/app/components/ui/use-dismissable-open"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { Check, ChevronDown } from "lucide-react"
@@ -9,7 +10,7 @@ import { Check, ChevronDown } from "lucide-react"
 const FollowButton = ({ initial, initialNotify, taxa, props }: { initial: boolean, initialNotify: boolean, taxa: string, props?: React.ComponentProps<typeof Button> }) => {
   const [isFollowing, setIsFollowing] = useState(initial)
   const [notify, setNotify] = useState(initialNotify)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const { open: menuOpen, setOpen: setMenuOpen, ref: menuRef } = useDismissableOpen<HTMLDivElement>()
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
   const { toast } = useToast()
@@ -91,7 +92,7 @@ const FollowButton = ({ initial, initialNotify, taxa, props }: { initial: boolea
   }
 
   return (
-    <div className="relative flex flex-col items-end gap-1.5">
+    <div ref={menuRef} className="relative flex flex-col items-end gap-1.5">
       <div className="inline-flex overflow-hidden rounded-md border border-accent bg-surface">
         <Button
           variant="paper"
@@ -118,7 +119,6 @@ const FollowButton = ({ initial, initialNotify, taxa, props }: { initial: boolea
 
       {menuOpen && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-0 top-full z-20 mt-1.5 w-60 rounded border border-border bg-surface p-1 shadow-md">
             <button
               type="button"

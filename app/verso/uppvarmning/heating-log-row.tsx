@@ -2,7 +2,14 @@
 
 import { useState } from "react"
 import { getHeatingLogZones } from "@/app/verso/uppvarmning/_actions/residential-heating"
-import { formatOneDecimal } from "@/app/lib/formatters"
+import {
+  formatDateLong,
+  formatOneDecimal,
+  formatTime as formatClock,
+  formatWeekdayDate,
+  isoDateKey,
+  SWEDISH_TIME_ZONE,
+} from "@/app/lib/formatters"
 import type { HeatingLog, HeatingZone } from "@/app/lib/dal"
 
 export const MODE_LABELS: Record<number, string> = { 0: "Av", 1: "Bas", 2: "Komfort" }
@@ -11,23 +18,18 @@ export const MODE_LABELS: Record<number, string> = { 0: "Av", 1: "Bas", 2: "Komf
  * Times and dates of heating logs and fireplace heatings are always shown in the house's timezone.
  * Fixed, not the runtime's, so the server render and the browser print the same text.
  */
-const TIME_ZONE = "Europe/Stockholm"
+const TIME_ZONE = SWEDISH_TIME_ZONE
 
-export const formatTime = (timestamp: string) =>
-  new Date(timestamp).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit", timeZone: TIME_ZONE })
+export const formatTime = (timestamp: string) => formatClock(timestamp, { timeZone: TIME_ZONE })
 
-export const formatHeatingDate =(timestamp: string) =>
-  new Date(timestamp).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric", timeZone: TIME_ZONE })
+export const formatHeatingDate = (timestamp: string) => formatDateLong(timestamp, { timeZone: TIME_ZONE })
 
 /** "sön 15 nov", without the abbreviation dots. */
 export const formatShortWeekdayDate = (timestamp: string) =>
-  new Date(timestamp)
-    .toLocaleDateString("sv-SE", { weekday: "short", day: "numeric", month: "short", timeZone: TIME_ZONE })
-    .replace(/\./g, "")
+  formatWeekdayDate(timestamp, { short: true, timeZone: TIME_ZONE })
 
 /** The house's calendar day of an instant as "YYYY-MM-DD", for counting whole days between two instants. */
-export const heatingCalendarDay = (instant: string | number) =>
-  new Date(instant).toLocaleDateString("sv-SE", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: TIME_ZONE })
+export const heatingCalendarDay = (instant: string | number) => isoDateKey(instant, TIME_ZONE)
 
 /**
  * Shared columns for the header, the log rows and their zone rows, so a zone's temperature and

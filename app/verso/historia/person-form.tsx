@@ -9,6 +9,7 @@ import { personFormSchema, type PersonFormValues } from "@/app/lib/schemas"
 import { Field, fieldInputClass } from "@/app/components/form/Field"
 import { FormActions, FormRootError } from "@/app/components/form/FormFeedback"
 import { Button } from "@/app/components/ui/Button"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import type { Person } from "@/app/lib/dal"
 
 const PrecisionSelect = forwardRef<HTMLSelectElement, ComponentPropsWithoutRef<"select">>(
@@ -44,6 +45,7 @@ export function PersonForm({
   onDeleted?: () => void
 }) {
   const [deleting, setDeleting] = useState(false)
+  const { askToConfirm, dialog } = useConfirmDialog()
   const {
     register,
     handleSubmit,
@@ -72,7 +74,14 @@ export function PersonForm({
   })
 
   async function onDelete() {
-    if (!person || !window.confirm("Ta bort personen?")) return
+    if (!person) return
+    const confirmed = await askToConfirm({
+      title: "Ta bort personen?",
+      message: "Personen tas bort. Det går inte att ångra.",
+      confirmLabel: "Ta bort",
+      destructive: true,
+    })
+    if (!confirmed) return
     setDeleting(true)
     const result = await deletePerson(person.id)
     setDeleting(false)
@@ -118,6 +127,7 @@ export function PersonForm({
         <textarea rows={5} className={fieldInputClass} {...register("notes")} />
       </Field>
       <FormRootError error={errors.root} />
+      {dialog}
       <div className="flex items-center justify-between">
         {person ? (
           <Button type="button" variant="ghost" size="sm" disabled={deleting} onClick={onDelete}>

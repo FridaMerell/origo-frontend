@@ -1,10 +1,12 @@
 "use client";
 
 import { Avatar } from "@/app/components/ui/Avatar";
+import { EmptyState } from "@/app/components/ui/EmptyState";
 import { CheckCircle2Icon, CircleIcon } from "lucide-react";
 import { TaskCompletionButton } from "@/app/flux/tasks/task-completion-button";
 import { TaskDueDate } from "@/app/flux/tasks/task-due-date";
 import { isTaskOverdue } from "@/app/lib/flux-task-dates";
+import { isoDateKey } from "@/app/lib/formatters";
 import { sortFluxTasks } from "@/app/flux/_state/flux-task-sort";
 import { fluxUserName, useFluxProjects, useFluxTasks, useFluxUsers } from "@/app/flux/_state/flux-context";
 import { FLUX_PRIORITY_SECTIONS } from "@/app/flux/flux-priority";
@@ -71,7 +73,7 @@ export default function FluxBacklogView() {
   const tasks = useFluxTasks();
   const users = useFluxUsers();
   const { openTask } = useTaskPanel();
-  const today = new Date().toISOString().split("T")[0];
+  const today = isoDateKey();
   const backlogTasks = tasks.filter((task) => task.status !== "done" && task.due_date && task.due_date <= today);
   const projectName = (id: number) => projects.find((project) => project.id === id)?.name ?? "Okänt projekt";
 
@@ -88,11 +90,9 @@ export default function FluxBacklogView() {
       </header>
 
       {backlogTasks.length === 0 ? (
-        <div className="flex min-h-48 flex-col items-center justify-center gap-2 border border-dashed border-border text-center">
-          <CheckCircle2Icon size={24} className="text-success" />
-          <p className="text-sm font-medium text-text">Backloggen är tom</p>
-          <p className="text-sm text-text-muted">Inga förfallna eller aktuella tasks just nu.</p>
-        </div>
+        <EmptyState icon={<CheckCircle2Icon size={24} className="text-success" />} title="Backloggen är tom">
+          Inga förfallna eller aktuella tasks just nu.
+        </EmptyState>
       ) : (
         <div className="flex flex-col gap-7">
           {FLUX_PRIORITY_SECTIONS.map(({ label, priority, color, textColor }) => {

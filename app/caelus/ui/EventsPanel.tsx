@@ -2,14 +2,13 @@
 
 import { PushControls } from "@/app/components/ui/PushControls"
 import { PUBLIC_API_BASE_URL } from "@/app/lib/config"
+import { formatDayMonth, formatTime } from "@/app/lib/formatters"
 import { useUser } from "@/app/lib/user-context"
 import EventAlertToggle from "./EventAlertToggle"
 import type { SkyEvent } from "./sky/events"
 import type { Shower } from "./sky/meteors"
 import type { Position } from "./sky/types"
 
-const DATE_FORMAT = new Intl.DateTimeFormat("sv-SE", { day: "numeric", month: "short" })
-const CLOCK_FORMAT = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit" })
 
 const CHOICE =
 	"cursor-pointer text-left text-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
@@ -120,7 +119,7 @@ export default function EventsPanel({
 				<>
 					<h3 className='mt-3 text-xs uppercase tracking-[0.16em] text-text-muted'>Den här dagen</h3>
 					<dl className='mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 text-sm'>
-						{today.map(event => row(event, CLOCK_FORMAT.format(event.time)))}
+						{today.map(event => row(event, formatTime(event.time)))}
 						{showers.map(shower => (
 							<div key={shower.name} className='col-span-2 grid grid-cols-subgrid py-0.5'>
 								<dt className='italic text-text-muted'>Pågår</dt>
@@ -135,7 +134,7 @@ export default function EventsPanel({
 			)}
 			<h3 className='mt-3 text-xs uppercase tracking-[0.16em] text-text-muted'>Kommande</h3>
 			<dl className='mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-5 text-sm'>
-				{coming.map(event => row(event, DATE_FORMAT.format(event.time)))}
+				{coming.map(event => row(event, formatDayMonth(event.time)))}
 			</dl>
 			{/* Varningarna för det som kommer når hit som pushnotiser. */}
 			{user && (

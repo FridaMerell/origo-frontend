@@ -12,7 +12,7 @@ export function AddTaskButton() {
   return (
     <>
       <Button variant="primary" size="sm" onClick={() => setOpen(true)}>
-        <Plus size={14} className="text-accent-contrast" />
+        <Plus size={14} />
         Ny uppgift
       </Button>
       <TaskFormDrawer open={open} onClose={() => setOpen(false)} />

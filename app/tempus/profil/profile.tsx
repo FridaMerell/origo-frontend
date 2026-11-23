@@ -1,6 +1,8 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import type { TempusProfile, TempusProfileSpecies } from "@/app/lib/dal/tempus/observations"
+import { formatDateLong, SWEDISH_TIME_ZONE } from "@/app/lib/formatters"
+import { formatPosition } from "@/app/lib/geo"
 
 const MONTHS = ["januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"]
 const RED_LIST: Record<string, string> = {
@@ -18,22 +20,11 @@ const LINK = "text-current underline decoration-border underline-offset-4 hover:
 const STEP = "font-display italic text-accent no-underline hover:text-accent-hover"
 
 const formatCount = (value: number) => value.toLocaleString("sv-SE")
-const formatDate = (value: string) =>
-  new Date(value).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Stockholm" })
+const formatDate = (value: string) => formatDateLong(value, { timeZone: SWEDISH_TIME_ZONE })
 const plural = (count: number, one: string, many: string) => `${formatCount(count)} ${count === 1 ? one : many}`
 const speciesName = (species: { swedish_name: string; scientific_name: string }) =>
   species.swedish_name || species.scientific_name
 const speciesHref = (dyntaxaTaxonId: number) => `/taxa/oversikt/${dyntaxaTaxonId}`
-
-// "58°40′ N 16°18′ Ö", as on a map's margin.
-function formatPosition([lon, lat]: [number, number]) {
-  const part = (value: number) => {
-    const degrees = Math.floor(Math.abs(value))
-    const minutes = Math.round((Math.abs(value) - degrees) * 60)
-    return minutes === 60 ? `${degrees + 1}°00′` : `${degrees}°${String(minutes).padStart(2, "0")}′`
-  }
-  return `${part(lat)} ${lat >= 0 ? "N" : "S"} ${part(lon)} ${lon >= 0 ? "Ö" : "V"}`
-}
 
 function SpeciesLink({ species }: { species: TempusProfileSpecies }) {
   return (

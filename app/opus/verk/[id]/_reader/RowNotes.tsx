@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import type { Id, ReadingUnit } from "@/app/lib/dal/opus"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
+import { Button } from "@/app/components/ui/Button"
 import { TextAreaField } from "../../../forms/Fields/Fields"
 import type { Column } from "./columns"
 import EditionLabel from "./EditionLabel"
@@ -23,6 +25,7 @@ export default function RowNotes({
 	const [saving, setSaving] = useState(false)
 	// Långa noter visas avkortade tills man öppnar dem.
 	const [expanded, setExpanded] = useState<Id[]>([])
+	const { requestConfirm, dialog } = useConfirmDialog()
 	const link = "rounded-sm text-text-muted underline underline-offset-4 hover:text-text disabled:opacity-40 cursor-pointer"
 
 	async function save(annotationId: Id) {
@@ -37,6 +40,8 @@ export default function RowNotes({
 	}
 
 	return (
+		<>
+		{dialog}
 		<ul className='flex flex-col gap-4'>
 			{notes.map(({ annotation, unit, column }) => {
 				const target =
@@ -65,13 +70,14 @@ export default function RowNotes({
 									<button type='button' onClick={() => setEditing(null)} className={link}>
 										Avbryt
 									</button>
-									<button
+									<Button
 										type='button'
+										size='sm'
+										rounded='rounded-md'
 										disabled={saving || !draft.trim()}
-										onClick={() => save(annotation.id)}
-										className='rounded-md bg-primary px-3 py-1.5 font-semibold text-bg hover:bg-primary/90 disabled:opacity-50 cursor-pointer'>
+										onClick={() => save(annotation.id)}>
 										{saving ? "Sparar…" : "Spara"}
-									</button>
+									</Button>
 								</div>
 							</div>
 						) : (
@@ -110,7 +116,13 @@ export default function RowNotes({
 									<button
 										type='button'
 										onClick={() => {
-											if (window.confirm("Ta bort noten? Det går inte att ångra.")) onDelete(annotation.id)
+											requestConfirm({
+												title: "Ta bort noten?",
+												message: "Det går inte att ångra.",
+												confirmLabel: "Ta bort",
+												destructive: true,
+												onConfirm: () => onDelete(annotation.id),
+											})
 										}}
 										className={`${link} hover:text-danger`}>
 										Ta bort
@@ -122,5 +134,6 @@ export default function RowNotes({
 				)
 			})}
 		</ul>
+		</>
 	)
 }

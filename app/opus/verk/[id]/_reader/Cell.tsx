@@ -1,6 +1,7 @@
 "use client"
 
 import type { AlignmentCell, Id } from "@/app/lib/dal/opus"
+import { useConfirmDialog } from "@/app/components/ui/useConfirmDialog"
 import UnitText from "../_text/UnitText"
 import Menu from "../_ui/Menu"
 import { BORDER_CLASS } from "../_ui/editions"
@@ -80,7 +81,9 @@ export function CellMenu({
 	busy: boolean
 	onAction: (action: CellAction, versionId: Id, row: number, target?: CombineTarget) => void
 }) {
+	const { askToConfirm, dialog } = useConfirmDialog()
 	return (
+		<>
 		<Menu
 			ariaLabel='Flytta eller sammanfoga cellen'
 			disabled={busy}
@@ -124,8 +127,14 @@ export function CellMenu({
 								label: "Kombinera stycken till ett",
 								hint: "Slår ihop cellens stycken till ett enda stycke, permanent",
 								disabled: cell.units.length < 2,
-								onSelect: () => {
-									if (window.confirm("Kombinera cellens stycken till ett enda stycke? Texterna slås ihop permanent."))
+								onSelect: async () => {
+									const confirmed = await askToConfirm({
+										title: "Kombinera stycken till ett?",
+										message: "Cellens stycken slås ihop till ett enda stycke, permanent.",
+										confirmLabel: "Kombinera",
+										destructive: true,
+									})
+									if (confirmed)
 										onAction("combine", versionId, row, {
 											unitId: cell.units[0].id,
 											count: cell.units.length - 1,
@@ -135,5 +144,7 @@ export function CellMenu({
 						]
 			}
 		/>
+		{dialog}
+		</>
 	)
 }

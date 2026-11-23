@@ -4,7 +4,7 @@ import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
 import { getCurrentUser } from "@/app/lib/dal/auth"
 import { getTempusGeoAreas } from "@/app/lib/dal/tempus/geo"
 import { getTempusAllObservationsPage, getTempusYearSummary } from "@/app/lib/dal/tempus/observations"
-import { formatDateLong } from "@/app/lib/formatters"
+import { formatDateLong, isoDateKey, SWEDISH_TIME_ZONE } from "@/app/lib/formatters"
 import HomeView from "./home-view"
 import { areaPosition } from "./home/area-position"
 import { getNextRouteOverview } from "./home/next-route"
@@ -47,7 +47,7 @@ export default async function TempusPage({
   const bannerPreview = process.env.NODE_ENV !== "production" && "visa-arsbanner" in params
   const yearBanner = isGuest
     ? null
-    : yearBannerYear(today) ?? (bannerPreview ? Number(today.toLocaleDateString("en-CA", { timeZone: "Europe/Stockholm", year: "numeric" })) : null)
+    : yearBannerYear(today) ?? (bannerPreview ? Number(isoDateKey(today, SWEDISH_TIME_ZONE).slice(0, 4)) : null)
   const yearBannerRequest = yearBanner ? getTempusYearSummary(yearBanner) : null
   const observationPageParam = Number([params.obs].flat()[0])
   const observationPage = Number.isInteger(observationPageParam) && observationPageParam > 0 ? observationPageParam : 1

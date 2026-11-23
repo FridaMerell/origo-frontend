@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { getTempusRoutes } from "@/app/lib/dal/tempus/routes"
 import { formatDateLongOrNull } from "@/app/lib/formatters"
+import { formatKm } from "@/app/lib/geo"
 
 export const metadata: Metadata = {
   title: "Rutter | Tempus",
@@ -87,7 +88,7 @@ export default async function RoutesPage() {
                         {plannedDate ?? "—"}
                       </span>
                       <span className="hidden items-center border-r border-border px-3 py-2 text-xs italic tabular-nums text-text-muted sm:flex">
-                        {(route.corridor_metres / 1000).toLocaleString("sv-SE")} km
+                        {formatKm(route.corridor_metres)}
                       </span>
                       <span className="hidden items-center justify-center border-r border-border px-2 py-2 text-xs italic tabular-nums text-text-muted sm:flex">
                         {pointCount || "—"}

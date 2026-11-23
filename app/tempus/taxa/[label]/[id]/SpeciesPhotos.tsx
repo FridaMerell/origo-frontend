@@ -12,10 +12,11 @@ import { thumbnailPath } from "@/app/tempus/observationer/observation-photos"
 // Up to this many photos fill the column; more become a sideways strip.
 const FILL_LIMIT = 3
 
-export default function SpeciesPhotos({ observations, name, scientificName }: {
+export default function SpeciesPhotos({ observations, name, scientificName, sheet = false }: {
   observations: TempusPublicObservation[]
   name: string
   scientificName?: string
+  sheet?: boolean
 }) {
   const [open, setOpen] = useState<number | null>(null)
   const photos = observations.flatMap((observation) =>
@@ -60,14 +61,18 @@ export default function SpeciesPhotos({ observations, name, scientificName }: {
                 )
               })}
             </div>
-            <figcaption className="mt-3 flex flex-col gap-0.5">
+            <figcaption className={sheet ? "mt-1.5 flex flex-col gap-0.5" : "mt-3 flex flex-col gap-0.5"}>
               <Link
                 href={`/observationer/${observation.id}`}
-                className="w-fit font-display text-lg font-semibold text-text no-underline hover:text-accent"
+                className={sheet
+                  ? "w-fit font-display text-xs italic text-text no-underline hover:text-accent"
+                  : "w-fit font-display text-lg font-semibold text-text no-underline hover:text-accent"}
               >
                 {formatDateLongOrNull(observation.observed_at) ?? "—"}
               </Link>
-              <span className="text-sm text-text-muted">{formatUserName(observation)}</span>
+              <span className={sheet ? "font-display text-[11px] italic text-text-muted" : "text-sm text-text-muted"}>
+                {formatUserName(observation)}
+              </span>
             </figcaption>
           </figure>
         ))}

@@ -352,6 +352,12 @@ function EditionPanel({
 											hint: "Håller platsen för ett kapitel som saknas i utgåvan",
 											onSelect: () => setMode("empty"),
 										},
+										{
+											label: "Exportera som .txt",
+											onSelect: () => {
+												window.location.href = `/api/opus/editions/${edition.id}/export/`
+											},
+										},
 										"separator" as const,
 									]
 								: []),

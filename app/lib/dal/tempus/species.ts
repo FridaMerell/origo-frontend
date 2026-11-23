@@ -174,6 +174,48 @@ export const getTempusSpeciesItem = cache(
     fetchItem(`${TEMPUS_ENDPOINTS.species}${id}/`)
 )
 
+// One xeno-canto recording as the `extended` action returns it.
+export type TempusSoundRecording = {
+  id: string | number | null
+  scientific_name: string
+  english_name: string
+  recordist: string
+  country: string
+  location: string
+  sound_type: string
+  sex: string
+  stage: string
+  page_url: string
+  audio_url: string
+  sonograms: Record<string, string>
+  licence_url: string
+  quality: string
+  length: string
+  date: string
+  remarks: string
+}
+
+// Artfakta's species data with snake_case keys; the inner shape of each text
+// block is passed on as the source delivers it, so it is read defensively.
+export type TempusArtfaktaData = Record<string, unknown>
+
+export type TempusSpeciesExtended = {
+  artfakta: TempusArtfaktaData | null
+  artfakta_error: string | null
+  sounds: {
+    count: number
+    page: number
+    num_pages: number
+    recordings: TempusSoundRecording[]
+  } | null
+  sounds_error: string | null
+}
+
+export const getTempusSpeciesExtended = cache(
+  (id: string): Promise<TempusSpeciesExtended | null> =>
+    fetchItem(`${TEMPUS_ENDPOINTS.species}${id}/extended/`)
+)
+
 export async function getTempusSpeciesItems(ids: Iterable<string>): Promise<TempusSpecies[]> {
   const uniqueIds = [...new Set(ids)]
   if (uniqueIds.length === 0) return []

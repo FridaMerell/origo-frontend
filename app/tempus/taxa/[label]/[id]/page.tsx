@@ -1,8 +1,6 @@
 import Link from "next/link"
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
-import { Card } from "@/app/components/ui/Card"
-import { Chip } from "@/app/components/ui/Chip"
 import { TEMPUS_ALL_SWEDEN, TEMPUS_GEO_AREA_COOKIE } from "@/app/lib/config"
 import {
   getTempusGeoAreas,
@@ -24,6 +22,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import FollowButton from "./FollowButton"
 import PhenogramPanel from "./PhenogramPanel"
 import SpeciesPhotos from "./SpeciesPhotos"
+import ExpandableText from "./expandable-text"
+import ModeSheet from "./mode-sheet"
 
 const speciesName = (s: { swedish_name?: string; scientific_name: string }) =>
   s.swedish_name || s.scientific_name
@@ -34,19 +34,28 @@ const bySignificance = (a: TempusHabitat, b: TempusHabitat) =>
   (SIGNIFICANCE_RANK[a.significance] ?? 9) - (SIGNIFICANCE_RANK[b.significance] ?? 9) ||
   a.name.localeCompare(b.name, "sv")
 
-const HabitatChips = ({ items }: { items: TempusHabitat[] }) => (
-  <div className="flex flex-wrap gap-2">
-    {[...items].sort(bySignificance).map((habitat) => (
-      <Chip
-        key={habitat.id}
-        title={`Betydelse: ${habitat.significance}`}
-        variant={habitat.significance === "stor" ? "neutral-active" : "neutral"}
-      >
-        {habitat.name}
-      </Chip>
-    ))}
-  </div>
+const HabitatList = ({ items, preview = false }: { items: TempusHabitat[]; preview?: boolean }) => {
+  const names = [...items].sort(bySignificance).map(({ name }) =>
+    name === name.toLocaleUpperCase("sv") ? name.charAt(0) + name.slice(1).toLocaleLowerCase("sv") : name,
+  )
+  if (preview && names.length > 8) return (
+    <div className="text-sm leading-6">
+      <ExpandableText
+        head={names.slice(0, 8).join(", ")}
+        rest={names.slice(8).join(", ")}
+        moreLabel={`Visa alla ${names.length} biotoper`}
+        lessLabel="Visa färre biotoper"
+      />
+    </div>
+  )
+  return <p className="text-sm leading-6">{names.join(", ")}</p>
+}
+
+const Head = ({ title }: { title: string }) => (
+  <h2 className="border-b border-border pb-2 text-base font-medium">{title}</h2>
 )
+
+const term = "text-xs text-text-muted"
 
 const Page = async ({ params, searchParams }: {
   params: Promise<{ label: string; id: string }>
@@ -55,12 +64,9 @@ const Page = async ({ params, searchParams }: {
   const { label: rawLabel, id } = await params
   const { p } = await searchParams
   const observationPage = typeof p === "string" && parseInt(p) > 0 ? parseInt(p) : 1
-  const label = decodeURIComponent(rawLabel)
-  const fromHomeOverview = label === "foljda" || label === "oversikt"
-  const [geoAreas, cookieStore] = await Promise.all([
-    getTempusGeoAreas(),
-    cookies(),
-  ])
+  const routeLabel = decodeURIComponent(rawLabel)
+  const fromHomeOverview = routeLabel === "foljda" || routeLabel === "oversikt"
+  const [geoAreas, cookieStore] = await Promise.all([getTempusGeoAreas(), cookies()])
   const selectedId = cookieStore.get(TEMPUS_GEO_AREA_COOKIE)?.value
   const selectedGeoArea = selectedId === TEMPUS_ALL_SWEDEN
     ? null
@@ -68,7 +74,7 @@ const Page = async ({ params, searchParams }: {
 
   const [species, category, observations, photoObservations] = await Promise.all([
     getTempusSpeciesItem(id),
-    fromHomeOverview ? Promise.resolve(null) : getTempusSpeciesCategoryItem(label),
+    fromHomeOverview ? Promise.resolve(null) : getTempusSpeciesCategoryItem(routeLabel),
     // `id` is the Dyntaxa taxon id, which the observation filter accepts.
     getTempusAllObservationsPage({ species: id, page: observationPage, page_size: 10 }),
     getTempusAllObservationsPage({ species: id, has_photos: "true", page_size: 12 }),
@@ -80,225 +86,207 @@ const Page = async ({ params, searchParams }: {
     `${targetPage > 1 ? `?p=${targetPage}` : "?"}#observationer`
 
   const selectedMapAreas: SwedenMapFeature[] = selectedGeoArea?.geometry
-    ? [
-      {
-        type: "Feature",
-        id: selectedGeoArea.id,
-        properties: { name: selectedGeoArea.name },
-        geometry: selectedGeoArea.geometry,
-      },
-    ]
+    ? [{
+      type: "Feature",
+      id: selectedGeoArea.id,
+      properties: { name: selectedGeoArea.name },
+      geometry: selectedGeoArea.geometry,
+    }]
     : []
-
   const observationPoints: SwedenMapPoint[] = observations.results.flatMap((observation) =>
     observation.location.type === "Point"
       ? [{ id: observation.id, coordinates: observation.location.coordinates }]
       : [],
   )
 
+  const name = speciesName(species)
+  const showsScientific = Boolean(species.swedish_name) && species.scientific_name !== species.swedish_name
   const facts: Array<[string, string]> = [
-    ["Vetenskapligt namn", species.scientific_name],
-    ["Svenskt namn", species.swedish_name || "—"],
-    ["Taxonomisk rang", species.taxon_rank],
+    ["Rang", species.taxon_rank],
     ["Dyntaxa taxon-ID", String(species.dyntaxa_taxon_id)],
     ["Status", species.is_active ? "Aktiv" : "Inaktiv"],
-    [
-      "Senast synkad",
-      species.synced_at ? formatDateNumeric(species.synced_at) : "Aldrig",
-    ],
+    ["Senast synkad", species.synced_at ? formatDateNumeric(species.synced_at) : "Aldrig"],
   ]
 
+  const map = (
+    <BiotopeMap
+      {...biotopePropsFromSpecies(species)}
+      theme={{ contourMinor: "var(--text-muted)", contourMajor: "var(--accent)", inkSoft: "var(--text-muted)" }}
+      height={500}
+      compass={false}
+      aria-hidden="true"
+      preserveAspectRatio="xMidYMid slice"
+      className="absolute inset-0 h-full w-full"
+    />
+  )
 
-  return (
-    <div className="container py-5 mx-auto flex flex-col gap-5">
-      <div className="flex flex-row gap-3 justify-between items-start md:items-center">
-        <div className="flex min-w-0 flex-col gap-1">
-          <Link
-            href={label === "oversikt" ? "/?view=all" : fromHomeOverview ? "/" : `/taxa/${encodeURIComponent(label)}`}
-            className="w-fit text-sm text-text-muted hover:text-text"
-          >
-            ← {label === "oversikt" ? "Alla arter" : fromHomeOverview ? "Säsongsöversikt" : category?.label ?? "Okänd kategori"}
-          </Link>
-          <h1 className="mt-2 break-words font-display text-2xl font-semibold tracking-tight capitalize sm:text-3xl md:mt-3">
-            {speciesName(species)}
-          </h1>
-          {species.swedish_name && species.scientific_name !== species.swedish_name && (
-            <em className="font-mono text-sm text-text-muted">{species.scientific_name}</em>
-          )}
-          <a
-            href={`https://artfakta.se/taxa/${species.dyntaxa_taxon_id}/information`}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-1 w-fit font-display text-sm italic text-accent underline decoration-accent/40 underline-offset-4 transition-colors hover:text-accent-hover"
-          >
-            Visa artfakta
-          </a>
-        </div>
-        <div className="flex shrink-0 items-center justify-end max-md:mt-7">
-          <FollowButton taxa={String(species.dyntaxa_taxon_id)} initial={species.is_followed} initialNotify={species.is_notify ?? false} />
-        </div>
-      </div>
-      <Card className="relative overflow-hidden shadow-sm min-h-70 max-sm:pb-40">
-
-        <BiotopeMap
-          {...biotopePropsFromSpecies(species)}
-          compass={true}
-          aria-hidden="true"
-          preserveAspectRatio="xMaxYMax slice"
-          className="absolute inset-0 z-0 opacity-30"
-          style={{ width: "100%", height: "100%" }}
-        />
-
-        <div className="absolute inset-0 bg-linear-to-b from-surface via-surface/60 to-transparent sm:bg-linear-to-r sm:via-surface/12" />
-        <dl className="relative z-10 grid grid-cols-2 gap-x-6 gap-y-4 sm:gap-x-10 sm:w-max">
-          {facts.map(([term, value]) => (
-            <div key={term} className="flex min-w-0 flex-col gap-0.5">
-              <dt className="text-sm text-text-muted">{term}</dt>
-              <dd className="break-words text-sm text-text">{value}</dd>
-            </div>
-          ))}
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <dt className="text-sm text-text-muted">Kategorier</dt>
-            <dd className="text-sm text-text">
-              {species.categories.length === 0 ? "—" : species.categories.map((speciesCategory, index) => (
-                <span key={speciesCategory.taxon_id ?? speciesCategory.label}>
-                  {index > 0 ? ", " : null}
-                  {speciesCategory.taxon_id ? (
-                    <Link href={`/taxa/${speciesCategory.taxon_id}`}>{speciesCategory.label}</Link>
-                  ) : speciesCategory.label}
-                </span>
-              ))}
-            </dd>
+  const factSheet = (
+    <dl className="flex h-full flex-col border-t border-border">
+        {facts.map(([label, text]) => (
+          <div key={label} className="grid flex-1 grid-cols-[7rem_minmax(0,1fr)] items-center gap-2 border-b border-border py-2.5">
+            <dt className={term}>{label}</dt>
+            <dd className="break-words text-sm">{text}</dd>
           </div>
-        </dl>
-      </Card>
+        ))}
+        <div className="grid flex-1 grid-cols-[7rem_minmax(0,1fr)] items-center gap-2 border-b border-border py-2.5">
+          <dt className={term}>Kategorier</dt>
+          <dd className="break-words text-sm">
+            {species.categories.length === 0 ? "—" : species.categories.map((speciesCategory, index) => (
+              <span key={speciesCategory.taxon_id ?? speciesCategory.label}>
+                {index > 0 ? ", " : null}
+                {speciesCategory.taxon_id ? (
+                  <Link href={`/taxa/${speciesCategory.taxon_id}`}>{speciesCategory.label}</Link>
+                ) : speciesCategory.label}
+              </span>
+            ))}
+          </dd>
+        </div>
+    </dl>
+  )
+
+  const basic = (
+    <>
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-display text-xl font-semibold tracking-tight">Aktivitet</h2>
-        <Card className="flex flex-col md:flex-row gap-3 md:items-end">
-          <div className="min-w-0 md:w-2/3 flex-col flex justify-space gap-6 md:gap-10">
+        <Head title="Aktivitet & utbredning" />
+        <div className="grid border-b border-border md:grid-cols-3">
+          <div className="flex min-w-0 flex-col py-4 md:col-span-2 md:pr-5">
             <PhenogramPanel
               id={id}
               geoAreaId={selectedGeoArea?.id}
               areaName={selectedGeoArea?.name ?? "hela Sverige"}
+              sheet
             />
-            <hr className="my-3 border-text-muted" />
-            <section className="flex flex-col gap-3">
-              <h2 className="font-display text-lg font-semibold tracking-tight">Livsmiljö</h2>
-              {species.landscape_types?.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <h3 className="text-sm text-text-muted">
-                    Landskapstyper
-                  </h3>
-                  <HabitatChips items={species.landscape_types} />
-                </div>
-              )}
-              {species.biotopes?.length > 0 && (
-                <div className="flex flex-col gap-1.5">
-                  <h3 className="text-sm text-text-muted">
-                    Biotoper
-                  </h3>
-                  <HabitatChips items={species.biotopes.length >6 ? species.biotopes.slice(0, 6) : species.biotopes} />
-                </div>
-              )}
-            </section>
           </div>
-
-          <SwedenMap
-            className="max-md:max-w-44 md:w-1/3"
-            areas={selectedMapAreas}
-            points={observationPoints}
-            title={selectedGeoArea ? `${selectedGeoArea.name} markerat på Sverigekartan` : "Sverigekarta"}
-          />
-        </Card>
-
-      </section >
+          <div className="flex flex-col border-t border-border px-0 py-4 md:border-l md:border-t-0 md:pl-4">
+            <p className="border-b border-border pb-2 text-xs italic text-text-muted">{selectedGeoArea?.name ?? "Hela Sverige"}</p>
+            <div className="flex flex-1 items-center justify-center">
+              <div className="w-48 lg:w-56 xl:w-64">
+                <SwedenMap
+                  areas={selectedMapAreas}
+                  points={observationPoints}
+                  title={selectedGeoArea ? `${selectedGeoArea.name} markerat på Sverigekartan` : "Sverigekarta"}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="border-b border-border py-4">
+          <h3 className="mb-2 text-sm font-medium">Livsmiljö</h3>
+          {species.landscape_types?.length > 0 && (
+            <div className="grid gap-x-4 border-t border-border py-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-baseline">
+              <h4 className={`${term} not-italic`}>Landskapstyper</h4>
+              <HabitatList items={species.landscape_types} />
+            </div>
+          )}
+          {species.biotopes?.length > 0 && (
+            <div className="grid gap-x-4 border-t border-border py-2 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-baseline">
+              <h4 className={`${term} not-italic`}>Biotoper</h4>
+              <HabitatList items={species.biotopes} preview />
+            </div>
+          )}
+        </div>
+      </section>
 
       {photoObservations.results.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="font-display text-xl font-semibold tracking-tight">Bilder</h2>
+          <Head title="Bilder" />
           <SpeciesPhotos
             observations={photoObservations.results}
-            name={speciesName(species)}
-            scientificName={species.swedish_name && species.scientific_name !== species.swedish_name ? species.scientific_name : undefined}
+            name={name}
+            scientificName={showsScientific ? species.scientific_name : undefined}
+            sheet
           />
         </section>
       )}
 
-      <section id="observationer" className="flex flex-col gap-3">
-        <h2 className="font-display text-xl font-semibold tracking-tight">Observationer</h2>
-        <Card className="flex flex-col p-0">
-          {observations.results.length === 0 ? (
-            <p className="p-4.5 text-sm text-text-muted">
-              Ingen har observerat {speciesName(species)} än.
-            </p>
-          ) : (
-            <>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-6 border-b border-border px-4.5 py-3 text-sm text-text-muted sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
-                <span>Datum</span>
-                <span className="max-sm:hidden">Person</span>
-                <span className="max-sm:hidden">Livsstadium</span>
-                <span className="text-right">Antal</span>
-              </div>
-              <ul>
-                {observations.results.map((observation) => (
-                  <li key={observation.id} className="border-b border-border last:border-b-0">
-                    <Link
-                      href={`/observationer/${observation.id}`}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-6 gap-y-0.5 px-4.5 py-3 text-sm text-text no-underline transition-colors hover:bg-surface-2/40 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto]"
-                    >
-                      <span className="min-w-0 truncate">{formatDateLongOrNull(observation.observed_at) ?? "—"}</span>
-                      <span className="min-w-0 truncate max-sm:hidden">{formatUserName(observation)}</span>
-                      <span className="min-w-0 truncate max-sm:hidden">{observation.life_stage || "—"}</span>
-                      <span className="col-span-2 row-start-2 min-w-0 truncate text-text-muted sm:hidden">
-                        {formatUserName(observation)}
-                        {observation.life_stage ? ` · ${observation.life_stage}` : null}
-                      </span>
-                      <span className="col-start-2 row-start-1 text-right tabular-nums sm:col-start-auto sm:row-start-auto">
-                        {observation.count ?? "—"}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </Card>
+      <section id="observationer" className="flex flex-col gap-4">
+        <Head title="Observationer" />
+        {observations.results.length === 0 ? (
+          <p className="py-2 text-sm italic text-text-muted">Ingen har observerat {name} än.</p>
+        ) : (
+          <div className="border-l border-t border-border">
+            <div className={`grid grid-cols-[minmax(0,1fr)_4rem] gap-x-4 border-b border-r border-border px-3 py-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_4rem] ${term}`}>
+              <span>Datum</span>
+              <span className="max-sm:hidden">Person</span>
+              <span className="max-sm:hidden">Livsstadium</span>
+              <span className="text-right">Antal</span>
+            </div>
+            <ul>
+              {observations.results.map((observation) => (
+                <li key={observation.id} className="border-b border-r border-border">
+                  <Link
+                    href={`/observationer/${observation.id}`}
+                    className="grid grid-cols-[minmax(0,1fr)_4rem] items-baseline gap-x-4 gap-y-0.5 px-3 py-2.5 text-sm italic text-text no-underline transition-colors hover:bg-surface-2/40 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_4rem]"
+                  >
+                    <span className="min-w-0 truncate">{formatDateLongOrNull(observation.observed_at) ?? "—"}</span>
+                    <span className="min-w-0 truncate max-sm:hidden">{formatUserName(observation)}</span>
+                    <span className="min-w-0 truncate max-sm:hidden">{observation.life_stage || "—"}</span>
+                    <span className="col-span-2 row-start-2 min-w-0 truncate text-text-muted sm:hidden">
+                      {formatUserName(observation)}
+                      {observation.life_stage ? ` · ${observation.life_stage}` : null}
+                    </span>
+                    <span className="col-start-2 row-start-1 text-right tabular-nums sm:col-start-auto sm:row-start-auto">
+                      {observation.count ?? "—"}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {(observations.next || observations.previous) && (
-          <nav data-pager="" className="flex items-center justify-between" aria-label="Sidnavigering för observationer">
+          <nav data-pager="" className="flex items-center justify-between text-xs italic" aria-label="Sidnavigering för observationer">
             {observations.previous ? (
-              <Link
-                data-page-step="previous"
-                href={observationHref(observationPage - 1)}
-                className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
-              >
-                <ChevronLeft size={16} />
+              <Link data-page-step="previous" href={observationHref(observationPage - 1)} className="inline-flex items-center gap-1 text-text-muted hover:text-text">
+                <ChevronLeft size={14} />
                 Föregående
               </Link>
-            ) : (
-              <span />
-            )}
-            <span className="text-sm text-text-muted">
-              Sida {observationPage} av {observationPages}
-            </span>
+            ) : <span />}
+            <span className="text-text-muted">Sida {observationPage} av {observationPages}</span>
             {observations.next ? (
-              <Link
-                data-page-step="next"
-                href={observationHref(observationPage + 1)}
-                className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text"
-              >
+              <Link data-page-step="next" href={observationHref(observationPage + 1)} className="inline-flex items-center gap-1 text-text-muted hover:text-text">
                 Nästa
-                <ChevronRight size={16} />
+                <ChevronRight size={14} />
               </Link>
-            ) : (
-              <span />
-            )}
+            ) : <span />}
           </nav>
         )}
       </section>
+    </>
+  )
 
-    </div >
+  return (
+    <div className="container mx-auto py-5 max-sm:px-3 sm:py-7">
+      <div className="mb-3 flex items-center justify-between gap-4 text-xs italic text-text-muted">
+        <Link
+          href={routeLabel === "oversikt" ? "/?view=all" : fromHomeOverview ? "/" : `/taxa/${encodeURIComponent(routeLabel)}`}
+          className="no-underline hover:text-accent"
+        >
+          ← {routeLabel === "oversikt" ? "Alla arter" : fromHomeOverview ? "Säsongsöversikt" : category?.label ?? "Okänd kategori"}
+        </Link>
+        <span>Dyntaxa {species.dyntaxa_taxon_id}</span>
+      </div>
+      <ModeSheet
+        taxonId={id}
+        name={name}
+        scientificName={showsScientific ? species.scientific_name : undefined}
+        artfaktaHref={`https://artfakta.se/taxa/${species.dyntaxa_taxon_id}/information`}
+        facts={factSheet}
+        map={map}
+        updated={species.synced_at ? formatDateNumeric(species.synced_at) : "aldrig"}
+        follow={
+          <FollowButton
+            taxa={String(species.dyntaxa_taxon_id)}
+            initial={species.is_followed}
+            initialNotify={species.is_notify ?? false}
+            props={{ className: "!h-6 !px-1.5 !text-[11px]" }}
+          />
+        }
+        basic={basic}
+      />
+    </div>
   )
 }
 

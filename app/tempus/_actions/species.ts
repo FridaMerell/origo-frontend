@@ -5,7 +5,11 @@ import { buildCookieHeader, fetchOrigoApi } from "@/app/lib/api-client"
 import { TEMPUS_ENDPOINTS } from "@/app/lib/config"
 import { getCurrentUser } from "@/app/lib/dal/auth"
 import { getTempusObservationItem, type TempusObservation } from "@/app/lib/dal/tempus/observations"
-import { getTempusSpeciesCategoriesAll, type TempusSeasonalOverview } from "@/app/lib/dal/tempus/species"
+import {
+  getTempusSpeciesCategoriesAll,
+  getTempusSpeciesExtended,
+  type TempusSeasonalOverview,
+} from "@/app/lib/dal/tempus/species"
 import {
   getTempusSpeciesItems,
   getTempusSpeciesPage,
@@ -110,6 +114,10 @@ export async function loadSeasonLookup(input: {
 
 export async function loadSpeciesItems(ids: string[]): Promise<TempusSpecies[]> {
   return getTempusSpeciesItems([...new Set(ids)].slice(0, 25))
+}
+
+export async function loadSpeciesExtended(id: string) {
+  return getTempusSpeciesExtended(id)
 }
 
 export async function loadSpeciesPhenogram(id: string, geoAreaId?: string) {

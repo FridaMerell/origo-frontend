@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { WandSparklesIcon } from "lucide-react"
 import type { AlignmentMatrix, Id } from "@/app/lib/dal/opus"
 import ChapterSync, { type EditionInfo } from "./ChapterSync"
@@ -19,7 +19,10 @@ export default function SyncTools({
 	onSyncChapters,
 	onApplied,
 	onReset,
+	picker,
 }: {
+	/** Valet av utgåvor som visas, om det finns något att välja bland. */
+	picker?: ReactNode
 	error: string | null
 	notice: string | null
 	busy: boolean
@@ -41,6 +44,7 @@ export default function SyncTools({
 			{error && <span className='mr-auto text-sm text-primary'>{error}</span>}
 			{!error && notice && <span className='mr-auto text-sm text-text'>{notice}</span>}
 			{busy && <span className='font-mono text-xs text-text'>Sparar…</span>}
+			{picker}
 			<button
 				type='button'
 				aria-expanded={toolsOpen}

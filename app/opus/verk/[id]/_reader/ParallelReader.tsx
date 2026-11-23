@@ -25,7 +25,9 @@ import Pager from "./Pager"
 import ParallelTable from "./ParallelTable"
 import SyncTools from "./SyncTools"
 import { useSaveReadingPosition, useTopRow } from "./useReadingPosition"
-import { useRowBookmarks } from "./useRowBookmarks"
+import { useRowBookmarks, type RenderBookmark } from "./useRowBookmarks"
+import { useColumnLayout } from "./useColumnLayout"
+import ColumnPicker from "./ColumnPicker"
 
 // One shared empty list, so that a reader without bookmarks gets the same list every render.
 const NO_BOOKMARKS: Bookmark[] = []
@@ -90,6 +92,21 @@ export default function ParallelReader({
 	const topRow = useTopRow(matrix.rows)
 	useSaveReadingPosition(matrix.rows, columns, workId, keepPosition)
 	const bookmarkButton = useRowBookmarks(initialBookmarks, columns, setError)
+
+	// Vilka utgåvor som visas och i vilken ordning (användarens val, sparat i webbläsaren). Bokmärken,
+	// läsposition och synk utgår ändå från alla kolumner, så referensutgåvan påverkas inte.
+	const layout = useColumnLayout(workId, columns)
+	const shownColumns = layout.shown
+	const shownRows = useMemo(
+		() =>
+			matrix.rows.map(row => ({
+				...row,
+				cells: shownColumns.flatMap(column => row.cells.filter(cell => cell.alignment_version === column.versionId)),
+			})),
+		[matrix.rows, shownColumns],
+	)
+	const renderBookmark: RenderBookmark = (row, alwaysVisible) =>
+		bookmarkButton(matrix.rows.find(full => full.row === row.row) ?? row, alwaysVisible)
 
 	// Efter en kapitelsynk: ta användaren till kapitlet de valde.
 	function handleSynced(next: AlignmentMatrix) {
@@ -279,16 +296,17 @@ export default function ParallelReader({
 				onSyncChapters={syncChapters}
 				onApplied={handleSynced}
 				onReset={resetRows}
+					picker={columns.length >= 2 && <ColumnPicker items={layout.items} onToggle={layout.toggle} onMove={layout.move} />}
 			/>
 
 			{matrix.total_rows > 0 && pager}
 
 			{matrix.total_rows > 0 && (
 				<MobileRows
-					rows={matrix.rows}
-					columns={columns}
+					rows={shownRows}
+					columns={shownColumns}
 					busy={busy}
-					renderBookmark={bookmarkButton}
+					renderBookmark={renderBookmark}
 					onAction={handleAction}
 					onChanged={reload}
 					onDeleteNote={handleDeleteAnnotation}
@@ -300,11 +318,11 @@ export default function ParallelReader({
 				<p className='py-10 text-text'>Inga stycken att visa.</p>
 			) : (
 				<ParallelTable
-					rows={matrix.rows}
-					columns={columns}
+					rows={shownRows}
+					columns={shownColumns}
 					topRow={topRow}
 					busy={busy}
-					renderBookmark={bookmarkButton}
+					renderBookmark={renderBookmark}
 					onAction={handleAction}
 					onChanged={reload}
 					onDeleteNote={handleDeleteAnnotation}

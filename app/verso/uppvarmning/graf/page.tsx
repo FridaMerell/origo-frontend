@@ -5,7 +5,7 @@ import HeatingGraphView from "./heating-graph-view"
 
 export const metadata: Metadata = {
   title: "Graf | Uppvärmning | Verso",
-  description: "Uppvärmning - Origo",
+  description: "Graf över husets uppvärmning över tid.",
 }
 
 export default async function HeatingGraphPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {

@@ -64,6 +64,11 @@ function AreaSection({
   )
 }
 
+export const metadata = {
+  title: "Modell | Flux",
+  description: "Projektets design samlad: domän, API, frontend, integrationer och leverans.",
+}
+
 export default async function FluxModelPage() {
   const data = await loadApiWorkbenchData()
   if (!data) return <p className="text-sm text-text-muted">Välj ett projekt för att öppna dess tekniska specifikation.</p>

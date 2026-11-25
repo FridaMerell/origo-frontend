@@ -8,7 +8,10 @@ type PageProps = { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const checklist = await getTempusChecklistItem(id)
-  return { title: checklist ? `Redigera ${checklist.name} | Checklistor` : "Redigera checklista" }
+  return {
+    title: checklist ? `Redigera ${checklist.name} | Checklistor` : "Redigera checklista | Tempus",
+    description: checklist ? `Ändra namn, beskrivning och arter i checklistan ${checklist.name}.` : "Ändra en artchecklista i Tempus.",
+  }
 }
 
 export default async function EditChecklistPage({ params }: PageProps) {

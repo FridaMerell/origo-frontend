@@ -10,6 +10,11 @@ function targetFor(value: string | undefined, preferredTargets: string[]): FluxS
   return preferred as FluxScaffoldTarget | undefined ?? "typescript"
 }
 
+export const metadata = {
+  title: "Generera kod | Flux",
+  description: "Generera kod och struktur för projektet utifrån dess domänmodell och API-design.",
+}
+
 export default async function FluxScaffoldPage({
   searchParams,
 }: {

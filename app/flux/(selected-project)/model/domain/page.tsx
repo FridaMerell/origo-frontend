@@ -12,6 +12,11 @@ function SubHeading({ children, action }: { children: React.ReactNode; action?: 
   )
 }
 
+export const metadata = {
+  title: "Domänmodell | Flux",
+  description: "Projektets entiteter, fält och relationer.",
+}
+
 export default async function DomainModelPage({
   searchParams,
 }: {

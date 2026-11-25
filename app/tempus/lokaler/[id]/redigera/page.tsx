@@ -9,7 +9,10 @@ type PageProps = { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const locale = await getTempusLocaleItem(id)
-  return { title: locale ? `Redigera ${locale.name} | Platser` : "Redigera plats" }
+  return {
+    title: locale ? `Redigera ${locale.name} | Platser` : "Redigera plats | Tempus",
+    description: locale ? `Ändra namn och avgränsning för platsen ${locale.name}.` : "Ändra en geografisk plats i Tempus.",
+  }
 }
 
 export default async function EditLocalePage({ params }: PageProps) {

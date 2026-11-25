@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import type { TempusSpeciesExtended } from "@/app/lib/dal"
-import { loadSpeciesExtended } from "@/app/tempus/_actions/species"
+import { artfaktaOf, soundsOf } from "@/app/tempus/ljud/sound-data"
 import { ArtfaktaSection, SoundsSection } from "./extended"
 import { DEFAULT_COMPASS_ARTWORK } from "@/app/tempus/ui/biotope-map/compass"
 
@@ -35,7 +35,10 @@ export default function ModeSheet({
   updated: string
 }) {
   const [mode, setMode] = useState<Mode>("basic")
+  // The recordings and the Artfakta texts are fetched apart, so the recordings show as soon as they are
+  // there instead of waiting for the slower Artfakta.
   const [extended, setExtended] = useState<TempusSpeciesExtended | null | undefined>(undefined)
+  const [artfakta, setArtfakta] = useState<TempusSpeciesExtended | null | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -70,8 +73,12 @@ export default function ModeSheet({
     if (next !== "advanced" || extended !== undefined || loading) return
     setLoading(true)
     setError(null)
+    // Asked for at the same time; the Artfakta texts take their own time and fill in when they arrive.
+    artfaktaOf(taxonId)
+      .then(setArtfakta)
+      .catch((caught) => setArtfakta({ artfakta: null, artfakta_error: caught instanceof Error ? caught.message : String(caught), sounds: null, sounds_error: null }))
     try {
-      setExtended(await loadSpeciesExtended(taxonId))
+      setExtended(await soundsOf(taxonId))
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : String(caught))
     } finally {
@@ -159,7 +166,7 @@ export default function ModeSheet({
               <SoundsSection
                 extended={extended}
                 name={name}
-                artfakta={<ArtfaktaSection extended={extended} name={name} />}
+                artfakta={<ArtfaktaSection extended={artfakta} name={name} />}
               />
             )
           ) : null}

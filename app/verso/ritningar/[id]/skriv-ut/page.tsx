@@ -11,7 +11,10 @@ export async function generateMetadata({
   const { id } = await params
   const drawing = await getDrawing(id)
 
-  return { title: drawing ? `Skriv ut ${drawing.name} | Ritningar` : "Skriv ut | Verso" }
+  return {
+    title: drawing ? `Skriv ut ${drawing.name} | Ritningar` : "Skriv ut | Verso",
+    description: drawing ? `Utskriftsvy för ritningen ${drawing.name}.` : "Utskriftsvy för en ritning i Verso.",
+  }
 }
 
 export default async function PrintDrawingPage({ params }: { params: Promise<{ id: string }> }) {

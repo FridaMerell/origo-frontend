@@ -22,7 +22,10 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const checklist = await getTempusChecklistItem(id)
-  return { title: checklist ? `${checklist.name} | Checklistor` : "Checklista" }
+  return {
+    title: checklist ? `${checklist.name} | Checklistor` : "Checklista | Tempus",
+    description: checklist ? `Artchecklistan ${checklist.name}: vilka arter som är sedda och vilka som återstår.` : "En artchecklista i Tempus.",
+  }
 }
 
 export default async function ChecklistDetailPage({ params, searchParams }: PageProps) {

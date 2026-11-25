@@ -1,5 +1,16 @@
 import { ApiEditorPage } from "../../api-editor-page"
 import { loadApiWorkbenchData } from "../../api-data"
+import { modelProjectMetadata } from "@/app/flux/(selected-project)/model/model-metadata"
+
+export function generateMetadata() {
+  return modelProjectMetadata(
+    (projectName) => ({
+      title: `Ny projektion i ${projectName} | Flux`,
+      description: `Skapa en återanvändbar API-projektion med namn, beskrivning och schema för ${projectName}.`,
+    }),
+    { title: "Ny projektion | Flux", description: "Skapa en återanvändbar API-projektion med namn, beskrivning och schema." },
+  )
+}
 
 export default async function NewApiProjectionPage() {
   const data = await loadApiWorkbenchData()

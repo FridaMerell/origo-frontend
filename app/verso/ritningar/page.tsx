@@ -5,7 +5,7 @@ import DrawingsView from "./drawings-view"
 
 export const metadata: Metadata = {
   title: "Ritningar | Verso",
-  description: "Ritningar - Origo",
+  description: "Husets ritningar, sida för sida, redo att visa och skriva ut.",
 }
 
 export default async function DrawingsPage() {

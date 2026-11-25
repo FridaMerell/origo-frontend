@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useApsisPosts } from "@/app/apsis/_state/apsis-context";
+import { usePageMeta } from "@/app/lib/use-page-meta";
 import { fileProxyUrl } from "@/app/lib/files";
 import { ApseDrawing } from "@/app/apsis/ui/ApseDrawing";
 import { Sign, signBodyClass, signPanelClass, signPrintClass } from "@/app/apsis/ui/Sign";
@@ -14,6 +15,10 @@ import { Sign, signBodyClass, signPanelClass, signPrintClass } from "@/app/apsis
  */
 export default function WallOfShamePage() {
   const absentApsisPosts = useApsisPosts().filter((post) => !post.has_apsis);
+  usePageMeta({
+    title: "Kyrkor utan absid | Apsis",
+    description: `${absentApsisPosts.length} kyrkor i samlingen saknar absid, med ett foto av varje.`,
+  });
 
   return (
     <Sign

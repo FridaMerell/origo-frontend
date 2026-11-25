@@ -8,7 +8,10 @@ type PageProps = { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const route = await getTempusRouteItem(id)
-  return { title: route ? `${route.name} | Rutter` : "Rutt" }
+  return {
+    title: route ? `${route.name} | Rutter` : "Rutt | Tempus",
+    description: route ? `Planerad rutt ${route.name} med stoppställen rankade efter artdata.` : "En planerad rutt i Tempus.",
+  }
 }
 
 export default async function RouteDetailPage({ params }: PageProps) {

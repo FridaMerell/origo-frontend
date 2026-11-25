@@ -10,6 +10,11 @@ function EmptyRow({ children }: { children: React.ReactNode }) {
   return <li className="px-4 py-4 text-sm text-text-muted sm:px-5">{children}</li>
 }
 
+export const metadata = {
+  title: "API | Flux",
+  description: "Projektets API-design: resurser, operationer, svar och projektioner på ett ställe.",
+}
+
 export default async function ApiWorkbenchPage() {
   const data = await loadApiWorkbenchData()
   if (!data) return <p className="text-sm text-text-muted">Välj ett projekt för att öppna API:t.</p>

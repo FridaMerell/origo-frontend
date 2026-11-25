@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
@@ -19,6 +20,7 @@ import { getTempusAllObservationsPage } from "@/app/lib/dal/tempus/observations"
 import { formatDateLongOrNull, formatDateNumeric } from "@/app/lib/formatters"
 import { formatUserName } from "@/app/lib/format-user-name"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import CompareButton from "./CompareButton"
 import FollowButton from "./FollowButton"
 import PhenogramPanel from "./PhenogramPanel"
 import SpeciesPhotos from "./SpeciesPhotos"
@@ -56,6 +58,20 @@ const Head = ({ title }: { title: string }) => (
 )
 
 const term = "text-xs text-text-muted"
+
+export async function generateMetadata({ params }: { params: Promise<{ label: string; id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const species = await getTempusSpeciesItem(id)
+  if (!species) return { title: "Art | Tempus", description: "En art i Tempus." }
+  const name = speciesName(species)
+  const scientific = species.swedish_name && species.scientific_name !== species.swedish_name
+    ? ` (${species.scientific_name})`
+    : ""
+  return {
+    title: `${name} | Arter`,
+    description: `${name}${scientific}: när arten är aktiv under året, var den förekommer, livsmiljö och dina observationer.`,
+  }
+}
 
 const Page = async ({ params, searchParams }: {
   params: Promise<{ label: string; id: string }>
@@ -277,12 +293,15 @@ const Page = async ({ params, searchParams }: {
         map={map}
         updated={species.synced_at ? formatDateNumeric(species.synced_at) : "aldrig"}
         follow={
+          <>
+          <CompareButton id={id} name={name} scientificName={showsScientific ? species.scientific_name : undefined} />
           <FollowButton
             taxa={String(species.dyntaxa_taxon_id)}
             initial={species.is_followed}
             initialNotify={species.is_notify ?? false}
             props={{ className: "!h-6 !px-1.5 !text-[11px]" }}
           />
+          </>
         }
         basic={basic}
       />

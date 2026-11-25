@@ -5,8 +5,8 @@ import { Card } from "@/app/components/ui/Card";
 import { LogoMark } from "@/app/verso/ui/LogoMark";
 
 export const metadata: Metadata = {
-  title: `Sign in | ${TENANTS.verso.name}`,
-  description: `Sign in to ${TENANTS.verso.name}`,
+  title: `Logga in | ${TENANTS.verso.name}`,
+  description: `Logga in på ${TENANTS.verso.name}`,
 };
 
 export default async function VersoLoginPage({

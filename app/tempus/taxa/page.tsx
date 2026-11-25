@@ -1,8 +1,14 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { Drawer } from "@/app/components/ui/Drawer"
 import SpeciesCategoryForm from "./species-category-form"
 import { getTempusSpeciesCategoriesAll } from "@/app/lib/dal/tempus/species"
 import { Card } from "@/app/components/ui/Card"
+
+export const metadata: Metadata = {
+  title: "Taxonomier | Tempus",
+  description: "Alla artkategorier i Tempus, från fåglar till kärlväxter, med antal arter i varje.",
+}
 
 const Page = async () => {
   const categories = await getTempusSpeciesCategoriesAll()

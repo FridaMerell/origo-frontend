@@ -3,9 +3,25 @@ import { getFluxScaffold } from "@/app/lib/dal/flux"
 import { ProviderGeneratorForm } from "../../provider-generator-form"
 import { loadApiWorkbenchData } from "../../../api/api-data"
 import { ModelPageHeader } from "../../../model-ui"
+import { modelRecordMetadata } from "@/app/flux/(selected-project)/model/model-metadata"
 
 function snake(value: string) {
   return (value.match(/[A-Z]+(?=[A-Z][a-z])|[A-Z]?[a-z]+\d*|[A-Z]+\d*|\d+/g) ?? []).map((word) => word.toLowerCase()).join("_")
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ providerId: string }> }) {
+  const { providerId } = await params
+  return modelRecordMetadata(
+    (design) => design.providers.find((item) => item.id === Number(providerId)),
+    (provider) => ({
+      title: `${provider.name} | Provider | Flux`,
+      description: provider.description || `Provider ${provider.name} med ${provider.resources.length} ${provider.resources.length === 1 ? "resurs" : "resurser"}, och kodgenerering för den.`,
+    }),
+    {
+      title: "Provider | Flux",
+      description: "Provider som avgränsar vilka resurser frontenden får data från, och kodgenerering för den.",
+    },
+  )
 }
 
 export default async function ProviderGeneratorPage({ params }: { params: Promise<{ providerId: string }> }) {

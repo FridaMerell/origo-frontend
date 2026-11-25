@@ -5,7 +5,7 @@ import PhotosView from "./photos-view"
 
 export const metadata: Metadata = {
   title: "Bilder | Verso",
-  description: "Bildbank - Origo",
+  description: "Husets bilder ordnade i album och med taggar.",
 }
 
 const STAGES: PhotoStage[] = ["before", "during", "after"]

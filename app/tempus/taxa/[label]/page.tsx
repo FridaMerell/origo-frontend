@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { getTempusSpeciesCategoryByTaxonId, getTempusSpeciesPageByCategory } from "@/app/lib/dal/tempus/species"
 import Link from "next/link"
 import FollowButton from "./[id]/FollowButton"
@@ -6,6 +7,17 @@ import ImportSpeciesChecklistForm from "../import-species-checklist-form"
 import AddSpeciesPanel from "../add-species-panel"
 import RebuildPhenogramsButton from "../rebuild-phenograms-button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+
+export async function generateMetadata({ params }: { params: Promise<{ label: string }> }): Promise<Metadata> {
+  const { label } = await params
+  const category = parseInt(label) ? await getTempusSpeciesCategoryByTaxonId(label) : null
+  return {
+    title: category ? `${category.label} | Taxonomier` : "Taxa | Tempus",
+    description: category
+      ? `Alla arter i kategorin ${category.label} i Tempus, med svenskt och vetenskapligt namn.`
+      : "En artkategori i Tempus.",
+  }
+}
 
 const Page = async ({ params, searchParams }: {
   params: Promise<{

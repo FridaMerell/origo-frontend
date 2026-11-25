@@ -11,7 +11,7 @@ import VersoShell, { type VersoMode } from "./verso-shell";
 
 export const metadata = {
   title: "Verso | Origo",
-  description: "Verso - Origo",
+  description: "Husets ritningar, utgifter, planering, uppvärmning och historia samlat på ett ställe.",
 };
 
 export default async function VersoLayout({ children }: { children: ReactNode }) {

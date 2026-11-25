@@ -48,6 +48,11 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   )
 }
 
+export const metadata = {
+  title: "Integrationer | Flux",
+  description: "Projektets integrationer mot externa tjänster och deras operationer.",
+}
+
 export default async function IntegrationsPage() {
   const data = await loadApiWorkbenchData()
   if (!data) return <p className="text-sm text-text-muted">Välj ett projekt för att öppna integrationerna.</p>

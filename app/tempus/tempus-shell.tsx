@@ -4,6 +4,7 @@ import { type ReactNode } from "react"
 import { flushSync } from "react-dom"
 import { usePathname } from "next/navigation"
 import Nav from "./nav"
+import CompareBar from "./ljud/compare-bar"
 import { APP_LINKS } from "@/app/lib/tenant-links"
 import { ThemeScope } from "@/app/components/ui/ThemeScope"
 import { useAppHrefs } from "@/app/components/ui/use-app-hrefs"
@@ -57,6 +58,7 @@ export default function TempusShell({ initialMode, children }: { initialMode: Co
       <header className="bg-bg">
         <Nav mode={mode} onToggleMode={toggleMode} />
       </header>
+      <CompareBar />
       <main className="min-w-0 flex-1  sm:pb-0">{children}</main>
       <footer className="mt-15 border-t border-border bg-surface pb-[calc(4.5rem+env(safe-area-inset-bottom))] text-text-muted sm:pb-0">
         <div className="container mx-auto flex flex-col items-center justify-between gap-3 py-6 text-sm max-sm:px-4 sm:flex-row">

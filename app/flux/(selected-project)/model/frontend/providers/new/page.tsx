@@ -1,6 +1,17 @@
 import { ProviderGeneratorForm } from "../../provider-generator-form"
 import { loadApiWorkbenchData } from "../../../api/api-data"
 import { ModelPageHeader } from "../../../model-ui"
+import { modelProjectMetadata } from "@/app/flux/(selected-project)/model/model-metadata"
+
+export function generateMetadata() {
+  return modelProjectMetadata(
+    (projectName) => ({
+      title: `Ny provider i ${projectName} | Flux`,
+      description: `Skapa en provider genom att välja de resurser frontenden för ${projectName} ska hämta data från.`,
+    }),
+    { title: "Ny provider | Flux", description: "Skapa en provider genom att välja de resurser frontenden ska hämta data från." },
+  )
+}
 
 export default async function NewProviderGeneratorPage() {
   const data = await loadApiWorkbenchData()

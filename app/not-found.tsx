@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "404 | Origo",
+  title: "Sidan hittades inte | Origo",
+  description: "Sidan du letar efter finns inte eller har flyttats.",
 };
 
 export default function NotFound() {

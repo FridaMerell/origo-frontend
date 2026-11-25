@@ -3,7 +3,7 @@ import ExpensesView from "./expenses-view"
 
 export const metadata: Metadata = {
   title: "Utgifter | Verso",
-  description: "Hantera utgifter",
+  description: "Registrera och följ husets utgifter.",
 }
 
 export default function Page() {

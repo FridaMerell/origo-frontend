@@ -4,7 +4,8 @@ import { useState } from "react"
 import { Check, Copy } from "lucide-react"
 import { Button } from "./Button"
 
-async function copyText(text: string) {
+/** Kopierar till urklipp, också där webbläsaren saknar `navigator.clipboard` (en sida utan https). */
+export async function copyText(text: string) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text)
     return

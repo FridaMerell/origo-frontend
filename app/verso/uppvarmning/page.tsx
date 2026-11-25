@@ -5,7 +5,7 @@ import HeatingView from "./heating-view"
 
 export const metadata: Metadata = {
   title: "Uppvärmning | Verso",
-  description: "Uppvärmning - Origo",
+  description: "Husets uppvärmning: loggar och eldning i öppen spis.",
 }
 
 export default async function HeatingPage({ searchParams }: { searchParams: Promise<{ page?: string; brasor?: string }> }) {

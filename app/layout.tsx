@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Origo",
-  description: "Origo application",
+  description: "Samlingsapplikation för en radda appar med helt skilda användningsområden.",
 };
 
 // iOS Safari zoomar in på fält med textstorlek under 16px när de får fokus,

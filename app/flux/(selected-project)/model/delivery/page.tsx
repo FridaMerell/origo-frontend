@@ -12,6 +12,11 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   )
 }
 
+export const metadata = {
+  title: "Leverans | Flux",
+  description: "Projektets teknikstack och seed-data samlat inför leverans.",
+}
+
 export default async function DeliveryPage() {
   const data = await loadApiWorkbenchData()
   if (!data) return <p className="text-sm text-text-muted">Välj ett projekt för att öppna leveransunderlaget.</p>

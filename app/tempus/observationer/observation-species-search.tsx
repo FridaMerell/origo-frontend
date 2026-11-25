@@ -16,6 +16,7 @@ export function ObservationSpeciesSearch({
   onPageChange,
   totalPages,
   onAdd,
+  label = "Art att föra in",
 }: {
   query: string
   onQueryChange: (value: string) => void
@@ -26,12 +27,13 @@ export function ObservationSpeciesSearch({
   onPageChange: (page: number) => void
   totalPages: number
   onAdd: (item: TempusSpecies) => void
+  label?: string
 }) {
   const combobox = useCombobox({ options: matches, query, onPick: onAdd })
 
   return (
     <div ref={combobox.setWrapper} className="relative border-x border-b border-border px-3 py-2 font-display text-[9px] italic text-text-faint">
-      Art att föra in
+      {label}
       <span className="relative mt-1 block">
         <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-faint" />
         <input

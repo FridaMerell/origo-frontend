@@ -12,7 +12,7 @@ import PersonsView from "./persons-view"
 
 export const metadata: Metadata = {
   title: "Personer | Verso",
-  description: "Personer i husets historia - Origo",
+  description: "Personerna i husets historia och hur de hänger ihop.",
 }
 
 type SearchParams = Promise<{ person?: string }>

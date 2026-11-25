@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/app/lib/dal/auth"
 import { getTempusObservationItem, type TempusObservation } from "@/app/lib/dal/tempus/observations"
 import {
   getTempusSpeciesCategoriesAll,
-  getTempusSpeciesExtended,
+  getTempusSpeciesItem,
   type TempusSeasonalOverview,
 } from "@/app/lib/dal/tempus/species"
 import {
@@ -116,8 +116,11 @@ export async function loadSpeciesItems(ids: string[]): Promise<TempusSpecies[]> 
   return getTempusSpeciesItems([...new Set(ids)].slice(0, 25))
 }
 
-export async function loadSpeciesExtended(id: string) {
-  return getTempusSpeciesExtended(id)
+/** Arterna för Dyntaxa-id:n, i samma ordning; id:n som inte finns hoppas över. */
+export async function loadSpeciesByTaxonIds(taxonIds: string[]): Promise<TempusSpecies[]> {
+  const ids = [...new Set(taxonIds.filter((id) => /^\d+$/.test(id)))].slice(0, 25)
+  const species = await Promise.all(ids.map((id) => getTempusSpeciesItem(id)))
+  return species.filter((item): item is TempusSpecies => item !== null)
 }
 
 export async function loadSpeciesPhenogram(id: string, geoAreaId?: string) {

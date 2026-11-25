@@ -3,8 +3,8 @@ import { LoginForm } from "@/app/login/login-form"
 import { Section } from "../konto/ui"
 
 export const metadata: Metadata = {
-  title: "Sign in | Origo",
-  description: "Sign in to Origo",
+  title: "Logga in | Origo",
+  description: "Logga in på Origo för att komma åt dina appar och din data.",
 }
 
 export default async function LoginPage({

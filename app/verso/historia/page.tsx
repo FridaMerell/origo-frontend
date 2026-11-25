@@ -5,7 +5,7 @@ import HistoryView from "./history-view"
 
 export const metadata: Metadata = {
   title: "Historia | Verso",
-  description: "Historiska dokument - Origo",
+  description: "Husets historia: dokument, händelser och bilder genom åren.",
 }
 
 type SearchParams = Promise<{ album?: string }>

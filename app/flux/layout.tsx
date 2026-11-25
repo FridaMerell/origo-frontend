@@ -8,7 +8,7 @@ import { readStoredMode } from "@/app/lib/color-mode";
 
 export const metadata = {
   title: "Flux | Origo",
-  description: "Origo",
+  description: "Planera projekt, milstolpar och uppgifter, och designa projektets datamodell, API och skärmar.",
 };
 
 export default async function FluxLayout({ children }: { children: ReactNode }) {

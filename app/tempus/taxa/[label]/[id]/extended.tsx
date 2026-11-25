@@ -94,7 +94,8 @@ export function SoundsSection({ extended, name, artfakta }: { extended: TempusSp
 
 type RedlistPost = { period?: { name?: string; current?: boolean }; category?: string; criterion_text?: string }
 
-export function ArtfaktaSection({ extended, name }: { extended: TempusSpeciesExtended | null; name: string }) {
+/** `extended` is undefined while Artfakta is still being fetched. */
+export function ArtfaktaSection({ extended, name }: { extended: TempusSpeciesExtended | null | undefined; name: string }) {
   const data = asRecord(extended?.artfakta)
   const facts = asRecord(data?.species_fact_text) ?? data
   const text = (key: string) => textOf(facts?.[key])
@@ -117,7 +118,9 @@ export function ArtfaktaSection({ extended, name }: { extended: TempusSpeciesExt
   return (
     <section className="flex flex-col gap-3">
       <Head title="Artfakta" source="SLU Artdatabanken" />
-      {!extended ? (
+      {extended === undefined ? (
+        <p role="status" className="text-sm italic text-text-muted">Hämtar artfakta…</p>
+      ) : !extended ? (
         <Message text="Servern svarade inte." />
       ) : extended.artfakta_error ? (
         <Message text={extended.artfakta_error} />

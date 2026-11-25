@@ -13,6 +13,11 @@ function EmptyRow({ children }: { children: React.ReactNode }) {
   return <li className="px-4 py-4 text-sm text-text-muted sm:px-5">{children}</li>
 }
 
+export const metadata = {
+  title: "Frontend | Flux",
+  description: "Projektets frontend-design: skärmar, roller, behörigheter och providers.",
+}
+
 export default async function FrontendDesignPage() {
   const data = await loadApiWorkbenchData()
   if (!data) return <p className="text-sm text-text-muted">Välj ett projekt för att öppna frontenddesignen.</p>

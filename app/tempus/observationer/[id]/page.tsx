@@ -16,10 +16,12 @@ type PageProps = { params: Promise<{ id: string }> }
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const observation = (await getTempusObservationItem(id)) ?? (await getTempusPublicObservationItem(id))
-  if (!observation) return { title: "Observation | Tempus" }
+  const fallback = { title: "Observation | Tempus", description: "En artobservation i Tempus." }
+  if (!observation) return fallback
   const species = (await getTempusSpeciesItems([observation.species]))[0] ?? null
   const name = species?.swedish_name || species?.scientific_name
-  return { title: name ? `${name} | Observationer` : "Observation | Tempus" }
+  if (!name) return fallback
+  return { title: `${name} | Observationer`, description: `Observation av ${name}: tid, plats och antal.` }
 }
 
 export default async function ObservationDetailPage({ params }: PageProps) {

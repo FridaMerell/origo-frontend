@@ -2,6 +2,11 @@ import { StackProfileEditor } from "../stack-profile-editor"
 import { loadApiWorkbenchData } from "../../api/api-data"
 import { ModelPageHeader } from "../../model-ui"
 
+export const metadata = {
+  title: "Teknikstack | Flux",
+  description: "Välj vilka tekniker och ramverk projektets kod ska genereras för.",
+}
+
 export default async function StackProfilePage() {
   const data = await loadApiWorkbenchData()
   if (!data) return <p className="text-sm text-text-muted">Välj ett projekt för att redigera stackprofilen.</p>

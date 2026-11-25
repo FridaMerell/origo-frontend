@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react"
 import { createGeoArea, type GeoAreaKind } from "@/app/tempus/_actions/geo-areas"
 import { Button } from "@/app/components/ui/Button"
+import { usePageMeta } from "@/app/lib/use-page-meta"
 import { Card } from "@/app/components/ui/Card"
 import type { GeoJsonPolygonGeometry } from "@/app/tempus/ui/biotope-map/SwedenMap"
 import { SwedenMapAreaEditor } from "../ui/biotope-map/SwedenMapAreaEditor"
@@ -16,6 +17,10 @@ const GEO_AREA_KINDS: Array<{ value: GeoAreaKind; label: string }> = [
 ]
 
 export default function MapsPage() {
+  usePageMeta({
+    title: "Områden | Tempus",
+    description: "Rita och spara geografiska områden på Sverigekartan för att avgränsa arter och observationer.",
+  })
   const [name, setName] = useState("")
   const [kind, setKind] = useState<GeoAreaKind>("biological_area")
   const [geometry, setGeometry] = useState<GeoJsonPolygonGeometry | null>(null)

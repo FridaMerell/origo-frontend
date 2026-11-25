@@ -3,7 +3,7 @@ import PlaneraView from "./planera-view"
 
 export const metadata: Metadata = {
   title: "Planering | Verso",
-  description: "Planering - Origo",
+  description: "Planera husets projekt och uppgifter.",
 }
 
 export default function PlaneraPage() {

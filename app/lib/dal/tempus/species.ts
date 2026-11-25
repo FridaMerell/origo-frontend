@@ -216,6 +216,23 @@ export const getTempusSpeciesExtended = cache(
     fetchItem(`${TEMPUS_ENDPOINTS.species}${id}/extended/`)
 )
 
+// `attempt` only keeps a second try from being answered by the first one's cached result.
+/** The recordings of a species only, without the Artfakta texts that make `extended` slower. */
+export const getTempusSpeciesSounds = cache(
+  (id: string, attempt = 0): Promise<TempusSpeciesExtended | null> => {
+    void attempt
+    return fetchItem(`${TEMPUS_ENDPOINTS.species}${id}/extended/?artfakta=false`)
+  }
+)
+
+/** The Artfakta texts of a species only, so the recordings need not wait for them. */
+export const getTempusSpeciesArtfakta = cache(
+  (id: string, attempt = 0): Promise<TempusSpeciesExtended | null> => {
+    void attempt
+    return fetchItem(`${TEMPUS_ENDPOINTS.species}${id}/extended/?sounds=false`)
+  }
+)
+
 export async function getTempusSpeciesItems(ids: Iterable<string>): Promise<TempusSpecies[]> {
   const uniqueIds = [...new Set(ids)]
   if (uniqueIds.length === 0) return []

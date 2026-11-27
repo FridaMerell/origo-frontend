@@ -57,7 +57,7 @@ export function ObservationSpeciesSearch({
         />
       </span>
       {showResults && (combobox.shown || matches.length === 0) ? (
-        <ul {...combobox.listProps} className="absolute inset-x-3 top-full z-10 mt-1 overflow-hidden rounded border border-border bg-surface shadow-md">
+        <ul {...combobox.listProps} className="absolute inset-x-3 top-full z-10 mt-1 max-h-[50vh] overflow-y-auto rounded border border-border bg-surface shadow-md">
           {matches.map((item, index) => (
             <li key={item.id} {...combobox.optionProps(index)}>
               <span

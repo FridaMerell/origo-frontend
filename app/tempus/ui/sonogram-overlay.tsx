@@ -75,22 +75,25 @@ export function SonogramOverlay({ layers }: { layers: OverlayLayer[] }) {
   const onReady = useRef((key: string, range: Range) => setRanges((current) => (
     current[key]?.minHz === range.minHz && current[key]?.maxHz === range.maxHz ? current : { ...current, [key]: range }
   ))).current
-  const longest = Math.max(1, ...layers.map((layer) => lengthSeconds(layer.recording.length)))
   const pending = layers.some((layer) => !(layer.key in ranges))
-  const loaded = layers.flatMap((layer) => (ranges[layer.key] ? [ranges[layer.key]] : []))
-  const axisMin = loaded.length > 0 ? Math.min(...loaded.map((range) => range.minHz)) : DEFAULT_RANGE.minHz
-  const axisMax = loaded.length > 0 ? Math.max(...loaded.map((range) => range.maxHz)) : DEFAULT_RANGE.maxHz
+  const rangeOf = (layer: OverlayLayer) => ranges[layer.key] ?? DEFAULT_RANGE
+  // Every recording fills the sheet's height over its own frequencies, so a bat and a bird are both as large as they
+  // can be. The first species' scale stands on the left, the second's on the right, each in its own ink.
+  const [first, second] = layers
 
   return (
     <div>
       <div className="relative h-48 overflow-hidden border-y border-border bg-surface sm:h-64">
-        {axisKhz(axisMin, axisMax).map((khz) => (
-          <span key={khz} aria-hidden="true" className="pointer-events-none absolute inset-x-0 border-t border-border/60" style={{ top: `${(1 - heightShare(khz, axisMin, axisMax)) * 100}%` }}>
-            <span className="absolute left-1 top-0.5 font-display text-[9px] italic leading-none text-text-faint">{khz} kHz</span>
+        {first ? axisKhz(rangeOf(first).minHz, rangeOf(first).maxHz).map((khz) => (
+          <span key={khz} aria-hidden="true" className="pointer-events-none absolute inset-x-0 border-t border-border/60" style={{ top: `${(1 - heightShare(khz, rangeOf(first).minHz, rangeOf(first).maxHz)) * 100}%` }}>
+            <span className="absolute left-1 top-0.5 font-display text-[9px] italic leading-none" style={{ color: `var(${first.ink})` }}>{khz} kHz</span>
           </span>
-        ))}
+        )) : null}
+        {second ? axisKhz(rangeOf(second).minHz, rangeOf(second).maxHz).map((khz) => (
+          <span key={khz} aria-hidden="true" className="pointer-events-none absolute right-1 font-display text-[9px] italic leading-none" style={{ top: `${(1 - heightShare(khz, rangeOf(second).minHz, rangeOf(second).maxHz)) * 100}%`, color: `var(${second.ink})` }}>{khz} kHz</span>
+        )) : null}
         {layers.map((layer) => (
-          <InkLayer key={`${layer.key}:${layer.recording.id}`} layer={layer} width={lengthSeconds(layer.recording.length) / longest * 100} bottom={((ranges[layer.key]?.minHz ?? axisMin) - axisMin) / (axisMax - axisMin) * 100} height={((ranges[layer.key]?.maxHz ?? axisMax) - (ranges[layer.key]?.minHz ?? axisMin)) / (axisMax - axisMin) * 100} onReady={onReady} />
+          <InkLayer key={`${layer.key}:${layer.recording.id}`} layer={layer} width={100} bottom={0} height={100} onReady={onReady} />
         ))}
         {layers.map((layer) => (
           layer.current > 0 ? (
@@ -98,7 +101,7 @@ export function SonogramOverlay({ layers }: { layers: OverlayLayer[] }) {
               key={`head-${layer.key}`}
               aria-hidden="true"
               className="pointer-events-none absolute inset-y-0 w-px"
-              style={{ left: `${Math.min(100, layer.current / longest * 100)}%`, backgroundColor: `var(${layer.ink})` }}
+              style={{ left: `${Math.min(100, layer.current / Math.max(1, lengthSeconds(layer.recording.length)) * 100)}%`, backgroundColor: `var(${layer.ink})` }}
             />
           ) : null
         ))}
@@ -106,13 +109,18 @@ export function SonogramOverlay({ layers }: { layers: OverlayLayer[] }) {
       </div>
       <div className="mt-2 flex items-center justify-between font-display text-[10px] italic text-text-faint">
         <span>0:00</span>
-        <span>{clock(longest)}</span>
+        <span className="flex gap-3">
+          {layers.map((layer) => (
+            <span key={layer.key} style={{ color: `var(${layer.ink})` }}>{clock(lengthSeconds(layer.recording.length))}</span>
+          ))}
+        </span>
       </div>
       <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
         {layers.map((layer) => (
           <li key={layer.key} className="flex items-center gap-2 font-display text-xs italic text-text-muted">
             <span aria-hidden="true" className="h-0.5 w-5" style={{ backgroundColor: `var(${layer.ink})` }} />
             <span className="capitalize">{layer.name}</span>
+            {ranges[layer.key] ? <span className="text-text-faint">{Math.round(ranges[layer.key].minHz / 100) / 10}–{Math.round(ranges[layer.key].maxHz / 100) / 10} kHz</span> : null}
           </li>
         ))}
       </ul>

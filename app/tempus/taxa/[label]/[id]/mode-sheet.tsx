@@ -108,14 +108,14 @@ export default function ModeSheet({
         <div className="flex items-center justify-between border-b border-border pb-2 text-[10px] italic text-text-muted">
           <span>Artblad</span>
           <div className="flex items-center gap-4">
-            <span>Senast synkad {updated}</span>
+            <span className="max-sm:hidden">Senast synkad {updated}</span>
             {follow}
           </div>
         </div>
 
         <div className="relative border-b border-border py-2">
-          <div className="flex items-baseline justify-between gap-x-3">
-            <h1 className="min-w-0 break-words text-3xl font-normal capitalize sm:text-4xl">{name}</h1>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+            <h1 className="max-w-full break-words text-3xl font-normal capitalize sm:text-4xl">{name}</h1>
             <a href={artfaktaHref} target="_blank" rel="noreferrer" className="shrink-0 text-xs italic text-accent underline decoration-accent/40 underline-offset-4 transition-colors duration-150 hover:text-accent-hover sm:hidden">Artfakta ↗</a>
           </div>
           <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0">

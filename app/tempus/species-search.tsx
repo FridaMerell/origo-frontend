@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { AppLink as Link } from "@/app/components/ui/AppLink"
 import { useDebounced } from "@/app/lib/use-debounced"
 import { useSpeciesPage } from "./ui/use-species-page"
+import CompareButton from "./taxa/[label]/[id]/CompareButton"
 import { ArrowRight, Search, X } from "lucide-react"
 
 type SpeciesSearchProps = {
@@ -134,18 +135,22 @@ export default function SpeciesSearch({ open, onClose }: SpeciesSearchProps) {
           ) : (
             <ul id="species-lookup-results" role="listbox" className="grid gap-1" aria-label="Sökresultat">
               {matches.map((species, index) => (
-                <li key={species.id} role="option" aria-selected={activeIndex === index}>
+                <li key={species.id} role="option" aria-selected={activeIndex === index} className="flex items-center gap-2">
                   <Link
                     id={`species-lookup-option-${index}`}
                     href={`/taxa/oversikt/${species.dyntaxa_taxon_id}`}
                     onClick={onClose}
-                    className={`flex items-center justify-between gap-4 rounded-md px-3 py-3 no-underline transition-colors hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-focus-ring ${activeIndex === index ? "bg-accent-wash" : ""}`}
+                    className={`flex min-w-0 flex-1 items-center justify-between gap-4 rounded-md px-3 py-3 no-underline transition-colors hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-focus-ring ${activeIndex === index ? "bg-accent-wash" : ""}`}
                   >
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-text">{species.swedish_name}</span>
                       <span className="block truncate font-mono text-xs italic text-text-muted">{species.scientific_name}</span>
                     </span>
-                    <ArrowRight size={17} className="shrink-0 text-text-faint" />
+                  </Link>
+                  <CompareButton id={String(species.dyntaxa_taxon_id)} name={species.swedish_name} scientificName={species.scientific_name} className="!h-8 shrink-0 !px-2.5 !text-xs" />
+                  {/* The arrow stands last in the row; the name beside it is the same link for keyboard and screen reader. */}
+                  <Link href={`/taxa/oversikt/${species.dyntaxa_taxon_id}`} onClick={onClose} tabIndex={-1} aria-hidden="true" className="shrink-0 p-1 text-text-faint hover:text-accent">
+                    <ArrowRight size={17} />
                   </Link>
                 </li>
               ))}

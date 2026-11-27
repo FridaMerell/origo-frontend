@@ -63,7 +63,7 @@ function SpeciesCell({ item, extended, error, ink, overlay, chosenId, onChoose, 
           </h2>
           {item.scientificName ? <p className="truncate font-display text-xs italic text-text-muted">{item.scientificName}</p> : null}
         </div>
-        <button type="button" onClick={onRemove} className="shrink-0 font-display text-xs italic text-text-muted underline decoration-border underline-offset-4 transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
+        <button type="button" onClick={onRemove} className="shrink-0 font-display text-xs italic text-text-muted underline decoration-border max-sm:-my-2 max-sm:px-1 max-sm:py-2 max-sm:text-sm underline-offset-4 transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
           Ta bort
         </button>
       </div>
@@ -82,7 +82,7 @@ function SpeciesCell({ item, extended, error, ink, overlay, chosenId, onChoose, 
             hideSonogram={overlay}
             onProgress={(current, playing) => onProgress(item.id, { current, playing })}
           />
-          <button type="button" aria-expanded={listOpen} onClick={() => setListOpen((current) => !current)} className="mt-2 font-display text-xs italic text-text-muted underline decoration-border underline-offset-4 transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
+          <button type="button" aria-expanded={listOpen} onClick={() => setListOpen((current) => !current)} className="mt-2 font-display text-xs italic text-text-muted underline decoration-border max-sm:py-2 max-sm:text-sm underline-offset-4 transition-colors hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
             {listOpen ? "Dölj inspelningar" : `Byt inspelning (${recordings.length})`}
           </button>
           {listOpen ? (
@@ -91,7 +91,7 @@ function SpeciesCell({ item, extended, error, ink, overlay, chosenId, onChoose, 
                 {recordings.slice(0, visible).map((recording) => (
                   <li key={String(recording.id)} className="border-b border-r border-border">
                     <button type="button" onClick={() => onChoose(item.id, String(recording.id))} aria-current={recording === selected ? "true" : undefined}
-                      className={`grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-x-3 px-2 py-2 text-left font-display text-xs italic transition-colors hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-focus-ring ${recording === selected ? "text-accent" : "text-text"}`}>
+                      className={`grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] gap-x-3 px-2 py-2 text-left font-display text-xs italic max-sm:py-3 max-sm:text-sm transition-colors hover:bg-accent-wash focus-visible:outline-2 focus-visible:outline-focus-ring ${recording === selected ? "text-accent" : "text-text"}`}>
                       <span className="min-w-0 truncate">{soundName(recording.sound_type)}</span>
                       <span className="tabular-nums text-text-muted">{recording.length}</span>
                       <span className="col-span-2 min-w-0 truncate text-[10px] text-text-faint">XC{recording.id} · {placeName(recording)}</span>
@@ -100,7 +100,7 @@ function SpeciesCell({ item, extended, error, ink, overlay, chosenId, onChoose, 
                 ))}
               </ol>
               {visible < recordings.length ? (
-                <button type="button" onClick={() => setVisible((count) => count + 12)} className="mt-2 font-display text-xs italic text-accent underline decoration-accent/40 underline-offset-4 hover:text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
+                <button type="button" onClick={() => setVisible((count) => count + 12)} className="mt-2 font-display text-xs italic text-accent underline decoration-accent/40 max-sm:py-2 max-sm:text-sm underline-offset-4 hover:text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
                   Visa fler ({recordings.length - visible} kvar)
                 </button>
               ) : null}
@@ -195,14 +195,19 @@ export default function Page() {
     })
   }, [])
 
-  // Species are compared by ear one after the other: starting one recording stops the others.
-  useEffect(() => {
-    const stopOthers = (event: Event) => {
-      document.querySelectorAll("audio").forEach((audio) => { if (audio !== event.target) audio.pause() })
+  // All recordings start together from the beginning, or all stop.
+  const anyPlaying = Object.values(progress).some((entry) => entry.playing)
+  const toggleAll = () => {
+    const audios = Array.from(document.querySelectorAll("audio"))
+    if (anyPlaying) {
+      audios.forEach((audio) => audio.pause())
+      return
     }
-    document.addEventListener("play", stopOthers, true)
-    return () => document.removeEventListener("play", stopOthers, true)
-  }, [])
+    audios.forEach((audio) => {
+      audio.currentTime = 0
+      void audio.play().catch(() => undefined)
+    })
+  }
 
   const names = species.map((item) => item.name)
   const title = names.length > 0 ? new Intl.ListFormat("sv", { style: "long", type: "conjunction" }).format(names) : "Jämför ljud"
@@ -213,13 +218,13 @@ export default function Page() {
 
   return (
     <div className="container mx-auto py-5 max-sm:px-3 sm:py-7">
-      <article className="overflow-hidden rounded-card border border-border bg-surface px-4 pb-5 pt-3 text-text shadow-card sm:px-6 sm:pb-6 sm:pt-4">
-        <header className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[9px] italic text-text-faint">
+      <article className="rounded-card border border-border bg-surface px-4 pb-5 pt-3 text-text shadow-card sm:px-6 sm:pb-6 sm:pt-4">
+        <header className="flex items-center justify-between border-b border-border pb-1.5 font-display text-[11px] italic text-text-faint sm:text-[9px]">
           <span>Ljudblad</span>
           <span className="flex items-center gap-4">
             {ready ? <span>{species.length} {species.length === 1 ? "art" : "arter"}</span> : null}
             {species.length > 0 ? (
-              <button type="button" onClick={() => void share()} className="cursor-pointer text-accent underline decoration-accent/40 underline-offset-4 transition-colors hover:text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
+              <button type="button" onClick={() => void share()} className="cursor-pointer text-accent underline decoration-accent/40 underline-offset-4 transition-colors max-sm:-my-2 max-sm:py-2 max-sm:text-sm hover:text-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring">
                 Dela
               </button>
             ) : null}
@@ -227,7 +232,7 @@ export default function Page() {
         </header>
 
         <div className="py-5 text-center">
-          <h1 className="font-display text-2xl font-medium italic tracking-wide first-letter:uppercase sm:text-3xl">{title}</h1>
+          <h1 className="font-display text-xl font-medium italic tracking-wide text-balance first-letter:uppercase sm:text-3xl">{title}</h1>
         </div>
 
         <div className="border-t border-border">
@@ -255,6 +260,17 @@ export default function Page() {
             <Tabs tabs={MODE_TABS} active={mode} onChange={setMode} className="mt-5" />
 
             {mode === "overlay" && layers.length > 0 ? <div className="mt-3"><SonogramOverlay layers={layers} /></div> : null}
+
+            {species.length > 1 ? (
+              <div className="mt-3 flex">
+                <button type="button" onClick={toggleAll} aria-label={anyPlaying ? "Pausa alla inspelningar" : "Spela alla inspelningar samtidigt"} className="group inline-flex cursor-pointer items-center gap-2.5 text-xs text-text transition-colors duration-150 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+                  <span className="grid size-8 place-items-center rounded-full bg-accent text-surface transition-[background-color,transform] duration-150 group-hover:bg-accent-hover group-active:scale-95 motion-reduce:transition-none">
+                    {anyPlaying ? <svg aria-hidden="true" viewBox="0 0 16 16" className="size-3 fill-current"><path d="M3 2h3v12H3zm7 0h3v12h-3z" /></svg> : <svg aria-hidden="true" viewBox="0 0 16 16" className="ml-0.5 size-3 fill-current"><path d="M4 2.2v11.6L13 8z" /></svg>}
+                  </span>
+                  <span>{anyPlaying ? "Pausa alla" : "Spela alla samtidigt"}</span>
+                </button>
+              </div>
+            ) : null}
 
             <div className="mt-5 grid grid-cols-[minmax(0,1fr)] border-l border-t border-border md:grid-cols-2">
               {species.map((item, position) => (

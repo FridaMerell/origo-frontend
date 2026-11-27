@@ -5,7 +5,13 @@ import { COMPARE_ADDED_EVENT, type CompareAdded } from "@/app/tempus/ljud/compar
 import { prefetchSounds } from "@/app/tempus/ljud/sound-data"
 import { inkOf, useCompareSpecies } from "@/app/tempus/ljud/use-compare"
 
-const CompareButton = ({ id, name, scientificName }: { id: string; name: string; scientificName?: string }) => {
+const CompareButton = ({ id, name, scientificName, className = "!h-6 !px-1.5 !text-[11px]" }: {
+  id: string
+  name: string
+  scientificName?: string
+  /** The size of the button where it stands; the default is the species sheet's small header button. */
+  className?: string
+}) => {
   const { species, has, add, remove } = useCompareSpecies()
   const added = has(id)
 
@@ -23,10 +29,9 @@ const CompareButton = ({ id, name, scientificName }: { id: string; name: string;
         prefetchSounds(id)
       }}
       rounded="rounded-md"
-      className="!h-6 whitespace-nowrap border-accent !px-1.5 !text-[11px] !text-accent hover:bg-accent-wash"
+      className={`whitespace-nowrap border-accent !text-accent hover:bg-accent-wash ${className}`}
     >
-      <span className="sm:hidden">{added ? "I jämförelse" : "Jämför"}</span>
-      <span className="max-sm:hidden">{added ? "Ta bort ur jämförelse" : "Lägg till i jämförelse"}</span>
+{added ? "Ta bort" : "Jämför ljud"}
     </Button>
   )
 }

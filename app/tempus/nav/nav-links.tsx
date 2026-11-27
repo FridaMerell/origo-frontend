@@ -7,6 +7,7 @@ export const primaryLinks = [
   { href: "/birdnet", label: "Birdnet", icon: "bird" },
   { href: "/taxa", label: "Taxonomier", icon: "leaf" },
   { href: "/sasong", label: "Säsong", icon: "leaf" },
+  { href: "/ljud/jamfor", label: "Jämför ljud", icon: "folio" },
 ] as const
 
 export const mainLinks = primaryLinks.filter((link) =>
@@ -14,7 +15,7 @@ export const mainLinks = primaryLinks.filter((link) =>
 )
 
 export const moreLinks = primaryLinks.filter((link) =>
-  link.href === "/rutt" || link.href === "/lokaler" || link.href === "/taxa" || link.href === "/sasong",
+  link.href === "/rutt" || link.href === "/lokaler" || link.href === "/taxa" || link.href === "/sasong" || link.href === "/ljud/jamfor",
 )
 
 export const isActiveLink = (pathname: string, href: string) =>

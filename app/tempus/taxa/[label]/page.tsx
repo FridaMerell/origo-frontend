@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { getTempusSpeciesCategoryByTaxonId, getTempusSpeciesPageByCategory } from "@/app/lib/dal/tempus/species"
 import Link from "next/link"
+import CompareButton from "./[id]/CompareButton"
 import FollowButton from "./[id]/FollowButton"
 import TaxonSearch from "./taxon-search"
 import ImportSpeciesChecklistForm from "../import-species-checklist-form"
@@ -87,18 +88,19 @@ const Page = async ({ params, searchParams }: {
           </p>
         )}
         {species.map((sp) => (
-          <div key={sp.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-field-border py-2">
+          <div key={sp.id} className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-field-border py-2 max-sm:gap-2">
             <Link href={`/taxa/${label}/${sp.dyntaxa_taxon_id}`} className="min-w-0">
-              <div className="grid min-w-0 grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-4">
+              <div className="grid min-w-0 grid-cols-[max-content_minmax(0,1fr)] items-baseline gap-4 max-sm:grid-cols-[minmax(0,1fr)] max-sm:gap-0 max-sm:break-words">
                 <span className="font-display text-md capitalize">
                   {sp.swedish_name}
                 </span>
-                <span className="min-w-0 truncate font-mono text-sm italic text-text-muted">
+                <span className="min-w-0 font-mono text-sm italic text-text-muted max-sm:text-xs sm:truncate">
                   {sp.scientific_name}
                 </span>
               </div>
             </Link>
             <FollowButton props={{ variant: "primary", size: 'sm' }} taxa={String(sp.dyntaxa_taxon_id)} initial={sp.is_followed} initialNotify={sp.is_notify ?? false} />
+            <CompareButton id={String(sp.dyntaxa_taxon_id)} name={sp.swedish_name} scientificName={sp.scientific_name} className="!h-[41px] !px-3 !text-sm max-sm:!px-2 max-sm:!text-xs" />
           </div>
         ))}
       </dl>
